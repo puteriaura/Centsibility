@@ -4,7 +4,7 @@ import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidQuizState, edgeKidQuizAnswer } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
-import { ALL_QUESTIONS } from "@/lib/quiz-bank";
+import { ALL_QUESTIONS } from "@/data/quiz-bank";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kid/quiz")({

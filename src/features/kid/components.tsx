@@ -140,6 +140,3 @@ export function txEmoji(t: string) {
   return <span className="wireframe-icon">{TX_LABEL_MAP[t] ?? "[icon: transaction]"}</span>;
 }
 
-export function txEmojiBg(_t: string) {
-  return "wireframe-box";
-}

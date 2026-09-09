@@ -4,8 +4,8 @@ import { AppShell, Card, SectionTitle } from "@/components/AppShell";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidRepayLoan, edgeKidRequestLoan } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
-import { SignaturePad } from "@/components/SignaturePad";
-import { exportLoanPdf } from "@/lib/loan-pdf";
+import { SignaturePad } from "@/features/loans/components/SignaturePad";
+import { exportLoanPdf } from "@/features/loans/utils/loan-pdf";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { toast } from "sonner";
 

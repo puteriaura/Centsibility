@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDailyQuote } from "@/lib/quotes";
+import { getDailyQuote } from "@/data/quotes";
 
 export function QuoteCard({ variant: _variant = "kid" }: { variant?: "kid" | "parent" }) {
   const [q, setQ] = useState(() => getDailyQuote());

@@ -83,9 +83,6 @@ function FullPageLoader() {
   );
 }
 
-export function CardSkeleton({ className = "" }: { className?: string }) {
-  return <Skeleton className={`wireframe-card ${className}`} style={{ height: "6rem" }} />;
-}
 
 function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unread: number }) {
   const isKid = mode === "kid";
@@ -276,39 +273,5 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
   );
 }
 
-export function Card({
-  children,
-  className = "",
-  style,
-  ...props
-}: {
-  children?: ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-} & React.HTMLAttributes<HTMLElement>) {
-  return (
-    <section className={`wireframe-card ${className}`} style={style} {...props}>
-      {children}
-    </section>
-  );
-}
-
-export function SectionTitle({
-  children,
-  action,
-  className = "",
-  style,
-  ...props
-}: {
-  children: ReactNode;
-  action?: ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-} & React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={`wireframe-space-between ${className}`} style={{ margin: "1rem 0 0.5rem 0", ...style }} {...props}>
-      <h2>{children}</h2>
-      {action}
-    </div>
-  );
-}
+export { Card } from "./ui/card";
+export { SectionTitle } from "./ui/section-title";

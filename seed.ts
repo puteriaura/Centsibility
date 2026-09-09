@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { supabaseAdmin } from "./src/integrations/supabase/client.server.ts";
+import { supabaseAdmin } from "./scripts/lib/supabase-admin.ts";
 import bcrypt from "bcryptjs";
 
 async function seed() {

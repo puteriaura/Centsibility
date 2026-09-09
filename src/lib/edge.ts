@@ -54,9 +54,6 @@ export async function edgeParentCreateKid(params: { name: string; username: stri
   return invoke<{ kid: any }>("parent-finance", { action: "create-kid", ...params });
 }
 
-export async function edgeParentGenerateCreationKey() {
-  return invoke<{ setupCode: string }>("parent-finance", { action: "generate-creation-key" });
-}
 
 export async function edgeParentDeleteKid(params: { kidId: string }) {
   return invoke<{ ok: boolean }>("parent-finance", { action: "delete-kid", ...params });
@@ -86,9 +83,6 @@ export async function edgeParentSetHibah(params: { kidId: string; rate: number }
   return invoke<{ ok: boolean }>("parent-finance", { action: "set-hibah", ...params });
 }
 
-export async function edgeParentSetInvestRate(params: { kidId: string; rate: number }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "set-invest-rate", ...params });
-}
 
 export async function edgeParentMarkNotificationsRead() {
   return invoke<{ ok: boolean }>("parent-finance", { action: "mark-notifications-read" });
