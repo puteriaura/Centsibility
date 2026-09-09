@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidQuizState, edgeKidQuizAnswer } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -38,9 +39,7 @@ function KidQuiz() {
 
   if (!state)
     return (
-      <AppShell mode="kid">
-        <Card className="wireframe-card">Loading…</Card>
-      </AppShell>
+      <Card className="wireframe-card">Loading…</Card>
     );
 
   const totalPoints = Math.round(Number(data?.kid.coins ?? 0));
@@ -69,7 +68,7 @@ function KidQuiz() {
   /* ── Done screen ── */
   if (done) {
     return (
-      <AppShell mode="kid">
+      <>
         <PointsHeader totalPoints={totalPoints} />
 
         <Card className="wireframe-card" style={{ textAlign: "center", marginTop: "1rem" }}>
@@ -98,14 +97,14 @@ function KidQuiz() {
         </Card>
 
         <QuizHistory attempts={data?.attempts ?? []} />
-      </AppShell>
+      </>
     );
   }
 
   const isPicked = picked !== null;
 
   return (
-    <AppShell mode="kid">
+    <>
       <PointsHeader totalPoints={totalPoints} />
 
       <div className="wireframe-space-between" style={{ marginTop: "1rem" }}>
@@ -182,7 +181,7 @@ function KidQuiz() {
       </div>
 
       <QuizHistory attempts={data?.attempts ?? []} />
-    </AppShell>
+    </>
   );
 }
 

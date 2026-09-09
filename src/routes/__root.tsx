@@ -18,7 +18,7 @@ function NotFoundComponent() {
   );
 }
 
-function DefaultErrorComponent({ error }: { error: Error }) {
+export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: () => void }) {
   const router = useRouter();
   return (
     <div className="wireframe-box" style={{ maxWidth: "500px", margin: "3rem auto", textAlign: "center" }}>
@@ -26,7 +26,13 @@ function DefaultErrorComponent({ error }: { error: Error }) {
       <h1>Something went wrong</h1>
       <p>{error?.message || "An unexpected error occurred. Please try again."}</p>
       <div className="wireframe-row" style={{ justifyContent: "center", marginTop: "1rem" }}>
-        <button type="button" onClick={() => router.invalidate()}>
+        <button
+          type="button"
+          onClick={() => {
+            router.invalidate();
+            reset?.();
+          }}
+        >
           Try again
         </button>
         <Link to="/">Go home</Link>

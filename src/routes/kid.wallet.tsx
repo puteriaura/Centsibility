@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidSadaqah, edgeKidInvestSettle, edgeKidInvestDeposit, edgeKidInvestWithdraw, edgeKidRequestApproval, edgeKidSetInvestRisk } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -37,13 +38,11 @@ function KidWallet() {
 
   if (loading || !data) {
     return (
-      <AppShell mode="kid">
-        <div className="wireframe-col">
-          <Skeleton style={{ height: "8rem" }} />
-          <Skeleton style={{ height: "6rem" }} />
-          <Skeleton style={{ height: "10rem" }} />
-        </div>
-      </AppShell>
+      <div className="wireframe-col">
+        <Skeleton style={{ height: "8rem" }} />
+        <Skeleton style={{ height: "6rem" }} />
+        <Skeleton style={{ height: "10rem" }} />
+      </div>
     );
   }
   const k = data.kid;
@@ -117,7 +116,7 @@ function KidWallet() {
   ];
 
   return (
-    <AppShell mode="kid">
+    <>
       <h1>[icon: wallet] Hyperdrive Core</h1>
 
       <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
@@ -292,7 +291,7 @@ function KidWallet() {
           </div>
         ))}
       </div>
-    </AppShell>
+    </>
   );
 }
 

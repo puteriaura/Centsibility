@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShell, Card } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidSadaqah } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -42,9 +42,7 @@ function KidSadaqah() {
 
   if (loading || !data)
     return (
-      <AppShell mode="kid">
-        <Card className="wireframe-card">Loading…</Card>
-      </AppShell>
+      <Card className="wireframe-card">Loading…</Card>
     );
   const balance = Number(data.kid.balance);
 
@@ -64,7 +62,7 @@ function KidSadaqah() {
   };
 
   return (
-    <AppShell mode="kid">
+    <>
       <h1>[icon: heart] Sadaqah</h1>
       <p>الصَّدَقَةُ تُطْفِئُ الخَطِيئَةَ</p>
       <p><small>"Sadaqah extinguishes sin." — Hadith</small></p>
@@ -120,6 +118,6 @@ function KidSadaqah() {
           </div>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

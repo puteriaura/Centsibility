@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import {
   edgeKidInvestDeposit,
@@ -57,9 +58,7 @@ function KidInvest() {
 
   if (loading || !data)
     return (
-      <AppShell mode="kid">
-        <Card className="wireframe-card">Loading…</Card>
-      </AppShell>
+      <Card className="wireframe-card">Loading…</Card>
     );
 
   const k = data.kid;
@@ -155,7 +154,7 @@ function KidInvest() {
   const pctChange = startBal === 0 ? (endBal > 0 ? 100 : 0) : (absChange / startBal) * 100;
 
   return (
-    <AppShell mode="kid">
+    <>
       <h1>[icon: invest] Cosmic Growth</h1>
       <p>Choose your risk and frequency. Your money grows (or dips) based on your settings.</p>
 
@@ -281,6 +280,6 @@ function KidInvest() {
           onConfirm={dir === "in" ? deposit : withdraw}
         />
       </Card>
-    </AppShell>
+    </>
   );
 }

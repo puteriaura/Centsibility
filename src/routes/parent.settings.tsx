@@ -1,7 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/AppShell";
 import { useParentData } from "@/hooks/use-parent-data";
 import { useAuth } from "@/providers/auth";
 import {
@@ -106,19 +105,17 @@ function Settings() {
 
   if (loading)
     return (
-      <AppShell mode="parent">
-        <div>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-        </div>
-      </AppShell>
+      <div>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </div>
     );
 
   const presets = [0.0, 0.025, 0.05, 0.1, 0.15];
 
   return (
-    <AppShell mode="parent">
+    <>
       <h1>Settings</h1>
 
       <h2>Your avatar</h2>
@@ -252,6 +249,6 @@ function Settings() {
           </div>
         </div>
       </section>
-    </AppShell>
+    </>
   );
 }

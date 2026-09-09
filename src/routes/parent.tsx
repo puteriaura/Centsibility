@@ -277,5 +277,9 @@ function ParentLayout() {
   }
 
   // PIN verified — render the actual parent child routes
-  return <Outlet />;
+  return (
+    <AppShell mode="parent">
+      <Outlet />
+    </AppShell>
+  );
 }

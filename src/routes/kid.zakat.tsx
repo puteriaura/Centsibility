@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell } from "@/components/AppShell";
 import { useKidData } from "@/hooks/use-kid-data";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,13 +39,11 @@ function KidZakat() {
 
   if (loading || !data) {
     return (
-      <AppShell mode="kid">
-        <div>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-        </div>
-      </AppShell>
+      <div>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </div>
     );
   }
 
@@ -79,7 +76,7 @@ function KidZakat() {
   };
 
   return (
-    <AppShell mode="kid">
+    <>
       <h1>[icon: mosque] Zakat Calculator</h1>
       <p>خُذْ مِنْ أَمْوَالِهِمْ صَدَقَةً</p>
       <p>"Take from their wealth a charity." — Quran 9:103</p>
@@ -266,7 +263,7 @@ function KidZakat() {
       <p>
         [icon: warning] This calculator is for educational purposes. Consult a qualified scholar for your actual Zakat obligation.
       </p>
-    </AppShell>
+    </>
   );
 }
 

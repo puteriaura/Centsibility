@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidRepayLoan, edgeKidRequestLoan } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -28,9 +29,7 @@ function KidLoans() {
 
   if (loading || !data)
     return (
-      <AppShell mode="kid">
-        <Card className="wireframe-card">Loading…</Card>
-      </AppShell>
+      <Card className="wireframe-card">Loading…</Card>
     );
   const code = getKidSession()?.code;
   const kidBalance = Number(data.kid.balance);
@@ -80,7 +79,7 @@ function KidLoans() {
   };
 
   return (
-    <AppShell mode="kid">
+    <>
       <h1>[icon: handshake] My Loans</h1>
       <p>Qard = interest-free. Pay on time to grow your trust score.</p>
 
@@ -266,6 +265,6 @@ function KidLoans() {
           );
         })}
       </div>
-    </AppShell>
+    </>
   );
 }

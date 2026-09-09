@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidRequestReward } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -32,13 +33,11 @@ function KidRewards() {
 
   if (loading || !data) {
     return (
-      <AppShell mode="kid">
-        <div className="wireframe-col">
-          <Skeleton style={{ height: "6rem" }} />
-          <Skeleton style={{ height: "10rem" }} />
-          <Skeleton style={{ height: "10rem" }} />
-        </div>
-      </AppShell>
+      <div className="wireframe-col">
+        <Skeleton style={{ height: "6rem" }} />
+        <Skeleton style={{ height: "10rem" }} />
+        <Skeleton style={{ height: "10rem" }} />
+      </div>
     );
   }
 
@@ -99,7 +98,7 @@ function KidRewards() {
   ];
 
   return (
-    <AppShell mode="kid">
+    <>
       <h1>[icon: gift] Rewards</h1>
       <p>Spend your points on real-life treats. Parent must approve!</p>
 
@@ -224,6 +223,6 @@ function KidRewards() {
           ))}
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

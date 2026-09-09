@@ -1,7 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/AppShell";
 import { useParentData } from "@/hooks/use-parent-data";
 import {
   edgeParentApproveRequest,
@@ -61,17 +60,15 @@ function Approvals() {
 
   if (loading)
     return (
-      <AppShell mode="parent">
-        <div>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-        </div>
-      </AppShell>
+      <div>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </div>
     );
 
   return (
-    <AppShell mode="parent">
+    <>
       <h1>Pending Transmissions</h1>
       <p>Review and confirm requests from your astronauts.</p>
 
@@ -200,6 +197,6 @@ function Approvals() {
           );
         })}
       </div>
-    </AppShell>
+    </>
   );
 }

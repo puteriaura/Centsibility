@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppShell } from "@/components/AppShell";
 import { useParentData } from "@/hooks/use-parent-data";
 import { edgeParentGetStatement } from "@/lib/edge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -129,13 +128,11 @@ function Reports() {
 
   if (loading) {
     return (
-      <AppShell mode="parent">
-        <div>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-        </div>
-      </AppShell>
+      <div>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </div>
     );
   }
 
@@ -164,7 +161,7 @@ function Reports() {
   const overdue = loans.filter((l) => l.status === "active" && new Date(l.due_date) < new Date());
 
   return (
-    <AppShell mode="parent">
+    <>
       {/* Header + Controls */}
       <header>
         <div>
@@ -447,7 +444,7 @@ function Reports() {
           #statement-area { display: block !important; padding: 24px; font-size: 12px; }
         }
       `}</style>
-    </AppShell>
+    </>
   );
 }
 

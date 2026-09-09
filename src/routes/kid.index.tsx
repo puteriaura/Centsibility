@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import {
   edgeKidClaimCoins,
@@ -45,17 +46,15 @@ function KidHome() {
 
   if (loading || !data)
     return (
-      <AppShell mode="kid">
-        <div className="wireframe-col">
-          <Skeleton style={{ height: "4rem" }} />
-          <Skeleton style={{ height: "8rem" }} />
-          <div className="wireframe-grid-2">
-            <Skeleton style={{ height: "6rem" }} />
-            <Skeleton style={{ height: "6rem" }} />
-          </div>
-          <Skeleton style={{ height: "10rem" }} />
+      <div className="wireframe-col">
+        <Skeleton style={{ height: "4rem" }} />
+        <Skeleton style={{ height: "8rem" }} />
+        <div className="wireframe-grid-2">
+          <Skeleton style={{ height: "6rem" }} />
+          <Skeleton style={{ height: "6rem" }} />
         </div>
-      </AppShell>
+        <Skeleton style={{ height: "10rem" }} />
+      </div>
     );
   const k = data.kid;
   const code = getKidSession()?.code;
@@ -149,7 +148,7 @@ function KidHome() {
   };
 
   return (
-    <AppShell mode="kid">
+    <>
       <div className="wireframe-space-between">
         <button
           type="button"
@@ -554,6 +553,6 @@ function KidHome() {
           </div>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

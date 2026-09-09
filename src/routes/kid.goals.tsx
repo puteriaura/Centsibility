@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidContributeGoal } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -51,13 +52,11 @@ function KidGoals() {
 
   if (loading || !data)
     return (
-      <AppShell mode="kid">
-        <div className="wireframe-col">
-          {[1, 2].map((i) => (
-            <div key={i} className="wireframe-box" style={{ height: "6rem" }} />
-          ))}
-        </div>
-      </AppShell>
+      <div className="wireframe-col">
+        {[1, 2].map((i) => (
+          <div key={i} className="wireframe-box" style={{ height: "6rem" }} />
+        ))}
+      </div>
     );
 
   const balance = Number(data.kid.balance);
@@ -161,7 +160,7 @@ function KidGoals() {
   };
 
   return (
-    <AppShell mode="kid">
+    <>
       <div className="wireframe-space-between">
         <div>
           <h1>[icon: rocket] My Missions</h1>
@@ -442,6 +441,6 @@ function KidGoals() {
           <li>Tap edit to change your objective or target fuel at any time.</li>
         </ul>
       </Card>
-    </AppShell>
+    </>
   );
 }

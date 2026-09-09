@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ParentRouteImport } from './routes/parent'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KidLoginRouteImport } from './routes/kid-login'
+import { Route as KidRouteImport } from './routes/kid'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParentIndexRouteImport } from './routes/parent.index'
 import { Route as KidIndexRouteImport } from './routes/kid.index'
@@ -42,6 +43,11 @@ const KidLoginRoute = KidLoginRouteImport.update({
   path: '/kid-login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KidRoute = KidRouteImport.update({
+  id: '/kid',
+  path: '/kid',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -53,9 +59,9 @@ const ParentIndexRoute = ParentIndexRouteImport.update({
   getParentRoute: () => ParentRoute,
 } as any)
 const KidIndexRoute = KidIndexRouteImport.update({
-  id: '/kid/',
-  path: '/kid/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => KidRoute,
 } as any)
 const ParentSettingsRoute = ParentSettingsRouteImport.update({
   id: '/settings',
@@ -73,48 +79,49 @@ const ParentApprovalsRoute = ParentApprovalsRouteImport.update({
   getParentRoute: () => ParentRoute,
 } as any)
 const KidZakatRoute = KidZakatRouteImport.update({
-  id: '/kid/zakat',
-  path: '/kid/zakat',
-  getParentRoute: () => rootRouteImport,
+  id: '/zakat',
+  path: '/zakat',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidWalletRoute = KidWalletRouteImport.update({
-  id: '/kid/wallet',
-  path: '/kid/wallet',
-  getParentRoute: () => rootRouteImport,
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidSadaqahRoute = KidSadaqahRouteImport.update({
-  id: '/kid/sadaqah',
-  path: '/kid/sadaqah',
-  getParentRoute: () => rootRouteImport,
+  id: '/sadaqah',
+  path: '/sadaqah',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidRewardsRoute = KidRewardsRouteImport.update({
-  id: '/kid/rewards',
-  path: '/kid/rewards',
-  getParentRoute: () => rootRouteImport,
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidQuizRoute = KidQuizRouteImport.update({
-  id: '/kid/quiz',
-  path: '/kid/quiz',
-  getParentRoute: () => rootRouteImport,
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidLoansRoute = KidLoansRouteImport.update({
-  id: '/kid/loans',
-  path: '/kid/loans',
-  getParentRoute: () => rootRouteImport,
+  id: '/loans',
+  path: '/loans',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidInvestRoute = KidInvestRouteImport.update({
-  id: '/kid/invest',
-  path: '/kid/invest',
-  getParentRoute: () => rootRouteImport,
+  id: '/invest',
+  path: '/invest',
+  getParentRoute: () => KidRoute,
 } as any)
 const KidGoalsRoute = KidGoalsRouteImport.update({
-  id: '/kid/goals',
-  path: '/kid/goals',
-  getParentRoute: () => rootRouteImport,
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => KidRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/kid': typeof KidRouteWithChildren
   '/kid-login': typeof KidLoginRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/kid': typeof KidRouteWithChildren
   '/kid-login': typeof KidLoginRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
@@ -174,6 +182,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/kid'
     | '/kid-login'
     | '/login'
     | '/parent'
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/kid'
     | '/kid-login'
     | '/login'
     | '/parent'
@@ -231,18 +241,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  KidRoute: typeof KidRouteWithChildren
   KidLoginRoute: typeof KidLoginRoute
   LoginRoute: typeof LoginRoute
   ParentRoute: typeof ParentRouteWithChildren
-  KidGoalsRoute: typeof KidGoalsRoute
-  KidInvestRoute: typeof KidInvestRoute
-  KidLoansRoute: typeof KidLoansRoute
-  KidQuizRoute: typeof KidQuizRoute
-  KidRewardsRoute: typeof KidRewardsRoute
-  KidSadaqahRoute: typeof KidSadaqahRoute
-  KidWalletRoute: typeof KidWalletRoute
-  KidZakatRoute: typeof KidZakatRoute
-  KidIndexRoute: typeof KidIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -268,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KidLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/kid': {
+      id: '/kid'
+      path: '/kid'
+      fullPath: '/kid'
+      preLoaderRoute: typeof KidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -284,10 +293,10 @@ declare module '@tanstack/react-router' {
     }
     '/kid/': {
       id: '/kid/'
-      path: '/kid'
+      path: '/'
       fullPath: '/kid/'
       preLoaderRoute: typeof KidIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/parent/settings': {
       id: '/parent/settings'
@@ -312,62 +321,88 @@ declare module '@tanstack/react-router' {
     }
     '/kid/zakat': {
       id: '/kid/zakat'
-      path: '/kid/zakat'
+      path: '/zakat'
       fullPath: '/kid/zakat'
       preLoaderRoute: typeof KidZakatRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/wallet': {
       id: '/kid/wallet'
-      path: '/kid/wallet'
+      path: '/wallet'
       fullPath: '/kid/wallet'
       preLoaderRoute: typeof KidWalletRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/sadaqah': {
       id: '/kid/sadaqah'
-      path: '/kid/sadaqah'
+      path: '/sadaqah'
       fullPath: '/kid/sadaqah'
       preLoaderRoute: typeof KidSadaqahRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/rewards': {
       id: '/kid/rewards'
-      path: '/kid/rewards'
+      path: '/rewards'
       fullPath: '/kid/rewards'
       preLoaderRoute: typeof KidRewardsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/quiz': {
       id: '/kid/quiz'
-      path: '/kid/quiz'
+      path: '/quiz'
       fullPath: '/kid/quiz'
       preLoaderRoute: typeof KidQuizRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/loans': {
       id: '/kid/loans'
-      path: '/kid/loans'
+      path: '/loans'
       fullPath: '/kid/loans'
       preLoaderRoute: typeof KidLoansRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/invest': {
       id: '/kid/invest'
-      path: '/kid/invest'
+      path: '/invest'
       fullPath: '/kid/invest'
       preLoaderRoute: typeof KidInvestRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
     '/kid/goals': {
       id: '/kid/goals'
-      path: '/kid/goals'
+      path: '/goals'
       fullPath: '/kid/goals'
       preLoaderRoute: typeof KidGoalsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof KidRoute
     }
   }
 }
+
+interface KidRouteChildren {
+  KidGoalsRoute: typeof KidGoalsRoute
+  KidInvestRoute: typeof KidInvestRoute
+  KidLoansRoute: typeof KidLoansRoute
+  KidQuizRoute: typeof KidQuizRoute
+  KidRewardsRoute: typeof KidRewardsRoute
+  KidSadaqahRoute: typeof KidSadaqahRoute
+  KidWalletRoute: typeof KidWalletRoute
+  KidZakatRoute: typeof KidZakatRoute
+  KidIndexRoute: typeof KidIndexRoute
+}
+
+const KidRouteChildren: KidRouteChildren = {
+  KidGoalsRoute: KidGoalsRoute,
+  KidInvestRoute: KidInvestRoute,
+  KidLoansRoute: KidLoansRoute,
+  KidQuizRoute: KidQuizRoute,
+  KidRewardsRoute: KidRewardsRoute,
+  KidSadaqahRoute: KidSadaqahRoute,
+  KidWalletRoute: KidWalletRoute,
+  KidZakatRoute: KidZakatRoute,
+  KidIndexRoute: KidIndexRoute,
+}
+
+const KidRouteWithChildren = KidRoute._addFileChildren(KidRouteChildren)
 
 interface ParentRouteChildren {
   ParentApprovalsRoute: typeof ParentApprovalsRoute
@@ -388,18 +423,10 @@ const ParentRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  KidRoute: KidRouteWithChildren,
   KidLoginRoute: KidLoginRoute,
   LoginRoute: LoginRoute,
   ParentRoute: ParentRouteWithChildren,
-  KidGoalsRoute: KidGoalsRoute,
-  KidInvestRoute: KidInvestRoute,
-  KidLoansRoute: KidLoansRoute,
-  KidQuizRoute: KidQuizRoute,
-  KidRewardsRoute: KidRewardsRoute,
-  KidSadaqahRoute: KidSadaqahRoute,
-  KidWalletRoute: KidWalletRoute,
-  KidZakatRoute: KidZakatRoute,
-  KidIndexRoute: KidIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

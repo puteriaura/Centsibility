@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/AppShell";
 import { useParentData } from "@/hooks/use-parent-data";
 import { useAuth } from "@/providers/auth";
 import {
@@ -114,19 +113,17 @@ function ParentHome() {
 
   if (loading) {
     return (
-      <AppShell mode="parent">
-        <div>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-        </div>
-      </AppShell>
+      <div>
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
+      </div>
     );
   }
 
   return (
-    <AppShell mode="parent">
+    <>
       {/* Hero header */}
       <header>
         <div>
@@ -347,6 +344,6 @@ function ParentHome() {
           </div>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }
