@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+import { isDebitTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
 
 export const Route = createFileRoute("/parent/reports")({
   head: () => ({ meta: [{ title: "Monthly Statement — Centsibility" }] }),
@@ -27,20 +28,8 @@ type StatementResult = {
   period: { from: string; to: string };
 } | null;
 
-const DEBIT_TYPES = ["WITHDRAWAL", "SADAQAH", "INVEST_IN", "QARD"];
-const TYPE_LABELS: Record<string, string> = {
-  DEPOSIT: "Deposit",
-  WITHDRAWAL: "Withdrawal",
-  HIBAH: "Hibah",
-  QARD: "Loan",
-  SADAQAH: "Sadaqah",
-  INVEST_IN: "Investment",
-  INVEST_OUT: "Return",
-};
-
-function isDebit(type: string) {
-  return DEBIT_TYPES.includes(type);
-}
+const isDebit = isDebitTransaction;
+const TYPE_LABELS = TRANSACTION_TYPE_LABELS;
 function fmtRM(n: number) {
   return `RM ${Math.abs(n).toFixed(2)}`;
 }

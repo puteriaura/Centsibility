@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
+import { NumericKeypad } from "@/components/ui/numeric-keypad";
 
 export const Route = createFileRoute("/parent")({
   component: ParentLayout,
@@ -120,13 +121,6 @@ function ParentLayout() {
   // -----------------------------------------------------------------------
   // 2️⃣  Keypad
   // -----------------------------------------------------------------------
-  const KEYS = [
-    ["1", "2", "3"],
-    ["4", "5", "6"],
-    ["7", "8", "9"],
-    ["00", "0", "⌫"],
-  ];
-
   const handleKeyPress = useCallback((key: string) => {
     if (key === "⌫") {
       setPinInput((p) => p.slice(0, -1));
@@ -247,21 +241,7 @@ function ParentLayout() {
           </div>
 
           {/* Numeric keypad */}
-          <div>
-            {KEYS.map((row, rIdx) => (
-              <div key={rIdx}>
-                {row.map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleKeyPress(key)}
-                  >
-                    {key}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
+          <NumericKeypad onKeyPress={handleKeyPress} disabled={pinProcessing} />
 
           {/* Submit button with spinner */}
           <button

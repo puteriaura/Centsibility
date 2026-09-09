@@ -8,6 +8,7 @@ import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NumericKeypad } from "@/components/ui/numeric-keypad";
 
 export const Route = createFileRoute("/kid/rewards")({
   head: () => ({ meta: [{ title: "Rewards — Centsibility" }] }),
@@ -90,12 +91,6 @@ function KidRewards() {
   const history = data.rewards.filter(
     (r: (typeof data.rewards)[number]) => r.status !== "requested",
   );
-  const Keys = [
-    ["1", "2", "3"],
-    ["4", "5", "6"],
-    ["7", "8", "9"],
-    ["00", "0", "⌫"],
-  ];
 
   return (
     <>
@@ -162,19 +157,7 @@ function KidRewards() {
             <small>of {maxPts} pts available</small>
           )}
         </div>
-        <div className="wireframe-grid-3" style={{ margin: "0.5rem 0" }}>
-          {Keys.flat().map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => pressKey(key)}
-              aria-label={key === "⌫" ? "Delete" : `Key ${key}`}
-              style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
-            >
-              {key}
-            </button>
-          ))}
-        </div>
+        <NumericKeypad onKeyPress={pressKey} />
         <button
           type="button"
           onClick={() => submit(name, parsedPts)}

@@ -1,4 +1,5 @@
 import type { Transaction } from "@/hooks/use-parent-data";
+import { formatTransactionSign } from "@/lib/finance";
 
 interface FlightLogSectionProps {
   kidTxs: Transaction[];
@@ -19,10 +20,7 @@ export function FlightLogSection({ kidTxs }: FlightLogSectionProps) {
               <span>{t.label}</span>
               <small>{new Date(t.created_at).toLocaleDateString()}</small>
               <strong>
-                {["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
-                (t.type === "QARD" && t.label === "Loan repayment")
-                  ? "-"
-                  : "+"}
+                {formatTransactionSign(t.type, t.label)}
                 RM {Number(t.amount).toFixed(2)}
               </strong>
             </li>

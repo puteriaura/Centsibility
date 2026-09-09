@@ -46,3 +46,16 @@ export function calculateLoanRepayment(
   const fullyRepaid = Math.abs(loanAmount - newRepaid) < 0.001;
   return { newRepaid, fullyRepaid };
 }
+
+export const DEFAULT_NISAB = 22000;
+export const DEFAULT_ZAKAT_RATE = 0.025;
+
+export function calculateZakat(
+  netWealth: number,
+  nisab: number = DEFAULT_NISAB,
+  zakatRate: number = DEFAULT_ZAKAT_RATE,
+): number {
+  const aboveNisab = netWealth >= nisab;
+  return aboveNisab ? netWealth * zakatRate : 0;
+}
+

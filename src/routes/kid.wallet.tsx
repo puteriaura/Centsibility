@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
+import { formatTransactionSign } from "@/lib/finance";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
@@ -281,10 +282,7 @@ function KidWallet() {
             </div>
             <div>
               <strong>
-                {["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
-                (t.type === "QARD" && t.label === "Loan repayment")
-                  ? "-"
-                  : "+"}
+                {formatTransactionSign(t.type, t.label)}
                 RM {Number(t.amount).toFixed(2)}
               </strong>
             </div>

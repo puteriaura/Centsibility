@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { NumericKeypad } from "@/components/ui/numeric-keypad";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -163,18 +164,7 @@ export function MoneyKeypad({
         </div>
 
         {/* Keypad grid */}
-        <div className="wireframe-grid-3">
-          {Keys.flat().map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => press(k)}
-              style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
+        <NumericKeypad onKeyPress={press} />
 
         {/* Action row */}
         <div className="wireframe-row">

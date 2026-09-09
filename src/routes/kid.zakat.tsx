@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useKidData } from "@/hooks/use-kid-data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { calculateZakat, DEFAULT_NISAB, DEFAULT_ZAKAT_RATE } from "@/lib/math";
 
 export const Route = createFileRoute("/kid/zakat")({
   head: () => ({ meta: [{ title: "Zakat Calculator — Centsibility" }] }),
@@ -12,8 +13,8 @@ export const Route = createFileRoute("/kid/zakat")({
  * Nisab threshold — approx. value of 85g of gold.
  * Using a simplified RM value for educational purposes.
  */
-const NISAB_RM = 22_000;
-const ZAKAT_RATE = 0.025; // 2.5%
+const NISAB_RM = DEFAULT_NISAB;
+const ZAKAT_RATE = DEFAULT_ZAKAT_RATE;
 
 type AssetRow = { label: string; amount: string };
 
@@ -55,7 +56,7 @@ function KidZakat() {
   const totalDeductions = deductions.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
   const netWealth = Math.max(0, totalAssets - totalDeductions);
   const aboveNisab = netWealth >= NISAB_RM;
-  const zakatDue = aboveNisab ? netWealth * ZAKAT_RATE : 0;
+  const zakatDue = calculateZakat(netWealth, NISAB_RM, ZAKAT_RATE);
 
   const updateRow = (
     list: AssetRow[],
