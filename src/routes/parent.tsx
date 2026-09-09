@@ -2,8 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { edgeParentGetPin, edgeParentSetPin, edgeParentGetProfile } from "@/lib/edge";
 import { useAuth } from "@/providers/auth";
-import { AppShell, Card } from "@/components/AppShell";
-import { ShieldCheck, LockKey, CaretLeft } from "@phosphor-icons/react";
+import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
@@ -201,9 +200,7 @@ function ParentLayout() {
   if (authLoading || initialising) {
     return (
       <AppShell mode="parent">
-        <div className="flex h-full items-center justify-center">
-          <ShieldCheck className="w-12 h-12 text-starlight/50 animate-pulse" />
-        </div>
+        <div>[loading commander status...]</div>
       </AppShell>
     );
   }
@@ -214,7 +211,7 @@ function ParentLayout() {
   // PIN not yet verified — show the PIN screen
   if (!pinVerified) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-void px-4 font-body relative">
+      <div>
         {/* Cancel → sign out + go to kid-login */}
         <button
           onClick={() => {
@@ -223,56 +220,46 @@ function ParentLayout() {
               window.location.href = "/kid-login";
             });
           }}
-          className="absolute top-6 left-6 flex items-center gap-2 text-starlight/60 hover:text-starlight transition font-kid text-sm tracking-wider"
         >
-          <CaretLeft weight="bold" className="w-5 h-5" />
-          Cancel
+          [icon: back] Cancel
         </button>
 
-        <Card className="w-full max-w-sm glass-panel border border-starlight/20 text-center py-8 px-6">
+        <section>
           {/* Lock icon */}
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-void border border-starlight/20">
-            <LockKey weight="duotone" className="h-8 w-8 text-starlight" />
-          </div>
+          <div>[icon: lock]</div>
 
-          <h2 className="font-display text-2xl text-starlight mb-2">
+          <h2>
             {isSettingPin ? "Set Commander PIN" : "Enter Commander PIN"}
           </h2>
-          <p className="text-sm text-starlight/70 mb-6">
+          <p>
             {isSettingPin
               ? "Create a 4–6 digit PIN to protect the parent dashboard."
               : "Enter your PIN to access the parent dashboard."}
           </p>
 
           {/* PIN circles */}
-          <div className="mb-6 flex justify-center gap-2">
+          <div>
             {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-4 w-4 rounded-full border-2 transition-colors ${
-                  i < pinInput.length
-                    ? "border-starlight bg-starlight"
-                    : "border-starlight/30 bg-transparent"
-                }`}
-              />
+              <span key={i}>
+                {i < pinInput.length ? "[●]" : "[○]"}
+              </span>
             ))}
           </div>
 
           {/* Numeric keypad */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {KEYS.flat().map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleKeyPress(key)}
-                className={`rounded-2xl py-4 font-mono text-xl font-bold transition active:scale-90 ${
-                  key === "⌫"
-                    ? "bg-white/10 text-coral text-2xl border border-white/10"
-                    : "glass-panel text-starlight hover:bg-white/10 border border-white/10"
-                }`}
-              >
-                {key}
-              </button>
+          <div>
+            {KEYS.map((row, rIdx) => (
+              <div key={rIdx}>
+                {row.map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleKeyPress(key)}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
 
@@ -280,33 +267,11 @@ function ParentLayout() {
           <button
             onClick={submitPin}
             disabled={pinInput.length < 4 || pinProcessing}
-            className="w-full btn-press rounded-full glass-panel border border-neon-mint/30 px-6 py-3.5 font-kid text-sm font-bold text-starlight hover:bg-neon-mint hover:text-void disabled:opacity-50 transition shadow-neon uppercase tracking-wider flex items-center justify-center gap-2"
           >
-            {pinProcessing && (
-              <svg
-                className="animate-spin h-5 w-5"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                />
-              </svg>
-            )}
+            {pinProcessing && "[loading...] "}
             {isSettingPin ? "Set PIN" : "Unlock"}
           </button>
-        </Card>
+        </section>
       </div>
     );
   }

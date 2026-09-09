@@ -8,19 +8,6 @@ import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
-import {
-  Wallet,
-  CurrencyCircleDollar,
-  HandWithdraw,
-  Leaf,
-  Heart,
-  Handshake as HandshakeIcon,
-  Gift as GiftIcon,
-  Plant,
-  ArrowUUpLeft,
-  Plus,
-  Minus,
-} from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
@@ -40,7 +27,7 @@ function KidWallet() {
       .then((r) => {
         if (r.paid > 0) {
           sfx.coin();
-          toast.success(`🌱 Investment grew by RM${r.paid.toFixed(2)}!`);
+          toast.success(`Investment grew by RM${r.paid.toFixed(2)}!`);
         }
         refresh();
       })
@@ -51,10 +38,10 @@ function KidWallet() {
   if (loading || !data) {
     return (
       <AppShell mode="kid">
-        <div className="space-y-3">
-          <Skeleton className="h-32 rounded-3xl" />
-          <Skeleton className="h-24 rounded-3xl" />
-          <Skeleton className="h-40 rounded-3xl" />
+        <div className="wireframe-col">
+          <Skeleton style={{ height: "8rem" }} />
+          <Skeleton style={{ height: "6rem" }} />
+          <Skeleton style={{ height: "10rem" }} />
         </div>
       </AppShell>
     );
@@ -63,8 +50,6 @@ function KidWallet() {
   const code = getKidSession()?.code;
   const balance = Number(k.balance);
   const invested = Number(k.invest_balance ?? 0);
-  const rate = Number(k.invest_rate ?? 0.02);
-  const hibahRate = Number(k.hibah_rate ?? 0.01);
 
   const ask = async (kind: "DEPOSIT" | "WITHDRAWAL", amount: number, reference?: string) => {
     if (!code) return;
@@ -89,7 +74,7 @@ function KidWallet() {
     try {
       await edgeKidSadaqah({ code, amount });
       sfx.success();
-      toast.success("Jazakallah khair! ✨");
+      toast.success("Jazakallah khair!");
       refresh();
     } catch (e: unknown) {
       sfx.error();
@@ -123,221 +108,156 @@ function KidWallet() {
     }
   };
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    {
-      key: "deposit",
-      label: "Deposit",
-      icon: <CurrencyCircleDollar weight="duotone" className="w-4 h-4" />,
-    },
-    {
-      key: "withdraw",
-      label: "Withdraw",
-      icon: <HandWithdraw weight="duotone" className="w-4 h-4" />,
-    },
-    { key: "invest", label: "Invest", icon: <Leaf weight="duotone" className="w-4 h-4" /> },
-    { key: "sadaqah", label: "Sadaqah", icon: <Heart weight="duotone" className="w-4 h-4" /> },
-    { key: "loan", label: "Loan", icon: <HandshakeIcon weight="duotone" className="w-4 h-4" /> },
+  const tabs: { key: Tab; label: string; iconLabel: string }[] = [
+    { key: "deposit", label: "Deposit", iconLabel: "[icon: deposit]" },
+    { key: "withdraw", label: "Withdraw", iconLabel: "[icon: withdraw]" },
+    { key: "invest", label: "Invest", iconLabel: "[icon: invest]" },
+    { key: "sadaqah", label: "Sadaqah", iconLabel: "[icon: sadaqah]" },
+    { key: "loan", label: "Loan", iconLabel: "[icon: loan]" },
   ];
 
   return (
     <AppShell mode="kid">
-      <h1 className="font-display text-2xl text-starlight flex items-center gap-2 drop-shadow-sm">
-        <Wallet
-          weight="duotone"
-          className="w-8 h-8 text-neon-mint drop-shadow-[0_0_8px_var(--neon-mint)]"
-        />
-        Hyperdrive Core
-      </h1>
+      <h1>[icon: wallet] Hyperdrive Core</h1>
 
-      <Card className="mt-4 glass-panel bg-gradient-to-br from-neon-mint/20 to-cosmic-blue/20 border-neon-mint/50 shadow-neon relative overflow-hidden">
-        {/* Glow effect */}
-        <div className="absolute -right-10 -top-10 w-32 h-32 bg-neon-mint/30 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="text-xs font-kid uppercase tracking-widest text-starlight/70 relative z-10">
-          Core Energy
-        </div>
-        <div className="mt-1 font-mono text-4xl font-bold text-white drop-shadow-[0_0_10px_var(--neon-mint)] relative z-10">
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <small>Core Energy</small>
+        <div style={{ fontSize: "2rem", fontWeight: "bold", margin: "0.25rem 0" }}>
           RM {balance.toFixed(2)}
         </div>
-        <div className="mt-3 flex flex-wrap gap-3 relative z-10">
-          <span className="rounded-full bg-void/40 border border-starlight/20 px-3 py-1 font-kid text-[11px] font-bold text-starlight uppercase tracking-wider">
-            Invested RM {invested.toFixed(2)}
-          </span>
-          <span className="rounded-full bg-void/40 border border-starlight/20 px-3 py-1 font-kid text-[11px] font-bold text-nebula-pink uppercase tracking-wider">
+        <div className="wireframe-row">
+          <small>Invested RM {invested.toFixed(2)}</small>
+          <small>
             {(k.risk_appetite as string) === "very_low" ? "Very Low Risk"
               : (k.risk_appetite as string) === "low" ? "Low Risk"
               : (k.risk_appetite as string) === "medium" ? "Medium Risk"
               : (k.risk_appetite as string) === "high" ? "High Risk"
               : (k.risk_appetite as string) === "very_high" ? "Very High Risk"
               : "Growth"}
-          </span>
+          </small>
         </div>
       </Card>
 
-      <div className="mt-5 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="wireframe-row" style={{ marginTop: "1rem", flexWrap: "wrap" }}>
         {tabs.map((t) => (
           <button
             key={t.key}
+            type="button"
             onClick={() => {
               setTab(t.key);
               sfx.tap();
             }}
-            className={`btn-press shrink-0 rounded-2xl px-5 py-3 font-kid text-xs font-bold transition flex items-center gap-2 uppercase tracking-wider border ${tab === t.key ? "bg-cosmic-blue border-cosmic-blue text-white shadow-[0_0_15px_var(--cosmic-blue)]" : "glass-panel bg-void/50 border-starlight/20 text-starlight/80 hover:bg-white/10"}`}
+            style={{
+              border: tab === t.key ? "2px solid #000" : "1px solid #ccc",
+              fontWeight: tab === t.key ? "bold" : "normal",
+            }}
           >
-            {t.icon} {t.label}
+            {t.iconLabel} {t.label}
           </button>
         ))}
       </div>
 
       {tab === "deposit" && (
-        <Card className="glass-panel bg-void/50 border-starlight/20 mt-2">
-          <h3 className="font-kid font-bold text-starlight text-lg mb-1 flex items-center gap-2">
-            <CurrencyCircleDollar weight="duotone" className="w-6 h-6 text-neon-mint" />
-            Request Energy
-          </h3>
-          <p className="font-body text-xs text-starlight/60 mb-5">
-            Ask mission control (parent) to transmit energy to your core.
-          </p>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: deposit] Request Energy</h3>
+          <p><small>Ask mission control (parent) to transmit energy to your core.</small></p>
           <MoneyKeypad
             min={0.5}
             max={10000}
             showReference
             confirmLabel="Transmit Request"
-            confirmBg="bg-neon-mint"
             onConfirm={(amt, ref) => ask("DEPOSIT", amt, ref)}
           />
         </Card>
       )}
 
       {tab === "withdraw" && (
-        <Card className="glass-panel bg-void/50 border-starlight/20 mt-2">
-          <h3 className="font-kid font-bold text-starlight text-lg mb-1 flex items-center gap-2">
-            <HandWithdraw weight="duotone" className="w-6 h-6 text-nova-red" />
-            Eject Energy
-          </h3>
-          <p className="font-body text-xs text-starlight/60 mb-5">
-            Ask mission control to convert energy into physical cash.
-          </p>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: withdraw] Eject Energy</h3>
+          <p><small>Ask mission control to convert energy into physical cash.</small></p>
           <MoneyKeypad
             min={0.5}
             max={balance}
             showReference
             confirmLabel="Transmit Request"
-            confirmBg="bg-nova-red shadow-[0_0_15px_var(--nova-red)]"
             onConfirm={(amt, ref) => ask("WITHDRAWAL", amt, ref)}
           />
         </Card>
       )}
 
       {tab === "invest" && (
-        <Card className="glass-panel bg-void/50 border-starlight/20 mt-2">
-          <h3 className="font-kid font-bold text-starlight text-lg mb-1 flex items-center gap-2">
-            <Leaf
-              weight="duotone"
-              className="w-6 h-6 text-nebula-pink drop-shadow-[0_0_5px_var(--nebula-pink)]"
-            />
-            Cosmic Growth
-          </h3>
-          <p className="font-body text-xs text-starlight/60 mb-4">
-            Choose your risk appetite. Higher risk means potential for bigger gains, but also bigger
-            losses!
-          </p>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: invest] Cosmic Growth</h3>
+          <p><small>Choose your risk appetite. Higher risk means potential for bigger gains, but also bigger losses!</small></p>
 
-          <div className="mb-4 grid grid-cols-4 gap-2">
+          <div className="wireframe-grid-4" style={{ marginBottom: "1rem" }}>
             {[
-              { key: "very_low", label: "V.Low", color: "text-sky-400",   bg: "bg-sky-400"   },
-              { key: "low",      label: "Low",   color: "text-neon-mint", bg: "bg-neon-mint" },
-              { key: "medium",   label: "Med",   color: "text-sunny",     bg: "bg-sunny"     },
-              { key: "high",     label: "High",  color: "text-coral",     bg: "bg-coral"     },
-              { key: "very_high",label: "Max",   color: "text-nova-red",  bg: "bg-nova-red"  },
+              { key: "very_low", label: "V.Low" },
+              { key: "low", label: "Low" },
+              { key: "medium", label: "Med" },
+              { key: "high", label: "High" },
+              { key: "very_high", label: "Max" },
             ].map((r) => (
               <button
                 key={r.key}
+                type="button"
                 onClick={() => changeRisk(r.key)}
-                className={`rounded-xl py-2 font-kid text-[10px] font-bold uppercase tracking-wider border transition ${
-                  (k.risk_appetite as string || "low") === r.key
-                    ? `${r.bg} text-void border-transparent shadow-[0_0_10px_rgba(0,0,0,0.3)]`
-                    : `glass-panel bg-void/30 ${r.color} border-starlight/10 hover:border-starlight/30`
-                }`}
+                style={{
+                  border: (k.risk_appetite as string || "low") === r.key ? "2px solid #000" : "1px solid #ccc",
+                  fontWeight: (k.risk_appetite as string || "low") === r.key ? "bold" : "normal",
+                }}
               >
                 {r.label}
               </button>
             ))}
           </div>
 
-          <div className="mb-5 grid grid-cols-2 gap-3 text-center text-[10px] font-kid font-bold text-starlight/50 uppercase tracking-widest">
-            <div className="rounded-2xl glass-panel bg-void/30 p-3 border-starlight/10 shadow-inner">
-              Core
-              <br />
-              <span className="font-mono text-neon-mint text-lg">RM {balance.toFixed(2)}</span>
+          <div className="wireframe-grid-2" style={{ textAlign: "center", marginBottom: "1rem" }}>
+            <div className="wireframe-box">
+              <small>Core</small>
+              <div><strong>RM {balance.toFixed(2)}</strong></div>
             </div>
-            <div className="rounded-2xl glass-panel bg-nebula-pink/10 border-nebula-pink/30 p-3 shadow-inner">
-              Generating
-              <br />
-              <span className="font-mono text-nebula-pink text-lg">RM {invested.toFixed(2)}</span>
+            <div className="wireframe-box">
+              <small>Generating</small>
+              <div><strong>RM {invested.toFixed(2)}</strong></div>
             </div>
           </div>
-          {/* Two separate keypads via toggle */}
           <InvestKeypad balance={balance} invested={invested} onInvest={invest} />
         </Card>
       )}
 
       {tab === "sadaqah" && (
-        <Card className="glass-panel bg-void/50 border-starlight/20 mt-2">
-          <h3 className="font-kid font-bold text-starlight text-lg mb-1 flex items-center gap-2">
-            <Heart
-              weight="duotone"
-              className="w-6 h-6 text-cosmic-blue drop-shadow-[0_0_5px_var(--cosmic-blue)]"
-            />
-            Transmit Sadaqah
-          </h3>
-          <p className="font-body text-xs text-starlight/60 mb-5">
-            "Sadaqah extinguishes sin." Share your energy to help others in the galaxy.
-          </p>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: sadaqah] Transmit Sadaqah</h3>
+          <p><small>"Sadaqah extinguishes sin." Share your energy to help others in the galaxy.</small></p>
           <MoneyKeypad
             min={0.5}
             max={balance}
             confirmLabel="Give Sadaqah"
-            confirmBg="bg-cosmic-blue shadow-[0_0_15px_var(--cosmic-blue)]"
             onConfirm={(amt) => sadaqah(amt)}
           />
         </Card>
       )}
 
       {tab === "loan" && (
-        <Card className="glass-panel bg-void/50 border-starlight/20 mt-2">
-          <h3 className="font-kid font-bold text-starlight text-lg flex items-center gap-2">
-            <HandshakeIcon weight="duotone" className="w-6 h-6 text-neon-mint" />
-            Qard Hasan
-          </h3>
-          <p className="mt-2 font-body text-xs text-starlight/60">
-            Interest-free loan — sign a digital agreement, parent approves, repay on time to grow
-            trust score.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-center">
-            <div className="rounded-2xl glass-panel bg-void/30 p-4 border-starlight/10 shadow-inner">
-              <div className="font-kid text-[10px] font-bold uppercase text-starlight/50 tracking-widest">
-                Trust Score
-              </div>
-              <div className="font-mono text-3xl font-bold text-neon-mint drop-shadow-[0_0_5px_var(--neon-mint)]">
-                {k.trust_score}
-              </div>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: loan] Qard Hasan</h3>
+          <p><small>Interest-free loan — sign a digital agreement, parent approves, repay on time to grow trust score.</small></p>
+          <div className="wireframe-grid-2" style={{ textAlign: "center", margin: "1rem 0" }}>
+            <div className="wireframe-box">
+              <small>Trust Score</small>
+              <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{k.trust_score}</div>
             </div>
-            <div className="rounded-2xl glass-panel bg-void/30 p-4 border-starlight/10 shadow-inner">
-              <div className="font-kid text-[10px] font-bold uppercase text-starlight/50 tracking-widest">
-                Active Loans
-              </div>
-              <div className="font-mono text-3xl font-bold text-starlight">
-                {
-                  data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active")
-                    .length
-                }
+            <div className="wireframe-box">
+              <small>Active Loans</small>
+              <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
+                {data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length}
               </div>
             </div>
           </div>
           <Link
             to="/kid/loans"
-            className="mt-4 block w-full rounded-2xl bg-cosmic-blue py-4 text-center font-kid text-sm font-bold text-white shadow-[0_0_15px_var(--cosmic-blue)] uppercase tracking-wider hover:scale-[1.02] transition"
+            style={{ display: "block", textAlign: "center", padding: "0.5rem" }}
           >
             Enter Loan Center
           </Link>
@@ -345,40 +265,29 @@ function KidWallet() {
       )}
 
       <SectionTitle>Flight Log</SectionTitle>
-      <div className="space-y-3">
+      <div className="wireframe-col">
         {data.txs.length === 0 && (
-          <Card className="text-center font-kid font-bold text-sm text-starlight/50 glass-panel bg-void/30 border-starlight/10 py-6 uppercase tracking-wider">
+          <Card className="wireframe-box" style={{ textAlign: "center" }}>
             No transmissions yet.
           </Card>
         )}
         {data.txs.map((t: (typeof data.txs)[number]) => (
-          <div
-            key={t.id}
-            className="flex items-center justify-between rounded-2xl glass-panel bg-void/50 border-starlight/20 p-4 shadow-sm hover:bg-white/5 transition"
-          >
-            <div className="flex items-center gap-4">
-              <div
-                className={`grid h-12 w-12 shrink-0 place-items-center rounded-[1.25rem] ${txBg(t.type)} shadow-inner border border-starlight/10`}
-              >
-                {txEmoji(t.type)}
-              </div>
-              <div className="min-w-0 flex-1 pr-4">
-                <div className="font-kid font-bold text-sm text-starlight truncate tracking-wide">
-                  {t.label}
-                </div>
-                <div className="font-mono text-[10px] text-starlight/50 mt-1 uppercase tracking-widest font-semibold">
-                  {new Date(t.created_at).toLocaleDateString()}
-                </div>
+          <div key={t.id} className="wireframe-space-between wireframe-box">
+            <div className="wireframe-row">
+              <span>{txIconLabel(t.type)}</span>
+              <div>
+                <strong>{t.label}</strong>
+                <div><small>{new Date(t.created_at).toLocaleDateString()}</small></div>
               </div>
             </div>
-            <div
-              className={`font-mono font-bold text-sm shrink-0 ${["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) || (t.type === "QARD" && t.label === "Loan repayment") ? "text-nova-red drop-shadow-[0_0_5px_var(--nova-red)]" : "text-neon-mint drop-shadow-[0_0_5px_var(--neon-mint)]"}`}
-            >
-              {["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
-              (t.type === "QARD" && t.label === "Loan repayment")
-                ? "-"
-                : "+"}
-              RM {Number(t.amount).toFixed(2)}
+            <div>
+              <strong>
+                {["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
+                (t.type === "QARD" && t.label === "Loan repayment")
+                  ? "-"
+                  : "+"}
+                RM {Number(t.amount).toFixed(2)}
+              </strong>
             </div>
           </div>
         ))}
@@ -387,7 +296,6 @@ function KidWallet() {
   );
 }
 
-/** Sub-component for the invest tab — toggles between Invest In / Withdraw Out keypads */
 function InvestKeypad({
   balance,
   invested,
@@ -400,54 +308,49 @@ function InvestKeypad({
   const [dir, setDir] = useState<"in" | "out">("in");
 
   return (
-    <div className="mt-3">
-      <div className="mb-4 grid grid-cols-2 gap-3">
+    <div className="wireframe-col" style={{ marginTop: "1rem" }}>
+      <div className="wireframe-grid-2">
         <button
+          type="button"
           onClick={() => setDir("in")}
-          className={`btn-press rounded-2xl py-3.5 flex items-center justify-center gap-2 font-kid text-xs font-bold transition uppercase tracking-wider border ${dir === "in" ? "bg-nebula-pink border-nebula-pink text-white shadow-[0_0_15px_var(--nebula-pink)]" : "glass-panel bg-void/50 text-starlight/80 border-starlight/20 hover:bg-white/10"}`}
+          style={{
+            border: dir === "in" ? "2px solid #000" : "1px solid #ccc",
+            fontWeight: dir === "in" ? "bold" : "normal",
+          }}
         >
-          <Plus weight="bold" className="w-4 h-4" /> Grow
+          [icon: plus] Grow
         </button>
         <button
+          type="button"
           onClick={() => setDir("out")}
-          className={`btn-press rounded-2xl py-3.5 flex items-center justify-center gap-2 font-kid text-xs font-bold transition uppercase tracking-wider border ${dir === "out" ? "bg-nova-red border-nova-red text-white shadow-[0_0_15px_var(--nova-red)]" : "glass-panel bg-void/50 text-starlight/80 border-starlight/20 hover:bg-white/10"}`}
+          style={{
+            border: dir === "out" ? "2px solid #000" : "1px solid #ccc",
+            fontWeight: dir === "out" ? "bold" : "normal",
+          }}
         >
-          <ArrowUUpLeft weight="bold" className="w-4 h-4" /> Recall
+          [icon: recall] Recall
         </button>
       </div>
       <MoneyKeypad
-        key={dir} // reset on direction change
+        key={dir}
         min={0.5}
         max={dir === "in" ? balance : invested}
         confirmLabel={dir === "in" ? "Lock Energy" : "Recall Energy"}
-        confirmBg={dir === "in" ? "bg-nebula-pink" : "bg-nova-red"}
         onConfirm={(amt) => onInvest(dir, amt)}
       />
     </div>
   );
 }
 
-function txEmoji(t: string) {
-  const map: Record<string, React.ReactNode> = {
-    DEPOSIT: <CurrencyCircleDollar weight="duotone" className="w-6 h-6" />,
-    WITHDRAWAL: <HandWithdraw weight="duotone" className="w-6 h-6" />,
-    HIBAH: <GiftIcon weight="duotone" className="w-6 h-6" />,
-    SADAQAH: <Heart weight="duotone" className="w-6 h-6" />,
-    QARD: <HandshakeIcon weight="duotone" className="w-6 h-6" />,
-    INVEST_IN: <Plant weight="duotone" className="w-6 h-6" />,
-    INVEST_OUT: <ArrowUUpLeft weight="duotone" className="w-6 h-6" />,
-  };
-  return map[t] ?? <div className="w-2 h-2 rounded-full bg-charcoal" />;
-}
-function txBg(t: string) {
+function txIconLabel(t: string): string {
   const map: Record<string, string> = {
-    DEPOSIT: "bg-neon-mint/20 text-neon-mint",
-    WITHDRAWAL: "bg-nova-red/20 text-nova-red",
-    HIBAH: "bg-sunny/20 text-sunny",
-    SADAQAH: "bg-cosmic-blue/20 text-cosmic-blue",
-    QARD: "bg-sky-500/20 text-sky-500",
-    INVEST_IN: "bg-nebula-pink/20 text-nebula-pink",
-    INVEST_OUT: "bg-void/50 text-starlight/80",
+    DEPOSIT: "[icon: deposit]",
+    WITHDRAWAL: "[icon: withdrawal]",
+    HIBAH: "[icon: hibah]",
+    SADAQAH: "[icon: sadaqah]",
+    QARD: "[icon: loan]",
+    INVEST_IN: "[icon: invest in]",
+    INVEST_OUT: "[icon: invest return]",
   };
-  return map[t] ?? "bg-void/50 text-starlight/50";
+  return map[t] ?? "[icon: transaction]";
 }

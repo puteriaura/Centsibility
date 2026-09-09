@@ -12,36 +12,16 @@ import {
 import { getKidSession } from "@/lib/kid-session";
 import { ImageUploadCrop } from "@/components/ImageUploadCrop";
 import { toast } from "sonner";
-import penny from "@/assets/penny-mascot.png";
 import { QuoteCard } from "@/components/QuoteCard";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import {
-  Eye,
-  EyeClosed,
-  Star,
-  ShieldCheck,
-  Target,
-  Handshake as HandshakeIcon,
-  Leaf,
-  Users,
-  TrendUp,
-  Mosque,
-  Gift,
-  CurrencyCircleDollar,
-  HandWithdraw,
-  Plus,
-  Minus,
-  Check,
-} from "@phosphor-icons/react";
-import {
   StatChip,
   ActionTile,
   RewardCoinPicker,
   txEmoji,
-  txEmojiBg,
 } from "@/features/kid/components";
 
 export const Route = createFileRoute("/kid/")({
@@ -66,14 +46,14 @@ function KidHome() {
   if (loading || !data)
     return (
       <AppShell mode="kid">
-        <div className="space-y-3">
-          <Skeleton className="h-16 rounded-3xl" />
-          <Skeleton className="h-32 rounded-3xl" />
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-24 rounded-3xl" />
-            <Skeleton className="h-24 rounded-3xl" />
+        <div className="wireframe-col">
+          <Skeleton style={{ height: "4rem" }} />
+          <Skeleton style={{ height: "8rem" }} />
+          <div className="wireframe-grid-2">
+            <Skeleton style={{ height: "6rem" }} />
+            <Skeleton style={{ height: "6rem" }} />
           </div>
-          <Skeleton className="h-40 rounded-3xl" />
+          <Skeleton style={{ height: "10rem" }} />
         </div>
       </AppShell>
     );
@@ -170,224 +150,189 @@ function KidHome() {
 
   return (
     <AppShell mode="kid">
-      <div className="flex items-center justify-between gap-3">
+      <div className="wireframe-space-between">
         <button
+          type="button"
           onClick={openProfile}
           aria-label="Open profile settings"
-          className="flex items-center gap-3 min-w-0 text-left hover:opacity-80 transition"
+          className="wireframe-row"
+          style={{ background: "none", border: "none", padding: 0 }}
         >
-          <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={56} ring />
-          <div className="min-w-0">
-            <p className="font-arabic text-sm text-neon-mint">السلام عليكم</p>
-            <h1 className="font-display text-2xl text-starlight truncate">Cmdr. {k.name}!</h1>
+          <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={56} />
+          <div style={{ textAlign: "left" }}>
+            <p style={{ margin: 0 }}>السلام عليكم</p>
+            <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Cmdr. {k.name}!</h1>
           </div>
         </button>
-        <div
-          className="flex items-center gap-2 rounded-full glass-panel px-3 py-1.5 shrink-0 border border-starlight/30 shadow-neon"
-          role="status"
-          aria-label={`${k.streak} day streak`}
-        >
-          <TrendUp weight="bold" className="w-4 h-4 text-neon-mint" />
-          <span className="font-kid text-xs font-bold text-starlight">{k.streak}d Orbit</span>
+        <div className="wireframe-box" role="status" aria-label={`${k.streak} day streak`}>
+          [icon: trend] <strong>{k.streak}d Orbit</strong>
         </div>
       </div>
 
-      <div className="mt-4">
+      <div style={{ marginTop: "1rem" }}>
         <QuoteCard variant="kid" />
       </div>
 
-      <div className="mt-4 relative overflow-hidden rounded-3xl glass-panel p-6 text-[color:var(--starlight)] shadow-soft">
-        <img
-          src={penny}
-          alt=""
-          width={80}
-          height={80}
-          className="absolute -right-2 -bottom-2 h-24 w-24 opacity-90 drop-shadow-md animate-float"
-        />
-        <div className="relative">
-          <div className="font-kid text-[10px] uppercase tracking-widest text-neon-mint opacity-90 flex items-center justify-between">
-            <span>Hyperdrive Core (RM)</span>
-            <button
-              onClick={() => setHideBalance(!hideBalance)}
-              className="opacity-80 hover:opacity-100 transition"
-            >
-              {hideBalance ? (
-                <EyeClosed weight="bold" className="w-4 h-4" />
-              ) : (
-                <Eye weight="bold" className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-          <div className="mt-1 font-mono text-4xl font-bold">
-            {hideBalance ? "RM •••" : `RM ${Number(k.balance).toFixed(2)}`}
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white/20 px-2.5 py-1 font-kid text-[11px] font-bold">
-              Hibah {(Number(k.hibah_rate) * 100).toFixed(0)}%
-            </span>
-            <span className="rounded-full bg-white/20 px-2.5 py-1 font-kid text-[11px] font-bold flex items-center gap-1">
-              100% Halal <Check weight="bold" className="w-3 h-3" />
-            </span>
-          </div>
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <div className="wireframe-space-between">
+          <small>Hyperdrive Core (RM)</small>
+          <button
+            type="button"
+            onClick={() => setHideBalance(!hideBalance)}
+            aria-label={hideBalance ? "Show balance" : "Hide balance"}
+          >
+            {hideBalance ? "[icon: show]" : "[icon: hide]"}
+          </button>
         </div>
-      </div>
+        <div style={{ fontSize: "2rem", fontWeight: "bold", margin: "0.5rem 0" }}>
+          {hideBalance ? "RM •••" : `RM ${Number(k.balance).toFixed(2)}`}
+        </div>
+        <div className="wireframe-row">
+          <small>Hibah {(Number(k.hibah_rate) * 100).toFixed(0)}%</small>
+          <small>100% Halal [✓]</small>
+        </div>
+      </Card>
 
       {/* Points reward currency — separate from money */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="rounded-3xl glass-panel p-4 shadow-neon">
-          <div className="font-kid text-[11px] font-bold uppercase tracking-wider text-starlight/70">
-            Stardust
+      <div className="wireframe-grid-2" style={{ marginTop: "0.75rem" }}>
+        <div className="wireframe-box">
+          <small>Stardust</small>
+          <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
+            {Math.round(Number(k.coins)).toLocaleString()} [icon: star]
           </div>
-          <div className="mt-1 font-mono text-2xl font-bold text-starlight flex items-center gap-1">
-            {Math.round(Number(k.coins)).toLocaleString()}
-            <Star weight="fill" className="w-5 h-5 text-starlight drop-shadow-md" />
-          </div>
-          <div className="font-body text-[10px] text-starlight/60">Fuel for rewards.</div>
+          <small>Fuel for rewards.</small>
         </div>
-        <div className="rounded-3xl glass-panel p-4 shadow-soft">
-          <div className="font-kid text-[11px] font-bold uppercase tracking-wider text-neon-mint">
-            Cosmic Growth
-          </div>
-          <div className="mt-1 font-mono text-2xl font-bold text-neon-mint">
+        <div className="wireframe-box">
+          <small>Cosmic Growth</small>
+          <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
             {hideBalance ? "RM •••" : `RM ${Number(k.invest_balance ?? 0).toFixed(2)}`}
           </div>
-          <Link to="/kid/invest" className="font-body text-[10px] text-neon-mint underline">
-            Manage →
-          </Link>
+          <Link to="/kid/invest">Manage →</Link>
         </div>
       </div>
 
       {k.unclaimed_coins > 0 && (
         <button
+          type="button"
           onClick={claim}
           aria-label={`Claim ${Math.round(Number(k.unclaimed_coins))} unclaimed points`}
-          className="mt-3 w-full rounded-3xl bg-gradient-to-r from-cosmic-blue to-nebula-pink p-4 text-left shadow-neon active:scale-95 transition"
+          className="wireframe-card"
+          style={{ width: "100%", marginTop: "0.75rem", textAlign: "left" }}
         >
-          <div className="flex items-center justify-between">
+          <div className="wireframe-space-between">
             <div>
-              <div className="font-kid text-sm font-bold text-starlight flex items-center gap-2">
-                <Gift weight="duotone" className="w-5 h-5 text-starlight" />
-                Unclaimed stardust!
-              </div>
-              <div className="font-body text-xs text-starlight/80 mt-1">Tap to claim your fuel</div>
+              <strong>[icon: gift] Unclaimed stardust!</strong>
+              <div><small>Tap to claim your fuel</small></div>
             </div>
-            <div className="font-mono text-2xl font-bold text-starlight flex items-center gap-1">
-              +{Math.round(Number(k.unclaimed_coins))}
-              <Star weight="fill" className="w-5 h-5 text-white drop-shadow-md" />
+            <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
+              +{Math.round(Number(k.unclaimed_coins))} [icon: star]
             </div>
           </div>
         </button>
       )}
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      <div className="wireframe-grid-3" style={{ marginTop: "0.75rem" }}>
         <StatChip
-          icon={<Star weight="duotone" className="w-6 h-6 text-starlight" />}
+          icon="[icon: star]"
           label="Level"
           value={k.level.toString()}
-          bg="glass-panel"
+          bg=""
         />
         <StatChip
-          icon={<Target weight="duotone" className="w-6 h-6 text-nebula-pink" />}
+          icon="[icon: target]"
           label="XP"
           value={`${k.xp}/100`}
-          bg="glass-panel"
+          bg=""
         />
         <StatChip
-          icon={<ShieldCheck weight="duotone" className="w-6 h-6 text-neon-mint" />}
+          icon="[icon: trust]"
           label="Trust"
           value={k.trust_score.toString()}
-          bg="glass-panel"
+          bg=""
         />
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="wireframe-grid-2" style={{ marginTop: "1rem" }}>
         <ActionTile
           to="/kid/goals"
-          icon={<Target weight="duotone" className="w-8 h-8 text-starlight" />}
+          icon="[icon: target]"
           title="Missions"
           sub="Save for things"
-          bg="glass-panel hover:bg-white/10"
-          text="text-starlight"
+          bg=""
+          text=""
         />
         <ActionTile
           to="/kid/quiz"
-          icon={<TrendUp weight="duotone" className="w-8 h-8 text-neon-mint" />}
+          icon="[icon: trend]"
           title="Daily Quest"
           sub="Earn stardust"
-          bg="glass-panel hover:bg-white/10"
-          text="text-starlight"
+          bg=""
+          text=""
         />
         <ActionTile
           to="/kid/invest"
-          icon={<Leaf weight="duotone" className="w-8 h-8 text-nebula-pink" />}
+          icon="[icon: leaf]"
           title="Invest"
           sub="Grow your money"
-          bg="glass-panel hover:bg-white/10"
-          text="text-starlight"
+          bg=""
+          text=""
         />
         <ActionTile
           to="/kid/loans"
-          icon={<HandshakeIcon weight="duotone" className="w-8 h-8 text-cosmic-blue" />}
+          icon="[icon: loan]"
           title="Qard Loan"
           sub="Borrow with sign"
-          bg="glass-panel hover:bg-white/10"
-          text="text-starlight"
+          bg=""
+          text=""
         />
         <ActionTile
           to="/kid/sadaqah"
-          icon={<Users weight="duotone" className="w-8 h-8 text-nova-red" />}
+          icon="[icon: users]"
           title="Sadaqah"
           sub="Help others"
-          bg="glass-panel hover:bg-white/10"
-          text="text-starlight"
+          bg=""
+          text=""
         />
         <ActionTile
           to="/kid/zakat"
-          icon={<Mosque weight="duotone" className="w-8 h-8 text-starlight" />}
+          icon="[icon: mosque]"
           title="Zakat Calc"
           sub="2.5% calculator"
-          bg="glass-panel hover:bg-white/10"
-          text="text-starlight"
+          bg=""
+          text=""
         />
         <button
+          type="button"
           onClick={() => setShowReward(true)}
-          className="btn-press rounded-[2rem] glass-panel hover:bg-white/10 p-5 text-left text-starlight shadow-soft active:scale-95 transition"
+          className="wireframe-card"
+          style={{ textAlign: "left" }}
         >
-          <Gift weight="duotone" className="w-8 h-8 mb-2 text-starlight" />
-          <div className="mt-1 font-kid font-bold text-sm tracking-wide">Reward</div>
-          <div className="font-body text-[11px] opacity-70">Spend stardust</div>
+          <div>[icon: gift]</div>
+          <strong>Reward</strong>
+          <div><small>Spend stardust</small></div>
         </button>
       </div>
 
       <SectionTitle>Transmission Requests</SectionTitle>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="wireframe-grid-2">
         <button
-          onClick={() => {
-            setMoneyReq("DEPOSIT");
-          }}
-          className="btn-press rounded-[2rem] bg-emerald-halal py-4 flex items-center justify-center gap-2 font-kid font-bold text-white shadow-soft"
+          type="button"
+          onClick={() => setMoneyReq("DEPOSIT")}
         >
-          <Plus weight="bold" className="w-5 h-5" /> Ask Deposit
+          [icon: plus] Ask Deposit
         </button>
         <button
-          onClick={() => {
-            setMoneyReq("WITHDRAWAL");
-          }}
-          className="btn-press rounded-[2rem] bg-coral py-4 flex items-center justify-center gap-2 font-kid font-bold text-white shadow-soft"
+          type="button"
+          onClick={() => setMoneyReq("WITHDRAWAL")}
         >
-          <Minus weight="bold" className="w-5 h-5" /> Ask Withdraw
+          [icon: minus] Ask Withdraw
         </button>
       </div>
 
       {moneyReq && (
-        <Card className="mt-3 border-2 border-emerald-halal">
-          <h3 className="font-kid font-bold text-starlight mb-3 flex items-center gap-2">
-            {moneyReq === "DEPOSIT" ? (
-              <CurrencyCircleDollar weight="duotone" className="w-6 h-6 text-emerald-halal" />
-            ) : (
-              <HandWithdraw weight="duotone" className="w-6 h-6 text-coral" />
-            )}
-            {moneyReq === "DEPOSIT" ? "Ask parent to deposit" : "Ask parent to withdraw"}
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>
+            {moneyReq === "DEPOSIT" ? "[icon: deposit] Ask parent to deposit" : "[icon: withdrawal] Ask parent to withdraw"}
           </h3>
           <MoneyKeypad
             min={0.5}
@@ -396,7 +341,6 @@ function KidHome() {
             confirmLabel={
               moneyReq === "DEPOSIT" ? "Send Deposit Request" : "Send Withdrawal Request"
             }
-            confirmBg={moneyReq === "DEPOSIT" ? "bg-emerald-halal" : "bg-coral"}
             onConfirm={submitMoneyReq}
             onCancel={() => setMoneyReq(null)}
           />
@@ -404,24 +348,17 @@ function KidHome() {
       )}
 
       {showReward && (
-        <Card className="mt-4 border-2 border-bubblegum bg-void/50">
-          <h3 className="font-kid font-bold text-starlight flex items-center gap-2">
-            <Gift weight="duotone" className="w-6 h-6 text-bubblegum" />
-            Request a custom reward
-          </h3>
-          <div className="mt-1 font-body text-[11px] text-starlight/70 mb-3">
-            You have{" "}
-            <span className="font-mono font-bold text-starlight flex items-center gap-1 inline-flex">
-              {Math.round(Number(k.coins)).toLocaleString()}{" "}
-              <Star weight="fill" className="w-4 h-4 text-gold-nur" />
-            </span>
-          </div>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: gift] Request a custom reward</h3>
+          <p>
+            You have {Math.round(Number(k.coins)).toLocaleString()} [icon: star]
+          </p>
           <input
             value={rName}
             onChange={(e) => setRName(e.target.value)}
             placeholder="e.g. New book, day trip, ice cream"
-            className="mb-3 w-full rounded-2xl border border-border bg-cream px-4 py-3 font-body text-sm"
             maxLength={100}
+            style={{ marginBottom: "0.5rem" }}
           />
           <RewardCoinPicker
             maxPoints={Math.max(1, Math.floor(k.coins))}
@@ -437,17 +374,15 @@ function KidHome() {
       {pendingApprovals.length > 0 && (
         <>
           <SectionTitle>Waiting for parent</SectionTitle>
-          <div className="space-y-2">
+          <div className="wireframe-col">
             {pendingApprovals.map((a: (typeof pendingApprovals)[number]) => (
-              <Card key={a.id} className="bg-sunny/20">
-                <div className="flex items-center justify-between">
+              <Card key={a.id} className="wireframe-box">
+                <div className="wireframe-space-between">
                   <div>
-                    <div className="font-kid text-sm font-bold text-starlight">{a.kind}</div>
-                    <div className="font-body text-xs text-starlight/70">
-                      {(a.reason || "").split(" :: SIG::")[0]}
-                    </div>
+                    <strong>{a.kind}</strong>
+                    <div><small>{(a.reason || "").split(" :: SIG::")[0]}</small></div>
                   </div>
-                  <div className="font-mono font-bold text-starlight">RM {a.amount}</div>
+                  <div><strong>RM {a.amount}</strong></div>
                 </div>
               </Card>
             ))}
@@ -458,31 +393,28 @@ function KidHome() {
       {data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length > 0 && (
         <>
           <SectionTitle>My Loans (Qard)</SectionTitle>
-          <div className="space-y-2">
+          <div className="wireframe-col">
             {data.loans
               .filter((l: (typeof data.loans)[number]) => l.status === "active")
               .map((l: (typeof data.loans)[number]) => {
                 const remaining = Number(l.amount) - Number(l.repaid);
                 const overdue = new Date(l.due_date) < new Date();
                 return (
-                  <Card key={l.id} className={overdue ? "border-2 border-coral" : ""}>
-                    <div className="flex items-center justify-between">
+                  <Card key={l.id} className="wireframe-box">
+                    <div className="wireframe-space-between">
                       <div>
-                        <div className="font-kid font-bold text-sm text-starlight">
-                          {l.reason || "Qard loan"}
-                        </div>
-                        <div className="font-body text-[11px] text-starlight/70">
-                          Due {l.due_date}{" "}
-                          {overdue && <span className="text-coral font-bold">· OVERDUE</span>}
+                        <strong>{l.reason || "Qard loan"}</strong>
+                        <div>
+                          <small>
+                            Due {l.due_date} {overdue && <span>· OVERDUE</span>}
+                          </small>
                         </div>
                       </div>
-                      <div className="font-mono font-bold text-starlight">
-                        RM {remaining.toFixed(2)}
-                      </div>
+                      <div><strong>RM {remaining.toFixed(2)}</strong></div>
                     </div>
                     <Link
                       to="/kid/loans"
-                      className="mt-3 block w-full rounded-2xl bg-charcoal py-2 text-center font-kid text-xs font-bold text-white"
+                      style={{ marginTop: "0.5rem", display: "inline-block" }}
                     >
                       Repay →
                     </Link>
@@ -494,52 +426,53 @@ function KidHome() {
       )}
 
       <SectionTitle>Transaction History</SectionTitle>
-      <div className="space-y-2">
+      <div className="wireframe-col">
         {data.txs.map((t: (typeof data.txs)[number]) => (
-          <div
-            key={t.id}
-            className="flex items-center justify-between rounded-2xl bg-card p-3 shadow-soft"
-          >
-            <div className="flex items-center gap-3">
-              <div className={`grid h-12 w-12 place-items-center rounded-2xl ${txEmojiBg(t.type)}`}>
-                {txEmoji(t.type)}
-              </div>
+          <div key={t.id} className="wireframe-space-between wireframe-box">
+            <div className="wireframe-row">
+              {txEmoji(t.type)}
               <div>
-                <div className="font-kid font-bold text-sm text-starlight">{t.label}</div>
-                <div className="font-body text-[11px] text-starlight/70">
-                  {new Date(t.created_at).toLocaleDateString()} · {t.type}
+                <strong>{t.label}</strong>
+                <div>
+                  <small>{new Date(t.created_at).toLocaleDateString()} · {t.type}</small>
                 </div>
               </div>
             </div>
-            <div
-              className={`font-mono font-bold text-sm ${["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) || (t.type === "QARD" && t.label === "Loan repayment") ? "text-coral" : "text-emerald-halal"}`}
-            >
-              {["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
-              (t.type === "QARD" && t.label === "Loan repayment")
-                ? "-"
-                : "+"}
-              RM {Number(t.amount).toFixed(2)}
+            <div>
+              <strong>
+                {["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
+                (t.type === "QARD" && t.label === "Loan repayment")
+                  ? "-"
+                  : "+"}
+                RM {Number(t.amount).toFixed(2)}
+              </strong>
             </div>
           </div>
         ))}
         {data.txs.length === 0 && (
-          <Card className="text-center font-body text-sm text-pewter">No activity yet.</Card>
+          <Card className="wireframe-box">No activity yet.</Card>
         )}
       </div>
 
       {showProfile && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-cream/95 backdrop-blur-md overflow-y-auto">
-          <div className="flex items-center justify-between p-4 sticky top-0 bg-void/95 backdrop-blur-sm border-b border-white/10">
-            <h2 className="font-display text-xl text-starlight">My Profile</h2>
-            <button
-              onClick={() => setShowProfile(false)}
-              className="rounded-full bg-white/10 px-4 py-1.5 font-bold text-sm text-starlight hover:bg-white/20"
-            >
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 200,
+            background: "#fff",
+            padding: "1rem",
+            overflowY: "auto",
+          }}
+        >
+          <div className="wireframe-space-between" style={{ borderBottom: "1px solid #ccc", paddingBottom: "0.5rem" }}>
+            <h2>My Profile</h2>
+            <button type="button" onClick={() => setShowProfile(false)}>
               Close
             </button>
           </div>
 
-          <div className="p-6 max-w-md mx-auto w-full space-y-6">
+          <div style={{ maxWidth: "500px", margin: "1rem auto" }}>
             {showUpload ? (
               <ImageUploadCrop
                 busy={savingProfile}
@@ -547,95 +480,76 @@ function KidHome() {
                 onCancel={() => setShowUpload(false)}
               />
             ) : (
-              <>
-                <div className="flex flex-col items-center">
-                  <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={96} ring />
-                  <button
-                    onClick={() => setShowUpload(true)}
-                    className="mt-3 font-kid text-sm font-bold text-emerald-halal underline"
-                  >
-                    Change Picture
-                  </button>
+              <div className="wireframe-col">
+                <div style={{ textAlign: "center" }}>
+                  <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={96} />
+                  <div>
+                    <button type="button" onClick={() => setShowUpload(true)} style={{ marginTop: "0.5rem" }}>
+                      Change Picture
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="wireframe-col">
                   <div>
-                    <label className="text-xs font-bold text-starlight ml-2">Name</label>
-                    <input
-                      value={k.name}
-                      disabled
-                      className="mt-1 w-full rounded-2xl bg-white/5 px-4 py-3 font-parent text-sm text-starlight/50 cursor-not-allowed border border-white/10"
-                    />
+                    <label>Name</label>
+                    <input value={k.name} disabled />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-starlight ml-2">
-                      Username (Parent only)
-                    </label>
-                    <input
-                      value={k.username || ""}
-                      disabled
-                      className="mt-1 w-full rounded-2xl bg-white/5 px-4 py-3 font-parent text-sm text-starlight/50 cursor-not-allowed border border-white/10"
-                    />
+                    <label>Username (Parent only)</label>
+                    <input value={k.username || ""} disabled />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-starlight ml-2">Short Bio</label>
+                    <label>Short Bio</label>
                     <textarea
                       value={pBio}
                       onChange={(e) => setPBio(e.target.value)}
                       maxLength={150}
                       rows={3}
                       placeholder="I love to learn and save money!"
-                      className="mt-1 w-full rounded-2xl border-2 border-white/10 bg-void/50 px-4 py-3 font-body text-sm resize-none text-starlight"
                     />
-                    <div className="text-right text-[10px] text-starlight/50 mr-2 mt-1">
-                      {pBio.length}/150
-                    </div>
+                    <small>{pBio.length}/150</small>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="wireframe-grid-2">
                     <div>
-                      <label className="text-xs font-bold text-starlight ml-2">Birth Date</label>
+                      <label>Birth Date</label>
                       <input
                         type="date"
                         value={pBirthDate}
                         onChange={(e) => setPBirthDate(e.target.value)}
-                        className="mt-1 w-full rounded-2xl border-2 border-white/10 bg-void/50 px-4 py-3 font-parent text-sm text-starlight"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-starlight ml-2">Birth Year</label>
+                      <label>Birth Year</label>
                       <input
                         type="number"
                         placeholder="YYYY"
                         value={pBirthYear}
                         onChange={(e) => setPBirthYear(e.target.value)}
-                        className="mt-1 w-full rounded-2xl border-2 border-white/10 bg-void/50 px-4 py-3 font-parent text-sm text-starlight"
                       />
                     </div>
                   </div>
 
                   {data.parent && (
-                    <div className="rounded-2xl bg-mint/20 p-4 border border-mint/40">
-                      <div className="text-[10px] uppercase font-bold text-pewter mb-1">
-                        Linked to Parent
-                      </div>
-                      <div className="font-parent font-bold text-charcoal">
-                        {data.parent.display_name || "Parent"}
-                      </div>
-                      <div className="font-body text-xs text-pewter">{data.parent.email}</div>
+                    <div className="wireframe-box">
+                      <small>Linked to Parent</small>
+                      <div><strong>{data.parent.display_name || "Parent"}</strong></div>
+                      <small>{data.parent.email}</small>
                     </div>
                   )}
 
                   <button
+                    type="button"
                     onClick={handleSaveProfile}
                     disabled={savingProfile}
-                    className="w-full rounded-2xl bg-emerald-halal py-3 font-kid font-bold text-white shadow-soft disabled:opacity-50 mt-4"
+                    style={{ marginTop: "1rem" }}
                   >
                     {savingProfile ? "Saving..." : "Save Profile"}
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

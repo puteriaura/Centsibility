@@ -11,7 +11,7 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
     const ctx = c.getContext("2d")!;
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, c.width, c.height);
-    ctx.strokeStyle = "#0f172a";
+    ctx.strokeStyle = "#000000";
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -58,7 +58,7 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
   };
 
   return (
-    <div>
+    <div className="wireframe-col">
       <canvas
         ref={ref}
         width={600}
@@ -67,12 +67,17 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
         onPointerMove={move}
         onPointerUp={up}
         onPointerLeave={up}
-        className="w-full touch-none rounded-2xl border-2 border-dashed border-charcoal/40 bg-white"
-        style={{ aspectRatio: "3 / 1" }}
+        style={{
+          width: "100%",
+          aspectRatio: "3 / 1",
+          border: "1px dashed #777",
+          background: "#fff",
+          touchAction: "none",
+        }}
       />
-      <div className="mt-2 flex justify-between font-body text-[11px] text-pewter">
-        <span>{hasInk ? "✓ Signed" : "Sign with finger or mouse"}</span>
-        <button type="button" onClick={clear} className="font-kid font-bold text-coral">
+      <div className="wireframe-space-between">
+        <small>{hasInk ? "[✓ Signed]" : "Sign with finger or mouse"}</small>
+        <button type="button" onClick={clear}>
           Clear
         </button>
       </div>

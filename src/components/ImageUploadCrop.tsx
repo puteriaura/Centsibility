@@ -21,11 +21,9 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, outputSize = 512
     throw new Error("No 2d context");
   }
 
-  // Set canvas size to the desired output size (512x512)
   canvas.width = outputSize;
   canvas.height = outputSize;
 
-  // Draw the cropped image onto the canvas, scaling it to outputSize
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -38,7 +36,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area, outputSize = 512
     outputSize,
   );
 
-  return canvas.toDataURL("image/webp", 0.9); // Returns webp format
+  return canvas.toDataURL("image/webp", 0.9);
 }
 
 export function ImageUploadCrop({
@@ -56,7 +54,7 @@ export function ImageUploadCrop({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
@@ -64,7 +62,6 @@ export function ImageUploadCrop({
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
 
-      // Pre-compress large images before cropping for performance
       try {
         const compressedFile = await imageCompression(file, {
           maxSizeMB: 1,
@@ -91,33 +88,30 @@ export function ImageUploadCrop({
 
   if (!imageSrc) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-3xl bg-cream">
-        <p className="mb-4 text-charcoal font-body text-center">
-          Select an image for your profile picture.
-        </p>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="rounded-xl bg-blue-parent px-6 py-2 font-bold text-white shadow-sm"
-        >
-          Choose Image
-        </button>
-        <button onClick={onCancel} className="mt-4 font-bold text-slate-parent hover:underline">
-          Cancel
-        </button>
+      <div className="wireframe-box">
+        <p>Select an image for your profile picture.</p>
+        <div className="wireframe-row">
+          <button type="button" onClick={() => fileInputRef.current?.click()}>
+            Choose Image
+          </button>
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           accept="image/*"
-          className="hidden"
+          style={{ display: "none" }}
         />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <div className="relative w-full h-64 sm:h-80 bg-black rounded-3xl overflow-hidden">
+    <div className="wireframe-col">
+      <div style={{ position: "relative", width: "100%", height: "240px", border: "1px solid #777" }}>
         <Cropper
           image={imageSrc}
           crop={crop}
@@ -131,8 +125,8 @@ export function ImageUploadCrop({
         />
       </div>
 
-      <div className="w-full px-4">
-        <label className="text-xs font-bold text-charcoal mb-1 block">Zoom</label>
+      <div>
+        <label>Zoom</label>
         <input
           type="range"
           value={zoom}
@@ -141,23 +135,14 @@ export function ImageUploadCrop({
           step={0.1}
           aria-labelledby="Zoom"
           onChange={(e) => setZoom(Number(e.target.value))}
-          className="w-full"
         />
       </div>
 
-      <div className="flex space-x-3 w-full">
-        <button
-          onClick={onCancel}
-          disabled={busy}
-          className="flex-1 rounded-xl bg-slate-200 py-3 font-bold text-charcoal disabled:opacity-50"
-        >
+      <div className="wireframe-row">
+        <button type="button" onClick={onCancel} disabled={busy}>
           Cancel
         </button>
-        <button
-          onClick={handleSave}
-          disabled={busy}
-          className="flex-1 rounded-xl bg-blue-parent py-3 font-bold text-white disabled:opacity-50 shadow-soft"
-        >
+        <button type="button" onClick={handleSave} disabled={busy}>
           {busy ? "Saving..." : "Save Picture"}
         </button>
       </div>

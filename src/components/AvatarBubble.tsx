@@ -1,10 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ImageUploadCrop } from "./ImageUploadCrop";
-
-import * as Phosphor from "@phosphor-icons/react";
 
 const KID_AVATARS = [
   "phosphor:Smiley",
@@ -45,7 +43,7 @@ const isUrl = (v: string) =>
 export function AvatarBubble({
   emoji,
   size = 48,
-  ring = false,
+  ring: _ring = false,
   className = "",
 }: {
   emoji: string;
@@ -55,21 +53,29 @@ export function AvatarBubble({
 }) {
   const url = isUrl(emoji);
   const isPhosphor = typeof emoji === "string" && emoji.startsWith("phosphor:");
+
   return (
     <div
-      style={{ width: size, height: size, fontSize: size * 0.55 }}
-      className={`grid place-items-center rounded-full overflow-hidden bg-gradient-to-br from-sunny via-mint to-sky shadow-soft ${ring ? "ring-2 ring-emerald-halal ring-offset-2 ring-offset-background" : ""} ${className}`}
+      style={{
+        width: size,
+        minWidth: size,
+        height: size,
+        border: "1px solid #777",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.75rem",
+        padding: "2px",
+        textAlign: "center",
+      }}
+      className={className}
     >
       {url ? (
-        <img src={emoji} alt="avatar" className="w-full h-full object-cover" />
+        <span>[image placeholder]</span>
       ) : isPhosphor ? (
-        (() => {
-          const iconName = emoji.replace("phosphor:", "");
-          const Icon = (Phosphor as any)[iconName] || Phosphor.User;
-          return <Icon weight="duotone" className="w-3/5 h-3/5 text-charcoal/80 drop-shadow-sm" />;
-        })()
+        <span>[icon: {emoji.replace("phosphor:", "").toLowerCase()}]</span>
       ) : (
-        <span aria-hidden>{emoji}</span>
+        <span>{emoji || "[avatar]"}</span>
       )}
     </div>
   );
@@ -118,20 +124,21 @@ export function AvatarPicker({
   };
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => {
-          sfx.pop();
-          setOpen((o) => !o);
-        }}
-        className="flex items-center gap-2"
-      >
-        <AvatarBubble emoji={value} size={56} />
-        <span className="font-kid text-xs font-bold text-emerald-halal underline">Change</span>
-      </button>
+    <div className="wireframe-box">
+      <div className="wireframe-row">
+        <AvatarBubble emoji={value} size={48} />
+        <button
+          type="button"
+          onClick={() => {
+            sfx.pop();
+            setOpen((o) => !o);
+          }}
+        >
+          {open ? "Close" : "Change avatar"}
+        </button>
+      </div>
       {open && (
-        <div className="mt-2 rounded-2xl bg-card p-3 shadow-soft border border-border space-y-3">
+        <div className="wireframe-card" style={{ marginTop: "0.5rem" }}>
           {isCropping ? (
             <ImageUploadCrop
               onSave={handleSaveCrop}
@@ -139,21 +146,21 @@ export function AvatarPicker({
               busy={uploading}
             />
           ) : (
-            <>
-              <div>
+            <div>
+              <div style={{ marginBottom: "0.5rem" }}>
                 <button
                   type="button"
                   onClick={() => setIsCropping(true)}
                   disabled={uploading}
-                  className="w-full rounded-2xl bg-emerald-halal py-2.5 font-parent text-sm font-bold text-white disabled:opacity-60"
+                  style={{ width: "100%" }}
                 >
-                  {uploading ? "Uploading…" : "📷 Upload a photo"}
+                  {uploading ? "Uploading…" : "[icon: camera] Upload a photo"}
                 </button>
-                <p className="mt-1 text-center font-body text-[10px] text-pewter">
-                  or pick an emoji avatar
+                <p style={{ textAlign: "center", fontSize: "0.8rem", margin: "0.25rem 0" }}>
+                  or pick an avatar
                 </p>
               </div>
-              <div className="grid grid-cols-6 gap-2">
+              <div className="wireframe-grid-4">
                 {list.map((e) => (
                   <button
                     key={e}
@@ -163,19 +170,18 @@ export function AvatarPicker({
                       onChange(e);
                       setOpen(false);
                     }}
-                    className={`grid place-items-center aspect-square rounded-[1.25rem] text-2xl transition ${value === e ? "bg-emerald-halal/20 ring-2 ring-emerald-halal" : "bg-cream hover:bg-sunny/40 shadow-sm border border-border"}`}
+                    style={{
+                      border: value === e ? "2px solid #000" : "1px solid #ccc",
+                      padding: "0.25rem",
+                    }}
                   >
                     {e.startsWith("phosphor:")
-                      ? (() => {
-                          const iconName = e.replace("phosphor:", "");
-                          const Icon = (Phosphor as any)[iconName] || Phosphor.User;
-                          return <Icon weight="duotone" className="w-3/5 h-3/5 text-charcoal/80" />;
-                        })()
+                      ? `[icon: ${e.replace("phosphor:", "").toLowerCase()}]`
                       : e}
                   </button>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
       )}

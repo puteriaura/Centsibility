@@ -7,7 +7,6 @@ import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, Mosque, Baby, Drop, CheckCircle } from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/kid/sadaqah")({
   head: () => ({ meta: [{ title: "Sadaqah — Centsibility" }] }),
@@ -20,7 +19,6 @@ function KidSadaqah() {
   const [pendingAmount, setPendingAmount] = useState<number | null>(null);
   const [sadaqahTotal, setSadaqahTotal] = useState(0);
 
-  // Query all SADAQAH transactions for the current year (not capped at 100)
   useEffect(() => {
     if (!data) return;
     const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
@@ -37,27 +35,15 @@ function KidSadaqah() {
   }, [data]);
 
   const causes = [
-    {
-      name: "Masjid",
-      icon: <Mosque weight="duotone" className="w-8 h-8 text-gold-nur mx-auto" />,
-      impact: "1 day of electricity",
-    },
-    {
-      name: "Orphans",
-      icon: <Baby weight="duotone" className="w-8 h-8 text-bubblegum mx-auto" />,
-      impact: "1 nutritious meal",
-    },
-    {
-      name: "Water Wells",
-      icon: <Drop weight="duotone" className="w-8 h-8 text-sky mx-auto" />,
-      impact: "Clean water for a family",
-    },
+    { name: "Masjid", iconLabel: "[icon: mosque]", impact: "1 day of electricity" },
+    { name: "Orphans", iconLabel: "[icon: baby]", impact: "1 nutritious meal" },
+    { name: "Water Wells", iconLabel: "[icon: water]", impact: "Clean water for a family" },
   ];
 
   if (loading || !data)
     return (
       <AppShell mode="kid">
-        <Card>Loading…</Card>
+        <Card className="wireframe-card">Loading…</Card>
       </AppShell>
     );
   const balance = Number(data.kid.balance);
@@ -79,40 +65,25 @@ function KidSadaqah() {
 
   return (
     <AppShell mode="kid">
-      <h1 className="font-display text-2xl text-charcoal flex items-center gap-2">
-        <Heart weight="duotone" className="w-8 h-8 text-emerald-halal" />
-        Sadaqah
-      </h1>
-      <p className="font-arabic text-base text-emerald-halal mt-1">
-        الصَّدَقَةُ تُطْفِئُ الخَطِيئَةَ
-      </p>
-      <p className="font-body text-sm italic text-slate-parent">
-        "Sadaqah extinguishes sin." — Hadith
-      </p>
+      <h1>[icon: heart] Sadaqah</h1>
+      <p>الصَّدَقَةُ تُطْفِئُ الخَطِيئَةَ</p>
+      <p><small>"Sadaqah extinguishes sin." — Hadith</small></p>
 
-      <Card className="mt-5 bg-gradient-halal text-[color:var(--warm-white)]">
-        <div className="font-body text-xs uppercase opacity-80">Your Sadaqah this year</div>
-        <div className="mt-1 font-mono text-3xl font-bold">RM {sadaqahTotal.toFixed(2)}</div>
-        <div className="mt-2 font-kid text-xs">
-          Mashallah, you've helped {Math.floor(sadaqahTotal / 5)} families!
-        </div>
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <small>Your Sadaqah this year</small>
+        <div style={{ fontSize: "2rem", fontWeight: "bold" }}>RM {sadaqahTotal.toFixed(2)}</div>
+        <small>Mashallah, you've helped {Math.floor(sadaqahTotal / 5)} families!</small>
       </Card>
 
-      <Card className="mt-4 border border-border shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
-        <p className="font-body text-xs text-pewter mb-3">
-          Balance:{" "}
-          <span className="font-mono font-bold text-charcoal">RM {balance.toFixed(2)}</span>
-        </p>
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <p><small>Balance: RM {balance.toFixed(2)}</small></p>
 
-        <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="wireframe-grid-3" style={{ margin: "0.5rem 0" }}>
           {causes.map((c) => (
-            <div
-              key={c.name}
-              className="rounded-[1.25rem] bg-cream p-3 text-center shadow-sm border border-border"
-            >
-              <div className="mb-2">{c.icon}</div>
-              <div className="font-kid text-xs font-bold text-charcoal">{c.name}</div>
-              <div className="font-body text-[10px] text-pewter mt-1 leading-tight">{c.impact}</div>
+            <div key={c.name} className="wireframe-box" style={{ textAlign: "center" }}>
+              <div>{c.iconLabel}</div>
+              <strong>{c.name}</strong>
+              <div><small>{c.impact}</small></div>
             </div>
           ))}
         </div>
@@ -121,47 +92,31 @@ function KidSadaqah() {
           min={0.5}
           max={balance}
           confirmLabel="Give Sadaqah"
-          confirmBg="bg-emerald-halal"
           onConfirm={(amt) => setPendingAmount(amt)}
         />
 
         {given && (
-          <div className="mt-3 rounded-[1.25rem] bg-mint/40 p-4 text-center font-kid text-sm font-bold text-charcoal flex items-center justify-center gap-2 border border-mint/50">
-            <CheckCircle weight="fill" className="w-5 h-5 text-emerald-halal" /> Jazakallah khair!
-            Your kindness was recorded.
+          <div className="wireframe-box" style={{ marginTop: "0.5rem", textAlign: "center" }}>
+            [✓] Jazakallah khair! Your kindness was recorded.
           </div>
         )}
       </Card>
 
       {/* Confirmation dialog */}
       {pendingAmount !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-8 shadow-xl text-center border border-white/10">
-            <div className="flex justify-center mb-4 text-emerald-halal opacity-90">
-              <Heart weight="duotone" className="w-12 h-12" />
-            </div>
-            <h3 className="font-parent text-xl font-bold text-charcoal">Give Sadaqah?</h3>
-            <p className="mt-3 font-body text-sm text-slate-parent">
-              Are you sure you want to donate{" "}
-              <span className="font-mono font-bold text-emerald-halal">
-                RM {pendingAmount.toFixed(2)}
-              </span>{" "}
-              as Sadaqah?
-            </p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setPendingAmount(null)}
-                className="btn-press flex-1 rounded-[1.25rem] bg-cream py-3.5 font-kid font-bold text-charcoal shadow-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => give(pendingAmount)}
-                className="btn-press flex-1 rounded-[1.25rem] bg-emerald-halal py-3.5 font-kid font-bold text-white shadow-soft flex items-center justify-center gap-1.5"
-              >
-                Yes, Give <Heart weight="fill" className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="wireframe-box" style={{ marginTop: "1rem", border: "2px solid #000" }}>
+          <div style={{ textAlign: "center" }}>[icon: heart]</div>
+          <h3>Give Sadaqah?</h3>
+          <p>
+            Are you sure you want to donate <strong>RM {pendingAmount.toFixed(2)}</strong> as Sadaqah?
+          </p>
+          <div className="wireframe-row">
+            <button type="button" onClick={() => setPendingAmount(null)}>
+              Cancel
+            </button>
+            <button type="button" onClick={() => give(pendingAmount)}>
+              Confirm & Donate
+            </button>
           </div>
         </div>
       )}

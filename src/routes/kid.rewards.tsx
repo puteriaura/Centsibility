@@ -7,68 +7,22 @@ import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Gift,
-  Star,
-  FilmStrip,
-  Storefront,
-  Moon,
-  GameController,
-  Tent,
-  BookOpen,
-  HandHeart,
-  Ticket,
-  CheckCircle,
-  XCircle,
-} from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/kid/rewards")({
   head: () => ({ meta: [{ title: "Rewards — Centsibility" }] }),
   component: KidRewards,
 });
 
-/* ── Suggested rewards (no screen time) ── */
+/* ── Suggested rewards ── */
 const SUGGESTED = [
-  {
-    name: "Pick the family movie",
-    cost: 2100,
-    icon: <FilmStrip weight="duotone" className="w-8 h-8 text-bubblegum" />,
-  },
-  {
-    name: "Special treat",
-    cost: 3000,
-    icon: <Storefront weight="duotone" className="w-8 h-8 text-sky" />,
-  },
-  {
-    name: "Stay up 30 min late",
-    cost: 6000,
-    icon: <Moon weight="duotone" className="w-8 h-8 text-starlight" />,
-  },
-  {
-    name: "Toy of my choice",
-    cost: 4500,
-    icon: <GameController weight="duotone" className="w-8 h-8 text-sunny" />,
-  },
-  {
-    name: "Day at the park",
-    cost: 2400,
-    icon: <Tent weight="duotone" className="w-8 h-8 text-emerald-halal" />,
-  },
-  {
-    name: "New book of my choice",
-    cost: 3000,
-    icon: <BookOpen weight="duotone" className="w-8 h-8 text-starlight" />,
-  },
-  {
-    name: "Cook favourite meal",
-    cost: 2250,
-    icon: <HandHeart weight="duotone" className="w-8 h-8 text-coral" />,
-  },
-  {
-    name: "Fun outing with parent",
-    cost: 3000,
-    icon: <Ticket weight="duotone" className="w-8 h-8 text-gold-nur" />,
-  },
+  { name: "Pick the family movie", cost: 2100, iconLabel: "[icon: movie]" },
+  { name: "Special treat", cost: 3000, iconLabel: "[icon: treat]" },
+  { name: "Stay up 30 min late", cost: 6000, iconLabel: "[icon: moon]" },
+  { name: "Toy of my choice", cost: 4500, iconLabel: "[icon: game]" },
+  { name: "Day at the park", cost: 2400, iconLabel: "[icon: park]" },
+  { name: "New book of my choice", cost: 3000, iconLabel: "[icon: book]" },
+  { name: "Cook favourite meal", cost: 2250, iconLabel: "[icon: meal]" },
+  { name: "Fun outing with parent", cost: 3000, iconLabel: "[icon: outing]" },
 ];
 
 function KidRewards() {
@@ -79,10 +33,10 @@ function KidRewards() {
   if (loading || !data) {
     return (
       <AppShell mode="kid">
-        <div className="space-y-3">
-          <Skeleton className="h-24 rounded-3xl" />
-          <Skeleton className="h-40 rounded-3xl" />
-          <Skeleton className="h-40 rounded-3xl" />
+        <div className="wireframe-col">
+          <Skeleton style={{ height: "6rem" }} />
+          <Skeleton style={{ height: "10rem" }} />
+          <Skeleton style={{ height: "10rem" }} />
         </div>
       </AppShell>
     );
@@ -94,7 +48,6 @@ function KidRewards() {
   const maxPts = Math.max(1, Math.floor(totalPoints));
   const parsedPts = Math.min(parseInt(rawPts || "0", 10), maxPts);
 
-  // Quick picks require at least 3 correct quiz answers (lifetime)
   const quizTotalCorrect = Number((k as Record<string, unknown>).quiz_total_correct ?? 0);
   const QUIZ_GATE = 3;
   const quizUnlocked = quizTotalCorrect >= QUIZ_GATE;
@@ -147,42 +100,32 @@ function KidRewards() {
 
   return (
     <AppShell mode="kid">
-      <h1 className="font-display text-2xl text-starlight flex items-center gap-2">
-        <Gift weight="duotone" className="w-8 h-8 text-bubblegum" /> Rewards
-      </h1>
-      <p className="font-body text-sm text-starlight/70">
-        Spend your points on real-life treats. Parent must approve!
-      </p>
+      <h1>[icon: gift] Rewards</h1>
+      <p>Spend your points on real-life treats. Parent must approve!</p>
 
       {/* Points balance */}
-      <Card className="mt-4 bg-gradient-to-br from-sunny to-bubblegum text-void shadow-soft border border-white/20">
-        <div className="font-kid text-xs font-bold uppercase opacity-80">Your Points</div>
-        <div className="mt-1 font-mono text-4xl font-bold flex items-center gap-1.5">
-          {totalPoints.toFixed(0)} <Star weight="fill" className="w-7 h-7 text-void" />
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <small>Your Points</small>
+        <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
+          {totalPoints.toFixed(0)} [icon: star]
         </div>
-        <div className="mt-1 font-body text-xs opacity-80">Earn more from Daily Quests</div>
+        <small>Earn more from Daily Quests</small>
       </Card>
 
       <SectionTitle>Quick picks</SectionTitle>
       {!quizUnlocked && (
-        <div className="rounded-2xl bg-sunny/10 border border-sunny/30 px-4 py-3 mb-3 flex items-center gap-3">
-          <span className="text-2xl">🔒</span>
-          <div>
-            <div className="font-kid font-bold text-sm text-starlight">
-              Complete {QUIZ_GATE} quiz answers to unlock
-            </div>
-            <div className="font-body text-xs text-starlight/60 mt-0.5">
-              {quizTotalCorrect}/{QUIZ_GATE} correct answers so far
-            </div>
-          </div>
+        <div className="wireframe-box">
+          <strong>Complete {QUIZ_GATE} quiz answers to unlock</strong>
+          <div><small>{quizTotalCorrect}/{QUIZ_GATE} correct answers so far</small></div>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="wireframe-grid-2">
         {SUGGESTED.map((s) => {
           const can = quizUnlocked && totalPoints >= s.cost;
           return (
             <button
               key={s.name}
+              type="button"
               onClick={() => can && submit(s.name, s.cost)}
               disabled={!can}
               aria-label={
@@ -190,86 +133,68 @@ function KidRewards() {
                   ? `Locked — complete ${QUIZ_GATE} quiz answers first`
                   : `Request ${s.name} for ${s.cost} points`
               }
-              className={`btn-press rounded-[1.5rem] p-4 text-left shadow-soft transition ${can ? "bg-card hover:border-bubblegum" : "bg-cream opacity-50 cursor-not-allowed"} border border-border flex flex-col items-start`}
+              className="wireframe-card"
+              style={{ textAlign: "left" }}
             >
-              <div className="mb-2" aria-hidden="true">
-                {!quizUnlocked ? <span className="text-2xl">🔒</span> : s.icon}
-              </div>
-              <div className="mt-1 font-kid font-bold text-sm text-starlight leading-tight flex-1">
-                {s.name}
-              </div>
-              <div className="mt-2 font-mono text-sm font-bold text-bubblegum flex items-center gap-1">
-                {s.cost} <Star weight="fill" className="w-3.5 h-3.5" />
-              </div>
+              <div>{!quizUnlocked ? "[Locked]" : s.iconLabel}</div>
+              <strong>{s.name}</strong>
+              <div><small>{s.cost} [icon: star]</small></div>
             </button>
           );
         })}
       </div>
 
       <SectionTitle>Custom reward</SectionTitle>
-      <Card className="glass-panel bg-void/50 border-starlight/20">
+      <Card className="wireframe-card">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="What do you want? e.g. New book"
-          className="w-full rounded-2xl border border-white/10 bg-void/50 px-4 py-3 font-body text-sm text-starlight"
           maxLength={100}
         />
-        <p className="mt-2 font-body text-[11px] text-starlight/70 mb-3 flex items-center gap-1">
-          You have{" "}
-          <span className="font-mono font-bold text-starlight flex items-center gap-0.5">
-            {totalPoints.toFixed(0)} <Star weight="fill" className="w-3.5 h-3.5 text-gold-nur" />
-          </span>
-        </p>
+        <p><small>You have {totalPoints.toFixed(0)} [icon: star]</small></p>
 
         {/* Points keypad */}
-        <div className="flex flex-col items-center rounded-3xl bg-gradient-to-b from-sunny/20 to-void/50 border border-white/10 px-6 py-4 shadow-inner mb-3">
-          <div className="font-mono text-4xl font-extrabold text-starlight flex items-center gap-1.5">
-            {parsedPts} <Star weight="fill" className="w-7 h-7 text-gold-nur drop-shadow-sm" />
+        <div className="wireframe-box" style={{ textAlign: "center", margin: "0.5rem 0" }}>
+          <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
+            {parsedPts} [icon: star]
           </div>
           {parsedPts > 0 && (
-            <p className="mt-1 font-body text-[11px] text-starlight/70">
-              of {maxPts} pts available
-            </p>
+            <small>of {maxPts} pts available</small>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="wireframe-grid-3" style={{ margin: "0.5rem 0" }}>
           {Keys.flat().map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => pressKey(key)}
               aria-label={key === "⌫" ? "Delete" : `Key ${key}`}
-              className={`rounded-2xl py-4 font-mono text-xl font-bold transition active:scale-90 ${
-                key === "⌫"
-                  ? "bg-white/10 text-coral text-2xl border border-white/10"
-                  : "glass-panel text-starlight shadow-soft hover:bg-white/10 border border-white/10"
-              }`}
+              style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
             >
               {key}
             </button>
           ))}
         </div>
         <button
+          type="button"
           onClick={() => submit(name, parsedPts)}
           disabled={!name.trim() || parsedPts < 1 || parsedPts > totalPoints}
-          className="btn-press mt-4 w-full rounded-[1.25rem] bg-bubblegum py-3.5 font-kid font-bold text-white disabled:opacity-40 shadow-soft flex items-center justify-center gap-1.5"
+          style={{ width: "100%", marginTop: "0.5rem" }}
         >
-          Request for {parsedPts} <Star weight="fill" className="w-4 h-4" />
+          Request for {parsedPts} [icon: star]
         </button>
       </Card>
 
       {pending.length > 0 && (
         <>
           <SectionTitle>Waiting for parent</SectionTitle>
-          <div className="space-y-2">
+          <div className="wireframe-col">
             {pending.map((r: (typeof pending)[number]) => (
-              <Card key={r.id} className="bg-sunny/20 border border-sunny/30">
-                <div className="flex items-center justify-between">
-                  <div className="font-kid font-bold text-sm text-starlight">{r.name}</div>
-                  <div className="font-mono font-bold text-starlight flex items-center gap-1">
-                    {r.cost} <Star weight="fill" className="w-4 h-4 text-gold-nur" />
-                  </div>
+              <Card key={r.id} className="wireframe-box">
+                <div className="wireframe-space-between">
+                  <strong>{r.name}</strong>
+                  <span>{r.cost} [icon: star]</span>
                 </div>
               </Card>
             ))}
@@ -279,40 +204,21 @@ function KidRewards() {
 
       <SectionTitle>History</SectionTitle>
       {history.length === 0 ? (
-        <Card className="text-center py-8 shadow-sm glass-panel bg-void/50 border-starlight/20">
-          <div className="flex justify-center mb-3 text-starlight/50 opacity-50">
-            <Gift weight="duotone" className="w-12 h-12" />
-          </div>
-          <p className="font-body text-sm text-starlight/70">
-            No reward history yet. Request your first reward above!
-          </p>
+        <Card className="wireframe-box" style={{ textAlign: "center" }}>
+          No reward history yet. Request your first reward above!
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="wireframe-col">
           {history.map((r: (typeof history)[number]) => (
-            <div
-              key={r.id}
-              className="flex items-center justify-between rounded-2xl glass-panel bg-void/50 border-starlight/20 p-3 shadow-soft"
-            >
+            <div key={r.id} className="wireframe-space-between wireframe-box">
               <div>
-                <div className="font-kid font-bold text-sm text-starlight">{r.name}</div>
-                <div className="font-body text-[11px] text-starlight/70 flex items-center gap-1 mt-0.5">
-                  {new Date(r.created_at).toLocaleDateString()} · {r.cost}{" "}
-                  <Star weight="fill" className="w-3 h-3 text-gold-nur" />
+                <strong>{r.name}</strong>
+                <div>
+                  <small>{new Date(r.created_at).toLocaleDateString()} · {r.cost} [icon: star]</small>
                 </div>
               </div>
-              <div
-                className={`font-kid text-xs font-bold flex items-center gap-1 ${r.status === "approved" ? "text-emerald-halal" : "text-coral"}`}
-              >
-                {r.status === "approved" ? (
-                  <>
-                    <CheckCircle weight="bold" className="w-4 h-4" /> Granted
-                  </>
-                ) : (
-                  <>
-                    <XCircle weight="bold" className="w-4 h-4" /> Declined
-                  </>
-                )}
+              <div>
+                <strong>{r.status === "approved" ? "[✓ Granted]" : "[✗ Declined]"}</strong>
               </div>
             </div>
           ))}

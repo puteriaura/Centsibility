@@ -13,32 +13,22 @@ import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
-import {
-  Leaf,
-  ArrowUpRight,
-  ArrowDownRight,
-  ArrowRight,
-  Plus,
-  ArrowUUpLeft,
-  Timer,
-  ChartLine,
-} from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/kid/invest")({
   head: () => ({ meta: [{ title: "Invest — Centsibility" }] }),
   component: KidInvest,
 });
 
-// Risk levels — kid-controlled
+// Risk levels
 const RISK_LEVELS = [
-  { key: "very_low",  label: "Very Low",  rate: 0.0005, color: "text-sky-400",    bg: "bg-sky-400",    desc: "Tiny gains, almost no loss" },
-  { key: "low",       label: "Low",       rate: 0.001,  color: "text-neon-mint",  bg: "bg-neon-mint",  desc: "Small steady growth" },
-  { key: "medium",    label: "Medium",    rate: 0.002,  color: "text-sunny",      bg: "bg-sunny",      desc: "Balanced risk & reward" },
-  { key: "high",      label: "High",      rate: 0.003,  color: "text-coral",      bg: "bg-coral",      desc: "Bigger swings possible" },
-  { key: "very_high", label: "Very High", rate: 0.004,  color: "text-nova-red",   bg: "bg-nova-red",   desc: "Max gains, max losses" },
+  { key: "very_low",  label: "Very Low",  rate: 0.0005, desc: "Tiny gains, almost no loss" },
+  { key: "low",       label: "Low",       rate: 0.001,  desc: "Small steady growth" },
+  { key: "medium",    label: "Medium",    rate: 0.002,  desc: "Balanced risk & reward" },
+  { key: "high",      label: "High",      rate: 0.003,  desc: "Bigger swings possible" },
+  { key: "very_high", label: "Very High", rate: 0.004,  desc: "Max gains, max losses" },
 ] as const;
 
-// Frequency options — how often growth is applied
+// Frequency options
 const FREQ_OPTIONS = [
   { key: "minute",  label: "Every Min",  desc: "Tiny ticks every minute" },
   { key: "hourly",  label: "Hourly",     desc: "Small changes each hour" },
@@ -68,7 +58,7 @@ function KidInvest() {
   if (loading || !data)
     return (
       <AppShell mode="kid">
-        <Card>Loading…</Card>
+        <Card className="wireframe-card">Loading…</Card>
       </AppShell>
     );
 
@@ -161,134 +151,94 @@ function KidInvest() {
   if (endBal > startBal) status = "PROFIT";
   else if (endBal < startBal) status = "LOSS";
 
-  const colorMap = {
-    PROFIT:   { bg: "bg-gradient-to-br from-neon-mint/20 to-void/50", chart: "#20e29b", arrow: <ArrowUpRight weight="bold" className="inline w-4 h-4" />, border: "border-neon-mint/50", shadow: "shadow-[0_0_20px_var(--neon-mint)]" },
-    LOSS:     { bg: "bg-gradient-to-br from-nova-red/20 to-void/50",  chart: "#ff4d4d", arrow: <ArrowDownRight weight="bold" className="inline w-4 h-4" />, border: "border-nova-red/50",  shadow: "shadow-[0_0_20px_var(--nova-red)]" },
-    STAGNANT: { bg: "bg-void/50", chart: "#9ca3af", arrow: <ArrowRight weight="bold" className="inline w-4 h-4" />, border: "border-starlight/20", shadow: "shadow-none" },
-  };
-  const theme = colorMap[status];
   const absChange = Math.abs(endBal - startBal);
   const pctChange = startBal === 0 ? (endBal > 0 ? 100 : 0) : (absChange / startBal) * 100;
 
   return (
     <AppShell mode="kid">
-      <h1 className="font-display text-2xl text-starlight flex items-center gap-2 drop-shadow-sm">
-        <Leaf weight="duotone" className="w-8 h-8 text-nebula-pink drop-shadow-[0_0_8px_var(--nebula-pink)]" />
-        Cosmic Growth
-      </h1>
-      <p className="font-body text-sm text-starlight/60 mt-1">
-        Choose your risk and frequency. Your money grows (or dips) based on your settings.
-      </p>
+      <h1>[icon: invest] Cosmic Growth</h1>
+      <p>Choose your risk and frequency. Your money grows (or dips) based on your settings.</p>
 
       {/* Balance card + chart */}
-      <Card className={`mt-5 glass-panel ${theme.bg} text-white transition-colors duration-500 overflow-hidden relative ${theme.shadow} border ${theme.border}`}>
-        <div className="relative z-10 flex justify-between items-start">
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <div className="wireframe-space-between">
           <div>
-            <div className="text-[10px] font-kid uppercase tracking-widest text-starlight/60">Generating</div>
-            <div className="mt-1 font-mono text-4xl font-bold drop-shadow-md">RM {invested.toFixed(2)}</div>
-            <div className="mt-3 font-kid text-sm font-bold flex items-center gap-1.5">
-              <span className={`px-2 py-1 rounded-md ${status === "PROFIT" ? "bg-neon-mint/20 text-neon-mint" : status === "LOSS" ? "bg-nova-red/20 text-nova-red" : "bg-void/40 text-starlight"}`}>
-                {theme.arrow} RM {absChange.toFixed(2)} ({pctChange.toFixed(1)}%)
-              </span>
-              <span className="text-[10px] uppercase font-body tracking-wider text-starlight/40">7d</span>
+            <small>Generating</small>
+            <div style={{ fontSize: "2rem", fontWeight: "bold" }}>RM {invested.toFixed(2)}</div>
+            <div>
+              <small>
+                {status === "PROFIT" ? "[↑]" : status === "LOSS" ? "[↓]" : "[→]"} RM {absChange.toFixed(2)} ({pctChange.toFixed(1)}%) · 7d
+              </small>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] font-kid tracking-widest uppercase text-starlight/60 mb-1.5">Status</div>
-            <div className={`px-2.5 py-1 rounded-lg font-bold text-xs inline-block tracking-wider ${status === "PROFIT" ? "bg-neon-mint text-void shadow-[0_0_10px_var(--neon-mint)]" : status === "LOSS" ? "bg-nova-red text-white shadow-[0_0_10px_var(--nova-red)]" : "bg-void border border-starlight/20 text-starlight"}`}>
-              {status}
-            </div>
+          <div>
+            <small>Status: <strong>{status}</strong></small>
           </div>
         </div>
-        <div className="h-28 mt-4 -mx-4 -mb-4 opacity-90">
+        <div style={{ height: "100px", marginTop: "1rem" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={theme.chart} stopOpacity={0.6} />
-                  <stop offset="95%" stopColor={theme.chart} stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
               <YAxis domain={["auto", "auto"]} hide />
-              <Area type="monotone" dataKey="value" stroke={theme.chart} strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" animationDuration={1500} />
+              <Area type="monotone" dataKey="value" stroke="#666" strokeWidth={1.5} fill="#eee" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </Card>
 
       {/* Rate info */}
-      <div className="mt-3 text-center text-[11px] text-starlight/50 font-body uppercase tracking-widest border border-starlight/10 rounded-2xl py-3 px-4 glass-panel bg-void/30">
-        Growth rate: <span className={riskInfo.color}>{(rate * 100).toFixed(2)}%</span> per settle ·
-        Frequency: <span className="text-nebula-pink">{FREQ_OPTIONS.find((f) => f.key === currentFreq)?.label ?? currentFreq}</span>
-        <br />
-        Projected (4 cycles):{" "}
-        <span className="text-starlight font-mono font-bold ml-1">RM {projected.toFixed(2)}</span>
+      <div className="wireframe-box" style={{ marginTop: "0.5rem", textAlign: "center" }}>
+        <small>
+          Growth rate: <strong>{(rate * 100).toFixed(2)}%</strong> per settle ·
+          Frequency: <strong>{FREQ_OPTIONS.find((f) => f.key === currentFreq)?.label ?? currentFreq}</strong> ·
+          Projected (4 cycles): <strong>RM {projected.toFixed(2)}</strong>
+        </small>
       </div>
 
       {/* ── Risk Appetite ── */}
-      <SectionTitle>
-        <span className="flex items-center gap-1.5">
-          <ChartLine weight="duotone" className="w-4 h-4 text-nebula-pink" /> Risk Appetite
-        </span>
-      </SectionTitle>
-      <Card className="glass-panel bg-void/50 border-starlight/20">
-        <p className="font-body text-xs text-starlight/60 mb-4">
-          Higher risk = bigger potential gains AND bigger potential losses.
-        </p>
-        <div className="space-y-2">
+      <SectionTitle>[icon: chart] Risk Appetite</SectionTitle>
+      <Card className="wireframe-card">
+        <p><small>Higher risk = bigger potential gains AND bigger potential losses.</small></p>
+        <div className="wireframe-col" style={{ marginTop: "0.5rem" }}>
           {RISK_LEVELS.map((r) => (
             <button
               key={r.key}
+              type="button"
               onClick={() => setRisk(r.key)}
               disabled={savingRisk}
-              className={`w-full rounded-2xl px-4 py-3 flex items-center justify-between transition border ${
-                currentRisk === r.key
-                  ? `${r.bg} text-void border-transparent shadow-[0_0_12px_rgba(0,0,0,0.3)]`
-                  : "glass-panel bg-void/30 text-starlight/70 border-starlight/10 hover:border-starlight/30 hover:text-starlight"
-              }`}
+              className="wireframe-space-between"
+              style={{
+                border: currentRisk === r.key ? "2px solid #000" : "1px solid #ccc",
+                fontWeight: currentRisk === r.key ? "bold" : "normal",
+              }}
             >
-              <div className="text-left">
-                <div className={`font-kid font-bold text-sm ${currentRisk === r.key ? "text-void" : r.color}`}>
-                  {r.label}
-                </div>
-                <div className={`font-body text-[10px] mt-0.5 ${currentRisk === r.key ? "text-void/70" : "text-starlight/50"}`}>
-                  {r.desc}
-                </div>
+              <div style={{ textAlign: "left" }}>
+                <strong>{r.label}</strong>
+                <div><small>{r.desc}</small></div>
               </div>
-              <div className={`font-mono text-sm font-bold ${currentRisk === r.key ? "text-void" : r.color}`}>
-                {(r.rate * 100).toFixed(2)}%
-              </div>
+              <div>{(r.rate * 100).toFixed(2)}%</div>
             </button>
           ))}
         </div>
       </Card>
 
       {/* ── Update Frequency ── */}
-      <SectionTitle>
-        <span className="flex items-center gap-1.5">
-          <Timer weight="duotone" className="w-4 h-4 text-cosmic-blue" /> Update Frequency
-        </span>
-      </SectionTitle>
-      <Card className="glass-panel bg-void/50 border-starlight/20">
-        <p className="font-body text-xs text-starlight/60 mb-4">
-          How often your investment grows or changes.
-        </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <SectionTitle>[icon: timer] Update Frequency</SectionTitle>
+      <Card className="wireframe-card">
+        <p><small>How often your investment grows or changes.</small></p>
+        <div className="wireframe-grid-3" style={{ marginTop: "0.5rem" }}>
           {FREQ_OPTIONS.map((f) => (
             <button
               key={f.key}
+              type="button"
               onClick={() => setFreq(f.key)}
               disabled={savingFreq}
-              className={`rounded-2xl px-3 py-3 text-left transition border ${
-                currentFreq === f.key
-                  ? "bg-cosmic-blue border-cosmic-blue text-white shadow-[0_0_12px_var(--cosmic-blue)]"
-                  : "glass-panel bg-void/30 text-starlight/70 border-starlight/10 hover:border-starlight/30 hover:text-starlight"
-              }`}
+              style={{
+                border: currentFreq === f.key ? "2px solid #000" : "1px solid #ccc",
+                textAlign: "left",
+              }}
             >
-              <div className="font-kid font-bold text-xs">{f.label}</div>
-              <div className={`font-body text-[10px] mt-0.5 ${currentFreq === f.key ? "text-white/70" : "text-starlight/40"}`}>
-                {f.desc}
-              </div>
+              <strong>{f.label}</strong>
+              <div><small>{f.desc}</small></div>
             </button>
           ))}
         </div>
@@ -296,31 +246,38 @@ function KidInvest() {
 
       {/* ── Transfer Energy ── */}
       <SectionTitle>Transfer Energy</SectionTitle>
-      <Card className="glass-panel bg-void/50 border-starlight/20 shadow-none">
-        <div className="mb-5 grid grid-cols-2 gap-3">
+      <Card className="wireframe-card">
+        <div className="wireframe-grid-2" style={{ marginBottom: "0.5rem" }}>
           <button
+            type="button"
             onClick={() => setDir("in")}
-            className={`btn-press rounded-2xl py-4 flex items-center justify-center gap-2 font-kid text-xs font-bold transition uppercase tracking-wider border ${dir === "in" ? "bg-nebula-pink border-nebula-pink text-white shadow-[0_0_15px_var(--nebula-pink)]" : "glass-panel bg-void/30 text-starlight/80 border-starlight/20 hover:bg-white/10"}`}
+            style={{
+              border: dir === "in" ? "2px solid #000" : "1px solid #ccc",
+              fontWeight: dir === "in" ? "bold" : "normal",
+            }}
           >
-            <Plus weight="bold" className="w-4 h-4" /> Grow
+            [icon: plus] Grow
           </button>
           <button
+            type="button"
             onClick={() => setDir("out")}
-            className={`btn-press rounded-2xl py-4 flex items-center justify-center gap-2 font-kid text-xs font-bold transition uppercase tracking-wider border ${dir === "out" ? "bg-nova-red border-nova-red text-white shadow-[0_0_15px_var(--nova-red)]" : "glass-panel bg-void/30 text-starlight/80 border-starlight/20 hover:bg-white/10"}`}
+            style={{
+              border: dir === "out" ? "2px solid #000" : "1px solid #ccc",
+              fontWeight: dir === "out" ? "bold" : "normal",
+            }}
           >
-            <ArrowUUpLeft weight="bold" className="w-4 h-4" /> Recall
+            [icon: recall] Recall
           </button>
         </div>
-        <div className="mb-4 flex justify-between font-kid text-[10px] font-bold text-starlight/50 uppercase tracking-widest px-2">
-          <span>Core: <span className="font-mono text-neon-mint text-sm">RM {balance.toFixed(2)}</span></span>
-          <span>Generating: <span className="font-mono text-nebula-pink text-sm">RM {invested.toFixed(2)}</span></span>
+        <div className="wireframe-space-between" style={{ marginBottom: "0.5rem" }}>
+          <small>Core: RM {balance.toFixed(2)}</small>
+          <small>Generating: RM {invested.toFixed(2)}</small>
         </div>
         <MoneyKeypad
           key={dir}
           min={0.5}
           max={dir === "in" ? balance : invested}
           confirmLabel={dir === "in" ? "Lock Energy" : "Recall Energy"}
-          confirmBg={dir === "in" ? "bg-nebula-pink" : "bg-nova-red"}
           onConfirm={dir === "in" ? deposit : withdraw}
         />
       </Card>

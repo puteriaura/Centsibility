@@ -1,23 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { AppShell } from "@/components/AppShell";
 import { useParentData } from "@/hooks/use-parent-data";
 import { edgeParentGetStatement } from "@/lib/edge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
-// Native printing is now used for better performance and vector quality.
-import {
-  ChartBar,
-  DownloadSimple,
-  UploadSimple,
-  Scales,
-  Coins,
-  FilePdf,
-  WhatsappLogo,
-  EnvelopeSimple,
-  Warning,
-} from "@phosphor-icons/react";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 
 export const Route = createFileRoute("/parent/reports")({
@@ -56,9 +44,6 @@ function isDebit(type: string) {
 }
 function fmtRM(n: number) {
   return `RM ${Math.abs(n).toFixed(2)}`;
-}
-function monthKey(date: Date) {
-  return format(date, "yyyy-MM");
 }
 function groupByDate(txs: Tx[]): Record<string, Tx[]> {
   return txs.reduce(
@@ -145,10 +130,10 @@ function Reports() {
   if (loading) {
     return (
       <AppShell mode="parent">
-        <div className="space-y-3">
-          <Skeleton className="h-10 rounded-2xl" />
-          <Skeleton className="h-32 rounded-3xl" />
-          <Skeleton className="h-56 rounded-3xl" />
+        <div>
+          <Skeleton />
+          <Skeleton />
+          <Skeleton />
         </div>
       </AppShell>
     );
@@ -163,12 +148,9 @@ function Reports() {
   const endBalance = stmt?.kid.balance ?? 0;
   let runningBalance = endBalance;
   const balanceMap = new Map<string, number>();
-  // stmtTxs is sorted newest-first. Walk forward (newest to oldest).
-  // Each tx's "balance after" is runningBalance, then undo the tx to get balance before.
   for (let i = 0; i < stmtTxs.length; i++) {
     const tx = stmtTxs[i];
     balanceMap.set(tx.id, runningBalance);
-    // Undo this tx to get the balance before it
     if (isDebit(tx.type)) runningBalance += tx.amount;
     else runningBalance -= tx.amount;
   }
@@ -184,18 +166,15 @@ function Reports() {
   return (
     <AppShell mode="parent">
       {/* Header + Controls */}
-      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <header>
         <div>
-          <h1 className="font-display text-3xl text-charcoal">Monthly Statement</h1>
-          <p className="font-body text-sm text-slate-parent">
-            Detailed financial oversight for your children.
-          </p>
+          <h1>Monthly Statement</h1>
+          <p>Detailed financial oversight for your children.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div>
           <select
             value={kidId}
             onChange={(e) => setKidId(e.target.value)}
-            className="rounded-2xl border-2 border-border bg-card px-4 py-2 font-parent font-bold text-charcoal focus:border-emerald-halal focus:outline-none shadow-soft"
           >
             <option value="">Select Child</option>
             {kids.map((k) => (
@@ -210,70 +189,54 @@ function Reports() {
             onChange={(e) => {
               if (e.target.value) setMonth(startOfMonth(new Date(e.target.value + "-01")));
             }}
-            className="rounded-2xl border-2 border-border bg-card px-4 py-2 font-mono font-bold text-charcoal focus:border-emerald-halal focus:outline-none shadow-soft"
           />
         </div>
       </header>
 
       {/* Body */}
       {fetching ? (
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <div>
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-3xl bg-card" />
+            <div key={i}>[loading statement data...]</div>
           ))}
         </div>
       ) : !stmt ? (
-        <Card className="mt-6 flex flex-col items-center justify-center py-20 text-center bg-white/40 backdrop-blur-md border-dashed border-2 border-border shadow-sm">
-          <div className="flex justify-center mb-4 opacity-40">
-            <ChartBar weight="duotone" className="w-16 h-16 text-charcoal" />
-          </div>
-          <h2 className="font-parent text-xl font-bold text-charcoal">No child selected</h2>
-          <p className="font-body text-pewter">Choose a child and month to view their statement.</p>
-        </Card>
+        <section>
+          <div>[icon: chart]</div>
+          <h2>No child selected</h2>
+          <p>Choose a child and month to view their statement.</p>
+        </section>
       ) : (
-        <div className="mt-6 space-y-6">
+        <div>
           {/* Summary Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
             <SummaryCard
               label="Total In"
               value={totalIn}
-              color="text-emerald-halal"
-              bg="bg-emerald-halal/5"
-              icon={<DownloadSimple weight="duotone" className="w-8 h-8 text-emerald-halal" />}
+              icon="[icon: download]"
             />
             <SummaryCard
               label="Total Out"
               value={totalOut}
-              color="text-coral"
-              bg="bg-coral/5"
-              icon={<UploadSimple weight="duotone" className="w-8 h-8 text-coral" />}
+              icon="[icon: upload]"
             />
             <SummaryCard
               label="Net Change"
               value={net}
-              color={net >= 0 ? "text-emerald-halal" : "text-coral"}
-              bg={net >= 0 ? "bg-emerald-halal/5" : "bg-coral/5"}
-              icon={
-                <Scales
-                  weight="duotone"
-                  className={`w-8 h-8 ${net >= 0 ? "text-emerald-halal" : "text-coral"}`}
-                />
-              }
+              icon="[icon: scales]"
             />
             <SummaryCard
               label="End Balance"
               value={Number(stmt.kid.balance)}
-              color="text-charcoal"
-              bg="bg-sunny/10"
-              icon={<Coins weight="duotone" className="w-8 h-8 text-sunny" />}
+              icon="[icon: coins]"
             />
           </div>
 
           {/* Expenses Circular Graph */}
           {totalOut > 0 && (
-            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm print:hidden">
-              <SectionTitle>Expense Breakdown</SectionTitle>
-              <div className="h-64 mt-4">
+            <section>
+              <h2>Expense Breakdown</h2>
+              <div style={{ height: "200px" }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -308,14 +271,7 @@ function Reports() {
                             {} as Record<string, number>,
                           ),
                       ).map((entry, index) => {
-                        const COLORS = [
-                          "#FF6B6B",
-                          "#FFB067",
-                          "#FFD166",
-                          "#4ECDC4",
-                          "#1A535C",
-                          "#F7FFF7",
-                        ];
+                        const COLORS = ["#333333", "#666666", "#999999", "#cccccc", "#777777"];
                         return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
                       })}
                     </Pie>
@@ -323,131 +279,91 @@ function Reports() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </section>
           )}
 
           {/* Statement Container */}
           <div
             ref={stmtRef}
             id="statement-area"
-            className="overflow-hidden rounded-[2rem] border border-white/40 bg-white/60 shadow-2xl backdrop-blur-xl"
           >
             {/* Statement Header */}
-            <div className="bg-gradient-to-r from-emerald-halal/10 to-sky/10 p-8">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div>
                 <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-10 w-10 rounded-2xl bg-gradient-halal" />
-                    <span className="font-display text-2xl text-charcoal">Centsibility</span>
-                  </div>
-                  <h2 className="font-parent text-3xl font-black text-charcoal">
-                    {stmt.kid.name}&apos;s Statement
-                  </h2>
-                  <p className="font-body text-pewter mt-1">
-                    Period:{" "}
-                    <span className="font-mono font-bold text-charcoal">
-                      {format(month, "MMMM yyyy")}
-                    </span>
+                  <h2>Centsibility</h2>
+                  <h3>{stmt.kid.name}&apos;s Statement</h3>
+                  <p>
+                    Period: <strong>{format(month, "MMMM yyyy")}</strong>
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className="font-mono text-xs font-bold uppercase tracking-widest text-pewter">
-                    Generated
-                  </div>
-                  <div className="font-mono text-sm text-charcoal">
-                    {format(new Date(), "dd/MM/yyyy")}
-                  </div>
+                <div>
+                  <div>Generated: {format(new Date(), "dd/MM/yyyy")}</div>
                 </div>
               </div>
             </div>
 
             {/* Loan Fees */}
             {loanFees.length > 0 && (
-              <div className="px-8 pt-6">
-                <Card className="border border-coral/30 bg-coral/5 shadow-sm">
-                  <p className="font-kid text-[11px] font-bold text-coral uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Warning weight="fill" className="w-4 h-4" /> Loan Fee Breakdown
-                  </p>
-                  <ul className="space-y-1">
-                    {loanFees.map((f) => (
-                      <li
-                        key={f.id}
-                        className="flex justify-between font-body text-xs text-charcoal"
-                      >
-                        <span>{f.label}</span>
-                        <span className="font-mono text-coral">−{fmtRM(f.amount)}</span>
-                      </li>
-                    ))}
-                    <li className="flex justify-between font-body text-xs font-bold text-coral border-t border-coral/20 pt-1 mt-1">
-                      <span>Total fees</span>
-                      <span className="font-mono">
-                        −{fmtRM(loanFees.reduce((s, f) => s + f.amount, 0))}
-                      </span>
+              <section>
+                <p>
+                  [icon: warning] Loan Fee Breakdown
+                </p>
+                <ul>
+                  {loanFees.map((f) => (
+                    <li key={f.id}>
+                      <span>{f.label}</span>
+                      <span>−{fmtRM(f.amount)}</span>
                     </li>
-                  </ul>
-                </Card>
-              </div>
+                  ))}
+                  <li>
+                    <span><strong>Total fees:</strong></span>
+                    <span>−{fmtRM(loanFees.reduce((s, f) => s + f.amount, 0))}</span>
+                  </li>
+                </ul>
+              </section>
             )}
 
             {/* Type Filter */}
-            <div className="flex gap-1.5 px-8 pt-6 overflow-x-auto pb-1 print:hidden">
+            <div>
               {availableTypes.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTypeFilter(t)}
-                  className={`shrink-0 rounded-full px-4 py-1.5 font-kid text-[10px] font-bold border transition ${
-                    typeFilter === t
-                      ? "border-emerald-halal bg-emerald-halal text-white"
-                      : "border-border bg-white/50 text-pewter hover:border-emerald-halal"
-                  }`}
                 >
-                  {t === "ALL" ? "All" : (TYPE_LABELS[t] ?? t)}
+                  {typeFilter === t ? `[ ${t === "ALL" ? "All" : (TYPE_LABELS[t] ?? t)} ]` : (t === "ALL" ? "All" : (TYPE_LABELS[t] ?? t))}
                 </button>
               ))}
             </div>
 
             {/* Transaction List */}
-            <div className="p-8">
+            <div>
               {filtered.length === 0 ? (
-                <div className="p-6 text-center font-body text-sm text-pewter">
-                  No transactions this period.
-                </div>
+                <div>No transactions this period.</div>
               ) : (
-                <div className="divide-y divide-border/50">
+                <div>
                   {sortedDates.map((date) => (
                     <div key={date}>
-                      <div className="py-2">
-                        <span className="font-kid text-[11px] font-bold text-pewter uppercase tracking-wider">
-                          {format(new Date(date + "T12:00:00"), "EEEE, d MMMM yyyy")}
-                        </span>
+                      <div>
+                        <strong>{format(new Date(date + "T12:00:00"), "EEEE, d MMMM yyyy")}</strong>
                       </div>
                       {grouped[date].map((tx) => {
                         const debit = isDebit(tx.type);
                         const runBal = balanceMap.get(tx.id);
                         return (
-                          <div key={tx.id} className="flex items-start gap-3 py-3">
-                            <span
-                              className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 font-kid text-[9px] font-bold uppercase tracking-wider ${debit ? "bg-coral/10 text-coral" : "bg-emerald-halal/10 text-emerald-halal"}`}
-                            >
-                              {TYPE_LABELS[tx.type] ?? tx.type}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-body text-sm text-charcoal truncate">{tx.label}</p>
-                              <p className="font-body text-[10px] text-pewter">
-                                {format(new Date(tx.created_at), "h:mm a")}
-                              </p>
+                          <div key={tx.id}>
+                            <span>[{TYPE_LABELS[tx.type] ?? tx.type}]</span>
+                            <div>
+                              <p>{tx.label}</p>
+                              <small>{format(new Date(tx.created_at), "h:mm a")}</small>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p
-                                className={`font-mono text-sm font-bold ${debit ? "text-coral" : "text-emerald-halal"}`}
-                              >
+                            <div>
+                              <p>
                                 {debit ? "−" : "+"}
                                 {fmtRM(tx.amount)}
                               </p>
                               {runBal !== undefined && (
-                                <p className="font-mono text-[10px] text-pewter">
-                                  bal {fmtRM(runBal)}
-                                </p>
+                                <small>bal {fmtRM(runBal)}</small>
                               )}
                             </div>
                           </div>
@@ -461,79 +377,64 @@ function Reports() {
           </div>
 
           {/* Actions */}
-          <div className="grid grid-cols-3 gap-2 print:hidden">
-            <button
-              onClick={handleDownloadPdf}
-              className="btn-press flex flex-col items-center gap-1.5 rounded-2xl bg-emerald-halal py-4 px-2 text-white shadow-soft transition"
-            >
-              <FilePdf weight="duotone" className="w-7 h-7" />
-              <span className="font-kid text-[10px] font-bold">PDF</span>
+          <div>
+            <button onClick={handleDownloadPdf}>
+              [icon: pdf] PDF
             </button>
-            <button
-              onClick={handleWhatsApp}
-              className="btn-press flex flex-col items-center gap-1.5 rounded-2xl bg-[#25D366] py-4 px-2 text-white shadow-soft transition"
-            >
-              <WhatsappLogo weight="duotone" className="w-7 h-7" />
-              <span className="font-kid text-[10px] font-bold">WhatsApp</span>
+            <button onClick={handleWhatsApp}>
+              [icon: whatsapp] WhatsApp
             </button>
-            <button
-              onClick={handleEmail}
-              className="btn-press flex flex-col items-center gap-1.5 rounded-2xl bg-sky py-4 px-2 text-white shadow-soft transition"
-            >
-              <EnvelopeSimple weight="duotone" className="w-7 h-7" />
-              <span className="font-kid text-[10px] font-bold">Email</span>
+            <button onClick={handleEmail}>
+              [icon: email] Email
             </button>
           </div>
         </div>
       )}
 
       {/* Trust Overview */}
-      <SectionTitle>Loan trust overview</SectionTitle>
-      <div className="space-y-2">
+      <h2>Loan trust overview</h2>
+      <div>
         {kids.map((k) => (
-          <Card key={k.id}>
-            <div className="flex items-center justify-between">
+          <section key={k.id}>
+            <div>
               <div>
-                <div className="font-parent font-semibold text-charcoal">{k.name}</div>
-                <div className="font-body text-[11px] text-pewter">Trust score</div>
+                <strong>{k.name}</strong>
+                <div>Trust score</div>
               </div>
-              <div className="text-right">
-                <div className="font-mono text-2xl font-bold text-charcoal">{k.trust_score}</div>
-                <div className="font-body text-[10px] text-pewter">
+              <div>
+                <div>{k.trust_score}</div>
+                <small>
                   {k.trust_score >= 750 ? "Excellent" : k.trust_score >= 650 ? "Good" : "Fair"}
-                </div>
+                </small>
               </div>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-cream overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-coral via-sunny to-emerald-halal"
-                style={{ width: `${((k.trust_score - 300) / 600) * 100}%` }}
+            <div>
+              <progress
+                value={Math.max(0, k.trust_score - 300)}
+                max={600}
+                style={{ width: "100%" }}
               />
             </div>
-          </Card>
+          </section>
         ))}
       </div>
 
       {overdue.length > 0 && (
         <>
-          <SectionTitle>
-            <span className="flex items-center gap-2">
-              <Warning weight="bold" className="w-5 h-5 text-coral" /> Overdue loans
-            </span>
-          </SectionTitle>
-          <div className="space-y-2">
+          <h2>[icon: warning] Overdue loans</h2>
+          <div>
             {overdue.map((l) => (
-              <Card key={l.id} className="border-2 border-coral">
-                <div className="flex items-center justify-between">
+              <section key={l.id}>
+                <div>
                   <div>
-                    <div className="font-parent font-semibold text-charcoal">{l.kids?.name}</div>
-                    <div className="font-body text-[11px] text-coral">Due {l.due_date}</div>
+                    <strong>{l.kids?.name}</strong>
+                    <div>Due {l.due_date}</div>
                   </div>
-                  <div className="font-mono font-bold text-coral">
+                  <div>
                     RM {(Number(l.amount) - Number(l.repaid)).toFixed(2)}
                   </div>
                 </div>
-              </Card>
+              </section>
             ))}
           </div>
         </>
@@ -553,27 +454,19 @@ function Reports() {
 function SummaryCard({
   label,
   value,
-  color,
-  bg,
   icon,
 }: {
   label: string;
   value: number;
-  color: string;
-  bg: string;
   icon: React.ReactNode;
 }) {
   return (
-    <div
-      className={`rounded-[2rem] ${bg} p-6 shadow-sm border border-white/40 transition hover:scale-[1.02] duration-300`}
-    >
-      <div className="flex items-center gap-3">
-        {icon}
-        <div className="font-parent text-xs font-bold uppercase tracking-wider text-pewter">
-          {label}
-        </div>
+    <section>
+      <div>
+        <span>{icon}</span>
+        <strong>{label}</strong>
       </div>
-      <div className={`mt-2 font-mono text-2xl font-black ${color}`}>RM {value.toFixed(2)}</div>
-    </div>
+      <div>RM {value.toFixed(2)}</div>
+    </section>
   );
 }

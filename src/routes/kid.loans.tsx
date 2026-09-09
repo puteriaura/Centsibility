@@ -8,25 +8,11 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { exportLoanPdf } from "@/lib/loan-pdf";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { toast } from "sonner";
-import {
-  Handshake,
-  Scroll,
-  CheckCircle,
-  FilePdf,
-  ShieldCheck,
-  Plus,
-  CaretLeft,
-} from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/kid/loans")({
   head: () => ({ meta: [{ title: "My Loans — Centsibility" }] }),
   component: KidLoans,
 });
-
-/** Fees charged on every approved loan */
-const SERVICE_FEE = 0.0;
-const PROCESSING_FEE = 0.0;
-const TOTAL_FEES = 0.0;
 
 function KidLoans() {
   const { data, loading, refresh } = useKidData();
@@ -38,12 +24,12 @@ function KidLoans() {
   const [reqReason, setReqReason] = useState("");
   const [dueDays, setDueDays] = useState(14);
   const [signature, setSignature] = useState<string | null>(null);
-  const [signStep, setSignStep] = useState(false); // true = show signature after amount entry
+  const [signStep, setSignStep] = useState(false);
 
   if (loading || !data)
     return (
       <AppShell mode="kid">
-        <Card>Loading…</Card>
+        <Card className="wireframe-card">Loading…</Card>
       </AppShell>
     );
   const code = getKidSession()?.code;
@@ -95,67 +81,44 @@ function KidLoans() {
 
   return (
     <AppShell mode="kid">
-      <h1 className="font-display text-2xl text-charcoal flex items-center gap-2">
-        <Handshake weight="duotone" className="w-8 h-8 text-charcoal" />
-        My Loans
-      </h1>
-      <p className="font-body text-sm text-slate-parent">
-        Qard = interest-free. Pay on time to grow your trust score.
-      </p>
+      <h1>[icon: handshake] My Loans</h1>
+      <p>Qard = interest-free. Pay on time to grow your trust score.</p>
 
-      <Card className="mt-4 bg-cream border border-border shadow-soft">
-        <div className="flex items-center justify-between">
+      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+        <div className="wireframe-space-between">
           <div>
-            <div className="font-kid text-xs font-bold text-pewter uppercase flex items-center gap-1.5">
-              <ShieldCheck weight="duotone" className="w-4 h-4 text-emerald-halal" /> Trust Score
-            </div>
-            <div className="font-mono text-3xl font-bold text-charcoal mt-0.5">
+            <small>[icon: trust] Trust Score</small>
+            <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
               {data.kid.trust_score}
             </div>
           </div>
           <button
+            type="button"
             onClick={() => {
               setRequesting(!requesting);
               setSignStep(false);
               setReqAmt(null);
             }}
             aria-label={requesting ? "Cancel loan request" : "Request a new loan"}
-            className="btn-press rounded-2xl bg-emerald-halal px-4 py-2.5 font-kid font-bold text-white shadow-soft flex items-center gap-1.5"
           >
-            {requesting ? (
-              "Cancel"
-            ) : (
-              <>
-                <Plus weight="bold" className="w-4 h-4" /> New loan
-              </>
-            )}
+            {requesting ? "Cancel" : "[icon: plus] New loan"}
           </button>
         </div>
       </Card>
 
       {requesting && (
-        <Card className="mt-4 border border-emerald-halal shadow-soft">
-          <h3 className="font-kid font-bold text-charcoal flex items-center gap-2">
-            <Scroll weight="duotone" className="w-5 h-5 text-emerald-halal" />
-            Qard Hasan Loan Agreement
-          </h3>
-          <p className="font-body text-[11px] text-pewter mt-1">
-            An interest-free loan. By signing below, you promise to repay the full amount by the due
-            date.
-          </p>
+        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
+          <h3>[icon: agreement] Qard Hasan Loan Agreement</h3>
+          <p><small>An interest-free loan. By signing below, you promise to repay the full amount by the due date.</small></p>
 
           {!signStep ? (
             /* ── Step 1: Amount entry ─────────────────────────── */
-            <div className="mt-4">
-              <p className="font-kid text-xs font-bold uppercase text-pewter mb-1">Loan amount</p>
-              <p className="font-body text-[10px] text-slate-parent mb-2">
-                Min. RM 1.00 — Qard Hasan (interest-free and fee-free) loan.
-              </p>
+            <div className="wireframe-col" style={{ marginTop: "1rem" }}>
+              <small>Loan amount (Min. RM 1.00 — Qard Hasan loan)</small>
               <MoneyKeypad
                 min={1.0}
                 max={500}
                 confirmLabel="Next: Details →"
-                confirmBg="bg-emerald-halal"
                 onConfirm={(amt) => {
                   setReqAmt(amt);
                   setSignStep(true);
@@ -164,67 +127,70 @@ function KidLoans() {
             </div>
           ) : (
             /* ── Step 2: Details + signature ─────────────────── */
-            <div className="mt-4 space-y-3">
-              {/* Amount recap */}
-              <div className="rounded-2xl bg-cream p-3 space-y-1">
-                <div className="flex justify-between font-body text-xs text-pewter">
-                  <span>Loan requested (Qard Hasan)</span>
-                  <span className="font-mono font-bold text-charcoal">RM {reqAmt!.toFixed(2)}</span>
+            <div className="wireframe-col" style={{ marginTop: "1rem" }}>
+              <div className="wireframe-box">
+                <div className="wireframe-space-between">
+                  <small>Loan requested (Qard Hasan)</small>
+                  <strong>RM {reqAmt!.toFixed(2)}</strong>
                 </div>
-                <div className="border-t border-border pt-1 mt-1 flex justify-between font-kid text-sm font-bold text-charcoal">
-                  <span>No admin fees</span>
-                  <span className="font-mono text-emerald-halal">RM 0.00</span>
+                <div className="wireframe-space-between">
+                  <small>Admin fees</small>
+                  <strong>RM 0.00</strong>
                 </div>
-                <div className="flex justify-between font-body text-[10px] text-pewter">
-                  <span>You repay (total)</span>
-                  <span className="font-mono">RM {reqAmt!.toFixed(2)}</span>
+                <div className="wireframe-space-between">
+                  <small>You repay (total)</small>
+                  <strong>RM {reqAmt!.toFixed(2)}</strong>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSignStep(false)}
-                  className="btn-press mt-2 flex items-center gap-1 text-[11px] font-bold text-pewter"
+                  style={{ marginTop: "0.5rem" }}
                 >
-                  <CaretLeft weight="bold" className="w-3.5 h-3.5" /> Change amount
+                  [icon: back] Change amount
                 </button>
               </div>
 
               <div>
-                <label className="font-kid text-xs font-bold uppercase text-pewter">
-                  Reason for loan
-                </label>
+                <label>Reason for loan</label>
                 <input
                   value={reqReason}
                   onChange={(e) => setReqReason(e.target.value)}
                   maxLength={200}
                   placeholder="e.g. To buy a book"
-                  className="mt-1 w-full rounded-2xl border border-border bg-cream px-4 py-3 font-body text-sm"
                 />
               </div>
+
               <div>
-                <label className="font-kid text-xs font-bold uppercase text-pewter">Repay in</label>
-                <div className="mt-1 flex gap-2">
+                <label>Repay in</label>
+                <div className="wireframe-row">
                   {[7, 14, 30, 60].map((d) => (
                     <button
                       key={d}
                       type="button"
                       onClick={() => setDueDays(d)}
-                      className={`btn-press flex-1 rounded-[1.25rem] py-2.5 font-kid text-xs font-bold transition ${dueDays === d ? "bg-charcoal text-white shadow-soft" : "bg-cream text-charcoal border border-border shadow-sm"}`}
+                      style={{
+                        flex: 1,
+                        border: dueDays === d ? "2px solid #000" : "1px solid #ccc",
+                        fontWeight: dueDays === d ? "bold" : "normal",
+                      }}
                     >
                       {d} days
                     </button>
                   ))}
                 </div>
               </div>
+
               <div>
-                <label className="font-kid text-xs font-bold uppercase text-pewter">
-                  Your signature
-                </label>
-                <div className="mt-1">
+                <label>Your signature</label>
+                <div style={{ marginTop: "0.5rem" }}>
                   <SignaturePad onChange={setSignature} />
                 </div>
               </div>
+
               <button
+                type="button"
                 onClick={submitRequest}
-                className="btn-press w-full rounded-[1.25rem] bg-emerald-halal py-3.5 font-kid font-bold text-white shadow-soft"
+                style={{ marginTop: "1rem" }}
               >
                 Sign & send to parent
               </button>
@@ -234,77 +200,61 @@ function KidLoans() {
       )}
 
       <SectionTitle>My Loans</SectionTitle>
-      <div className="space-y-3">
-        {data.loans.length === 0 && <Card className="text-center text-pewter">No loans yet.</Card>}
+      <div className="wireframe-col">
+        {data.loans.length === 0 && <Card className="wireframe-card">No loans yet.</Card>}
         {data.loans.map((l: (typeof data.loans)[number]) => {
           const remaining = Number(l.amount) - Number(l.repaid);
           const overdue = l.status === "active" && new Date(l.due_date) < new Date();
           return (
-            <Card key={l.id} className={overdue ? "border-2 border-coral" : ""}>
-              <div className="flex items-center justify-between">
+            <Card key={l.id} className="wireframe-card">
+              <div className="wireframe-space-between">
                 <div>
-                  <div className="font-kid font-bold text-charcoal text-sm">
-                    {l.reason || "Qard loan"}
-                  </div>
-                  <div className="font-body text-[11px] text-pewter mt-1 flex items-center gap-1">
-                    Due {l.due_date} ·{" "}
-                    {l.status === "repaid" ? (
-                      <span className="flex items-center gap-1 text-emerald-halal font-bold">
-                        <CheckCircle weight="bold" className="w-3.5 h-3.5" /> Repaid
-                      </span>
-                    ) : overdue ? (
-                      <span className="text-coral font-bold">OVERDUE</span>
-                    ) : (
-                      "On track"
-                    )}
+                  <strong>{l.reason || "Qard loan"}</strong>
+                  <div>
+                    <small>
+                      Due {l.due_date} ·{" "}
+                      {l.status === "repaid" ? (
+                        <strong>[✓ Repaid]</strong>
+                      ) : overdue ? (
+                        <strong>[OVERDUE]</strong>
+                      ) : (
+                        "On track"
+                      )}
+                    </small>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-mono font-bold text-charcoal">RM {remaining.toFixed(2)}</div>
-                  <div className="font-body text-[10px] text-pewter">
-                    of RM {Number(l.amount).toFixed(2)}
-                  </div>
+                <div style={{ textAlign: "right" }}>
+                  <div><strong>RM {remaining.toFixed(2)}</strong></div>
+                  <small>of RM {Number(l.amount).toFixed(2)}</small>
                 </div>
               </div>
 
               <button
+                type="button"
                 onClick={() => exportLoanPdf({ ...l, kidName: data.kid.name })}
                 aria-label={`Download loan ${l.status === "repaid" ? "receipt" : "agreement"} PDF for ${l.reason || "Qard loan"}`}
-                className={`btn-press mt-3 flex items-center justify-center gap-1.5 w-full rounded-[1.25rem] py-2 font-kid text-xs font-bold transition ${l.status === "repaid" ? "border border-emerald-halal bg-emerald-halal/10 text-emerald-halal" : "border border-border bg-card text-charcoal shadow-sm"}`}
+                style={{ width: "100%", marginTop: "0.5rem" }}
               >
-                {l.status === "repaid" ? (
-                  <>
-                    <CheckCircle weight="fill" className="w-4 h-4" /> Download receipt (PDF)
-                  </>
-                ) : (
-                  <>
-                    <FilePdf weight="duotone" className="w-4 h-4" /> Download agreement (PDF)
-                  </>
-                )}
+                {l.status === "repaid" ? "[icon: pdf] Download receipt (PDF)" : "[icon: pdf] Download agreement (PDF)"}
               </button>
 
               {l.status === "active" && (
                 <>
                   <button
+                    type="button"
                     onClick={() => setActive(active === l.id ? null : l.id)}
-                    className="btn-press mt-2 w-full rounded-[1.25rem] bg-emerald-halal py-3 font-kid font-bold text-white shadow-soft"
+                    style={{ width: "100%", marginTop: "0.5rem" }}
                   >
                     Repay
                   </button>
                   {active === l.id && (
-                    <div className="mt-3 rounded-2xl bg-cream p-3">
-                      <p className="font-body text-xs text-pewter mb-3">
-                        Available balance:{" "}
-                        <span className="font-mono font-bold text-charcoal">
-                          RM {kidBalance.toFixed(2)}
-                        </span>
-                      </p>
+                    <div className="wireframe-box" style={{ marginTop: "0.5rem" }}>
+                      <p><small>Available balance: RM {kidBalance.toFixed(2)}</small></p>
                       <MoneyKeypad
                         key={l.id}
                         min={0.5}
                         max={Math.min(remaining, kidBalance)}
-                        confirmLabel={`Confirm Repayment`}
-                        confirmBg="bg-charcoal"
+                        confirmLabel="Confirm Repayment"
                         onConfirm={(amt) => repay(l.id, amt)}
                         onCancel={() => setActive(null)}
                       />

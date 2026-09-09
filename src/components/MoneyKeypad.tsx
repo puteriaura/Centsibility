@@ -34,7 +34,7 @@ interface MoneyKeypadProps {
   onCancel?: () => void;
   /** Extra content to render between reference and confirm button (e.g. fee breakdown) */
   extraContent?: React.ReactNode;
-  /** Colour of the confirm button background (Tailwind class, default bg-emerald-halal) */
+  /** Colour of the confirm button background (ignored in wireframe) */
   confirmBg?: string;
   /** Whether the keypad is busy (disable confirm) */
   busy?: boolean;
@@ -46,7 +46,7 @@ interface MoneyKeypadProps {
 
 /** Convert raw digit string (no decimal) → display string "RM X.XX" */
 function rawToDisplay(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 8); // max 8 digits → 999999.99
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
   if (digits.length === 0) return "RM 0.00";
   const padded = digits.padStart(3, "0");
   const cents = padded.slice(-2);
@@ -72,7 +72,7 @@ export function MoneyKeypad({
   showReference = false,
   onCancel,
   extraContent,
-  confirmBg = "bg-emerald-halal",
+  confirmBg: _confirmBg,
   busy = false,
   initialRaw = "",
 }: MoneyKeypadProps) {
@@ -138,51 +138,38 @@ export function MoneyKeypad({
   // ── Amount screen ──────────────────────────────────────────────────────────
   if (step === "amount") {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="wireframe-col">
         {/* Amount display */}
-        <div className="relative flex flex-col items-center rounded-3xl glass-panel bg-void/50 px-6 py-6 shadow-inner border border-starlight/20">
-          <div
-            className={`font-mono text-5xl font-bold tracking-tight transition-colors drop-shadow-sm ${
-              tooHigh
-                ? "text-nova-red drop-shadow-[0_0_8px_var(--nova-red)]"
-                : amount === 0
-                  ? "text-starlight/30"
-                  : "text-neon-mint drop-shadow-[0_0_10px_var(--neon-mint)]"
-            }`}
-          >
+        <div className="wireframe-box" style={{ textAlign: "center", padding: "1rem" }}>
+          <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
             {display}
           </div>
 
-          {/* Validation hint */}
           {tooLow && (
-            <p className="mt-2 font-kid text-xs font-bold text-nova-red animate-pulse uppercase tracking-wider">
+            <p style={{ margin: "0.25rem 0", fontSize: "0.85rem" }}>
               Minimum is RM {min.toFixed(2)}
             </p>
           )}
           {tooHigh && (
-            <p className="mt-2 font-kid text-xs font-bold text-nova-red animate-pulse uppercase tracking-wider">
+            <p style={{ margin: "0.25rem 0", fontSize: "0.85rem" }}>
               Maximum is RM {max.toLocaleString("en-MY")}
             </p>
           )}
           {!tooLow && !tooHigh && amount > 0 && (
-            <p className="mt-2 font-kid text-[10px] font-bold text-starlight/50 uppercase tracking-widest">
+            <p style={{ margin: "0.25rem 0", fontSize: "0.8rem", color: "#666" }}>
               Tap Next when ready
             </p>
           )}
         </div>
 
         {/* Keypad grid */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="wireframe-grid-3">
           {Keys.flat().map((k) => (
             <button
               key={k}
               type="button"
               onClick={() => press(k)}
-              className={`rounded-[1.25rem] py-4 font-mono text-2xl font-bold transition active:scale-90 shadow-sm border ${
-                k === "⌫"
-                  ? "bg-nova-red/10 border-nova-red/30 text-nova-red text-2xl hover:bg-nova-red/20"
-                  : "glass-panel border-starlight/10 text-starlight hover:bg-white/10 hover:border-starlight/30"
-              }`}
+              style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
             >
               {k}
             </button>
@@ -190,13 +177,9 @@ export function MoneyKeypad({
         </div>
 
         {/* Action row */}
-        <div className="flex gap-3">
+        <div className="wireframe-row">
           {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-2xl bg-void border border-starlight/20 px-6 py-4 font-kid text-sm font-bold text-starlight uppercase tracking-wider hover:bg-white/10 transition shadow-sm"
-            >
+            <button type="button" onClick={onCancel}>
               Cancel
             </button>
           )}
@@ -204,7 +187,7 @@ export function MoneyKeypad({
             type="button"
             onClick={handleNext}
             disabled={!valid}
-            className={`btn-press flex-1 rounded-2xl py-4 font-kid text-sm font-bold text-void transition uppercase tracking-wider shadow-neon ${confirmBg} disabled:opacity-30 disabled:shadow-none hover:scale-[1.02]`}
+            style={{ flex: 1 }}
           >
             {showReference ? "Next →" : confirmLabel}
           </button>
@@ -215,40 +198,35 @@ export function MoneyKeypad({
 
   // ── Reference screen ───────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-4">
+    <div className="wireframe-col">
       {/* Amount recap */}
-      <div className="flex items-center gap-4 rounded-2xl glass-panel bg-void/30 border-starlight/20 px-5 py-4">
+      <div className="wireframe-space-between wireframe-box">
         <button
           type="button"
           onClick={() => setStep("amount")}
-          className="text-starlight/50 text-2xl font-bold hover:text-starlight transition"
+          aria-label="Back to amount"
         >
-          ←
+          [icon: back]
         </button>
-        <div className="font-mono text-3xl font-bold text-neon-mint drop-shadow-[0_0_5px_var(--neon-mint)]">
+        <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
           {display}
         </div>
-        <span className="ml-auto font-kid text-[10px] font-bold uppercase tracking-widest text-starlight/40">
-          tap ← to edit
-        </span>
+        <small>(tap back to edit)</small>
       </div>
 
-      {/* Reference dropdown */}
-      <div>
-        <label className="ml-2 font-kid text-[10px] font-bold uppercase tracking-widest text-starlight/60">
-          Transmission Log Code
-        </label>
-        <div className="mt-3 grid grid-cols-2 gap-3">
+      {/* Reference options */}
+      <fieldset>
+        <legend>Transmission Log Code</legend>
+        <div className="wireframe-grid-2">
           {REFERENCE_OPTIONS.map((opt) => (
             <button
               key={opt}
               type="button"
               onClick={() => setReference(opt)}
-              className={`rounded-2xl px-4 py-3 font-kid text-xs font-bold transition active:scale-95 border ${
-                reference === opt
-                  ? "bg-cosmic-blue border-cosmic-blue text-white shadow-[0_0_15px_var(--cosmic-blue)]"
-                  : "glass-panel border-starlight/20 text-starlight/80 hover:bg-white/10"
-              }`}
+              style={{
+                border: reference === opt ? "2px solid #000" : "1px solid #ccc",
+                fontWeight: reference === opt ? "bold" : "normal",
+              }}
             >
               {opt}
             </button>
@@ -261,33 +239,31 @@ export function MoneyKeypad({
             onChange={(e) => setCustomRef(e.target.value)}
             placeholder="Log details..."
             maxLength={100}
-            className="mt-3 w-full rounded-2xl border border-starlight/30 bg-void/50 px-5 py-4 font-kid text-sm text-starlight placeholder:text-starlight/30 shadow-inner focus:outline-none focus:border-neon-mint"
+            style={{ marginTop: "0.5rem" }}
           />
         )}
-      </div>
+      </fieldset>
 
       {/* Fee breakdown or extra content slot */}
       {extraContent}
 
       {/* Confirm */}
-      <button
-        type="button"
-        onClick={doConfirm}
-        disabled={confirming || busy || (reference === "Others" && !customRef.trim())}
-        className={`w-full rounded-2xl py-4 font-kid text-sm font-bold text-void transition shadow-neon uppercase tracking-wider hover:scale-[1.02] ${confirmBg} disabled:opacity-30 disabled:shadow-none`}
-      >
-        {confirming ? "Processing…" : confirmLabel}
-      </button>
-
-      {onCancel && (
+      <div className="wireframe-row">
         <button
           type="button"
-          onClick={onCancel}
-          className="w-full rounded-2xl bg-void border border-starlight/20 py-4 font-kid text-sm font-bold text-starlight uppercase tracking-wider hover:bg-white/10 transition shadow-sm"
+          onClick={doConfirm}
+          disabled={confirming || busy || (reference === "Others" && !customRef.trim())}
+          style={{ flex: 1 }}
         >
-          Cancel
+          {confirming ? "Processing…" : confirmLabel}
         </button>
-      )}
+
+        {onCancel && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 }

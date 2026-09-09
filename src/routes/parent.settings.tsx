@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AppShell, Card, SectionTitle } from "@/components/AppShell";
+import { AppShell } from "@/components/AppShell";
 import { useParentData } from "@/hooks/use-parent-data";
 import { useAuth } from "@/providers/auth";
 import {
@@ -16,7 +16,6 @@ import { saveQuickLogin, getQuickLogin, clearQuickLogin } from "@/lib/quick-logi
 import { toast } from "sonner";
 import { AvatarPicker } from "@/components/AvatarBubble";
 import { sfx } from "@/lib/sounds";
-import { CheckCircle } from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/parent/settings")({
   head: () => ({ meta: [{ title: "Settings — Centsibility" }] }),
@@ -108,10 +107,10 @@ function Settings() {
   if (loading)
     return (
       <AppShell mode="parent">
-        <div className="space-y-3">
-          <Skeleton className="h-32 rounded-3xl" />
-          <Skeleton className="h-32 rounded-3xl" />
-          <Skeleton className="h-32 rounded-3xl" />
+        <div>
+          <Skeleton />
+          <Skeleton />
+          <Skeleton />
         </div>
       </AppShell>
     );
@@ -120,117 +119,102 @@ function Settings() {
 
   return (
     <AppShell mode="parent">
-      <h1 className="font-parent text-2xl font-bold text-charcoal">Settings</h1>
+      <h1>Settings</h1>
 
-      <SectionTitle>Your avatar</SectionTitle>
-      <Card>
+      <h2>Your avatar</h2>
+      <section>
         <AvatarPicker value={selfAvatar} onChange={updateSelfAvatar} kind="parent" />
-      </Card>
+      </section>
 
-      <SectionTitle>Children avatars</SectionTitle>
-      <div className="space-y-3">
+      <h2>Children avatars</h2>
+      <div>
         {kids.map((k) => (
-          <Card key={`av-${k.id}`} className="shadow-sm">
-            <div className="font-parent font-semibold text-charcoal mb-2">{k.name}</div>
+          <section key={`av-${k.id}`}>
+            <div><strong>{k.name}</strong></div>
             <AvatarPicker
               value={k.avatar ?? "phosphor:Smiley"}
               onChange={(a) => updateKidAvatar(k.id, a)}
               kind="kid"
             />
-          </Card>
+          </section>
         ))}
       </div>
 
-      <SectionTitle>Quick PIN login</SectionTitle>
-      <Card>
-        <p className="font-body text-xs text-pewter">
-          Set a 4-6 digit PIN to skip typing your password on this device.
-        </p>
+      <h2>Quick PIN login</h2>
+      <section>
+        <p>Set a 4-6 digit PIN to skip typing your password on this device.</p>
         {hasQuick ? (
-          <div className="mt-3 flex items-center justify-between bg-emerald-halal/5 p-3 rounded-2xl border border-emerald-halal/20">
-            <span className="font-kid text-sm text-emerald-halal flex items-center gap-1.5">
-              <CheckCircle weight="fill" className="w-4 h-4" /> PIN active on this device
-            </span>
-            <button
-              onClick={removePin}
-              className="btn-press rounded-[1.25rem] border border-border bg-card px-4 py-2 font-parent text-xs font-semibold text-coral shadow-sm"
-            >
-              Remove
-            </button>
+          <div>
+            <span>[✓] PIN active on this device</span>
+            <button onClick={removePin}>Remove</button>
           </div>
         ) : (
-          <form onSubmit={savePin} className="mt-3 space-y-2">
-            <input
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="Choose PIN (4-6 digits)"
-              inputMode="numeric"
-              maxLength={6}
-              className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 font-mono tracking-widest"
-            />
-            <input
-              value={pwd}
-              onChange={(e) => setPwd(e.target.value)}
-              type="password"
-              placeholder="Confirm your password"
-              className="w-full rounded-[1.25rem] border border-border bg-card px-4 py-3 font-body text-sm focus:border-emerald-halal focus:outline-none"
-            />
-            <button className="btn-press w-full rounded-[1.25rem] bg-emerald-halal py-3.5 font-parent text-sm font-bold text-white shadow-soft">
+          <form onSubmit={savePin}>
+            <div>
+              <input
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="Choose PIN (4-6 digits)"
+                inputMode="numeric"
+                maxLength={6}
+              />
+            </div>
+            <div>
+              <input
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+                type="password"
+                placeholder="Confirm your password"
+              />
+            </div>
+            <button type="submit">
               {hasPin ? "Update PIN" : "Set PIN"}
             </button>
           </form>
         )}
-      </Card>
+      </section>
 
-      <SectionTitle>Hibah rate per child (gift, not interest)</SectionTitle>
-      <div className="space-y-3">
+      <h2>Hibah rate per child (gift, not interest)</h2>
+      <div>
         {kids.map((k) => (
-          <Card key={k.id}>
-            <div className="flex items-center justify-between">
+          <section key={k.id}>
+            <div>
               <div>
-                <div className="font-parent font-semibold text-charcoal">{k.name}</div>
-                <div className="font-body text-[11px] text-pewter">
-                  Code: <span className="font-mono font-bold">{k.login_code}</span>
+                <strong>{k.name}</strong>
+                <div>
+                  Code: <code>{k.login_code}</code>
                 </div>
               </div>
-              <div className="font-mono text-2xl font-bold text-emerald-halal">
-                {(Number(k.hibah_rate) * 100).toFixed(1)}%
+              <div>
+                <strong>{(Number(k.hibah_rate) * 100).toFixed(1)}%</strong>
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div>
               {presets.map((r) => (
                 <button
                   key={r}
                   onClick={() => setRate(k.id, r)}
-                  className={`rounded-2xl px-3 py-1.5 font-parent text-xs font-semibold transition ${
-                    Math.abs(Number(k.hibah_rate) - r) < 0.001
-                      ? "bg-emerald-halal text-white"
-                      : "bg-cream text-slate-parent"
-                  }`}
                 >
-                  {(r * 100).toFixed(1)}%
+                  {Math.abs(Number(k.hibah_rate) - r) < 0.001
+                    ? `[ ${(r * 100).toFixed(1)}% ]`
+                    : `${(r * 100).toFixed(1)}%`}
                 </button>
               ))}
               <button
                 onClick={() => setEditing(editing === k.id ? null : k.id)}
-                className="rounded-2xl bg-charcoal px-3 py-1.5 font-parent text-xs font-semibold text-white"
               >
                 Custom
               </button>
             </div>
             {editing === k.id && (
-              <div className="mt-3 rounded-2xl bg-cream p-3">
-                <div className="mb-3 text-center font-mono text-3xl font-bold text-charcoal">
-                  {custom.toFixed(1)}%
-                </div>
-                {/* Step buttons for custom rate — no slider */}
-                <div className="grid grid-cols-4 gap-1.5 mb-3">
+              <div>
+                <div>{custom.toFixed(1)}%</div>
+                <div>
                   {[0.5, 1, 2, 5].map((step) => (
                     <button
                       key={`-${step}`}
                       type="button"
                       onClick={() => setCustom((v) => Math.max(0, +(v - step).toFixed(1)))}
-                      className="rounded-xl bg-card border border-border py-1.5 font-mono text-xs font-bold text-coral active:scale-95 transition"
                     >
                       −{step}
                     </button>
@@ -240,44 +224,34 @@ function Settings() {
                       key={`+${step}`}
                       type="button"
                       onClick={() => setCustom((v) => Math.min(20, +(v + step).toFixed(1)))}
-                      className="rounded-xl bg-card border border-border py-1.5 font-mono text-xs font-bold text-emerald-halal active:scale-95 transition"
                     >
                       +{step}
                     </button>
                   ))}
                 </div>
-                <p className="mb-2 text-center font-body text-[10px] text-pewter">
-                  Range: 0% – 20%
-                </p>
-                <button
-                  onClick={() => setRate(k.id, custom / 100)}
-                  className="btn-press w-full rounded-[1.25rem] bg-emerald-halal py-3 font-parent text-sm font-bold text-white shadow-soft mt-1"
-                >
+                <p>Range: 0% – 20%</p>
+                <button onClick={() => setRate(k.id, custom / 100)}>
                   Set {custom.toFixed(1)}%
                 </button>
               </div>
             )}
-          </Card>
+          </section>
         ))}
       </div>
 
-      <SectionTitle>Shariah compliance</SectionTitle>
-      <Card className="bg-emerald-halal/5 border border-emerald-halal/30 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5">
-            <CheckCircle weight="fill" className="w-6 h-6 text-emerald-halal shrink-0" />
-          </div>
+      <h2>Shariah compliance</h2>
+      <section>
+        <div>
+          <span>[✓]</span>
           <div>
-            <div className="font-parent font-semibold text-emerald-halal">
-              Reviewed by Shariah scholars
-            </div>
-            <div className="mt-1 font-body text-xs text-slate-parent">
+            <div><strong>Reviewed by Shariah scholars</strong></div>
+            <p>
               Free of riba. Qard loans carry no interest or penalty fees. Hibah is a voluntary gift.
               Zakat auto-calculated at 2.5% above Nisab.
-            </div>
+            </p>
           </div>
         </div>
-      </Card>
+      </section>
     </AppShell>
   );
 }

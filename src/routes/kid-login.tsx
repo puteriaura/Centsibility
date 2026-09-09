@@ -3,7 +3,6 @@ import { useState } from "react";
 import { edgeKidLogin, edgeKidLoginByCode } from "@/lib/edge";
 import { setKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
-import { Smiley, Key, User, RocketLaunch } from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/kid-login")({
   head: () => ({ meta: [{ title: "Kid Login — Centsibility" }] }),
@@ -59,46 +58,42 @@ function KidLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-sky/20 via-cream to-mint/20 flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-[-5%] left-[-5%] w-[30%] h-[30%] bg-sky/10 blur-[80px] rounded-full animate-float" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-mint/10 blur-[100px] rounded-full animate-float [animation-delay:2s]" />
-
-      <div className="w-full max-w-md rounded-[2.5rem] border border-white/40 bg-white/60 p-8 shadow-2xl backdrop-blur-xl relative z-10">
-        <div className="flex justify-center mb-2">
-          <Smiley weight="duotone" className="w-16 h-16 text-bubblegum animate-bounce" />
-        </div>
-        <h1 className="mt-3 font-display text-2xl text-charcoal text-center">Kid Login</h1>
-        <p className="font-body text-sm text-pewter text-center">
-          Sign in with your code or username.
-        </p>
+    <div style={{ maxWidth: "450px", margin: "2rem auto" }}>
+      <section className="wireframe-card" style={{ textAlign: "center" }}>
+        <div className="wireframe-icon" style={{ fontSize: "2rem" }}>[icon: kid]</div>
+        <h1>Kid Login</h1>
+        <p>Sign in with your code or username.</p>
 
         {/* Tab switcher */}
-        <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl bg-cream p-1">
+        <div className="wireframe-row" style={{ marginTop: "1rem" }}>
           <button
+            type="button"
             onClick={() => setTab("code")}
-            className={`btn-press flex items-center justify-center gap-1.5 rounded-[1.25rem] py-3 font-kid text-xs font-bold transition shadow-sm ${
-              tab === "code" ? "bg-bubblegum text-white" : "text-pewter hover:bg-white/50"
-            }`}
+            style={{
+              flex: 1,
+              border: tab === "code" ? "2px solid #000" : "1px solid #ccc",
+              fontWeight: tab === "code" ? "bold" : "normal",
+            }}
           >
-            <Key weight="bold" className="w-4 h-4" /> Login Code
+            [icon: key] Login Code
           </button>
           <button
+            type="button"
             onClick={() => setTab("login")}
-            className={`btn-press flex items-center justify-center gap-1.5 rounded-[1.25rem] py-3 font-kid text-xs font-bold transition shadow-sm ${
-              tab === "login" ? "bg-bubblegum text-white" : "text-pewter hover:bg-white/50"
-            }`}
+            style={{
+              flex: 1,
+              border: tab === "login" ? "2px solid #000" : "1px solid #ccc",
+              fontWeight: tab === "login" ? "bold" : "normal",
+            }}
           >
-            <User weight="bold" className="w-4 h-4" /> Username + PIN
+            [icon: user] Username + PIN
           </button>
         </div>
 
         {/* Quick Code Login */}
         {tab === "code" && (
-          <form onSubmit={handleCodeLogin} className="mt-5 space-y-3">
-            <label className="font-kid text-xs font-bold text-pewter uppercase tracking-wider">
-              6-character login code
-            </label>
+          <form onSubmit={handleCodeLogin} className="wireframe-col" style={{ marginTop: "1rem", textAlign: "left" }}>
+            <label>6-character login code</label>
             <input
               required
               value={quickCode}
@@ -106,43 +101,28 @@ function KidLogin() {
               placeholder="e.g. AB12CD"
               maxLength={6}
               autoFocus
-              className="w-full rounded-2xl border-2 border-border bg-cream px-4 py-4 text-center font-mono text-2xl font-bold tracking-widest uppercase placeholder:tracking-normal"
+              style={{ textAlign: "center", fontSize: "1.25rem", letterSpacing: "0.2em" }}
             />
-            <button
-              disabled={busy}
-              type="submit"
-              className="btn-press flex items-center justify-center gap-2 w-full rounded-[1.25rem] bg-bubblegum py-3.5 font-kid font-bold text-white disabled:opacity-50 shadow-soft"
-            >
-              {busy ? (
-                "Checking…"
-              ) : (
-                <>
-                  Let's go! <RocketLaunch weight="fill" className="w-5 h-5" />
-                </>
-              )}
+            <button disabled={busy} type="submit" style={{ marginTop: "0.5rem" }}>
+              {busy ? "Checking…" : "Let's go! [icon: go]"}
             </button>
           </form>
         )}
 
         {/* Username + PIN Login */}
         {tab === "login" && (
-          <form onSubmit={handleLogin} className="mt-5 space-y-3">
+          <form onSubmit={handleLogin} className="wireframe-col" style={{ marginTop: "1rem", textAlign: "left" }}>
             <div>
-              <label className="font-kid text-xs font-bold text-pewter uppercase tracking-wider">
-                Username
-              </label>
+              <label>Username</label>
               <input
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="e.g. aiman"
-                className="mt-1 w-full rounded-2xl border-2 border-border bg-cream px-4 py-3 font-body text-sm"
               />
             </div>
             <div>
-              <label className="font-kid text-xs font-bold text-pewter uppercase tracking-wider">
-                6-digit PIN
-              </label>
+              <label>6-digit PIN</label>
               <input
                 required
                 type="password"
@@ -152,29 +132,21 @@ function KidLogin() {
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                 placeholder="••••••"
-                className="mt-1 w-full rounded-2xl border-2 border-border bg-cream px-4 py-3 font-mono text-center text-lg tracking-[0.5em]"
+                style={{ textAlign: "center", letterSpacing: "0.4em" }}
               />
             </div>
-            <button
-              disabled={busy}
-              type="submit"
-              className="btn-press flex items-center justify-center gap-2 w-full rounded-[1.25rem] bg-bubblegum py-3.5 font-kid font-bold text-white disabled:opacity-50 shadow-soft"
-            >
-              {busy ? (
-                "Signing in…"
-              ) : (
-                <>
-                  Sign In <RocketLaunch weight="fill" className="w-5 h-5" />
-                </>
-              )}
+            <button disabled={busy} type="submit" style={{ marginTop: "0.5rem" }}>
+              {busy ? "Signing in…" : "Sign In [icon: go]"}
             </button>
           </form>
         )}
 
-        <Link to="/login" className="mt-6 inline-block font-parent text-xs text-slate-parent">
-          Parent? Sign in here →
-        </Link>
-      </div>
+        <div style={{ marginTop: "1.5rem", borderTop: "1px solid #ccc", paddingTop: "0.75rem" }}>
+          <Link to="/login">
+            Parent? Sign in here →
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
