@@ -1,16 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
-import type { Tables } from "@/integrations/supabase/types";
 import equal from "fast-deep-equal";
+import type {
+  Kid,
+  Approval,
+  Reward,
+  Loan,
+  Transaction,
+  Notification,
+  ScheduledHibah,
+} from "@/types/domain";
 
-export type Kid = Tables<"kids">;
-export type Approval = Tables<"approvals"> & { kids: { name: string } | null };
-export type Reward = Tables<"rewards"> & { kids: { name: string } | null };
-export type Loan = Tables<"loans"> & { kids: { name: string } | null };
-export type Transaction = Tables<"transactions"> & { kids: { name: string } | null };
-export type Notification = Tables<"notifications">;
-export type ScheduledHibah = Tables<"scheduled_hibahs">;
+export type {
+  Kid,
+  Approval,
+  Reward,
+  Loan,
+  Transaction,
+  Notification,
+  ScheduledHibah,
+};
 
 export function useParentData() {
   const { user } = useAuth();

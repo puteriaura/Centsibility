@@ -7,26 +7,14 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { isDebitTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
+import type { StatementResult, StatementTx as Tx } from "@/types/domain";
 
 export const Route = createFileRoute("/parent/reports")({
   head: () => ({ meta: [{ title: "Monthly Statement — Centsibility" }] }),
   component: Reports,
 });
 
-type Tx = {
-  id: string;
-  created_at: string;
-  type: string;
-  label: string;
-  amount: number;
-  kid_id: string;
-};
 
-type StatementResult = {
-  kid: { id: string; name: string; balance: number };
-  transactions: Tx[];
-  period: { from: string; to: string };
-} | null;
 
 const isDebit = isDebitTransaction;
 const TYPE_LABELS = TRANSACTION_TYPE_LABELS;

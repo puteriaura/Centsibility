@@ -3,6 +3,7 @@ import { edgeKidGetState } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
+import { cleanApprovalReason } from "@/lib/qard";
 import equal from "fast-deep-equal";
 
 export type KidState = Awaited<ReturnType<typeof edgeKidGetState>>;
@@ -43,10 +44,7 @@ export function useKidData() {
         if (seen[a.id]) continue;
         newlyResolved.push(a.id);
         if (firstLoad.current) continue; // skip toast on very first load to avoid spam
-        const reasonClean = (a.reason || "")
-          .split(" :: SIG::")[0]
-          .replace(/\(due \d+d\)$/, "")
-          .trim();
+        const reasonClean = cleanApprovalReason(a.reason);
         const label =
           a.kind === "QARD"
             ? "Loan"

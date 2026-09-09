@@ -18,6 +18,7 @@ import { AvatarBubble } from "@/components/AvatarBubble";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
+import { cleanApprovalReason } from "@/lib/qard";
 import {
   StatChip,
   ActionTile,
@@ -379,7 +380,7 @@ function KidHome() {
                 <div className="wireframe-space-between">
                   <div>
                     <strong>{a.kind}</strong>
-                    <div><small>{(a.reason || "").split(" :: SIG::")[0]}</small></div>
+                    <div><small>{cleanApprovalReason(a.reason)}</small></div>
                   </div>
                   <div><strong>RM {a.amount}</strong></div>
                 </div>

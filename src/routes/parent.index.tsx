@@ -14,6 +14,7 @@ import { QuoteCard } from "@/components/QuoteCard";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cleanApprovalReason } from "@/lib/qard";
 
 export const Route = createFileRoute("/parent/")({
   head: () => ({ meta: [{ title: "Command Center — Centsibility" }] }),
@@ -225,7 +226,7 @@ function ParentHome() {
                   <strong>{a.kids?.name} · {a.kind}</strong>
                 </div>
                 <div>
-                  {(a.reason || "").split(" :: SIG::")[0]}
+                  {cleanApprovalReason(a.reason)}
                 </div>
               </div>
               <div>

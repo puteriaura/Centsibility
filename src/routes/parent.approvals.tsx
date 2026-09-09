@@ -8,19 +8,14 @@ import {
   edgeParentMarkNotificationsRead,
 } from "@/lib/edge";
 import { toast } from "sonner";
+import { parseQardReason } from "@/lib/qard";
 
 export const Route = createFileRoute("/parent/approvals")({
   head: () => ({ meta: [{ title: "Approvals — Centsibility" }] }),
   component: Approvals,
 });
 
-function parseQard(reason: string) {
-  const [main, sig] = (reason || "").split(" :: SIG::");
-  const dueMatch = main.match(/\(due (\d+)d\)/);
-  const dueDays = dueMatch ? parseInt(dueMatch[1]) : 14;
-  const cleanReason = main.replace(/\(due \d+d\)$/, "").trim();
-  return { reason: cleanReason, dueDays, signature: sig || null };
-}
+const parseQard = parseQardReason;
 
 function Approvals() {
   const { approvals, rewards, loading, refresh } = useParentData();
