@@ -1,0 +1,2 @@
+ALTER TABLE public.kids ADD COLUMN IF NOT EXISTS avatar text NOT NULL DEFAULT '🧒';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar text NOT NULL DEFAULT '👨‍👩‍👧';

@@ -1,0 +1,12 @@
+project_id = "hcazdhtsnpjpprjhdsvr"
+
+# kid-finance handles its own auth via session_token/login_code.
+# Disable Supabase gateway JWT verification so unauthenticated kids
+# (login, login-by-code) can reach the function without a Supabase session.
+[functions.kid-finance]
+verify_jwt = false
+
+# parent-finance validates the parent's Supabase JWT itself — keep gateway
+# verification ON as an extra layer of protection.
+[functions.parent-finance]
+verify_jwt = true

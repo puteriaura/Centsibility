@@ -1,0 +1,240 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Cosmic Theme */
+  --color-nebula-pink: var(--nebula-pink);
+  --color-starlight: var(--starlight);
+  --color-cosmic-blue: var(--cosmic-blue);
+  --color-neon-mint: var(--neon-mint);
+  --color-nova-red: var(--nova-red);
+  --color-emerald-halal: var(--emerald-halal);
+  --color-gold-nur: var(--gold-nur);
+  --color-teal-amanah: var(--teal-amanah);
+  --color-deep-space: var(--deep-space);
+  --color-void: var(--void);
+  --color-stardust: var(--stardust);
+
+  /* We keep the old variable names for compatibility, mapping them to space colors */
+  --color-bubblegum: var(--nebula-pink);
+  --color-sunny: var(--starlight);
+  --color-sky: var(--cosmic-blue);
+  --color-mint: var(--neon-mint);
+  --color-coral: var(--nova-red);
+  --color-cream: var(--deep-space);
+  --color-slate-parent: oklch(0.7 0.05 270);
+  --color-pewter: oklch(0.6 0.05 270);
+  --color-charcoal: var(--stardust);
+
+  /* Fonts */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-kid: "Space Grotesk", sans-serif;
+  --font-parent: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "Inter", monospace;
+  --font-arabic: "Amiri", serif;
+}
+
+:root {
+  --radius: 1.5rem;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  
+  /* Light Mode Colors (Bright & Friendly) */
+  --nebula-pink: oklch(0.65 0.25 330);
+  --starlight: oklch(0.2 0.05 270); /* Dark text in light mode */
+  --cosmic-blue: oklch(0.65 0.15 250);
+  --neon-mint: oklch(0.7 0.15 160);
+  --nova-red: oklch(0.65 0.2 15);
+  
+  /* Halal mappings */
+  --emerald-halal: var(--neon-mint);
+  --gold-nur: oklch(0.8 0.15 80);
+  --teal-amanah: oklch(0.75 0.15 190);
+  
+  /* Backgrounds & Neutrals */
+  --deep-space: oklch(0.98 0.01 270);
+  --void: oklch(0.95 0.02 270);
+  --stardust: oklch(0.2 0.05 270);
+  
+  /* Core UI mapping */
+  --background: var(--deep-space);
+  --foreground: oklch(0.2 0.05 270);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.05 270);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.05 270);
+  --primary: var(--cosmic-blue);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9 0.05 270);
+  --secondary-foreground: oklch(0.2 0.05 270);
+  --muted: oklch(0.95 0.02 270);
+  --muted-foreground: oklch(0.5 0.05 270);
+  --accent: var(--nebula-pink);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: var(--nova-red);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0.02 270);
+  --input: oklch(0.9 0.02 270);
+  --ring: var(--cosmic-blue);
+}
+
+.dark {
+  /* Cosmic Core */
+  --nebula-pink: oklch(0.65 0.25 330);
+  --starlight: oklch(0.9 0.15 95);
+  --cosmic-blue: oklch(0.45 0.25 260);
+  --neon-mint: oklch(0.85 0.2 160);
+  --nova-red: oklch(0.65 0.25 15);
+  
+  /* Halal mappings */
+  --emerald-halal: var(--neon-mint);
+  --gold-nur: var(--starlight);
+  --teal-amanah: oklch(0.75 0.18 190);
+  
+  /* Backgrounds & Neutrals */
+  --deep-space: oklch(0.18 0.05 270);
+  --void: oklch(0.12 0.03 270);
+  --stardust: oklch(0.95 0.02 270);
+  
+  /* Core UI mapping */
+  --background: var(--void);
+  --foreground: var(--stardust);
+  --card: oklch(0.20 0.06 270 / 0.6);
+  --card-foreground: var(--stardust);
+  --popover: oklch(0.18 0.05 270);
+  --popover-foreground: var(--stardust);
+  --primary: var(--neon-mint);
+  --primary-foreground: var(--void);
+  --secondary: oklch(0.28 0.08 270);
+  --secondary-foreground: var(--starlight);
+  --muted: oklch(0.22 0.06 270);
+  --muted-foreground: oklch(0.7 0.05 270);
+  --accent: var(--cosmic-blue);
+  --accent-foreground: var(--starlight);
+  --destructive: var(--nova-red);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.35 0.08 270 / 0.5);
+  --input: oklch(0.25 0.08 270 / 0.5);
+  --ring: var(--neon-mint);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn-press {
+    transition: all 200ms var(--ease-out);
+  }
+  .btn-press:active {
+    transform: scale(0.93);
+  }
+  
+  /* New Glassmorphic panel style */
+  .glass-panel {
+    background: color-mix(in oklab, var(--color-deep-space) 40%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid color-mix(in oklab, var(--color-starlight) 15%, transparent);
+    box-shadow: 0 16px 32px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 0 color-mix(in oklab, var(--color-starlight) 10%, transparent);
+  }
+
+  /* Light mode adjustments for glass panel */
+  :root:not(.dark) .glass-panel {
+    background: color-mix(in oklab, #ffffff 60%, transparent);
+    border: 1px solid color-mix(in oklab, #000000 5%, transparent);
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@utility text-gradient-brand {
+  background: linear-gradient(135deg, var(--neon-mint), var(--cosmic-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-gradient-hero {
+  background: 
+    radial-gradient(ellipse at top right, color-mix(in oklab, var(--cosmic-blue) 45%, transparent), transparent 60%),
+    radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--nebula-pink) 35%, transparent), transparent 50%),
+    var(--void);
+  background-attachment: fixed;
+}
+
+@utility bg-gradient-kid {
+  background: linear-gradient(135deg, var(--cosmic-blue), var(--nebula-pink));
+}
+
+@utility bg-gradient-halal {
+  background: linear-gradient(135deg, var(--cosmic-blue), var(--neon-mint));
+}
+
+@utility shadow-soft {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+}
+
+@utility shadow-glow-gold {
+  box-shadow: 0 0 35px -5px color-mix(in oklab, var(--starlight) 40%, transparent);
+}
+
+@utility shadow-neon {
+  box-shadow: 0 0 15px -2px var(--neon-mint), inset 0 0 10px -2px color-mix(in oklab, var(--neon-mint) 50%, transparent);
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-15px) rotate(3deg); }
+}
+
+@keyframes stars-twinkle {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.85); }
+}
+
+@utility animate-float {
+  animation: float-slow 6s ease-in-out infinite;
+}
+@utility animate-stars {
+  animation: stars-twinkle 4s ease-in-out infinite;
+}
