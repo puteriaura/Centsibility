@@ -4,8 +4,64 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { isParentBypassed, isKidBypassed } from "@/lib/admin-bypass";
+import { DEMO_KID_STATE } from "@/lib/demo-data";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
+
+function getMockEdgeResponse<T>(functionName: string, body: Record<string, unknown>): T {
+  const action = String(body.action || "");
+  switch (action) {
+    case "get-profile":
+      return { id: "demo-parent-id", email: "test@centsibility.com" } as T;
+    case "get-pin":
+      return { pin_hash: null } as T;
+    case "set-pin":
+      return { ok: true } as T;
+    case "login":
+    case "login-by-code":
+      return { kidId: "demo-kid-aiman", name: "Aiman", code: "AIMAN1" } as T;
+    case "get-state":
+      return DEMO_KID_STATE as T;
+    case "claim-coins":
+      return { claimed: 10 } as T;
+    case "deposit":
+      return { newBalance: 150 } as T;
+    case "create-kid":
+      return { kid: { id: "demo-kid-" + Date.now(), name: body.name } } as T;
+    case "get-statement":
+      return {
+        kid: { id: "demo-kid-aiman", name: "Aiman", balance: 142.5 },
+        transactions: [],
+        period: { from: body.from, to: body.to },
+      } as T;
+    case "get-scheduled-hibahs":
+      return { scheduledHibahs: [] } as T;
+    case "quiz-state":
+      return {
+        date: new Date().toISOString().slice(0, 10),
+        correct: 3,
+        wrong: 0,
+        index: 1,
+        maxPerDay: 5,
+        maxWrong: 2,
+      } as T;
+    case "quiz-answer":
+      return {
+        correct: 4,
+        wrong: 0,
+        index: 2,
+        cycled: false,
+        doneForToday: false,
+      } as T;
+    case "invest-settle":
+      return { paid: 1.0 } as T;
+    case "loan-repay":
+      return { ok: true, fullyRepaid: false, trustDelta: 1 } as T;
+    default:
+      return { ok: true } as T;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Single invoke helper — works for both parent-finance and kid-finance.
@@ -28,10 +84,32 @@ async function invoke<T = unknown>(
   functionName: string,
   body: Record<string, unknown>,
 ): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(functionName, { body });
-  if (error) throw new Error(error.message || "Edge function call failed");
-  if (data?.error) throw new Error(data.error);
-  return data as T;
+  try {
+    const { data, error } = await supabase.functions.invoke(functionName, { body });
+    if (error) {
+      if (isParentBypassed() || isKidBypassed()) {
+        console.warn(`Edge function [${functionName}:${body.action}] failed, using mock response`);
+        return getMockEdgeResponse<T>(functionName, body);
+      }
+      throw new Error(error.message || "Edge function call failed");
+    }
+    if (data?.error) {
+      if (isParentBypassed() || isKidBypassed()) {
+        return getMockEdgeResponse<T>(functionName, body);
+      }
+      throw new Error(data.error);
+    }
+    return data as T;
+  } catch (err) {
+    if (isParentBypassed() || isKidBypassed()) {
+      console.warn(
+        `Edge function [${functionName}:${body.action}] threw error, using mock response:`,
+        err,
+      );
+      return getMockEdgeResponse<T>(functionName, body);
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------

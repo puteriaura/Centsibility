@@ -3,6 +3,7 @@ import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ImageUploadCrop } from "./ImageUploadCrop";
+import { AppIcon } from "@/components/ui/app-icon";
 
 const KID_AVATARS = [
   "phosphor:Smiley",
@@ -43,7 +44,7 @@ const isUrl = (v: string) =>
 export function AvatarBubble({
   emoji,
   size = 48,
-  ring: _ring = false,
+  ring = false,
   className = "",
 }: {
   emoji: string;
@@ -53,29 +54,26 @@ export function AvatarBubble({
 }) {
   const url = isUrl(emoji);
   const isPhosphor = typeof emoji === "string" && emoji.startsWith("phosphor:");
+  const iconSize = Math.max(16, Math.round(size * 0.45));
 
   return (
     <div
-      style={{
-        width: size,
-        minWidth: size,
-        height: size,
-        border: "1px solid #777",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.75rem",
-        padding: "2px",
-        textAlign: "center",
-      }}
-      className={className}
+      className={`avatar-bubble ${ring ? "avatar-bubble--ring" : ""} ${className}`.trim()}
+      style={{ width: size, minWidth: size, height: size, fontSize: iconSize }}
     >
       {url ? (
-        <span>[image placeholder]</span>
+        <img src={emoji} alt="" className="avatar-bubble__img" />
       ) : isPhosphor ? (
-        <span>[icon: {emoji.replace("phosphor:", "").toLowerCase()}]</span>
+        <AppIcon
+          name={emoji}
+          size={iconSize}
+          color="var(--indigo-velvet)"
+          strokeWidth={2.25}
+        />
       ) : (
-        <span>{emoji || "[avatar]"}</span>
+        <span className="avatar-bubble__emoji" aria-hidden>
+          {emoji || "🙂"}
+        </span>
       )}
     </div>
   );
@@ -126,9 +124,10 @@ export function AvatarPicker({
   return (
     <div className="wireframe-box">
       <div className="wireframe-row">
-        <AvatarBubble emoji={value} size={48} />
+        <AvatarBubble emoji={value} size={48} ring />
         <button
           type="button"
+          data-variant="secondary"
           onClick={() => {
             sfx.pop();
             setOpen((o) => !o);
@@ -138,7 +137,7 @@ export function AvatarPicker({
         </button>
       </div>
       {open && (
-        <div className="wireframe-card" style={{ marginTop: "0.5rem" }}>
+        <div className="ui-card" style={{ marginTop: "0.5rem" }}>
           {isCropping ? (
             <ImageUploadCrop
               onSave={handleSaveCrop}
@@ -154,32 +153,42 @@ export function AvatarPicker({
                   disabled={uploading}
                   style={{ width: "100%" }}
                 >
-                  {uploading ? "Uploading…" : "[icon: camera] Upload a photo"}
+                  <AppIcon name="camera" size={18} aria-hidden />
+                  {uploading ? "Uploading…" : "Upload a photo"}
                 </button>
-                <p style={{ textAlign: "center", fontSize: "0.8rem", margin: "0.25rem 0" }}>
+                <p
+                  className="text-secondary"
+                  style={{ textAlign: "center", fontSize: "0.8rem", margin: "0.5rem 0" }}
+                >
                   or pick an avatar
                 </p>
               </div>
               <div className="wireframe-grid-4">
-                {list.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => {
-                      sfx.tap();
-                      onChange(e);
-                      setOpen(false);
-                    }}
-                    style={{
-                      border: value === e ? "2px solid #000" : "1px solid #ccc",
-                      padding: "0.25rem",
-                    }}
-                  >
-                    {e.startsWith("phosphor:")
-                      ? `[icon: ${e.replace("phosphor:", "").toLowerCase()}]`
-                      : e}
-                  </button>
-                ))}
+                {list.map((e) => {
+                  const selected = value === e;
+                  return (
+                    <button
+                      key={e}
+                      type="button"
+                      data-variant="ghost"
+                      aria-label={e.replace("phosphor:", "")}
+                      aria-pressed={selected}
+                      onClick={() => {
+                        sfx.tap();
+                        onChange(e);
+                        setOpen(false);
+                      }}
+                      className={selected ? "avatar-pick avatar-pick--selected" : "avatar-pick"}
+                    >
+                      <AppIcon
+                        name={e}
+                        size={22}
+                        color="var(--indigo-velvet)"
+                        strokeWidth={2.25}
+                      />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -4,6 +4,8 @@ import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { cleanApprovalReason } from "@/lib/qard";
+import { isKidBypassed } from "@/lib/admin-bypass";
+import { DEMO_KID_STATE } from "@/lib/demo-data";
 import equal from "fast-deep-equal";
 
 export type KidState = Awaited<ReturnType<typeof edgeKidGetState>>;
@@ -24,13 +26,22 @@ function markSeen(ids: string[]) {
 }
 
 export function useKidData() {
-  const [data, setData] = useState<KidState | null>(null);
+  const [data, setData] = useState<KidState | null>(() => {
+    if (isKidBypassed()) return DEMO_KID_STATE as unknown as KidState;
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const firstLoad = useRef(true);
 
   const refresh = useCallback(async () => {
     const s = getKidSession();
-    if (!s) return;
+    if (!s) {
+      if (isKidBypassed()) {
+        setData(DEMO_KID_STATE as unknown as KidState);
+      }
+      setLoading(false);
+      return;
+    }
     if (document.visibilityState === "hidden") return; // Pause polling when tab is inactive
     try {
       const res = await edgeKidGetState({ code: s.code });
@@ -76,10 +87,15 @@ export function useKidData() {
       }
       if (newlyResolved.length) markSeen(newlyResolved);
       firstLoad.current = false;
+    } catch (err) {
+      console.warn("Failed to fetch kid state from edge function:", err);
+      if (isKidBypassed() || s.code === "AIMAN1" || !data) {
+        setData((prev) => prev ?? (DEMO_KID_STATE as unknown as KidState));
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [data]);
 
   useEffect(() => {
     refresh();

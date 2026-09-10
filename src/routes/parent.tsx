@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { NumericKeypad } from "@/components/ui/numeric-keypad";
+import { isParentBypassed, setParentBypassed } from "@/lib/admin-bypass";
 
 export const Route = createFileRoute("/parent")({
   component: ParentLayout,
@@ -27,6 +28,7 @@ async function hashPin(pin: string): Promise<string> {
 /** Clear every parent-session flag from sessionStorage. */
 function clearParentSession() {
   sessionStorage.removeItem("parentSessionValidUntil");
+  setParentBypassed(false);
 }
 
 /** Sign out + redirect — returns a never-resolving promise so callers can
@@ -73,15 +75,17 @@ function ParentLayout() {
       }
 
       // ------ STEP 1: Verify profile exists ------
-      try {
-        const profile = await edgeParentGetProfile();
-        if (cancelled) return;
+      if (!isParentBypassed()) {
+        try {
+          const profile = await edgeParentGetProfile();
+          if (cancelled) return;
 
-        if (!profile) {
-          return await ejectUser("Profile not found.");
+          if (!profile) {
+            return await ejectUser("Profile not found.");
+          }
+        } catch {
+          return await ejectUser("Unable to verify your profile.");
         }
-      } catch {
-        return await ejectUser("Unable to verify your profile.");
       }
 
       // ------ STEP 2: Valid session? Skip PIN entirely ------

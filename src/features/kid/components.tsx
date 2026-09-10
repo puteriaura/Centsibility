@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export function StatChip({
   icon,
   label,
   value,
-  bg: _bg,
 }: {
-  icon: React.ReactNode;
+  icon: string;
   label: string;
   value: string;
-  bg: string;
+  bg?: string;
 }) {
   return (
-    <div className="wireframe-box" style={{ textAlign: "center" }}>
-      <div>{icon}</div>
-      <div style={{ fontSize: "1.25rem", fontWeight: "bold" }}>{value}</div>
-      <small style={{ textTransform: "uppercase" }}>{label}</small>
+    <div className="stat-chip">
+      <AppIcon name={icon} size={18} color="var(--lavender-purple)" />
+      <div className="stat-chip__value">{value}</div>
+      <small className="stat-chip__label">{label}</small>
     </div>
   );
 }
@@ -26,27 +26,21 @@ export function ActionTile({
   icon,
   title,
   sub,
-  bg: _bg,
-  text: _text,
 }: {
   to: string;
-  icon: React.ReactNode;
+  icon: string;
   title: string;
   sub: string;
-  bg: string;
-  text: string;
+  bg?: string;
+  text?: string;
 }) {
   return (
-    <Link
-      to={to}
-      className="wireframe-card"
-      style={{ textDecoration: "none", color: "inherit", display: "block" }}
-    >
-      <div>{icon}</div>
-      <strong>{title}</strong>
-      <div>
-        <small>{sub}</small>
-      </div>
+    <Link to={to} className="action-tile">
+      <span className="action-tile__icon" aria-hidden>
+        <AppIcon name={icon} size={22} color="var(--indigo-velvet)" />
+      </span>
+      <strong className="action-tile__title">{title}</strong>
+      <small className="action-tile__sub">{sub}</small>
     </Link>
   );
 }
@@ -89,54 +83,50 @@ export function RewardCoinPicker({
 
   return (
     <div className="wireframe-col">
-      <div className="wireframe-box" style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
-          {coins} <span className="wireframe-icon">[icon: star]</span>
+      <div className="stat-chip" style={{ padding: "1rem" }}>
+        <div className="text-balance" style={{ fontSize: "2rem" }}>
+          {coins}{" "}
+          <AppIcon name="star" size={22} color="var(--lavender-purple)" />
         </div>
-        {coins > 0 && (
-          <small>of {maxPoints} pts available</small>
-        )}
+        {coins > 0 && <small className="text-secondary">of {maxPoints} pts available</small>}
       </div>
       <div className="wireframe-grid-3">
         {Keys.flat().map((k) => (
           <button
             key={k}
             type="button"
+            data-variant="secondary"
             onClick={() => press(k)}
-            style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
+            style={{ fontSize: "1.25rem", fontWeight: 700 }}
           >
             {k}
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => onConfirm(coins)}
-        disabled={!valid || !rewardName.trim()}
-      >
-        Request for {coins} [icon: star]
+      <button type="button" onClick={() => onConfirm(coins)} disabled={!valid || !rewardName.trim()}>
+        Request for {coins} pts
       </button>
-      <button
-        type="button"
-        onClick={onCancel}
-      >
+      <button type="button" data-variant="ghost" onClick={onCancel}>
         Cancel
       </button>
     </div>
   );
 }
 
-const TX_LABEL_MAP: Record<string, string> = {
-  DEPOSIT: "[icon: deposit]",
-  WITHDRAWAL: "[icon: withdrawal]",
-  HIBAH: "[icon: hibah]",
-  SADAQAH: "[icon: sadaqah]",
-  QARD: "[icon: loan]",
-  INVEST_IN: "[icon: invest in]",
-  INVEST_OUT: "[icon: invest return]",
+const TX_ICON_MAP: Record<string, string> = {
+  DEPOSIT: "deposit",
+  WITHDRAWAL: "withdrawal",
+  HIBAH: "hibah",
+  SADAQAH: "sadaqah",
+  QARD: "loan",
+  INVEST_IN: "investin",
+  INVEST_OUT: "investreturn",
 };
 
 export function txEmoji(t: string) {
-  return <span className="wireframe-icon">{TX_LABEL_MAP[t] ?? "[icon: transaction]"}</span>;
+  return (
+    <span className="tx-icon" aria-hidden>
+      <AppIcon name={TX_ICON_MAP[t] ?? "transaction"} size={18} color="var(--indigo-velvet)" />
+    </span>
+  );
 }
-

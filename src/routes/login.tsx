@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import { getQuickLogin, clearQuickLogin } from "@/lib/quick-login";
+import { adminBypassParent, ADMIN_BYPASS } from "@/lib/admin-bypass";
+import { AppIcon } from "@/components/ui/app-icon";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -250,10 +252,48 @@ function Login() {
           </>
         )}
 
-        <div style={{ marginTop: "1.5rem", borderTop: "1px solid #ccc", paddingTop: "0.75rem", textAlign: "center" }}>
-          <Link to="/kid-login">
-            [icon: kid] Kid? Login with code →
+        <div
+          style={{
+            marginTop: "1.5rem",
+            borderTop: "1px solid var(--border)",
+            paddingTop: "0.75rem",
+            textAlign: "center",
+          }}
+        >
+          <Link to="/kid-login" className="wireframe-row" style={{ justifyContent: "center" }}>
+            <AppIcon name="kid" size={16} />
+            Kid? Login with code →
           </Link>
+        </div>
+
+        <div className="admin-bypass">
+          <button
+            type="button"
+            data-variant="secondary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await adminBypassParent();
+                toast.success("Admin bypass — parent demo");
+                nav({ to: "/parent" });
+              } catch (err: unknown) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : `Bypass failed. Seed ${ADMIN_BYPASS.parent.email} first.`,
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <AppIcon name="shieldcheck" size={16} />
+            Admin bypass (demo parent)
+          </button>
+          <small className="text-muted">
+            Uses seeded {ADMIN_BYPASS.parent.email} · skips PIN for 30 min
+          </small>
         </div>
       </section>
     </div>

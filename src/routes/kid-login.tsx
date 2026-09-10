@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { edgeKidLogin, edgeKidLoginByCode } from "@/lib/edge";
 import { setKidSession } from "@/lib/kid-session";
+import { adminBypassKid, ADMIN_BYPASS } from "@/lib/admin-bypass";
+import { AppIcon } from "@/components/ui/app-icon";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kid-login")({
@@ -60,33 +62,30 @@ function KidLogin() {
   return (
     <div style={{ maxWidth: "450px", margin: "2rem auto" }}>
       <section className="wireframe-card" style={{ textAlign: "center" }}>
-        <div className="wireframe-icon" style={{ fontSize: "2rem" }}>[icon: kid]</div>
+        <div className="login-hero-icon" aria-hidden>
+          <AppIcon name="kid" size={36} color="var(--indigo-velvet)" />
+        </div>
         <h1>Kid Login</h1>
         <p>Sign in with your code or username.</p>
 
-        {/* Tab switcher */}
         <div className="wireframe-row" style={{ marginTop: "1rem" }}>
           <button
             type="button"
+            data-variant={tab === "code" ? undefined : "secondary"}
             onClick={() => setTab("code")}
-            style={{
-              flex: 1,
-              border: tab === "code" ? "2px solid #000" : "1px solid #ccc",
-              fontWeight: tab === "code" ? "bold" : "normal",
-            }}
+            style={{ flex: 1 }}
           >
-            [icon: key] Login Code
+            <AppIcon name="key" size={16} />
+            Login Code
           </button>
           <button
             type="button"
+            data-variant={tab === "login" ? undefined : "secondary"}
             onClick={() => setTab("login")}
-            style={{
-              flex: 1,
-              border: tab === "login" ? "2px solid #000" : "1px solid #ccc",
-              fontWeight: tab === "login" ? "bold" : "normal",
-            }}
+            style={{ flex: 1 }}
           >
-            [icon: user] Username + PIN
+            <AppIcon name="user" size={16} />
+            Username + PIN
           </button>
         </div>
 
@@ -104,12 +103,11 @@ function KidLogin() {
               style={{ textAlign: "center", fontSize: "1.25rem", letterSpacing: "0.2em" }}
             />
             <button disabled={busy} type="submit" style={{ marginTop: "0.5rem" }}>
-              {busy ? "Checking…" : "Let's go! [icon: go]"}
+              {busy ? "Checking…" : "Let's go!"}
             </button>
           </form>
         )}
 
-        {/* Username + PIN Login */}
         {tab === "login" && (
           <form onSubmit={handleLogin} className="wireframe-col" style={{ marginTop: "1rem", textAlign: "left" }}>
             <div>
@@ -136,15 +134,49 @@ function KidLogin() {
               />
             </div>
             <button disabled={busy} type="submit" style={{ marginTop: "0.5rem" }}>
-              {busy ? "Signing in…" : "Sign In [icon: go]"}
+              {busy ? "Signing in…" : "Sign In"}
             </button>
           </form>
         )}
 
-        <div style={{ marginTop: "1.5rem", borderTop: "1px solid #ccc", paddingTop: "0.75rem" }}>
-          <Link to="/login">
-            Parent? Sign in here →
-          </Link>
+        <div
+          style={{
+            marginTop: "1.5rem",
+            borderTop: "1px solid var(--border)",
+            paddingTop: "0.75rem",
+          }}
+        >
+          <Link to="/login">Parent? Sign in here →</Link>
+        </div>
+
+        <div className="admin-bypass">
+          <button
+            type="button"
+            data-variant="secondary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const name = await adminBypassKid();
+                toast.success(`Admin bypass — hi ${name}!`);
+                nav({ to: "/kid" });
+              } catch (err: unknown) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : `Bypass failed. Seed kid ${ADMIN_BYPASS.kid.username} / ${ADMIN_BYPASS.kid.code} first.`,
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <AppIcon name="shieldcheck" size={16} />
+            Admin bypass (demo kid)
+          </button>
+          <small className="text-muted">
+            {ADMIN_BYPASS.kid.username} / PIN · or code {ADMIN_BYPASS.kid.code}
+          </small>
         </div>
       </section>
     </div>

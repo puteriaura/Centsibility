@@ -2,6 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import equal from "fast-deep-equal";
+import { isParentBypassed } from "@/lib/admin-bypass";
+import {
+  DEMO_KID,
+  DEMO_APPROVALS,
+  DEMO_REWARDS,
+  DEMO_LOANS,
+  DEMO_TRANSACTIONS,
+  DEMO_NOTIFICATIONS,
+  DEMO_SCHEDULED_HIBAHS,
+} from "@/lib/demo-data";
 import type {
   Kid,
   Approval,
@@ -24,13 +34,23 @@ export type {
 
 export function useParentData() {
   const { user } = useAuth();
-  const [kids, setKids] = useState<Kid[]>([]);
-  const [approvals, setApprovals] = useState<Approval[]>([]);
-  const [rewards, setRewards] = useState<Reward[]>([]);
-  const [loans, setLoans] = useState<Loan[]>([]);
-  const [txs, setTxs] = useState<Transaction[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [scheduledHibahs, setScheduledHibahs] = useState<ScheduledHibah[]>([]);
+  const [kids, setKids] = useState<Kid[]>(() => (isParentBypassed() ? [DEMO_KID] : []));
+  const [approvals, setApprovals] = useState<Approval[]>(() =>
+    isParentBypassed() ? DEMO_APPROVALS : [],
+  );
+  const [rewards, setRewards] = useState<Reward[]>(() =>
+    isParentBypassed() ? DEMO_REWARDS : [],
+  );
+  const [loans, setLoans] = useState<Loan[]>(() => (isParentBypassed() ? DEMO_LOANS : []));
+  const [txs, setTxs] = useState<Transaction[]>(() =>
+    isParentBypassed() ? DEMO_TRANSACTIONS : [],
+  );
+  const [notifications, setNotifications] = useState<Notification[]>(() =>
+    isParentBypassed() ? DEMO_NOTIFICATIONS : [],
+  );
+  const [scheduledHibahs, setScheduledHibahs] = useState<ScheduledHibah[]>(() =>
+    isParentBypassed() ? DEMO_SCHEDULED_HIBAHS : [],
+  );
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -73,19 +93,41 @@ export function useParentData() {
         sh = { data: [], error: null };
       }
 
-      setKids((prev) => (equal(prev, k.data || []) ? prev : ((k.data || []) as Kid[])));
-      setApprovals((prev) => (equal(prev, a.data || []) ? prev : ((a.data || []) as Approval[])));
-      setRewards((prev) => (equal(prev, r.data || []) ? prev : ((r.data || []) as Reward[])));
-      setLoans((prev) => (equal(prev, l.data || []) ? prev : ((l.data || []) as Loan[])));
-      setTxs((prev) => (equal(prev, t.data || []) ? prev : ((t.data || []) as Transaction[])));
-      setNotifications((prev) =>
-        equal(prev, n.data || []) ? prev : ((n.data || []) as Notification[]),
-      );
-      setScheduledHibahs((prev) =>
-        equal(prev, sh.data || []) ? prev : ((sh.data || []) as ScheduledHibah[]),
-      );
+      const hasKids = Boolean(k.data && k.data.length > 0);
+
+      if (!hasKids && isParentBypassed()) {
+        // Use demo dataset in bypass mode when no kids are in database
+        setKids([DEMO_KID]);
+        setApprovals(DEMO_APPROVALS);
+        setRewards(DEMO_REWARDS);
+        setLoans(DEMO_LOANS);
+        setTxs(DEMO_TRANSACTIONS);
+        setNotifications(DEMO_NOTIFICATIONS);
+        setScheduledHibahs(DEMO_SCHEDULED_HIBAHS);
+      } else {
+        setKids((prev) => (equal(prev, k.data || []) ? prev : ((k.data || []) as Kid[])));
+        setApprovals((prev) => (equal(prev, a.data || []) ? prev : ((a.data || []) as Approval[])));
+        setRewards((prev) => (equal(prev, r.data || []) ? prev : ((r.data || []) as Reward[])));
+        setLoans((prev) => (equal(prev, l.data || []) ? prev : ((l.data || []) as Loan[])));
+        setTxs((prev) => (equal(prev, t.data || []) ? prev : ((t.data || []) as Transaction[])));
+        setNotifications((prev) =>
+          equal(prev, n.data || []) ? prev : ((n.data || []) as Notification[]),
+        );
+        setScheduledHibahs((prev) =>
+          equal(prev, sh.data || []) ? prev : ((sh.data || []) as ScheduledHibah[]),
+        );
+      }
     } catch (err) {
-      console.error("Failed to fetch parent data", err);
+      console.warn("Failed to fetch parent data from Supabase:", err);
+      if (isParentBypassed()) {
+        setKids([DEMO_KID]);
+        setApprovals(DEMO_APPROVALS);
+        setRewards(DEMO_REWARDS);
+        setLoans(DEMO_LOANS);
+        setTxs(DEMO_TRANSACTIONS);
+        setNotifications(DEMO_NOTIFICATIONS);
+        setScheduledHibahs(DEMO_SCHEDULED_HIBAHS);
+      }
     } finally {
       setLoading(false);
     }

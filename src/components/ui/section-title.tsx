@@ -16,12 +16,12 @@ export function SectionTitle({
 }: SectionTitleProps) {
   return (
     <div
-      className={`wireframe-space-between ${className}`}
-      style={{ margin: "1rem 0 0.5rem 0", ...style }}
+      className={`section-title ${className}`.trim()}
+      style={style}
       {...props}
     >
-      <h2>{children}</h2>
-      {action}
+      <h2 className="section-title__heading">{children}</h2>
+      {action ? <div className="section-title__action">{action}</div> : null}
     </div>
   );
 }
