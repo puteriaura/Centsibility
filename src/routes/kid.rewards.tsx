@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidRequestReward } from "@/lib/edge";
@@ -9,22 +12,22 @@ import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NumericKeypad } from "@/components/ui/numeric-keypad";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export const Route = createFileRoute("/kid/rewards")({
   head: () => ({ meta: [{ title: "Rewards — Centsibility" }] }),
   component: KidRewards,
 });
 
-/* ── Suggested rewards ── */
 const SUGGESTED = [
-  { name: "Pick the family movie", cost: 2100, iconLabel: "[icon: movie]" },
-  { name: "Special treat", cost: 3000, iconLabel: "[icon: treat]" },
-  { name: "Stay up 30 min late", cost: 6000, iconLabel: "[icon: moon]" },
-  { name: "Toy of my choice", cost: 4500, iconLabel: "[icon: game]" },
-  { name: "Day at the park", cost: 2400, iconLabel: "[icon: park]" },
-  { name: "New book of my choice", cost: 3000, iconLabel: "[icon: book]" },
-  { name: "Cook favourite meal", cost: 2250, iconLabel: "[icon: meal]" },
-  { name: "Fun outing with parent", cost: 3000, iconLabel: "[icon: outing]" },
+  { name: "Pick the family movie", cost: 2100, icon: "movie" },
+  { name: "Special treat or snack", cost: 3000, icon: "treat" },
+  { name: "Stay up 30 min late", cost: 6000, icon: "moon" },
+  { name: "Toy of my choice", cost: 4500, icon: "game" },
+  { name: "Day at the park", cost: 2400, icon: "park" },
+  { name: "New book of my choice", cost: 3000, icon: "book" },
+  { name: "Cook favourite meal", cost: 2250, icon: "meal" },
+  { name: "Fun outing with parent", cost: 3000, icon: "outing" },
 ];
 
 function KidRewards() {
@@ -34,10 +37,10 @@ function KidRewards() {
 
   if (loading || !data) {
     return (
-      <div className="wireframe-col">
-        <Skeleton style={{ height: "6rem" }} />
-        <Skeleton style={{ height: "10rem" }} />
-        <Skeleton style={{ height: "10rem" }} />
+      <div className="space-y-4">
+        <Skeleton style={{ height: "8rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
       </div>
     );
   }
@@ -93,119 +96,180 @@ function KidRewards() {
   );
 
   return (
-    <>
-      <h1>[icon: gift] Rewards</h1>
-      <p>Spend your points on real-life treats. Parent must approve!</p>
-
-      {/* Points balance */}
-      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-        <small>Your Points</small>
-        <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
-          {totalPoints.toFixed(0)} [icon: star]
+    <div className="space-y-6 pb-12">
+      <section className="deposit-hero" aria-label="Available reward points">
+        <div className="deposit-hero__copy">
+          <p className="deposit-hero__label">Available points</p>
+          <p className="deposit-hero__amount tabular-nums">{totalPoints.toLocaleString()}</p>
+          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
+            Earn more from quests &amp; savings
+          </p>
         </div>
-        <small>Earn more from Daily Quests</small>
-      </Card>
-
-      <SectionTitle>Quick picks</SectionTitle>
-      {!quizUnlocked && (
-        <div className="wireframe-box">
-          <strong>Complete {QUIZ_GATE} quiz answers to unlock</strong>
-          <div><small>{quizTotalCorrect}/{QUIZ_GATE} correct answers so far</small></div>
+        <div className="deposit-hero__mascot" aria-hidden="true">
+          <AppIcon name="star" size={32} color="#fff" />
         </div>
-      )}
-      <div className="wireframe-grid-2">
-        {SUGGESTED.map((s) => {
-          const can = quizUnlocked && totalPoints >= s.cost;
-          return (
-            <button
-              key={s.name}
-              type="button"
-              onClick={() => can && submit(s.name, s.cost)}
-              disabled={!can}
-              aria-label={
-                !quizUnlocked
-                  ? `Locked — complete ${QUIZ_GATE} quiz answers first`
-                  : `Request ${s.name} for ${s.cost} points`
-              }
-              className="wireframe-card"
-              style={{ textAlign: "left" }}
-            >
-              <div>{!quizUnlocked ? "[Locked]" : s.iconLabel}</div>
-              <strong>{s.name}</strong>
-              <div><small>{s.cost} [icon: star]</small></div>
-            </button>
-          );
-        })}
+      </section>
+
+      <div>
+        <h1 className="text-lg font-bold text-[var(--ink)] m-0">Reward Store</h1>
+        <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 mb-0">
+          Redeem points for real-life privileges. Parent approves.
+        </p>
       </div>
 
-      <SectionTitle>Custom reward</SectionTitle>
-      <Card className="wireframe-card">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="What do you want? e.g. New book"
-          maxLength={100}
-        />
-        <p><small>You have {totalPoints.toFixed(0)} [icon: star]</small></p>
+      {/* Quick Picks */}
+      <div className="space-y-3">
+        <SectionTitle>Quick Wishlist Picks</SectionTitle>
 
-        {/* Points keypad */}
-        <div className="wireframe-box" style={{ textAlign: "center", margin: "0.5rem 0" }}>
-          <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
-            {parsedPts} [icon: star]
-          </div>
-          {parsedPts > 0 && (
-            <small>of {maxPts} pts available</small>
-          )}
-        </div>
-        <NumericKeypad onKeyPress={pressKey} />
-        <button
-          type="button"
-          onClick={() => submit(name, parsedPts)}
-          disabled={!name.trim() || parsedPts < 1 || parsedPts > totalPoints}
-          style={{ width: "100%", marginTop: "0.5rem" }}
-        >
-          Request for {parsedPts} [icon: star]
-        </button>
-      </Card>
-
-      {pending.length > 0 && (
-        <>
-          <SectionTitle>Waiting for parent</SectionTitle>
-          <div className="wireframe-col">
-            {pending.map((r: (typeof pending)[number]) => (
-              <Card key={r.id} className="wireframe-box">
-                <div className="wireframe-space-between">
-                  <strong>{r.name}</strong>
-                  <span>{r.cost} [icon: star]</span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </>
-      )}
-
-      <SectionTitle>History</SectionTitle>
-      {history.length === 0 ? (
-        <Card className="wireframe-box" style={{ textAlign: "center" }}>
-          No reward history yet. Request your first reward above!
-        </Card>
-      ) : (
-        <div className="wireframe-col">
-          {history.map((r: (typeof history)[number]) => (
-            <div key={r.id} className="wireframe-space-between wireframe-box">
-              <div>
-                <strong>{r.name}</strong>
-                <div>
-                  <small>{new Date(r.created_at).toLocaleDateString()} · {r.cost} [icon: star]</small>
-                </div>
-              </div>
-              <div>
-                <strong>{r.status === "approved" ? "[✓ Granted]" : "[✗ Declined]"}</strong>
-              </div>
+        {!quizUnlocked && (
+          <Card variant="soft" className="p-4 border border-[var(--primary-soft)] flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="lock" size={20} />
             </div>
-          ))}
+            <div>
+              <strong className="text-xs sm:text-sm text-[var(--ink)] block">
+                Answer {QUIZ_GATE} Quiz Questions to Unlock
+              </strong>
+              <small className="text-xs text-[var(--text-secondary)]">
+                Current progress: {quizTotalCorrect}/{QUIZ_GATE} completed
+              </small>
+            </div>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          {SUGGESTED.map((s) => {
+            const can = quizUnlocked && totalPoints >= s.cost;
+            return (
+              <button
+                key={s.name}
+                type="button"
+                onClick={() => can && submit(s.name, s.cost)}
+                disabled={!can}
+                aria-label={
+                  !quizUnlocked
+                    ? `Locked — complete ${QUIZ_GATE} quiz answers first`
+                    : `Request ${s.name} for ${s.cost} points`
+                }
+                className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${
+                  !quizUnlocked
+                    ? "bg-[var(--surface-soft)] border-[var(--border)] opacity-60 cursor-not-allowed"
+                    : can
+                      ? "bg-white border-[var(--border)] hover:border-[var(--primary)] hover:shadow-sm"
+                      : "bg-white border-[var(--border)] opacity-65 cursor-not-allowed"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center">
+                    <AppIcon name={!quizUnlocked ? "lock" : s.icon} size={18} />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)]">
+                    {s.cost} <AppIcon name="star" size={12} color="var(--primary)" />
+                  </span>
+                </div>
+                <strong className="text-xs sm:text-sm font-bold text-[var(--ink)] line-clamp-2 leading-snug">
+                  {s.name}
+                </strong>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Custom Reward Request */}
+      <div className="space-y-3">
+        <SectionTitle>Custom Reward</SectionTitle>
+        <Card variant="default" className="p-5 space-y-4 border border-[var(--border)]">
+          <Input
+            label="What reward would you like?"
+            id="reward-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="E.g. Visit science museum, new coloring set"
+            maxLength={100}
+          />
+
+          <div>
+            <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1.5">
+              <span>Points to Spend</span>
+              <span>Balance: <strong>{totalPoints.toFixed(0)} pts</strong></span>
+            </div>
+            <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
+              <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary)] flex items-center justify-center gap-1.5 tabular-nums">
+                {parsedPts.toLocaleString()}
+                <AppIcon name="star" size={20} />
+              </div>
+              {parsedPts > 0 && (
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  of {maxPts.toLocaleString()} points available
+                </p>
+              )}
+            </div>
+          </div>
+
+          <NumericKeypad onKeyPress={pressKey} />
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => submit(name, parsedPts)}
+            disabled={!name.trim() || parsedPts < 1 || parsedPts > totalPoints}
+            className="w-full justify-center text-sm font-bold min-h-[48px]"
+          >
+            Submit Request for {parsedPts.toLocaleString()} Points
+          </Button>
+        </Card>
+      </div>
+
+      {/* Waiting for Parent Section */}
+      {pending.length > 0 && (
+        <div className="space-y-3">
+          <SectionTitle>Pending Approval</SectionTitle>
+          <Card variant="default" className="p-3 divide-y divide-[var(--border)]">
+            {pending.map((r: (typeof pending)[number]) => (
+              <div key={r.id} className="py-3 px-2 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2.5">
+                  <Badge variant="warning">Pending</Badge>
+                  <strong className="text-[var(--ink)]">{r.name}</strong>
+                </div>
+                <span className="font-bold text-[var(--primary)] flex items-center gap-1">
+                  {r.cost} <AppIcon name="star" size={14} color="var(--primary)" />
+                </span>
+              </div>
+            ))}
+          </Card>
         </div>
       )}
-    </>
+
+      {/* Rewards History */}
+      <div className="space-y-3">
+        <SectionTitle>Reward Redemptions</SectionTitle>
+        {history.length === 0 ? (
+          <Card variant="soft" className="p-6 text-center text-xs sm:text-sm text-[var(--text-muted)]">
+            No past reward requests. Choose a reward above!
+          </Card>
+        ) : (
+          <Card variant="default" className="p-3 divide-y divide-[var(--border)]">
+            {history.map((r: (typeof history)[number]) => (
+              <div key={r.id} className="py-3 px-2 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <div>
+                  <strong className="text-[var(--ink)] block">{r.name}</strong>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {new Date(r.created_at).toLocaleDateString()} · {r.cost} pts
+                  </span>
+                </div>
+                <div>
+                  {r.status === "approved" ? (
+                    <Badge variant="success">Granted</Badge>
+                  ) : (
+                    <Badge variant="error">Declined</Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }

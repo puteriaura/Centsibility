@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -58,29 +60,39 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
   };
 
   return (
-    <div className="wireframe-col">
-      <canvas
-        ref={ref}
-        width={600}
-        height={200}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerLeave={up}
-        style={{
-          width: "100%",
-          aspectRatio: "3 / 1",
-          border: "1px dashed #777",
-          background: "#fff",
-          touchAction: "none",
-        }}
-      />
-      <div className="wireframe-space-between">
-        <small>{hasInk ? "[✓ Signed]" : "Sign with finger or mouse"}</small>
-        <button type="button" onClick={clear}>
-          Clear
-        </button>
+      <div className="flex flex-col gap-2">
+        <canvas
+          ref={ref}
+          width={600}
+          height={200}
+          onPointerDown={down}
+          onPointerMove={move}
+          onPointerUp={up}
+          onPointerLeave={up}
+          style={{
+            width: "100%",
+            aspectRatio: "3 / 1",
+            border: "1.5px dashed var(--border)",
+            borderRadius: "12px",
+            background: "#fff",
+            touchAction: "none",
+          }}
+        />
+        <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+          <span className="flex items-center gap-1">
+            {hasInk ? (
+              <span className="text-[var(--success)] font-semibold flex items-center gap-1">
+                <AppIcon name="approve" size={14} /> Signed
+              </span>
+            ) : (
+              "Sign with finger or stylus above"
+            )}
+          </span>
+          <Button type="button" variant="secondary" size="sm" onClick={clear} className="text-xs">
+            Clear Signature
+          </Button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+

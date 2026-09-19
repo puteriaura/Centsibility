@@ -1,15 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SectionTitle } from "@/components/ui/section-title";
+import { StatCard, TransactionRow } from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
-import { edgeKidSadaqah, edgeKidInvestSettle, edgeKidInvestDeposit, edgeKidInvestWithdraw, edgeKidRequestApproval, edgeKidSetInvestRisk } from "@/lib/edge";
+import {
+  edgeKidSadaqah,
+  edgeKidInvestSettle,
+  edgeKidInvestDeposit,
+  edgeKidInvestWithdraw,
+  edgeKidRequestApproval,
+  edgeKidSetInvestRisk,
+} from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { formatTransactionSign } from "@/lib/finance";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
@@ -17,6 +27,20 @@ export const Route = createFileRoute("/kid/wallet")({
 });
 
 type Tab = "deposit" | "withdraw" | "invest" | "sadaqah" | "loan";
+
+function riskLabel(risk: string | undefined) {
+  return risk === "very_low"
+    ? "Very Low Risk"
+    : risk === "low"
+      ? "Low Risk"
+      : risk === "medium"
+        ? "Medium Risk"
+        : risk === "high"
+          ? "High Risk"
+          : risk === "very_high"
+            ? "Very High Risk"
+            : "Growth";
+}
 
 function KidWallet() {
   const { data, loading, refresh } = useKidData();
@@ -39,13 +63,14 @@ function KidWallet() {
 
   if (loading || !data) {
     return (
-      <div className="wireframe-col">
-        <Skeleton style={{ height: "8rem" }} />
-        <Skeleton style={{ height: "6rem" }} />
-        <Skeleton style={{ height: "10rem" }} />
+      <div className="space-y-4">
+        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "3rem", borderRadius: "999px" }} />
+        <Skeleton style={{ height: "14rem", borderRadius: "20px" }} />
       </div>
     );
   }
+
   const k = data.kid;
   const code = getKidSession()?.code;
   const balance = Number(k.balance);
@@ -108,59 +133,177 @@ function KidWallet() {
     }
   };
 
-  const tabs: { key: Tab; label: string; iconLabel: string }[] = [
-    { key: "deposit", label: "Deposit", iconLabel: "[icon: deposit]" },
-    { key: "withdraw", label: "Withdraw", iconLabel: "[icon: withdraw]" },
-    { key: "invest", label: "Invest", iconLabel: "[icon: invest]" },
-    { key: "sadaqah", label: "Sadaqah", iconLabel: "[icon: sadaqah]" },
-    { key: "loan", label: "Loan", iconLabel: "[icon: loan]" },
+  const tabs: { key: Tab; label: string; icon: string }[] = [
+    { key: "deposit", label: "Deposit", icon: "deposit" },
+    { key: "withdraw", label: "Withdraw", icon: "withdraw" },
+    { key: "invest", label: "Invest", icon: "invest" },
+    { key: "sadaqah", label: "Sadaqah", icon: "sadaqah" },
+    { key: "loan", label: "Loan", icon: "loan" },
   ];
 
+  const currentRisk = (k.risk_appetite as string) || "low";
+  const totalBalance = balance + invested;
+  const activeLoans = data.loans.filter(
+    (l: (typeof data.loans)[number]) => l.status === "active",
+  );
+  const outstanding = activeLoans.reduce(
+    (sum: number, l: (typeof data.loans)[number]) =>
+      sum + (Number(l.amount) - Number(l.repaid)),
+    0,
+  );
+
+  const scrollToHistory = () => {
+    sfx.tap();
+    document.getElementById("wallet-history")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <>
-      <h1>[icon: wallet] Hyperdrive Core</h1>
-
-      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-        <small>Core Energy</small>
-        <div style={{ fontSize: "2rem", fontWeight: "bold", margin: "0.25rem 0" }}>
-          RM {balance.toFixed(2)}
-        </div>
-        <div className="wireframe-row">
-          <small>Invested RM {invested.toFixed(2)}</small>
-          <small>
-            {(k.risk_appetite as string) === "very_low" ? "Very Low Risk"
-              : (k.risk_appetite as string) === "low" ? "Low Risk"
-              : (k.risk_appetite as string) === "medium" ? "Medium Risk"
-              : (k.risk_appetite as string) === "high" ? "High Risk"
-              : (k.risk_appetite as string) === "very_high" ? "Very High Risk"
-              : "Growth"}
-          </small>
-        </div>
-      </Card>
-
-      <div className="wireframe-row" style={{ marginTop: "1rem", flexWrap: "wrap" }}>
-        {tabs.map((t) => (
+    <div className="space-y-5 pb-8">
+      {/* AEON Deposit-style total balance hero */}
+      <section className="deposit-hero" aria-label="Total balance">
+        <div className="deposit-hero__copy">
+          <p className="deposit-hero__label">Total balance</p>
+          <p className="deposit-hero__amount tabular-nums">RM{totalBalance.toFixed(2)}</p>
           <button
-            key={t.key}
             type="button"
+            className="deposit-hero__link"
             onClick={() => {
-              setTab(t.key);
               sfx.tap();
-            }}
-            style={{
-              border: tab === t.key ? "2px solid #000" : "1px solid #ccc",
-              fontWeight: tab === t.key ? "bold" : "normal",
+              setTab("deposit");
             }}
           >
-            {t.iconLabel} {t.label}
+            View balance info →
           </button>
-        ))}
+        </div>
+        <div className="deposit-hero__mascot" aria-hidden="true">
+          <AppIcon name="penny" size={40} color="#fff" />
+        </div>
+      </section>
+
+      {/* History / Goals / Insights quick tiles */}
+      <div className="deposit-quick-row" role="navigation" aria-label="Deposit shortcuts">
+        <button type="button" className="deposit-quick-tile" onClick={scrollToHistory}>
+          <AppIcon name="history" size={22} />
+          <span>History</span>
+        </button>
+        <Link to="/kid/goals" className="deposit-quick-tile" onClick={() => sfx.tap()}>
+          <AppIcon name="goal" size={22} />
+          <span>Goals</span>
+        </Link>
+        <Link
+          to="/kid/insights"
+          className="deposit-quick-tile"
+          onClick={() => sfx.tap()}
+        >
+          <AppIcon name="trend" size={22} />
+          <span>Insights</span>
+        </Link>
       </div>
 
+      {/* Stacked account cards */}
+      <div className="deposit-account-stack">
+        <button
+          type="button"
+          className="deposit-account-card deposit-account-card--pink"
+          onClick={() => {
+            sfx.tap();
+            setTab("deposit");
+          }}
+        >
+          <div className="deposit-account-card__top">
+            <div>
+              <strong>Main Wallet</strong>
+              <p>Spending · Hibah {(Number(k.hibah_rate) * 100).toFixed(0)}%</p>
+            </div>
+            <span className="deposit-account-card__badge">0% fee</span>
+          </div>
+          <div className="deposit-account-card__bottom">
+            <span>Account balance</span>
+            <strong className="tabular-nums">RM{balance.toFixed(2)}</strong>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          className="deposit-account-card deposit-account-card--magenta"
+          onClick={() => {
+            sfx.tap();
+            setTab("invest");
+          }}
+        >
+          <div className="deposit-account-card__top">
+            <div>
+              <strong>Growth Pot</strong>
+              <p>{riskLabel(k.risk_appetite as string)} · Halal</p>
+            </div>
+            <span className="deposit-account-card__badge">Invest</span>
+          </div>
+          <div className="deposit-account-card__bottom">
+            <span>Account balance</span>
+            <strong className="tabular-nums">RM{invested.toFixed(2)}</strong>
+          </div>
+        </button>
+
+        <Link
+          to="/kid/loans"
+          className="deposit-account-card deposit-account-card--navy"
+          onClick={() => sfx.tap()}
+        >
+          <div className="deposit-account-card__top">
+            <div>
+              <strong>Qard Hasan</strong>
+              <p>{activeLoans.length} active placement(s)</p>
+            </div>
+            <span className="deposit-account-card__badge">0% interest</span>
+          </div>
+          <div className="deposit-account-card__bottom">
+            <span>Outstanding</span>
+            <strong className="tabular-nums">RM{outstanding.toFixed(2)}</strong>
+          </div>
+        </Link>
+      </div>
+
+      {/* Action Tabs with Scrollable Pill Container */}
+      <div
+        className="tab-pills-container no-scrollbar"
+        role="tablist"
+        aria-label="Wallet actions"
+      >
+        {tabs.map((t) => {
+          const isActive = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => {
+                setTab(t.key);
+                sfx.tap();
+              }}
+              className={`tab-pill ${isActive ? "is-active" : ""}`}
+            >
+              <AppIcon name={t.icon} size={16} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Panels */}
       {tab === "deposit" && (
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <h3>[icon: deposit] Request Energy</h3>
-          <p><small>Ask mission control (parent) to transmit energy to your core.</small></p>
+        <Card variant="default" className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="deposit" size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Request Money</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Ask parent to deposit money into your digital savings.
+              </p>
+            </div>
+          </div>
           <MoneyKeypad
             min={0.5}
             max={10000}
@@ -172,9 +315,18 @@ function KidWallet() {
       )}
 
       {tab === "withdraw" && (
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <h3>[icon: withdraw] Eject Energy</h3>
-          <p><small>Ask mission control to convert energy into physical cash.</small></p>
+        <Card variant="default" className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="withdraw" size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Withdraw Cash</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Ask parent to convert your digital balance into physical cash.
+              </p>
+            </div>
+          </div>
           <MoneyKeypad
             min={0.5}
             max={balance}
@@ -186,50 +338,79 @@ function KidWallet() {
       )}
 
       {tab === "invest" && (
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <h3>[icon: invest] Cosmic Growth</h3>
-          <p><small>Choose your risk appetite. Higher risk means potential for bigger gains, but also bigger losses!</small></p>
-
-          <div className="wireframe-grid-4" style={{ marginBottom: "1rem" }}>
-            {[
-              { key: "very_low", label: "V.Low" },
-              { key: "low", label: "Low" },
-              { key: "medium", label: "Med" },
-              { key: "high", label: "High" },
-              { key: "very_high", label: "Max" },
-            ].map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                onClick={() => changeRisk(r.key)}
-                style={{
-                  border: (k.risk_appetite as string || "low") === r.key ? "2px solid #000" : "1px solid #ccc",
-                  fontWeight: (k.risk_appetite as string || "low") === r.key ? "bold" : "normal",
-                }}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="wireframe-grid-2" style={{ textAlign: "center", marginBottom: "1rem" }}>
-            <div className="wireframe-box">
-              <small>Core</small>
-              <div><strong>RM {balance.toFixed(2)}</strong></div>
+        <Card variant="default" className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="invest" size={20} />
             </div>
-            <div className="wireframe-box">
-              <small>Generating</small>
-              <div><strong>RM {invested.toFixed(2)}</strong></div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Halal Investment</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Put your money to work with Shariah-compliant growth funds.
+              </p>
             </div>
           </div>
+
+          <div>
+            <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block mb-2">
+              Risk Appetite
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[
+                { key: "very_low", label: "V.Low" },
+                { key: "low", label: "Low" },
+                { key: "medium", label: "Med" },
+                { key: "high", label: "High" },
+                { key: "very_high", label: "Max" },
+              ].map((r) => {
+                const isSelected = currentRisk === r.key;
+                return (
+                  <Button
+                    key={r.key}
+                    type="button"
+                    variant={isSelected ? "primary" : "secondary"}
+                    size="sm"
+                    className="w-full text-xs font-bold px-1"
+                    onClick={() => changeRisk(r.key)}
+                  >
+                    {r.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <StatCard
+              label="Wallet Balance"
+              value={`RM ${balance.toFixed(2)}`}
+              icon="wallet"
+            />
+            <StatCard
+              label="Currently Invested"
+              value={`RM ${invested.toFixed(2)}`}
+              icon="invest"
+              subtitle={k.invest_balance && Number(k.invest_balance) > 0 ? "Growing" : undefined}
+            />
+          </div>
+
           <InvestKeypad balance={balance} invested={invested} onInvest={invest} />
         </Card>
       )}
 
       {tab === "sadaqah" && (
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <h3>[icon: sadaqah] Transmit Sadaqah</h3>
-          <p><small>"Sadaqah extinguishes sin." Share your energy to help others in the galaxy.</small></p>
+        <Card variant="default" className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="sadaqah" size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Give Sadaqah</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                &ldquo;Sadaqah extinguishes sin as water extinguishes fire.&rdquo;
+              </p>
+            </div>
+          </div>
           <MoneyKeypad
             min={0.5}
             max={balance}
@@ -240,56 +421,82 @@ function KidWallet() {
       )}
 
       {tab === "loan" && (
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <h3>[icon: loan] Qard Hasan</h3>
-          <p><small>Interest-free loan — sign a digital agreement, parent approves, repay on time to grow trust score.</small></p>
-          <div className="wireframe-grid-2" style={{ textAlign: "center", margin: "1rem 0" }}>
-            <div className="wireframe-box">
-              <small>Trust Score</small>
-              <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{k.trust_score}</div>
+        <Card variant="default" className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="loan" size={20} />
             </div>
-            <div className="wireframe-box">
-              <small>Active Loans</small>
-              <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
-                {data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length}
-              </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Qard Hasan (Benevolent Loan)</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Interest-free financial assistance with digital agreement and repayment scheduling.
+              </p>
             </div>
           </div>
-          <Link
-            to="/kid/loans"
-            style={{ display: "block", textAlign: "center", padding: "0.5rem" }}
-          >
-            Enter Loan Center
+
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard
+              label="Trust Score"
+              value={String(k.trust_score ?? 100)}
+              icon="shield"
+            />
+            <StatCard
+              label="Active Loans"
+              value={String(data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length)}
+              icon="loan"
+            />
+          </div>
+
+          <Link to="/kid/loans" className="block mt-2">
+            <Button variant="outline" className="w-full justify-center">
+              Enter Loan Agreement Center →
+            </Button>
           </Link>
         </Card>
       )}
 
-      <SectionTitle>Flight Log</SectionTitle>
-      <div className="wireframe-col">
-        {data.txs.length === 0 && (
-          <Card className="wireframe-box" style={{ textAlign: "center" }}>
-            No transmissions yet.
-          </Card>
-        )}
-        {data.txs.map((t: (typeof data.txs)[number]) => (
-          <div key={t.id} className="wireframe-space-between wireframe-box">
-            <div className="wireframe-row">
-              <span>{txIconLabel(t.type)}</span>
-              <div>
-                <strong>{t.label}</strong>
-                <div><small>{new Date(t.created_at).toLocaleDateString()}</small></div>
-              </div>
+      {/* Transaction History Section */}
+      <div id="wallet-history" className="space-y-3 scroll-mt-4">
+        <SectionTitle>Recent Activity</SectionTitle>
+        <Card variant="default" className="p-2 sm:p-3 divide-y divide-[var(--border)]">
+          {data.txs.length === 0 ? (
+            <div className="py-8 text-center text-sm text-[var(--text-muted)]">
+              No transactions yet. Start by requesting a deposit!
             </div>
-            <div>
-              <strong>
-                {formatTransactionSign(t.type, t.label)}
-                RM {Number(t.amount).toFixed(2)}
-              </strong>
-            </div>
-          </div>
-        ))}
+          ) : (
+            data.txs.map((t: (typeof data.txs)[number]) => {
+              const isDebit =
+                formatTransactionSign(t.type, t.label) === "-" ||
+                ["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type);
+
+              const iconName = t.type.toLowerCase().includes("deposit")
+                ? "deposit"
+                : t.type.toLowerCase().includes("invest")
+                  ? "invest"
+                  : t.type.toLowerCase().includes("sadaqah")
+                    ? "sadaqah"
+                    : t.type.toLowerCase().includes("loan")
+                      ? "loan"
+                      : "wallet";
+
+              return (
+                <TransactionRow
+                  key={t.id}
+                  title={t.label}
+                  subtitle={new Date(t.created_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                  amount={Number(t.amount)}
+                  isIncome={!isDebit}
+                  icon={iconName}
+                />
+              );
+            })
+          )}
+        </Card>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -305,49 +512,34 @@ function InvestKeypad({
   const [dir, setDir] = useState<"in" | "out">("in");
 
   return (
-    <div className="wireframe-col" style={{ marginTop: "1rem" }}>
-      <div className="wireframe-grid-2">
-        <button
+    <div className="space-y-3 pt-3 border-t border-[var(--border)]">
+      <div className="grid grid-cols-2 gap-2">
+        <Button
           type="button"
+          variant={dir === "in" ? "primary" : "secondary"}
           onClick={() => setDir("in")}
-          style={{
-            border: dir === "in" ? "2px solid #000" : "1px solid #ccc",
-            fontWeight: dir === "in" ? "bold" : "normal",
-          }}
+          className="w-full justify-center"
         >
-          [icon: plus] Grow
-        </button>
-        <button
+          <AppIcon name="plus" size={14} />
+          Invest Funds
+        </Button>
+        <Button
           type="button"
+          variant={dir === "out" ? "primary" : "secondary"}
           onClick={() => setDir("out")}
-          style={{
-            border: dir === "out" ? "2px solid #000" : "1px solid #ccc",
-            fontWeight: dir === "out" ? "bold" : "normal",
-          }}
+          className="w-full justify-center"
         >
-          [icon: recall] Recall
-        </button>
+          <AppIcon name="recall" size={14} />
+          Recall Funds
+        </Button>
       </div>
       <MoneyKeypad
         key={dir}
         min={0.5}
         max={dir === "in" ? balance : invested}
-        confirmLabel={dir === "in" ? "Lock Energy" : "Recall Energy"}
+        confirmLabel={dir === "in" ? "Confirm Investment" : "Recall Investment"}
         onConfirm={(amt) => onInvest(dir, amt)}
       />
     </div>
   );
-}
-
-function txIconLabel(t: string): string {
-  const map: Record<string, string> = {
-    DEPOSIT: "[icon: deposit]",
-    WITHDRAWAL: "[icon: withdrawal]",
-    HIBAH: "[icon: hibah]",
-    SADAQAH: "[icon: sadaqah]",
-    QARD: "[icon: loan]",
-    INVEST_IN: "[icon: invest in]",
-    INVEST_OUT: "[icon: invest return]",
-  };
-  return map[t] ?? "[icon: transaction]";
 }

@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidRepayLoan, edgeKidRequestLoan } from "@/lib/edge";
@@ -8,6 +11,8 @@ import { getKidSession } from "@/lib/kid-session";
 import { SignaturePad } from "@/features/loans/components/SignaturePad";
 import { exportLoanPdf } from "@/features/loans/utils/loan-pdf";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kid/loans")({
@@ -18,8 +23,8 @@ export const Route = createFileRoute("/kid/loans")({
 function KidLoans() {
   const { data, loading, refresh } = useKidData();
   const [active, setActive] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<"active" | "closed">("active");
 
-  // Request flow
   const [requesting, setRequesting] = useState(false);
   const [reqAmt, setReqAmt] = useState<number | null>(null);
   const [reqReason, setReqReason] = useState("");
@@ -27,12 +32,23 @@ function KidLoans() {
   const [signature, setSignature] = useState<string | null>(null);
   const [signStep, setSignStep] = useState(false);
 
-  if (loading || !data)
+  if (loading || !data) {
     return (
-      <Card className="wireframe-card">Loading…</Card>
+      <div className="space-y-4">
+        <Skeleton style={{ height: "8rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
+      </div>
     );
+  }
   const code = getKidSession()?.code;
   const kidBalance = Number(data.kid.balance);
+
+  const activeLoans = data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active");
+  const closedLoans = data.loans.filter((l: (typeof data.loans)[number]) => l.status === "repaid");
+  const totalOutstanding = activeLoans.reduce(
+    (acc: number, l: (typeof data.loans)[number]) => acc + (Number(l.amount) - Number(l.repaid)),
+    0,
+  );
 
   const repay = async (loanId: string, amount: number) => {
     if (!code) return;
@@ -64,7 +80,11 @@ function KidLoans() {
     }
     try {
       await edgeKidRequestLoan({
-        code, amount: reqAmt, reason: reqReason.trim(), signature, dueDays,
+        code,
+        amount: reqAmt,
+        reason: reqReason.trim(),
+        signature,
+        dueDays,
       });
       toast.success("Loan request signed & sent to parent");
       setRequesting(false);
@@ -79,45 +99,104 @@ function KidLoans() {
   };
 
   return (
-    <>
-      <h1>[icon: handshake] My Loans</h1>
-      <p>Qard = interest-free. Pay on time to grow your trust score.</p>
+    <div className="space-y-4 pb-12">
+      <section className="deposit-hero deposit-hero--lilac" aria-label="Total outstanding balance">
+        <div className="deposit-hero__copy">
+          <p className="deposit-hero__label">Total Outstanding Balance</p>
+          <p className="deposit-hero__amount tabular-nums">RM{totalOutstanding.toFixed(2)}</p>
+          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
+            Trust {data.kid.trust_score} · 0% interest (Halal)
+          </p>
+        </div>
+        <div className="deposit-hero__mascot" aria-hidden="true">
+          <AppIcon name="loan" size={32} color="#fff" />
+        </div>
+      </section>
 
-      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-        <div className="wireframe-space-between">
-          <div>
-            <small>[icon: trust] Trust Score</small>
-            <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
-              {data.kid.trust_score}
+      <div
+        className="segment-tabs"
+        role="tablist"
+        aria-label="Loan status"
+      >
+        <button
+          type="button"
+          role="tab"
+          id="tab-loans-active"
+          aria-selected={selectedTab === "active"}
+          aria-controls="panel-loans-active"
+          className="segment-tab"
+          onClick={() => setSelectedTab("active")}
+        >
+          Active ({activeLoans.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-loans-closed"
+          aria-selected={selectedTab === "closed"}
+          aria-controls="panel-loans-closed"
+          className="segment-tab"
+          onClick={() => setSelectedTab("closed")}
+        >
+          Closed ({closedLoans.length})
+        </button>
+      </div>
+
+      {selectedTab === "active" && !requesting && (
+        <article className="financing-promo">
+          <div className="financing-promo__art">
+            <span className="bg-white text-[var(--ink)] text-[11px] font-extrabold px-3 py-1 rounded-full">
+              Financing
+            </span>
+            <AppIcon name="handshake" size={36} color="#fff" />
+          </div>
+          <div className="financing-promo__body">
+            <h2 className="text-base font-bold text-[var(--ink)] m-0">
+              Personal Financing-i (Qard Hasan)
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 mb-4 leading-relaxed">
+              Interest-free support anytime. Repay on schedule to grow your trust score.
+            </p>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                setRequesting(true);
+                setSignStep(false);
+                setReqAmt(null);
+              }}
+              className="text-xs font-bold"
+            >
+              <AppIcon name="plus" size={14} /> Apply for Financing
+            </Button>
+          </div>
+        </article>
+      )}
+
+      {/* Loan Application Flow */}
+      {requesting && (
+        <Card variant="default" className="p-5 sm:p-6 space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="agreement" size={20} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--ink)]">Qard Hasan Agreement</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                100% interest-free. By signing below, you promise to repay the borrowed amount.
+              </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setRequesting(!requesting);
-              setSignStep(false);
-              setReqAmt(null);
-            }}
-            aria-label={requesting ? "Cancel loan request" : "Request a new loan"}
-          >
-            {requesting ? "Cancel" : "[icon: plus] New loan"}
-          </button>
-        </div>
-      </Card>
-
-      {requesting && (
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <h3>[icon: agreement] Qard Hasan Loan Agreement</h3>
-          <p><small>An interest-free loan. By signing below, you promise to repay the full amount by the due date.</small></p>
 
           {!signStep ? (
-            /* ── Step 1: Amount entry ─────────────────────────── */
-            <div className="wireframe-col" style={{ marginTop: "1rem" }}>
-              <small>Loan amount (Min. RM 1.00 — Qard Hasan loan)</small>
+            <div className="space-y-3 pt-2">
+              <div className="text-xs font-semibold text-[var(--text-secondary)]">
+                Select loan amount (Min. RM 1.00 — Max RM 500.00)
+              </div>
               <MoneyKeypad
                 min={1.0}
                 max={500}
-                confirmLabel="Next: Details →"
+                confirmLabel="Next: Fill Details →"
                 onConfirm={(amt) => {
                   setReqAmt(amt);
                   setSignStep(true);
@@ -125,130 +204,186 @@ function KidLoans() {
               />
             </div>
           ) : (
-            /* ── Step 2: Details + signature ─────────────────── */
-            <div className="wireframe-col" style={{ marginTop: "1rem" }}>
-              <div className="wireframe-box">
-                <div className="wireframe-space-between">
-                  <small>Loan requested (Qard Hasan)</small>
-                  <strong>RM {reqAmt!.toFixed(2)}</strong>
+            <div className="space-y-4 pt-2">
+              {/* Summary Card */}
+              <Card variant="soft" className="p-4 space-y-2 border border-[var(--border)]">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[var(--text-secondary)]">Requested Amount</span>
+                  <strong className="text-sm font-bold text-[var(--ink)] tabular-nums">
+                    RM {reqAmt!.toFixed(2)}
+                  </strong>
                 </div>
-                <div className="wireframe-space-between">
-                  <small>Admin fees</small>
-                  <strong>RM 0.00</strong>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[var(--text-secondary)]">Interest / Admin Fees</span>
+                  <strong className="text-sm font-bold text-[var(--success)]">RM 0.00 (Halal)</strong>
                 </div>
-                <div className="wireframe-space-between">
-                  <small>You repay (total)</small>
-                  <strong>RM {reqAmt!.toFixed(2)}</strong>
+                <div className="flex justify-between items-center text-xs pt-1 border-t border-[var(--border)]">
+                  <span className="font-semibold text-[var(--ink)]">Total Repayable</span>
+                  <strong className="text-base font-extrabold text-[var(--primary)] tabular-nums">
+                    RM {reqAmt!.toFixed(2)}
+                  </strong>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setSignStep(false)}
-                  style={{ marginTop: "0.5rem" }}
+                  className="mt-1 text-xs"
                 >
-                  [icon: back] Change amount
-                </button>
-              </div>
+                  <AppIcon name="back" size={14} /> Change Amount
+                </Button>
+              </Card>
 
-              <div>
-                <label>Reason for loan</label>
-                <input
-                  value={reqReason}
-                  onChange={(e) => setReqReason(e.target.value)}
-                  maxLength={200}
-                  placeholder="e.g. To buy a book"
-                />
-              </div>
+              {/* Purpose Input */}
+              <Input
+                label="Reason for loan"
+                id="loan-reason"
+                value={reqReason}
+                onChange={(e) => setReqReason(e.target.value)}
+                maxLength={200}
+                placeholder="E.g. School project supplies, art notebook"
+              />
 
+              {/* Repay Duration Selector */}
               <div>
-                <label>Repay in</label>
-                <div className="wireframe-row">
+                <label className="block text-xs font-semibold text-[var(--ink)] mb-2">
+                  Repayment Duration
+                </label>
+                <div className="grid grid-cols-4 gap-2">
                   {[7, 14, 30, 60].map((d) => (
-                    <button
+                    <Button
                       key={d}
                       type="button"
+                      variant={dueDays === d ? "primary" : "secondary"}
+                      size="sm"
                       onClick={() => setDueDays(d)}
-                      style={{
-                        flex: 1,
-                        border: dueDays === d ? "2px solid #000" : "1px solid #ccc",
-                        fontWeight: dueDays === d ? "bold" : "normal",
-                      }}
+                      className="justify-center"
                     >
                       {d} days
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
 
+              {/* Signature Capture */}
               <div>
-                <label>Your signature</label>
-                <div style={{ marginTop: "0.5rem" }}>
+                <label className="block text-xs font-semibold text-[var(--ink)] mb-2">
+                  Sign Digitally Below
+                </label>
+                <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-white p-2">
                   <SignaturePad onChange={setSignature} />
                 </div>
               </div>
 
-              <button
+              <Button
                 type="button"
+                variant="primary"
                 onClick={submitRequest}
-                style={{ marginTop: "1rem" }}
+                className="w-full justify-center text-sm font-bold"
               >
-                Sign & send to parent
-              </button>
+                Sign Agreement & Submit to Parent
+              </Button>
             </div>
           )}
         </Card>
       )}
 
-      <SectionTitle>My Loans</SectionTitle>
-      <div className="wireframe-col">
-        {data.loans.length === 0 && <Card className="wireframe-card">No loans yet.</Card>}
-        {data.loans.map((l: (typeof data.loans)[number]) => {
-          const remaining = Number(l.amount) - Number(l.repaid);
-          const overdue = l.status === "active" && new Date(l.due_date) < new Date();
-          return (
-            <Card key={l.id} className="wireframe-card">
-              <div className="wireframe-space-between">
-                <div>
-                  <strong>{l.reason || "Qard loan"}</strong>
-                  <div>
-                    <small>
-                      Due {l.due_date} ·{" "}
-                      {l.status === "repaid" ? (
-                        <strong>[✓ Repaid]</strong>
-                      ) : overdue ? (
-                        <strong>[OVERDUE]</strong>
-                      ) : (
-                        "On track"
-                      )}
-                    </small>
+      {/* Active & Past Loans filtered by tab */}
+      <div
+        className="space-y-3"
+        role="tabpanel"
+        id={selectedTab === "active" ? "panel-loans-active" : "panel-loans-closed"}
+        aria-labelledby={selectedTab === "active" ? "tab-loans-active" : "tab-loans-closed"}
+      >
+        <SectionTitle>
+          {selectedTab === "active" ? "Active Financing Agreements" : "Settled History"}
+        </SectionTitle>
+        {(selectedTab === "active" ? activeLoans : closedLoans).length === 0 ? (
+          <Card variant="soft" className="p-8 text-center text-sm text-[var(--text-muted)]">
+            {selectedTab === "active"
+              ? "No active loans. Tap 'Apply for Financing' above to request interest-free support."
+              : "No closed loans yet. Fully repaid loans will be recorded here."}
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {(selectedTab === "active" ? activeLoans : closedLoans).map((l: (typeof data.loans)[number]) => {
+              const remaining = Number(l.amount) - Number(l.repaid);
+              const overdue = l.status === "active" && new Date(l.due_date) < new Date();
+              return (
+                <Card
+                  key={l.id}
+                  variant="default"
+                  className={`p-5 rounded-2xl border transition-all duration-150 ${
+                    overdue
+                      ? "border-[var(--error)]/40 bg-[var(--error-soft)]/20"
+                      : "border-[var(--border)]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-bold text-[var(--ink)]">
+                          {l.reason || "Qard Hasan Loan"}
+                        </h4>
+                        {l.status === "repaid" ? (
+                          <Badge variant="success">Repaid</Badge>
+                        ) : overdue ? (
+                          <Badge variant="error">Overdue</Badge>
+                        ) : (
+                          <Badge variant="warning">Active</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        Due: {new Date(l.due_date).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-base font-bold tabular-nums text-[var(--ink)] block">
+                        RM {remaining.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        of RM {Number(l.amount).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div><strong>RM {remaining.toFixed(2)}</strong></div>
-                  <small>of RM {Number(l.amount).toFixed(2)}</small>
-                </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => exportLoanPdf({ ...l, kidName: data.kid.name })}
-                aria-label={`Download loan ${l.status === "repaid" ? "receipt" : "agreement"} PDF for ${l.reason || "Qard loan"}`}
-                style={{ width: "100%", marginTop: "0.5rem" }}
-              >
-                {l.status === "repaid" ? "[icon: pdf] Download receipt (PDF)" : "[icon: pdf] Download agreement (PDF)"}
-              </button>
+                  <div className="flex items-center gap-2 pt-3 mt-3 border-t border-[var(--border)]">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => exportLoanPdf({ ...l, kidName: data.kid.name })}
+                      className="flex-1 justify-center text-xs"
+                      aria-label={`Download loan ${l.status === "repaid" ? "receipt" : "agreement"} PDF for ${l.reason || "Qard loan"}`}
+                    >
+                      <AppIcon name="pdf" size={14} />
+                      {l.status === "repaid" ? "Receipt (PDF)" : "Agreement (PDF)"}
+                    </Button>
 
-              {l.status === "active" && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setActive(active === l.id ? null : l.id)}
-                    style={{ width: "100%", marginTop: "0.5rem" }}
-                  >
-                    Repay
-                  </button>
-                  {active === l.id && (
-                    <div className="wireframe-box" style={{ marginTop: "0.5rem" }}>
-                      <p><small>Available balance: RM {kidBalance.toFixed(2)}</small></p>
+                    {l.status === "active" && (
+                      <Button
+                        type="button"
+                        variant={active === l.id ? "secondary" : "primary"}
+                        size="sm"
+                        onClick={() => setActive(active === l.id ? null : l.id)}
+                        className="flex-1 justify-center text-xs"
+                      >
+                        {active === l.id ? "Cancel" : "Repay Now"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {l.status === "active" && active === l.id && (
+                    <div className="pt-3 mt-3 border-t border-dashed border-[var(--border)] space-y-3">
+                      <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                        <span>Wallet Balance: <strong>RM {kidBalance.toFixed(2)}</strong></span>
+                        <span>Outstanding: <strong>RM {remaining.toFixed(2)}</strong></span>
+                      </div>
                       <MoneyKeypad
                         key={l.id}
                         min={0.5}
@@ -259,12 +394,12 @@ function KidLoans() {
                       />
                     </div>
                   )}
-                </>
-              )}
-            </Card>
-          );
-        })}
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getDailyQuote } from "@/data/quotes";
 import { AppIcon } from "@/components/ui/app-icon";
+import { Card } from "@/components/ui/card";
 
 export function QuoteCard({ variant: _variant = "kid" }: { variant?: "kid" | "parent" }) {
   const [q, setQ] = useState(() => getDailyQuote());
@@ -10,16 +11,17 @@ export function QuoteCard({ variant: _variant = "kid" }: { variant?: "kid" | "pa
   }, []);
 
   return (
-    <section className="ui-card card-soft">
-      <div className="wireframe-row" style={{ gap: "0.5rem", marginBottom: "0.5rem" }}>
-        <AppIcon name="book" size={18} color="var(--indigo-velvet)" aria-hidden />
-        <strong>
-          Stellar Wisdom ·{" "}
+    <Card variant="soft" className="p-4 sm:p-5 border border-[var(--border)]">
+      <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--ink)]">
+        <AppIcon name="book" size={18} color="var(--primary)" aria-hidden />
+        <span>
+          Daily Reflection ·{" "}
           {new Date().toLocaleDateString(undefined, { weekday: "long" })}
-        </strong>
+        </span>
       </div>
-      <p style={{ margin: "0.5rem 0" }}>“{q.text}”</p>
-      {q.source && <small className="text-secondary">— {q.source}</small>}
-    </section>
+      <p className="text-xs sm:text-sm text-[var(--ink)] italic leading-relaxed my-1.5">“{q.text}”</p>
+      {q.source && <small className="text-xs text-[var(--text-secondary)] block font-semibold mt-1">— {q.source}</small>}
+    </Card>
   );
 }
+

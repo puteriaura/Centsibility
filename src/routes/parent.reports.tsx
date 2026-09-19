@@ -8,19 +8,24 @@ import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { isDebitTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
 import type { StatementResult, StatementTx as Tx } from "@/types/domain";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SectionTitle } from "@/components/ui/section-title";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export const Route = createFileRoute("/parent/reports")({
   head: () => ({ meta: [{ title: "Monthly Statement — Centsibility" }] }),
   component: Reports,
 });
 
-
-
 const isDebit = isDebitTransaction;
 const TYPE_LABELS = TRANSACTION_TYPE_LABELS;
+
 function fmtRM(n: number) {
   return `RM ${Math.abs(n).toFixed(2)}`;
 }
+
 function groupByDate(txs: Tx[]): Record<string, Tx[]> {
   return txs.reduce(
     (acc, tx) => {
@@ -31,6 +36,8 @@ function groupByDate(txs: Tx[]): Record<string, Tx[]> {
     {} as Record<string, Tx[]>,
   );
 }
+
+const PIE_COLORS = ["#EC008C", "#B60081", "#161A50", "#F5A623", "#17A673", "#9B72CF"];
 
 function Reports() {
   const { kids, loans, loading } = useParentData();
@@ -105,10 +112,10 @@ function Reports() {
 
   if (loading) {
     return (
-      <div>
-        <Skeleton />
-        <Skeleton />
-        <Skeleton />
+      <div className="space-y-4">
+        <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
+        <Skeleton style={{ height: "14rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "14rem", borderRadius: "20px" }} />
       </div>
     );
   }
@@ -138,17 +145,26 @@ function Reports() {
   const overdue = loans.filter((l) => l.status === "active" && new Date(l.due_date) < new Date());
 
   return (
-    <>
-      {/* Header + Controls */}
-      <header>
+    <div className="space-y-6 pb-12">
+      {/* Header + Selector Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1>Monthly Statement</h1>
-          <p>Detailed financial oversight for your children.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--ink)] flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name="chart" size={20} />
+            </div>
+            Monthly Statements
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
+            Financial analytics, category breakdown, and exportable statements for your family.
+          </p>
         </div>
-        <div>
+
+        <div className="flex items-center gap-2">
           <select
             value={kidId}
             onChange={(e) => setKidId(e.target.value)}
+            className="h-10 px-3 text-xs sm:text-sm bg-white border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
           >
             <option value="">Select Child</option>
             {kids.map((k) => (
@@ -157,60 +173,75 @@ function Reports() {
               </option>
             ))}
           </select>
+
           <input
             type="month"
             value={format(month, "yyyy-MM")}
             onChange={(e) => {
               if (e.target.value) setMonth(startOfMonth(new Date(e.target.value + "-01")));
             }}
+            className="h-10 px-3 text-xs sm:text-sm bg-white border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
           />
         </div>
-      </header>
+      </div>
 
-      {/* Body */}
       {fetching ? (
-        <div>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i}>[loading statement data...]</div>
-          ))}
+        <div className="space-y-3">
+          <Skeleton style={{ height: "6rem", borderRadius: "16px" }} />
+          <Skeleton style={{ height: "12rem", borderRadius: "16px" }} />
         </div>
       ) : !stmt ? (
-        <section>
-          <div>[icon: chart]</div>
-          <h2>No child selected</h2>
-          <p>Choose a child and month to view their statement.</p>
-        </section>
+        <Card variant="soft" className="p-8 text-center space-y-2">
+          <AppIcon name="chart" size={28} color="var(--primary)" />
+          <h3 className="text-base font-bold text-[var(--ink)]">No Child Account Selected</h3>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Choose a child and statement month above to load the report.
+          </p>
+        </Card>
       ) : (
-        <div>
-          {/* Summary Cards */}
-          <div>
-            <SummaryCard
-              label="Total In"
-              value={totalIn}
-              icon="[icon: download]"
-            />
-            <SummaryCard
-              label="Total Out"
-              value={totalOut}
-              icon="[icon: upload]"
-            />
-            <SummaryCard
-              label="Net Change"
-              value={net}
-              icon="[icon: scales]"
-            />
-            <SummaryCard
-              label="End Balance"
-              value={Number(stmt.kid.balance)}
-              icon="[icon: coins]"
-            />
+        <div className="space-y-6">
+          {/* Summary Metric Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card variant="default" className="p-4 border border-[var(--border)]">
+              <span className="text-xs text-[var(--text-secondary)] font-semibold block">Total Deposits</span>
+              <div className="text-lg sm:text-xl font-bold text-[var(--success)] tabular-nums mt-1">
+                +{fmtRM(totalIn)}
+              </div>
+            </Card>
+
+            <Card variant="default" className="p-4 border border-[var(--border)]">
+              <span className="text-xs text-[var(--text-secondary)] font-semibold block">Total Outflow</span>
+              <div className="text-lg sm:text-xl font-bold text-[var(--ink)] tabular-nums mt-1">
+                −{fmtRM(totalOut)}
+              </div>
+            </Card>
+
+            <Card variant="default" className="p-4 border border-[var(--border)]">
+              <span className="text-xs text-[var(--text-secondary)] font-semibold block">Net Change</span>
+              <div
+                className={`text-lg sm:text-xl font-bold tabular-nums mt-1 ${
+                  net >= 0 ? "text-[var(--success)]" : "text-[var(--error)]"
+                }`}
+              >
+                {net >= 0 ? "+" : "−"}{fmtRM(net)}
+              </div>
+            </Card>
+
+            <Card variant="default" className="p-4 border border-[var(--border)]">
+              <span className="text-xs text-[var(--text-secondary)] font-semibold block">Closing Balance</span>
+              <div className="text-lg sm:text-xl font-extrabold text-[var(--primary)] tabular-nums mt-1">
+                {fmtRM(Number(stmt.kid.balance))}
+              </div>
+            </Card>
           </div>
 
-          {/* Expenses Circular Graph */}
+          {/* Expenses Donut Chart */}
           {totalOut > 0 && (
-            <section>
-              <h2>Expense Breakdown</h2>
-              <div style={{ height: "200px" }}>
+            <Card variant="default" className="p-5 sm:p-6 border border-[var(--border)] space-y-4">
+              <h3 className="text-sm font-bold text-[var(--ink)] uppercase tracking-wider">
+                Expense Category Breakdown
+              </h3>
+              <div className="h-52 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -228,9 +259,9 @@ function Reports() {
                       ).map(([name, value]) => ({ name, value }))}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
+                      innerRadius={55}
                       outerRadius={80}
-                      paddingAngle={5}
+                      paddingAngle={4}
                       dataKey="value"
                     >
                       {Object.entries(
@@ -244,174 +275,200 @@ function Reports() {
                             },
                             {} as Record<string, number>,
                           ),
-                      ).map((entry, index) => {
-                        const COLORS = ["#333333", "#666666", "#999999", "#cccccc", "#777777"];
-                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
-                      })}
+                      ).map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
                     </Pie>
                     <RechartsTooltip formatter={(value: number) => `RM ${value.toFixed(2)}`} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </section>
+            </Card>
           )}
 
-          {/* Statement Container */}
-          <div
-            ref={stmtRef}
-            id="statement-area"
-          >
-            {/* Statement Header */}
-            <div>
-              <div>
+          {/* Statement printable area */}
+          <div ref={stmtRef} id="statement-area" className="space-y-4">
+            <Card variant="default" className="p-5 sm:p-6 border border-[var(--border)] shadow-xs space-y-5">
+              {/* Statement Header */}
+              <div className="flex items-start justify-between border-b border-[var(--border)] pb-4">
                 <div>
-                  <h2>Centsibility</h2>
-                  <h3>{stmt.kid.name}&apos;s Statement</h3>
-                  <p>
-                    Period: <strong>{format(month, "MMMM yyyy")}</strong>
+                  <span className="text-xs font-bold text-[var(--primary)] uppercase tracking-wider block">
+                    Centsibility Digital Bank
+                  </span>
+                  <h2 className="text-xl font-bold text-[var(--ink)] mt-0.5">
+                    {stmt.kid.name}&apos;s Official Statement
+                  </h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    Accounting Period: <strong>{format(month, "MMMM yyyy")}</strong>
                   </p>
                 </div>
-                <div>
-                  <div>Generated: {format(new Date(), "dd/MM/yyyy")}</div>
+                <div className="text-right text-xs text-[var(--text-muted)]">
+                  <span>Generated: {format(new Date(), "dd MMM yyyy")}</span>
                 </div>
               </div>
-            </div>
 
-            {/* Loan Fees */}
-            {loanFees.length > 0 && (
-              <section>
-                <p>
-                  [icon: warning] Loan Fee Breakdown
-                </p>
-                <ul>
+              {/* Loan Fee Callout if applicable */}
+              {loanFees.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-[var(--warning-soft)] border border-[var(--warning)]/20 text-xs space-y-1">
+                  <span className="font-bold text-[var(--ink)] block">Loan Administration Fees</span>
                   {loanFees.map((f) => (
-                    <li key={f.id}>
+                    <div key={f.id} className="flex justify-between text-[var(--text-secondary)]">
                       <span>{f.label}</span>
-                      <span>−{fmtRM(f.amount)}</span>
-                    </li>
-                  ))}
-                  <li>
-                    <span><strong>Total fees:</strong></span>
-                    <span>−{fmtRM(loanFees.reduce((s, f) => s + f.amount, 0))}</span>
-                  </li>
-                </ul>
-              </section>
-            )}
-
-            {/* Type Filter */}
-            <div>
-              {availableTypes.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTypeFilter(t)}
-                >
-                  {typeFilter === t ? `[ ${t === "ALL" ? "All" : (TYPE_LABELS[t] ?? t)} ]` : (t === "ALL" ? "All" : (TYPE_LABELS[t] ?? t))}
-                </button>
-              ))}
-            </div>
-
-            {/* Transaction List */}
-            <div>
-              {filtered.length === 0 ? (
-                <div>No transactions this period.</div>
-              ) : (
-                <div>
-                  {sortedDates.map((date) => (
-                    <div key={date}>
-                      <div>
-                        <strong>{format(new Date(date + "T12:00:00"), "EEEE, d MMMM yyyy")}</strong>
-                      </div>
-                      {grouped[date].map((tx) => {
-                        const debit = isDebit(tx.type);
-                        const runBal = balanceMap.get(tx.id);
-                        return (
-                          <div key={tx.id}>
-                            <span>[{TYPE_LABELS[tx.type] ?? tx.type}]</span>
-                            <div>
-                              <p>{tx.label}</p>
-                              <small>{format(new Date(tx.created_at), "h:mm a")}</small>
-                            </div>
-                            <div>
-                              <p>
-                                {debit ? "−" : "+"}
-                                {fmtRM(tx.amount)}
-                              </p>
-                              {runBal !== undefined && (
-                                <small>bal {fmtRM(runBal)}</small>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      <span className="tabular-nums font-semibold">−{fmtRM(f.amount)}</span>
                     </div>
                   ))}
+                  <div className="flex justify-between pt-1 border-t border-[var(--warning)]/30 font-bold text-[var(--ink)]">
+                    <span>Total Service Fees</span>
+                    <span className="tabular-nums">−{fmtRM(loanFees.reduce((s, f) => s + f.amount, 0))}</span>
+                  </div>
                 </div>
               )}
-            </div>
+
+              {/* Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                {availableTypes.map((t) => {
+                  const isSelected = typeFilter === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTypeFilter(t)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-[var(--primary)] text-white shadow-xs"
+                          : "bg-[var(--surface-soft)] text-[var(--text-secondary)] hover:text-[var(--ink)] hover:bg-[var(--white)] border border-[var(--border)]"
+                      }`}
+                    >
+                      {t === "ALL" ? "All Entries" : (TYPE_LABELS[t] ?? t)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Transactions List */}
+              <div className="space-y-4">
+                {filtered.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-[var(--text-muted)]">
+                    No transactions recorded for this selected criteria.
+                  </div>
+                ) : (
+                  sortedDates.map((date) => (
+                    <div key={date} className="space-y-2">
+                      <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">
+                        {format(new Date(date + "T12:00:00"), "EEEE, d MMMM yyyy")}
+                      </span>
+                      <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-white overflow-hidden">
+                        {grouped[date].map((tx) => {
+                          const debit = isDebit(tx.type);
+                          const runBal = balanceMap.get(tx.id);
+                          return (
+                            <div key={tx.id} className="p-3 flex items-center justify-between gap-3 text-xs">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={debit ? "default" : "success"}>
+                                    {TYPE_LABELS[tx.type] ?? tx.type}
+                                  </Badge>
+                                  <strong className="text-sm font-semibold text-[var(--ink)]">
+                                    {tx.label}
+                                  </strong>
+                                </div>
+                                <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                                  {format(new Date(tx.created_at), "h:mm a")}
+                                </span>
+                              </div>
+
+                              <div className="text-right shrink-0">
+                                <span
+                                  className={`text-sm font-bold tabular-nums block ${
+                                    debit ? "text-[var(--ink)]" : "text-[var(--success)]"
+                                  }`}
+                                >
+                                  {debit ? "−" : "+"}
+                                  {fmtRM(tx.amount)}
+                                </span>
+                                {runBal !== undefined && (
+                                  <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
+                                    bal {fmtRM(runBal)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
           </div>
 
-          {/* Actions */}
-          <div>
-            <button onClick={handleDownloadPdf}>
-              [icon: pdf] PDF
-            </button>
-            <button onClick={handleWhatsApp}>
-              [icon: whatsapp] WhatsApp
-            </button>
-            <button onClick={handleEmail}>
-              [icon: email] Email
-            </button>
+          {/* Export Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button type="button" variant="primary" onClick={handleDownloadPdf}>
+              <AppIcon name="pdf" size={16} /> Print / Save PDF
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleWhatsApp}>
+              <AppIcon name="whatsapp" size={16} /> Share to WhatsApp
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleEmail}>
+              <AppIcon name="email" size={16} /> Send via Email
+            </Button>
           </div>
         </div>
       )}
 
-      {/* Trust Overview */}
-      <h2>Loan trust overview</h2>
-      <div>
-        {kids.map((k) => (
-          <section key={k.id}>
-            <div>
-              <div>
-                <strong>{k.name}</strong>
-                <div>Trust score</div>
+      {/* Loan Trust Scores */}
+      <div className="space-y-3">
+        <SectionTitle>Loan Reliability Scores</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {kids.map((k) => (
+            <Card key={k.id} variant="default" className="p-4 border border-[var(--border)] space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <strong className="text-sm font-bold text-[var(--ink)]">{k.name}</strong>
+                  <span className="text-xs text-[var(--text-muted)] block">Trust Rating</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-extrabold text-[var(--ink)] tabular-nums">{k.trust_score}</div>
+                  <Badge variant={k.trust_score >= 750 ? "success" : k.trust_score >= 650 ? "brand" : "warning"}>
+                    {k.trust_score >= 750 ? "Excellent" : k.trust_score >= 650 ? "Good" : "Fair"}
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <div>{k.trust_score}</div>
-                <small>
-                  {k.trust_score >= 750 ? "Excellent" : k.trust_score >= 650 ? "Good" : "Fair"}
-                </small>
+              <div className="w-full bg-[var(--surface-soft)] rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-[var(--primary)] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, Math.max(0, ((k.trust_score - 300) / 600) * 100))}%` }}
+                />
               </div>
-            </div>
-            <div>
-              <progress
-                value={Math.max(0, k.trust_score - 300)}
-                max={600}
-                style={{ width: "100%" }}
-              />
-            </div>
-          </section>
-        ))}
+            </Card>
+          ))}
+        </div>
       </div>
 
+      {/* Overdue Loans Banner if any */}
       {overdue.length > 0 && (
-        <>
-          <h2>[icon: warning] Overdue loans</h2>
-          <div>
+        <div className="space-y-3">
+          <SectionTitle>Overdue Repayments</SectionTitle>
+          <div className="space-y-2">
             {overdue.map((l) => (
-              <section key={l.id}>
+              <Card key={l.id} variant="default" className="p-4 border border-[var(--error)]/30 bg-[var(--error-soft)]/20 flex items-center justify-between gap-3">
                 <div>
-                  <div>
-                    <strong>{l.kids?.name}</strong>
-                    <div>Due {l.due_date}</div>
-                  </div>
-                  <div>
-                    RM {(Number(l.amount) - Number(l.repaid)).toFixed(2)}
-                  </div>
+                  <strong className="text-sm font-bold text-[var(--ink)]">{l.kids?.name}</strong>
+                  <span className="text-xs text-[var(--error)] block font-semibold">
+                    Due Date: {l.due_date} (Overdue)
+                  </span>
                 </div>
-              </section>
+                <div className="text-right">
+                  <span className="text-base font-extrabold text-[var(--error)] tabular-nums">
+                    RM {(Number(l.amount) - Number(l.repaid)).toFixed(2)}
+                  </span>
+                </div>
+              </Card>
             ))}
           </div>
-        </>
+        </div>
       )}
 
       <style>{`
@@ -421,26 +478,6 @@ function Reports() {
           #statement-area { display: block !important; padding: 24px; font-size: 12px; }
         }
       `}</style>
-    </>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-}) {
-  return (
-    <section>
-      <div>
-        <span>{icon}</span>
-        <strong>{label}</strong>
-      </div>
-      <div>RM {value.toFixed(2)}</div>
-    </section>
+    </div>
   );
 }

@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import {
@@ -12,6 +14,8 @@ import {
 } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
 
@@ -22,20 +26,20 @@ export const Route = createFileRoute("/kid/invest")({
 
 // Risk levels
 const RISK_LEVELS = [
-  { key: "very_low",  label: "Very Low",  rate: 0.0005, desc: "Tiny gains, almost no loss" },
-  { key: "low",       label: "Low",       rate: 0.001,  desc: "Small steady growth" },
-  { key: "medium",    label: "Medium",    rate: 0.002,  desc: "Balanced risk & reward" },
-  { key: "high",      label: "High",      rate: 0.003,  desc: "Bigger swings possible" },
-  { key: "very_high", label: "Very High", rate: 0.004,  desc: "Max gains, max losses" },
+  { key: "very_low",  label: "Very Low",  rate: 0.0005, desc: "Tiny steady gains, minimal risk" },
+  { key: "low",       label: "Low",       rate: 0.001,  desc: "Small steady growth rate" },
+  { key: "medium",    label: "Medium",    rate: 0.002,  desc: "Balanced Shariah growth" },
+  { key: "high",      label: "High",      rate: 0.003,  desc: "Higher potential return swings" },
+  { key: "very_high", label: "Very High", rate: 0.004,  desc: "Maximum returns, highest volatility" },
 ] as const;
 
 // Frequency options
 const FREQ_OPTIONS = [
-  { key: "minute",  label: "Every Min",  desc: "Tiny ticks every minute" },
-  { key: "hourly",  label: "Hourly",     desc: "Small changes each hour" },
-  { key: "daily",   label: "Daily",      desc: "Once per day" },
-  { key: "weekly",  label: "Weekly",     desc: "Once per week" },
-  { key: "monthly", label: "Monthly",    desc: "Once per month" },
+  { key: "minute",  label: "Every Min",  desc: "Instant live ticks" },
+  { key: "hourly",  label: "Hourly",     desc: "Compounded hourly" },
+  { key: "daily",   label: "Daily",      desc: "Daily market close" },
+  { key: "weekly",  label: "Weekly",     desc: "Weekly rebalancing" },
+  { key: "monthly", label: "Monthly",    desc: "Monthly harvest" },
 ] as const;
 
 function KidInvest() {
@@ -56,10 +60,15 @@ function KidInvest() {
       .catch(() => {});
   }, [refresh]);
 
-  if (loading || !data)
+  if (loading || !data) {
     return (
-      <Card className="wireframe-card">Loading…</Card>
+      <div className="space-y-4">
+        <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
+        <Skeleton style={{ height: "14rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
+      </div>
     );
+  }
 
   const k = data.kid;
   const code = getKidSession()?.code;
@@ -69,8 +78,6 @@ function KidInvest() {
   const balance = Number(k.balance);
   const invested = Number(k.invest_balance);
   const projected = invested * Math.pow(1 + rate, 4);
-
-  const riskInfo = RISK_LEVELS.find((r) => r.key === currentRisk) ?? RISK_LEVELS[1];
 
   const setRisk = async (key: string) => {
     if (!code || savingRisk) return;
@@ -104,7 +111,7 @@ function KidInvest() {
     if (!code) return;
     try {
       await edgeKidInvestDeposit({ code, amount });
-      toast.success("Invested!");
+      toast.success("Funds added to investment!");
       refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
@@ -115,7 +122,7 @@ function KidInvest() {
     if (!code) return;
     try {
       await edgeKidInvestWithdraw({ code, amount });
-      toast.success("Moved back to wallet");
+      toast.success("Funds recalled to main wallet");
       refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
@@ -134,7 +141,10 @@ function KidInvest() {
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    chartData.unshift({ name: d.toLocaleDateString("en-US", { weekday: "short" }), value: Math.max(0, runningBalance) });
+    chartData.unshift({
+      name: d.toLocaleDateString("en-US", { weekday: "short" }),
+      value: Math.max(0, runningBalance),
+    });
     const dayTxs = last7DaysTxs.filter(
       (t: (typeof last7DaysTxs)[number]) => new Date(t.created_at).getDate() === d.getDate(),
     );
@@ -154,132 +164,215 @@ function KidInvest() {
   const pctChange = startBal === 0 ? (endBal > 0 ? 100 : 0) : (absChange / startBal) * 100;
 
   return (
-    <>
-      <h1>[icon: invest] Cosmic Growth</h1>
-      <p>Choose your risk and frequency. Your money grows (or dips) based on your settings.</p>
+    <div className="space-y-6 pb-12">
+      <section className="deposit-hero" aria-label="Invested portfolio">
+        <div className="deposit-hero__copy">
+          <p className="deposit-hero__label">Invested portfolio</p>
+          <p className="deposit-hero__amount tabular-nums">RM{invested.toFixed(2)}</p>
+          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
+            {status === "PROFIT" ? "+" : status === "LOSS" ? "−" : ""}
+            RM{absChange.toFixed(2)} ({pctChange.toFixed(1)}%) · 7 days · Wallet RM{balance.toFixed(2)}
+          </p>
+        </div>
+        <div className="deposit-hero__mascot" aria-hidden="true">
+          <AppIcon name="invest" size={32} color="#fff" />
+        </div>
+      </section>
+
+      <div>
+        <h1 className="text-lg font-bold text-[var(--ink)] m-0">Halal Growth</h1>
+        <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 mb-0">
+          Shariah-compliant fund simulation with risk controls.
+        </p>
+      </div>
 
       {/* Balance card + chart */}
-      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-        <div className="wireframe-space-between">
+      <Card variant="default" className="p-5 sm:p-6 rounded-2xl border border-[var(--border)] space-y-4">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <small>Generating</small>
-            <div style={{ fontSize: "2rem", fontWeight: "bold" }}>RM {invested.toFixed(2)}</div>
-            <div>
-              <small>
-                {status === "PROFIT" ? "[↑]" : status === "LOSS" ? "[↓]" : "[→]"} RM {absChange.toFixed(2)} ({pctChange.toFixed(1)}%) · 7d
-              </small>
+            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider block">
+              7-day movement
+            </span>
+            <div className="flex items-center gap-1.5 mt-1 text-xs">
+              <span
+                className={`font-bold tabular-nums ${
+                  status === "PROFIT"
+                    ? "text-[var(--success)]"
+                    : status === "LOSS"
+                      ? "text-[var(--error)]"
+                      : "text-[var(--text-muted)]"
+                }`}
+              >
+                {status === "PROFIT" ? "+ " : status === "LOSS" ? "- " : ""}RM {absChange.toFixed(2)} ({pctChange.toFixed(1)}%)
+              </span>
             </div>
           </div>
+
           <div>
-            <small>Status: <strong>{status}</strong></small>
+            {status === "PROFIT" ? (
+              <Badge variant="success">Profit</Badge>
+            ) : status === "LOSS" ? (
+              <Badge variant="error">Dip</Badge>
+            ) : (
+              <Badge variant="default">Steady</Badge>
+            )}
           </div>
         </div>
-        <div style={{ height: "100px", marginTop: "1rem" }}>
+
+        {/* Solid fill only — no chart gradients */}
+        <div className="h-28 sm:h-32 -mx-2 pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
               <YAxis domain={["auto", "auto"]} hide />
-              <Area type="monotone" dataKey="value" stroke="#666" strokeWidth={1.5} fill="#eee" />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="var(--primary)"
+                strokeWidth={2.5}
+                fill="var(--primary-soft)"
+                fillOpacity={1}
+                isAnimationActive={false}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </Card>
 
-      {/* Rate info */}
-      <div className="wireframe-box" style={{ marginTop: "0.5rem", textAlign: "center" }}>
-        <small>
-          Growth rate: <strong>{(rate * 100).toFixed(2)}%</strong> per settle ·
-          Frequency: <strong>{FREQ_OPTIONS.find((f) => f.key === currentFreq)?.label ?? currentFreq}</strong> ·
-          Projected (4 cycles): <strong>RM {projected.toFixed(2)}</strong>
-        </small>
-      </div>
+        {/* Rate info footer */}
+        <div className="pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between text-xs text-[var(--text-secondary)] gap-2">
+          <span>
+            Growth rate: <strong className="text-[var(--ink)]">{(rate * 100).toFixed(2)}%</strong> / cycle
+          </span>
+          <span>
+            Cadence: <strong className="text-[var(--ink)]">{FREQ_OPTIONS.find((f) => f.key === currentFreq)?.label ?? currentFreq}</strong>
+          </span>
+          <span>
+            Projected (4 cycles): <strong className="text-[var(--primary)] font-bold">RM {projected.toFixed(2)}</strong>
+          </span>
+        </div>
+      </Card>
 
       {/* ── Risk Appetite ── */}
-      <SectionTitle>[icon: chart] Risk Appetite</SectionTitle>
-      <Card className="wireframe-card">
-        <p><small>Higher risk = bigger potential gains AND bigger potential losses.</small></p>
-        <div className="wireframe-col" style={{ marginTop: "0.5rem" }}>
-          {RISK_LEVELS.map((r) => (
-            <button
-              key={r.key}
-              type="button"
-              onClick={() => setRisk(r.key)}
-              disabled={savingRisk}
-              className="wireframe-space-between"
-              style={{
-                border: currentRisk === r.key ? "2px solid #000" : "1px solid #ccc",
-                fontWeight: currentRisk === r.key ? "bold" : "normal",
-              }}
-            >
-              <div style={{ textAlign: "left" }}>
-                <strong>{r.label}</strong>
-                <div><small>{r.desc}</small></div>
-              </div>
-              <div>{(r.rate * 100).toFixed(2)}%</div>
-            </button>
-          ))}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <AppIcon name="chart" size={18} color="var(--primary)" />
+          <SectionTitle>Risk Appetite</SectionTitle>
         </div>
-      </Card>
+        <Card variant="default" className="p-4 sm:p-5 space-y-3">
+          <p className="text-xs text-[var(--text-secondary)]">
+            Higher risk offers higher growth potential alongside potential market swings.
+          </p>
+          <div className="space-y-2">
+            {RISK_LEVELS.map((r) => {
+              const isSelected = currentRisk === r.key;
+              return (
+                <button
+                  key={r.key}
+                  type="button"
+                  onClick={() => setRisk(r.key)}
+                  disabled={savingRisk}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all duration-150 cursor-pointer min-h-[44px] ${
+                    isSelected
+                      ? "border-[var(--primary)] bg-[var(--surface-pink)] shadow-xs"
+                      : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <strong className={`text-sm ${isSelected ? "text-[var(--primary)]" : "text-[var(--ink)]"}`}>
+                        {r.label}
+                      </strong>
+                      {isSelected && <Badge variant="brand">Active</Badge>}
+                    </div>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">{r.desc}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold tabular-nums text-[var(--ink)]">
+                      {(r.rate * 100).toFixed(2)}%
+                    </span>
+                    <span className="block text-[10px] text-[var(--text-muted)]">rate</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
 
       {/* ── Update Frequency ── */}
-      <SectionTitle>[icon: timer] Update Frequency</SectionTitle>
-      <Card className="wireframe-card">
-        <p><small>How often your investment grows or changes.</small></p>
-        <div className="wireframe-grid-3" style={{ marginTop: "0.5rem" }}>
-          {FREQ_OPTIONS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFreq(f.key)}
-              disabled={savingFreq}
-              style={{
-                border: currentFreq === f.key ? "2px solid #000" : "1px solid #ccc",
-                textAlign: "left",
-              }}
-            >
-              <strong>{f.label}</strong>
-              <div><small>{f.desc}</small></div>
-            </button>
-          ))}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <AppIcon name="timer" size={18} color="var(--primary)" />
+          <SectionTitle>Growth Schedule</SectionTitle>
         </div>
-      </Card>
+        <Card variant="default" className="p-4 sm:p-5 space-y-3">
+          <p className="text-xs text-[var(--text-secondary)]">
+            Choose how frequently your investment portfolio compounds returns.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {FREQ_OPTIONS.map((f) => {
+              const isSelected = currentFreq === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFreq(f.key)}
+                  disabled={savingFreq}
+                  className={`p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer min-h-[44px] ${
+                    isSelected
+                      ? "border-[var(--primary)] bg-[var(--surface-pink)] shadow-xs"
+                      : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
+                  }`}
+                >
+                  <strong className={`text-xs sm:text-sm block ${isSelected ? "text-[var(--primary)]" : "text-[var(--ink)]"}`}>
+                    {f.label}
+                  </strong>
+                  <span className="text-[11px] text-[var(--text-secondary)] mt-0.5 block">
+                    {f.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
 
-      {/* ── Transfer Energy ── */}
-      <SectionTitle>Transfer Energy</SectionTitle>
-      <Card className="wireframe-card">
-        <div className="wireframe-grid-2" style={{ marginBottom: "0.5rem" }}>
-          <button
-            type="button"
-            onClick={() => setDir("in")}
-            style={{
-              border: dir === "in" ? "2px solid #000" : "1px solid #ccc",
-              fontWeight: dir === "in" ? "bold" : "normal",
-            }}
-          >
-            [icon: plus] Grow
-          </button>
-          <button
-            type="button"
-            onClick={() => setDir("out")}
-            style={{
-              border: dir === "out" ? "2px solid #000" : "1px solid #ccc",
-              fontWeight: dir === "out" ? "bold" : "normal",
-            }}
-          >
-            [icon: recall] Recall
-          </button>
-        </div>
-        <div className="wireframe-space-between" style={{ marginBottom: "0.5rem" }}>
-          <small>Core: RM {balance.toFixed(2)}</small>
-          <small>Generating: RM {invested.toFixed(2)}</small>
-        </div>
-        <MoneyKeypad
-          key={dir}
-          min={0.5}
-          max={dir === "in" ? balance : invested}
-          confirmLabel={dir === "in" ? "Lock Energy" : "Recall Energy"}
-          onConfirm={dir === "in" ? deposit : withdraw}
-        />
-      </Card>
-    </>
+      {/* ── Transfer Energy / Invest & Recall ── */}
+      <div className="space-y-3">
+        <SectionTitle>Manage Investment Funds</SectionTitle>
+        <Card variant="default" className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={dir === "in" ? "primary" : "secondary"}
+              onClick={() => setDir("in")}
+              className="w-full justify-center"
+            >
+              <AppIcon name="plus" size={14} /> Add to Invest
+            </Button>
+            <Button
+              type="button"
+              variant={dir === "out" ? "primary" : "secondary"}
+              onClick={() => setDir("out")}
+              className="w-full justify-center"
+            >
+              <AppIcon name="recall" size={14} /> Recall to Wallet
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] py-1 border-b border-[var(--border)]">
+            <span>Core Wallet: <strong>RM {balance.toFixed(2)}</strong></span>
+            <span>Invested Pool: <strong>RM {invested.toFixed(2)}</strong></span>
+          </div>
+
+          <MoneyKeypad
+            key={dir}
+            min={0.5}
+            max={dir === "in" ? balance : invested}
+            confirmLabel={dir === "in" ? "Deposit to Investment" : "Recall to Main Wallet"}
+            onConfirm={dir === "in" ? deposit : withdraw}
+          />
+        </Card>
+      </div>
+    </div>
   );
 }

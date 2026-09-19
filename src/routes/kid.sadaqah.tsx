@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidSadaqah } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,15 +39,21 @@ function KidSadaqah() {
   }, [data]);
 
   const causes = [
-    { name: "Masjid", iconLabel: "[icon: mosque]", impact: "1 day of electricity" },
-    { name: "Orphans", iconLabel: "[icon: baby]", impact: "1 nutritious meal" },
-    { name: "Water Wells", iconLabel: "[icon: water]", impact: "Clean water for a family" },
+    { name: "Local Masjid", icon: "mosque", impact: "Helps community electricity & care" },
+    { name: "Orphan Relief", icon: "baby", impact: "Provides wholesome hot meals" },
+    { name: "Clean Water Wells", icon: "water", impact: "Brings fresh clean water to families" },
   ];
 
-  if (loading || !data)
+  if (loading || !data) {
     return (
-      <Card className="wireframe-card">Loading…</Card>
+      <div className="space-y-4">
+        <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
+        <Skeleton style={{ height: "10rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
+      </div>
     );
+  }
+
   const balance = Number(data.kid.balance);
 
   const give = async (amount: number) => {
@@ -54,7 +64,7 @@ function KidSadaqah() {
       await edgeKidSadaqah({ code, amount });
       setGiven(true);
       setPendingAmount(null);
-      setTimeout(() => setGiven(false), 2500);
+      setTimeout(() => setGiven(false), 3000);
       refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
@@ -62,26 +72,63 @@ function KidSadaqah() {
   };
 
   return (
-    <>
-      <h1>[icon: heart] Sadaqah</h1>
-      <p>الصَّدَقَةُ تُطْفِئُ الخَطِيئَةَ</p>
-      <p><small>"Sadaqah extinguishes sin." — Hadith</small></p>
+    <div className="space-y-6 pb-12">
+      <section className="deposit-hero" aria-label="Sadaqah contributions this year">
+        <div className="deposit-hero__copy">
+          <p className="deposit-hero__label">Given this year</p>
+          <p className="deposit-hero__amount tabular-nums">RM{sadaqahTotal.toFixed(2)}</p>
+          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
+            Wallet RM{balance.toFixed(2)} · Give anytime
+          </p>
+        </div>
+        <div className="deposit-hero__mascot" aria-hidden="true">
+          <AppIcon name="sadaqah" size={32} color="#fff" />
+        </div>
+      </section>
 
-      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-        <small>Your Sadaqah this year</small>
-        <div style={{ fontSize: "2rem", fontWeight: "bold" }}>RM {sadaqahTotal.toFixed(2)}</div>
-        <small>Mashallah, you've helped {Math.floor(sadaqahTotal / 5)} families!</small>
-      </Card>
+      <div className="p-3 rounded-xl bg-[var(--surface-pink)] border border-[var(--primary-soft)] text-center">
+        <p className="text-sm font-bold text-[var(--primary)] mb-0.5">
+          الصَّدَقَةُ تُطْفِئُ الخَطِيئَةَ
+        </p>
+        <p className="text-xs text-[var(--text-secondary)] m-0">
+          &ldquo;Charity extinguishes sins just as water extinguishes fire.&rdquo; — Hadith
+        </p>
+      </div>
 
-      <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-        <p><small>Balance: RM {balance.toFixed(2)}</small></p>
+      <div className="aeon-banner aeon-banner--purple">
+        <div className="max-w-[70%]">
+          <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug m-0">
+            Give sadaqah and earn stardust — start with RM1
+          </h2>
+          <p className="text-xs text-white/85 mt-1 mb-0">
+            Your kindness reaches local masjids, orphans, and clean water projects.
+          </p>
+        </div>
+        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0">
+          <AppIcon name="heart" size={28} />
+        </div>
+      </div>
 
-        <div className="wireframe-grid-3" style={{ margin: "0.5rem 0" }}>
+      {/* Donation Form Card */}
+      <Card variant="default" className="p-5 sm:p-6 space-y-4 border border-[var(--border)]">
+        <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pb-2 border-b border-[var(--border)]">
+          <span>Available Wallet Balance</span>
+          <strong className="text-sm text-[var(--ink)] tabular-nums">RM {balance.toFixed(2)}</strong>
+        </div>
+
+        {/* Causes Grid — Common Region / Similarity */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="list" aria-label="Sadaqah causes">
           {causes.map((c) => (
-            <div key={c.name} className="wireframe-box" style={{ textAlign: "center" }}>
-              <div>{c.iconLabel}</div>
-              <strong>{c.name}</strong>
-              <div><small>{c.impact}</small></div>
+            <div
+              key={c.name}
+              role="listitem"
+              className="p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center space-y-1"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center mx-auto">
+                <AppIcon name={c.icon} size={16} />
+              </div>
+              <strong className="text-xs font-bold text-[var(--ink)] block">{c.name}</strong>
+              <small className="text-[10px] text-[var(--text-muted)] block leading-tight">{c.impact}</small>
             </div>
           ))}
         </div>
@@ -89,35 +136,59 @@ function KidSadaqah() {
         <MoneyKeypad
           min={0.5}
           max={balance}
-          confirmLabel="Give Sadaqah"
+          confirmLabel="Donate Sadaqah"
           onConfirm={(amt) => setPendingAmount(amt)}
         />
 
         {given && (
-          <div className="wireframe-box" style={{ marginTop: "0.5rem", textAlign: "center" }}>
-            [✓] Jazakallah khair! Your kindness was recorded.
+          <div
+            className="p-4 rounded-xl bg-[var(--success-soft)] text-[var(--success)] text-xs font-bold flex items-center gap-2 border border-[var(--success)]/20"
+            role="status"
+          >
+            <AppIcon name="approve" size={18} />
+            <span>Jazakallah khair! May Allah bless your kindness and generosity.</span>
           </div>
         )}
       </Card>
 
-      {/* Confirmation dialog */}
-      {pendingAmount !== null && (
-        <div className="wireframe-box" style={{ marginTop: "1rem", border: "2px solid #000" }}>
-          <div style={{ textAlign: "center" }}>[icon: heart]</div>
-          <h3>Give Sadaqah?</h3>
-          <p>
-            Are you sure you want to donate <strong>RM {pendingAmount.toFixed(2)}</strong> as Sadaqah?
-          </p>
-          <div className="wireframe-row">
-            <button type="button" onClick={() => setPendingAmount(null)}>
+      {/* Confirmation Modal */}
+      <Modal
+        isOpen={pendingAmount !== null}
+        onClose={() => setPendingAmount(null)}
+        title="Confirm Sadaqah Donation"
+        description="Share blessings from your digital savings with those in need."
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
+            <Button variant="secondary" onClick={() => setPendingAmount(null)}>
               Cancel
-            </button>
-            <button type="button" onClick={() => give(pendingAmount)}>
-              Confirm & Donate
-            </button>
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (pendingAmount !== null) give(pendingAmount);
+              }}
+            >
+              Confirm & Donate RM {pendingAmount?.toFixed(2)}
+            </Button>
           </div>
+        }
+      >
+        <div className="text-center py-4 space-y-2">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center mx-auto shadow-xs">
+            <AppIcon name="heart" size={28} />
+          </div>
+          <p className="text-sm text-[var(--ink)]">
+            Are you sure you want to give{" "}
+            <strong className="text-base text-[var(--primary)] font-extrabold tabular-nums">
+              RM {pendingAmount?.toFixed(2)}
+            </strong>{" "}
+            as Sadaqah?
+          </p>
+          <p className="text-xs text-[var(--text-secondary)]">
+            This amount will be deducted from your active wallet balance.
+          </p>
         </div>
-      )}
-    </>
+      </Modal>
+    </div>
   );
 }

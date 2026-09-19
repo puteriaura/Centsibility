@@ -3,12 +3,10 @@ import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/providers/auth";
 import { getKidSession, clearKidSession, KidSession } from "@/lib/kid-session";
 import { supabase } from "@/integrations/supabase/client";
-import { useTheme } from "@/lib/theme";
-import { sfx, isMuted, toggleMute } from "@/lib/sounds";
+import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { setParentBypassed, setKidBypassed } from "@/lib/admin-bypass";
-
 type Mode = "kid" | "parent";
 
 export function AppShell({ mode, children }: { mode: Mode; children: ReactNode }) {
@@ -54,27 +52,32 @@ export function AppShell({ mode, children }: { mode: Mode; children: ReactNode }
   if (mode === "kid" && kid === undefined) return <FullPageLoader />;
   if (mode === "kid" && !kid) return <FullPageLoader />;
 
+  // Full-bleed chat like AEON Neko Sensei (own header + Insights handle)
+  const immersiveChat = mode === "kid" && pathname.startsWith("/kid/chat");
+
   return (
-    <div className="app-shell">
-      <TopBar mode={mode} kidName={kid?.name} unread={unread} />
-      <main className="app-shell__main">{children}</main>
-      <BottomNav mode={mode} unread={unread} />
+    <div className={`app-shell${immersiveChat ? " app-shell--immersive" : ""}`}>
+      {!immersiveChat && <TopBar mode={mode} kidName={kid?.name} unread={unread} />}
+      <main className={`app-shell__main${immersiveChat ? " app-shell__main--flush" : ""}`}>
+        {children}
+      </main>
+      {!immersiveChat && <BottomNav mode={mode} unread={unread} />}
     </div>
   );
 }
 
 function FullPageLoader() {
   return (
-    <div className="app-shell app-shell--loading wireframe-col">
-      <div className="wireframe-row">
+    <div className="app-shell app-shell--loading space-y-4 p-4">
+      <div className="flex items-center gap-3">
         <Skeleton style={{ width: "48px", height: "48px", borderRadius: "999px" }} />
-        <div style={{ flex: 1 }} className="wireframe-col">
+        <div style={{ flex: 1 }} className="space-y-2">
           <Skeleton style={{ height: "16px", width: "120px" }} />
           <Skeleton style={{ height: "12px", width: "80px" }} />
         </div>
       </div>
       <Skeleton style={{ height: "120px", width: "100%", borderRadius: "16px" }} />
-      <div className="wireframe-grid-2">
+      <div className="grid grid-cols-2 gap-3">
         <Skeleton style={{ height: "80px", borderRadius: "16px" }} />
         <Skeleton style={{ height: "80px", borderRadius: "16px" }} />
       </div>
@@ -82,6 +85,7 @@ function FullPageLoader() {
     </div>
   );
 }
+
 
 function IconBtn({
   label,
@@ -99,16 +103,37 @@ function IconBtn({
   );
 }
 
+function pageTitle(pathname: string, mode: Mode, kidName?: string) {
+  if (mode === "kid") {
+    if (pathname.startsWith("/kid/insights")) return "Insights";
+    if (pathname.startsWith("/kid/chat")) return "Penny Sensei";
+    if (pathname.startsWith("/kid/wallet")) return "Deposit";
+    if (pathname.startsWith("/kid/loans")) return "Financing";
+    if (pathname.startsWith("/kid/card")) return "Card";
+    if (pathname.startsWith("/kid/goals")) return "Goals";
+    if (pathname.startsWith("/kid/rewards")) return "Rewards";
+    if (pathname.startsWith("/kid/sadaqah")) return "Sadaqah";
+    if (pathname.startsWith("/kid/zakat")) return "Zakat";
+    if (pathname.startsWith("/kid/quiz")) return "Quest";
+    if (pathname.startsWith("/kid/invest")) return "Invest";
+    return kidName ? `Hi, ${kidName}` : "Home";
+  }
+  if (pathname.startsWith("/parent/insights")) return "Insights";
+  if (pathname.startsWith("/parent/reports")) return "Reports";
+  if (pathname.startsWith("/parent/approvals")) return "Notifications";
+  if (pathname.startsWith("/parent/settings")) return "Settings";
+  return "Home";
+}
+
 function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unread: number }) {
   const isKid = mode === "kid";
   const nav = useNavigate();
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
-  const { theme, toggle } = useTheme();
-  const [muted, setMuted] = useState(isMuted());
 
-  const isSubPage = isKid
-    ? currentPath !== "/kid" && currentPath !== "/kid/"
-    : currentPath !== "/parent" && currentPath !== "/parent/";
+  const isHome = isKid
+    ? currentPath === "/kid" || currentPath === "/kid/"
+    : currentPath === "/parent" || currentPath === "/parent/";
+  const title = pageTitle(currentPath, mode, kidName);
 
   const switchMode = async () => {
     sfx.swoosh();
@@ -138,7 +163,7 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
   return (
     <header className="shell-topbar">
       <div className="shell-topbar__left">
-        {isSubPage && (
+        {!isHome ? (
           <Link
             to={isKid ? "/kid" : "/parent"}
             aria-label="Go back"
@@ -147,19 +172,22 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
           >
             <AppIcon name="back" size={20} />
           </Link>
+        ) : (
+          <Link
+            to={isKid ? "/kid" : "/parent"}
+            onClick={() => sfx.tap()}
+            className="shell-brand"
+            aria-label="Centsibility home"
+          >
+            <span className="shell-brand__mark" aria-hidden>
+              <AppIcon name="penny" size={16} color="#fff" />
+            </span>
+          </Link>
         )}
-        <Link to="/" onClick={() => sfx.tap()} className="shell-brand">
-          <span className="shell-brand__mark" aria-hidden>
-            <AppIcon name="penny" size={18} color="#fff" />
-          </span>
-          <strong className="shell-brand__name">Centsibility</strong>
-        </Link>
+        <h1 className="shell-topbar__title">{title}</h1>
       </div>
 
       <div className="shell-topbar__right">
-        {isKid && kidName ? (
-          <span className="shell-chip">{kidName}</span>
-        ) : null}
         {!isKid && unread > 0 ? (
           <Link
             to="/parent/approvals"
@@ -170,33 +198,28 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
             {unread}
           </Link>
         ) : null}
+        {isKid ? (
+          <IconBtn
+            label="Open Penny Sensei"
+            onClick={() => {
+              sfx.pop();
+              nav({ to: "/kid/chat" });
+            }}
+          >
+            <AppIcon name="penny" size={18} />
+          </IconBtn>
+        ) : null}
         <IconBtn
           label={isKid ? "Switch to parent view" : "Switch to kid view"}
           onClick={switchMode}
         >
           <AppIcon name={isKid ? "parent" : "kid"} size={18} />
         </IconBtn>
-        <IconBtn
-          label={muted ? "Unmute sounds" : "Mute sounds"}
-          onClick={() => {
-            sfx.tap();
-            setMuted(toggleMute());
-          }}
-        >
-          <AppIcon name={muted ? "soundoff" : "soundon"} size={18} />
-        </IconBtn>
-        <IconBtn
-          label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          onClick={() => {
-            sfx.tap();
-            toggle();
-          }}
-        >
-          <AppIcon name={theme === "dark" ? "light" : "dark"} size={18} />
-        </IconBtn>
-        <IconBtn label="Sign out" onClick={logout}>
-          <AppIcon name="exit" size={18} />
-        </IconBtn>
+        {isKid ? (
+          <IconBtn label="Sign out" onClick={logout}>
+            <AppIcon name="exit" size={18} />
+          </IconBtn>
+        ) : null}
       </div>
     </header>
   );
@@ -207,15 +230,22 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
   const items =
     mode === "kid"
       ? [
-          { to: "/kid", label: "Home", icon: "home" },
-          { to: "/kid/wallet", label: "Wallet", icon: "wallet" },
-          { to: "/kid/quiz", label: "Quest", icon: "quest" },
-          { to: "/kid/rewards", label: "Reward", icon: "reward" },
+          { to: "/kid/insights", label: "Penny", icon: "penny", match: ["/kid/insights", "/kid/chat"] },
+          { to: "/kid/wallet", label: "Deposit", icon: "wallet" },
+          { to: "/kid/wallet", label: "Scan", icon: "scan", isCenter: true },
+          { to: "/kid/loans", label: "Financing", icon: "loan" },
+          { to: "/kid/card", label: "Card", icon: "card" },
         ]
       : [
           { to: "/parent", label: "Home", icon: "home" },
           { to: "/parent/approvals", label: "Approve", icon: "approve", badge: unread },
-          { to: "/parent/reports", label: "Reports", icon: "reports" },
+          { to: "/parent/approvals", label: "Scan", icon: "scan", isCenter: true },
+          {
+            to: "/parent/insights",
+            label: "Insights",
+            icon: "reports",
+            match: ["/parent/insights", "/parent/reports"],
+          },
           { to: "/parent/settings", label: "Settings", icon: "settings" },
         ];
 
@@ -223,22 +253,36 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
     <nav className="shell-bottomnav" aria-label="Main navigation">
       <div className="shell-bottomnav__inner">
         {items.map((it) => {
-          const active =
-            it.to === "/kid" || it.to === "/parent"
-              ? pathname === it.to || pathname === it.to + "/"
-              : pathname.startsWith(it.to);
           const badge = "badge" in it ? it.badge : 0;
+          const isCenter = "isCenter" in it && it.isCenter;
+          const matchPaths = "match" in it && Array.isArray(it.match) ? it.match : null;
+          const active = isCenter
+            ? pathname.includes("/scan")
+            : matchPaths
+              ? matchPaths.some((p) => pathname.startsWith(p))
+              : it.to === "/kid" || it.to === "/parent"
+                ? pathname === it.to || pathname === it.to + "/"
+                : pathname.startsWith(it.to);
+
           return (
             <Link
-              key={it.to}
+              key={it.label}
               to={it.to}
               aria-label={it.label}
               aria-current={active ? "page" : undefined}
-              className={active ? "shell-navitem shell-navitem--active" : "shell-navitem"}
+              className={`shell-navitem ${active ? "shell-navitem--active" : ""} ${
+                isCenter ? "shell-navitem--center" : ""
+              }`.trim()}
               onClick={() => sfx.tap()}
             >
               <span className="shell-navitem__icon-wrap">
-                <AppIcon name={it.icon} size={22} strokeWidth={active ? 2.5 : 2} />
+                {isCenter ? (
+                  <span className="shell-navitem__center-pill">
+                    <AppIcon name={it.icon} size={20} color="#fff" />
+                  </span>
+                ) : (
+                  <AppIcon name={it.icon} size={22} strokeWidth={active ? 2.5 : 2} />
+                )}
                 {Boolean(badge) && (
                   <span className="shell-navitem__badge" aria-hidden>
                     {badge}

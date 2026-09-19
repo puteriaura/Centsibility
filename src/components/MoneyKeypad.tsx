@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { NumericKeypad } from "@/components/ui/numeric-keypad";
+import { Button } from "@/components/ui/button";
+import { AppIcon } from "@/components/ui/app-icon";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -139,48 +141,49 @@ export function MoneyKeypad({
   // ── Amount screen ──────────────────────────────────────────────────────────
   if (step === "amount") {
     return (
-      <div className="wireframe-col">
+      <div className="space-y-4">
         {/* Amount display */}
-        <div className="wireframe-box" style={{ textAlign: "center", padding: "1rem" }}>
-          <div style={{ fontSize: "2rem", fontWeight: "bold" }}>
+        <div className="p-4 rounded-2xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
+          <div className="text-3xl font-extrabold text-[var(--ink)] tabular-nums">
             {display}
           </div>
 
           {tooLow && (
-            <p style={{ margin: "0.25rem 0", fontSize: "0.85rem" }}>
+            <p className="text-xs text-[var(--error)] mt-1 font-medium">
               Minimum is RM {min.toFixed(2)}
             </p>
           )}
           {tooHigh && (
-            <p style={{ margin: "0.25rem 0", fontSize: "0.85rem" }}>
+            <p className="text-xs text-[var(--error)] mt-1 font-medium">
               Maximum is RM {max.toLocaleString("en-MY")}
             </p>
           )}
           {!tooLow && !tooHigh && amount > 0 && (
-            <p style={{ margin: "0.25rem 0", fontSize: "0.8rem", color: "#666" }}>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
               Tap Next when ready
             </p>
           )}
         </div>
 
         {/* Keypad grid */}
-        <NumericKeypad onKeyPress={press} />
+        <NumericKeypad onKeyPress={press} variant="aeon" />
 
         {/* Action row */}
-        <div className="wireframe-row">
+        <div className="flex items-center gap-3 pt-2">
           {onCancel && (
-            <button type="button" onClick={onCancel}>
+            <Button type="button" variant="secondary" onClick={onCancel} className="flex-1 justify-center">
               Cancel
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
+            variant="primary"
             onClick={handleNext}
             disabled={!valid}
-            style={{ flex: 1 }}
+            className="flex-1 justify-center font-bold"
           >
             {showReference ? "Next →" : confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -188,38 +191,40 @@ export function MoneyKeypad({
 
   // ── Reference screen ───────────────────────────────────────────────────────
   return (
-    <div className="wireframe-col">
+    <div className="space-y-4">
       {/* Amount recap */}
-      <div className="wireframe-space-between wireframe-box">
+      <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--surface-soft)] border border-[var(--border)]">
         <button
           type="button"
           onClick={() => setStep("amount")}
           aria-label="Back to amount"
+          className="p-2 rounded-xl hover:bg-white text-[var(--ink)] transition-colors"
         >
-          [icon: back]
+          <AppIcon name="back" size={20} />
         </button>
-        <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
+        <div className="text-2xl font-extrabold text-[var(--ink)] tabular-nums">
           {display}
         </div>
-        <small>(tap back to edit)</small>
+        <small className="text-xs text-[var(--text-muted)]">(edit)</small>
       </div>
 
       {/* Reference options */}
-      <fieldset>
-        <legend>Transmission Log Code</legend>
-        <div className="wireframe-grid-2">
+      <div className="space-y-2">
+        <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block">
+          Transmission Purpose
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {REFERENCE_OPTIONS.map((opt) => (
-            <button
+            <Button
               key={opt}
               type="button"
+              variant={reference === opt ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setReference(opt)}
-              style={{
-                border: reference === opt ? "2px solid #000" : "1px solid #ccc",
-                fontWeight: reference === opt ? "bold" : "normal",
-              }}
+              className="justify-center text-xs"
             >
               {opt}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -229,30 +234,30 @@ export function MoneyKeypad({
             onChange={(e) => setCustomRef(e.target.value)}
             placeholder="Log details..."
             maxLength={100}
-            style={{ marginTop: "0.5rem" }}
+            className="w-full h-11 px-3 mt-2 rounded-xl border border-[var(--border)] bg-white text-xs font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
           />
         )}
-      </fieldset>
+      </div>
 
       {/* Fee breakdown or extra content slot */}
       {extraContent}
 
       {/* Confirm */}
-      <div className="wireframe-row">
-        <button
+      <div className="flex items-center gap-3 pt-2">
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel} className="flex-1 justify-center">
+            Cancel
+          </Button>
+        )}
+        <Button
           type="button"
+          variant="primary"
           onClick={doConfirm}
           disabled={confirming || busy || (reference === "Others" && !customRef.trim())}
-          style={{ flex: 1 }}
+          className="flex-1 justify-center font-bold"
         >
           {confirming ? "Processing…" : confirmLabel}
-        </button>
-
-        {onCancel && (
-          <button type="button" onClick={onCancel}>
-            Cancel
-          </button>
-        )}
+        </Button>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import Cropper, { Area } from "react-easy-crop";
 import imageCompression from "browser-image-compression";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // Utility function to get cropped image as Base64 string
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -88,15 +90,17 @@ export function ImageUploadCrop({
 
   if (!imageSrc) {
     return (
-      <div className="wireframe-box">
-        <p>Select an image for your profile picture.</p>
-        <div className="wireframe-row">
-          <button type="button" onClick={() => fileInputRef.current?.click()}>
+      <Card variant="soft" className="p-6 text-center space-y-3 border border-[var(--border)]">
+        <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
+          Select an image from your device for your profile avatar.
+        </p>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <Button type="button" variant="primary" size="sm" onClick={() => fileInputRef.current?.click()}>
             Choose Image
-          </button>
-          <button type="button" onClick={onCancel}>
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         </div>
         <input
           type="file"
@@ -105,13 +109,13 @@ export function ImageUploadCrop({
           accept="image/*"
           style={{ display: "none" }}
         />
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="wireframe-col">
-      <div style={{ position: "relative", width: "100%", height: "240px", border: "1px solid #777" }}>
+    <div className="space-y-4">
+      <div style={{ position: "relative", width: "100%", height: "240px", borderRadius: "16px", overflow: "hidden", border: "1px solid var(--border)" }}>
         <Cropper
           image={imageSrc}
           crop={crop}
@@ -125,8 +129,8 @@ export function ImageUploadCrop({
         />
       </div>
 
-      <div>
-        <label>Zoom</label>
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-[var(--ink)] block">Zoom Level</label>
         <input
           type="range"
           value={zoom}
@@ -135,17 +139,19 @@ export function ImageUploadCrop({
           step={0.1}
           aria-labelledby="Zoom"
           onChange={(e) => setZoom(Number(e.target.value))}
+          className="w-full accent-[var(--primary)]"
         />
       </div>
 
-      <div className="wireframe-row">
-        <button type="button" onClick={onCancel} disabled={busy}>
+      <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border)]">
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel} disabled={busy}>
           Cancel
-        </button>
-        <button type="button" onClick={handleSave} disabled={busy}>
+        </Button>
+        <Button type="button" variant="primary" size="sm" onClick={handleSave} disabled={busy} loading={busy}>
           {busy ? "Saving..." : "Save Picture"}
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
+

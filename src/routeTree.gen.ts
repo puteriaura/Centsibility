@@ -18,6 +18,7 @@ import { Route as ParentIndexRouteImport } from './routes/parent.index'
 import { Route as KidIndexRouteImport } from './routes/kid.index'
 import { Route as ParentSettingsRouteImport } from './routes/parent.settings'
 import { Route as ParentReportsRouteImport } from './routes/parent.reports'
+import { Route as ParentInsightsRouteImport } from './routes/parent.insights'
 import { Route as ParentApprovalsRouteImport } from './routes/parent.approvals'
 import { Route as KidZakatRouteImport } from './routes/kid.zakat'
 import { Route as KidWalletRouteImport } from './routes/kid.wallet'
@@ -26,7 +27,10 @@ import { Route as KidRewardsRouteImport } from './routes/kid.rewards'
 import { Route as KidQuizRouteImport } from './routes/kid.quiz'
 import { Route as KidLoansRouteImport } from './routes/kid.loans'
 import { Route as KidInvestRouteImport } from './routes/kid.invest'
+import { Route as KidInsightsRouteImport } from './routes/kid.insights'
 import { Route as KidGoalsRouteImport } from './routes/kid.goals'
+import { Route as KidChatRouteImport } from './routes/kid.chat'
+import { Route as KidCardRouteImport } from './routes/kid.card'
 
 const ParentRoute = ParentRouteImport.update({
   id: '/parent',
@@ -73,6 +77,11 @@ const ParentReportsRoute = ParentReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => ParentRoute,
 } as any)
+const ParentInsightsRoute = ParentInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => ParentRoute,
+} as any)
 const ParentApprovalsRoute = ParentApprovalsRouteImport.update({
   id: '/approvals',
   path: '/approvals',
@@ -113,9 +122,24 @@ const KidInvestRoute = KidInvestRouteImport.update({
   path: '/invest',
   getParentRoute: () => KidRoute,
 } as any)
+const KidInsightsRoute = KidInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => KidRoute,
+} as any)
 const KidGoalsRoute = KidGoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidChatRoute = KidChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidCardRoute = KidCardRouteImport.update({
+  id: '/card',
+  path: '/card',
   getParentRoute: () => KidRoute,
 } as any)
 
@@ -125,7 +149,10 @@ export interface FileRoutesByFullPath {
   '/kid-login': typeof KidLoginRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
+  '/kid/card': typeof KidCardRoute
+  '/kid/chat': typeof KidChatRoute
   '/kid/goals': typeof KidGoalsRoute
+  '/kid/insights': typeof KidInsightsRoute
   '/kid/invest': typeof KidInvestRoute
   '/kid/loans': typeof KidLoansRoute
   '/kid/quiz': typeof KidQuizRoute
@@ -134,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/kid/wallet': typeof KidWalletRoute
   '/kid/zakat': typeof KidZakatRoute
   '/parent/approvals': typeof ParentApprovalsRoute
+  '/parent/insights': typeof ParentInsightsRoute
   '/parent/reports': typeof ParentReportsRoute
   '/parent/settings': typeof ParentSettingsRoute
   '/kid/': typeof KidIndexRoute
@@ -143,7 +171,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kid-login': typeof KidLoginRoute
   '/login': typeof LoginRoute
+  '/kid/card': typeof KidCardRoute
+  '/kid/chat': typeof KidChatRoute
   '/kid/goals': typeof KidGoalsRoute
+  '/kid/insights': typeof KidInsightsRoute
   '/kid/invest': typeof KidInvestRoute
   '/kid/loans': typeof KidLoansRoute
   '/kid/quiz': typeof KidQuizRoute
@@ -152,6 +183,7 @@ export interface FileRoutesByTo {
   '/kid/wallet': typeof KidWalletRoute
   '/kid/zakat': typeof KidZakatRoute
   '/parent/approvals': typeof ParentApprovalsRoute
+  '/parent/insights': typeof ParentInsightsRoute
   '/parent/reports': typeof ParentReportsRoute
   '/parent/settings': typeof ParentSettingsRoute
   '/kid': typeof KidIndexRoute
@@ -164,7 +196,10 @@ export interface FileRoutesById {
   '/kid-login': typeof KidLoginRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
+  '/kid/card': typeof KidCardRoute
+  '/kid/chat': typeof KidChatRoute
   '/kid/goals': typeof KidGoalsRoute
+  '/kid/insights': typeof KidInsightsRoute
   '/kid/invest': typeof KidInvestRoute
   '/kid/loans': typeof KidLoansRoute
   '/kid/quiz': typeof KidQuizRoute
@@ -173,6 +208,7 @@ export interface FileRoutesById {
   '/kid/wallet': typeof KidWalletRoute
   '/kid/zakat': typeof KidZakatRoute
   '/parent/approvals': typeof ParentApprovalsRoute
+  '/parent/insights': typeof ParentInsightsRoute
   '/parent/reports': typeof ParentReportsRoute
   '/parent/settings': typeof ParentSettingsRoute
   '/kid/': typeof KidIndexRoute
@@ -186,7 +222,10 @@ export interface FileRouteTypes {
     | '/kid-login'
     | '/login'
     | '/parent'
+    | '/kid/card'
+    | '/kid/chat'
     | '/kid/goals'
+    | '/kid/insights'
     | '/kid/invest'
     | '/kid/loans'
     | '/kid/quiz'
@@ -195,6 +234,7 @@ export interface FileRouteTypes {
     | '/kid/wallet'
     | '/kid/zakat'
     | '/parent/approvals'
+    | '/parent/insights'
     | '/parent/reports'
     | '/parent/settings'
     | '/kid/'
@@ -204,7 +244,10 @@ export interface FileRouteTypes {
     | '/'
     | '/kid-login'
     | '/login'
+    | '/kid/card'
+    | '/kid/chat'
     | '/kid/goals'
+    | '/kid/insights'
     | '/kid/invest'
     | '/kid/loans'
     | '/kid/quiz'
@@ -213,6 +256,7 @@ export interface FileRouteTypes {
     | '/kid/wallet'
     | '/kid/zakat'
     | '/parent/approvals'
+    | '/parent/insights'
     | '/parent/reports'
     | '/parent/settings'
     | '/kid'
@@ -224,7 +268,10 @@ export interface FileRouteTypes {
     | '/kid-login'
     | '/login'
     | '/parent'
+    | '/kid/card'
+    | '/kid/chat'
     | '/kid/goals'
+    | '/kid/insights'
     | '/kid/invest'
     | '/kid/loans'
     | '/kid/quiz'
@@ -233,6 +280,7 @@ export interface FileRouteTypes {
     | '/kid/wallet'
     | '/kid/zakat'
     | '/parent/approvals'
+    | '/parent/insights'
     | '/parent/reports'
     | '/parent/settings'
     | '/kid/'
@@ -312,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParentReportsRouteImport
       parentRoute: typeof ParentRoute
     }
+    '/parent/insights': {
+      id: '/parent/insights'
+      path: '/insights'
+      fullPath: '/parent/insights'
+      preLoaderRoute: typeof ParentInsightsRouteImport
+      parentRoute: typeof ParentRoute
+    }
     '/parent/approvals': {
       id: '/parent/approvals'
       path: '/approvals'
@@ -368,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KidInvestRouteImport
       parentRoute: typeof KidRoute
     }
+    '/kid/insights': {
+      id: '/kid/insights'
+      path: '/insights'
+      fullPath: '/kid/insights'
+      preLoaderRoute: typeof KidInsightsRouteImport
+      parentRoute: typeof KidRoute
+    }
     '/kid/goals': {
       id: '/kid/goals'
       path: '/goals'
@@ -375,11 +437,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KidGoalsRouteImport
       parentRoute: typeof KidRoute
     }
+    '/kid/chat': {
+      id: '/kid/chat'
+      path: '/chat'
+      fullPath: '/kid/chat'
+      preLoaderRoute: typeof KidChatRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/card': {
+      id: '/kid/card'
+      path: '/card'
+      fullPath: '/kid/card'
+      preLoaderRoute: typeof KidCardRouteImport
+      parentRoute: typeof KidRoute
+    }
   }
 }
 
 interface KidRouteChildren {
+  KidCardRoute: typeof KidCardRoute
+  KidChatRoute: typeof KidChatRoute
   KidGoalsRoute: typeof KidGoalsRoute
+  KidInsightsRoute: typeof KidInsightsRoute
   KidInvestRoute: typeof KidInvestRoute
   KidLoansRoute: typeof KidLoansRoute
   KidQuizRoute: typeof KidQuizRoute
@@ -391,7 +470,10 @@ interface KidRouteChildren {
 }
 
 const KidRouteChildren: KidRouteChildren = {
+  KidCardRoute: KidCardRoute,
+  KidChatRoute: KidChatRoute,
   KidGoalsRoute: KidGoalsRoute,
+  KidInsightsRoute: KidInsightsRoute,
   KidInvestRoute: KidInvestRoute,
   KidLoansRoute: KidLoansRoute,
   KidQuizRoute: KidQuizRoute,
@@ -406,6 +488,7 @@ const KidRouteWithChildren = KidRoute._addFileChildren(KidRouteChildren)
 
 interface ParentRouteChildren {
   ParentApprovalsRoute: typeof ParentApprovalsRoute
+  ParentInsightsRoute: typeof ParentInsightsRoute
   ParentReportsRoute: typeof ParentReportsRoute
   ParentSettingsRoute: typeof ParentSettingsRoute
   ParentIndexRoute: typeof ParentIndexRoute
@@ -413,6 +496,7 @@ interface ParentRouteChildren {
 
 const ParentRouteChildren: ParentRouteChildren = {
   ParentApprovalsRoute: ParentApprovalsRoute,
+  ParentInsightsRoute: ParentInsightsRoute,
   ParentReportsRoute: ParentReportsRoute,
   ParentSettingsRoute: ParentSettingsRoute,
   ParentIndexRoute: ParentIndexRoute,

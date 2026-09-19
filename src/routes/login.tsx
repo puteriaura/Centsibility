@@ -6,6 +6,10 @@ import { getQuickLogin, clearQuickLogin } from "@/lib/quick-login";
 import { adminBypassParent, ADMIN_BYPASS } from "@/lib/admin-bypass";
 import { AppIcon } from "@/components/ui/app-icon";
 import { toast } from "sonner";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Parent Login — Centsibility" }] }),
@@ -95,7 +99,10 @@ function Login() {
         toast.success("Account created!");
         nav({ to: "/parent" });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
         if (error) throw error;
         nav({ to: "/parent" });
       }
@@ -107,195 +114,311 @@ function Login() {
     }
   };
 
+  const strength = [
+    { ok: password.length >= 8, label: "At least 8 characters" },
+    { ok: /[A-Z]/.test(password), label: "One uppercase letter" },
+    { ok: /\d/.test(password), label: "One number" },
+    { ok: /[^A-Za-z0-9]/.test(password), label: "One special character" },
+  ];
+
   return (
-    <div style={{ maxWidth: "450px", margin: "2rem auto" }}>
-      <section className="wireframe-card">
-        <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
-          <h2>Centsibility</h2>
-        </Link>
-
-        {usePin && quick ? (
-          <>
-            <h1>Quick login</h1>
-            <p>Welcome back, {quick.email}.</p>
-            <form onSubmit={submitPin} className="wireframe-col" style={{ marginTop: "1rem" }}>
-              <label>Enter PIN</label>
-              <input
-                required
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                inputMode="numeric"
-                pattern="\d{4,6}"
-                maxLength={6}
-                placeholder="Enter PIN"
-              />
-              <button disabled={busy} type="submit">
-                {busy ? "…" : "Unlock"}
-              </button>
-            </form>
-            <button
-              type="button"
-              onClick={() => {
-                clearQuickLogin();
-                setUsePin(false);
-              }}
-              style={{ marginTop: "0.5rem" }}
-            >
-              Use different account
-            </button>
-          </>
-        ) : (
-          <>
-            <h1>{mode === "signin" ? "Parent sign in" : "Create parent account"}</h1>
-            <p>Manage your family's halal finance journey.</p>
-
-            <form onSubmit={submit} className="wireframe-col" style={{ marginTop: "1rem" }}>
-              {mode === "signup" && (
-                <>
-                  <div>
-                    <label>Your name</label>
-                    <input
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name"
-                    />
-                  </div>
-                  <div className="wireframe-box">
-                    <small>Does your child have their own device?</small>
-                    <div className="wireframe-row" style={{ marginTop: "0.5rem" }}>
-                      <button
-                        type="button"
-                        onClick={() => setChildHasDevice(true)}
-                        style={{
-                          flex: 1,
-                          border: childHasDevice === true ? "2px solid #000" : "1px solid #ccc",
-                        }}
-                      >
-                        Yes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setChildHasDevice(false)}
-                        style={{
-                          flex: 1,
-                          border: childHasDevice === false ? "2px solid #000" : "1px solid #ccc",
-                        }}
-                      >
-                        No
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label>Email</label>
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => handleEmailChange(e.target.value)}
-                  placeholder="Email"
-                />
-                {emailError && (
-                  <p style={{ color: "#000", fontWeight: "bold", fontSize: "0.85rem" }}>
-                    [✗] {emailError}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label>Password</label>
-                <input
-                  required
-                  type="password"
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "signup" ? "Create a strong password" : "Password"}
-                />
-              </div>
-
-              {mode === "signup" && password.length > 0 && (
-                <div className="wireframe-box">
-                  <small>Password strength:</small>
-                  {[
-                    { ok: password.length >= 8, label: "At least 8 characters" },
-                    { ok: /[A-Z]/.test(password), label: "One uppercase letter" },
-                    { ok: /\d/.test(password), label: "One number" },
-                    { ok: /[^A-Za-z0-9]/.test(password), label: "One special character" },
-                  ].map((r) => (
-                    <div key={r.label} className="wireframe-row">
-                      <span>{r.ok ? "[✓]" : "[✗]"}</span>
-                      <small>{r.label}</small>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button disabled={busy} type="submit" style={{ marginTop: "0.5rem" }}>
-                {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-              </button>
-            </form>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === "signin" ? "signup" : "signin");
-                setEmailError("");
-              }}
-              style={{ marginTop: "0.75rem" }}
-            >
-              {mode === "signin" ? "No account? Create one" : "Already have an account? Sign in"}
-            </button>
-          </>
-        )}
-
-        <div
-          style={{
-            marginTop: "1.5rem",
-            borderTop: "1px solid var(--border)",
-            paddingTop: "0.75rem",
-            textAlign: "center",
-          }}
-        >
-          <Link to="/kid-login" className="wireframe-row" style={{ justifyContent: "center" }}>
-            <AppIcon name="kid" size={16} />
-            Kid? Login with code →
-          </Link>
-        </div>
-
-        <div className="admin-bypass">
-          <button
-            type="button"
-            data-variant="secondary"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await adminBypassParent();
-                toast.success("Admin bypass — parent demo");
-                nav({ to: "/parent" });
-              } catch (err: unknown) {
-                toast.error(
-                  err instanceof Error
-                    ? err.message
-                    : `Bypass failed. Seed ${ADMIN_BYPASS.parent.email} first.`,
-                );
-              } finally {
-                setBusy(false);
-              }
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem 1rem",
+        background: "var(--white)",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "440px" }}>
+        {/* Brand Header */}
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <Link
+            to="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              textDecoration: "none",
+              color: "var(--ink)",
+              fontWeight: 800,
+              fontSize: "1.375rem",
+              letterSpacing: "-0.02em",
             }}
           >
-            <AppIcon name="shieldcheck" size={16} />
-            Admin bypass (demo parent)
-          </button>
-          <small className="text-muted">
-            Uses seeded {ADMIN_BYPASS.parent.email} · skips PIN for 30 min
-          </small>
+            <span
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: "var(--primary)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                boxShadow: "0 2px 8px rgba(230, 0, 18, 0.25)",
+              }}
+            >
+              <AppIcon name="penny" size={20} color="#fff" />
+            </span>
+            <span>Centsibility</span>
+          </Link>
+          <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+            Next-Generation Halal Family Banking
+          </p>
         </div>
-      </section>
+
+        {/* Main Card */}
+        <Card variant="default" style={{ padding: "0.5rem" }}>
+          <CardHeader style={{ textAlign: "center", padding: "1.5rem 1.5rem 0.5rem" }}>
+            <CardTitle style={{ fontSize: "1.35rem" }}>
+              {usePin && quick
+                ? "Device Quick PIN"
+                : mode === "signin"
+                ? "Parent Sign In"
+                : "Create Parent Account"}
+            </CardTitle>
+            <CardDescription>
+              {usePin && quick
+                ? `Welcome back, ${quick.email}`
+                : mode === "signin"
+                ? "Access your family commander dashboard"
+                : "Start your child's halal financial voyage"}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent style={{ padding: "1rem 1.5rem 1.5rem" }}>
+            {usePin && quick ? (
+              <form onSubmit={submitPin} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                <div>
+                  <label htmlFor="quick-pin" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                    Security PIN
+                  </label>
+                  <Input
+                    id="quick-pin"
+                    required
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    inputMode="numeric"
+                    pattern="\d{4,6}"
+                    maxLength={6}
+                    placeholder="••••••"
+                    autoComplete="one-time-code"
+                    style={{ textAlign: "center", fontSize: "1.25rem", letterSpacing: "0.25em" }}
+                    autoFocus
+                  />
+                </div>
+                <Button disabled={busy} type="submit" variant="primary" style={{ width: "100%" }}>
+                  {busy ? "Authenticating…" : "Unlock Dashboard"}
+                </Button>
+
+                <div style={{ textAlign: "center", marginTop: "0.5rem" }}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      clearQuickLogin();
+                      setUsePin(false);
+                    }}
+                  >
+                    Use email and password instead
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {mode === "signup" && (
+                  <>
+                    <div>
+                      <label htmlFor="parent-name" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Full Name
+                      </label>
+                      <Input
+                        id="parent-name"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Sarah Ahmad"
+                        autoComplete="name"
+                      />
+                    </div>
+
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Does your child have their own device?
+                      </span>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                        <Button
+                          type="button"
+                          variant={childHasDevice === true ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => setChildHasDevice(true)}
+                        >
+                          Yes, own device
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={childHasDevice === false ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => setChildHasDevice(false)}
+                        >
+                          No, shared device
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label htmlFor="parent-email" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                    Parent Email
+                  </label>
+                  <Input
+                    id="parent-email"
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder="parent@example.com"
+                    autoComplete="email"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "parent-email-error" : undefined}
+                  />
+                  {emailError && (
+                    <p id="parent-email-error" style={{ margin: "0.35rem 0 0", fontSize: "0.75rem", color: "var(--error)" }} role="alert">
+                      {emailError}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="parent-password" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                    Password
+                  </label>
+                  <Input
+                    id="parent-password"
+                    required
+                    type="password"
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={mode === "signup" ? "Choose secure password" : "Enter password"}
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  />
+                </div>
+
+                {mode === "signup" && password.length > 0 && (
+                  <div style={{ padding: "0.75rem", background: "var(--surface-soft)", borderRadius: "0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem" }} aria-live="polite">
+                    <small style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)" }}>Password Requirements</small>
+                    {strength.map((r) => (
+                      <div key={r.label} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <AppIcon
+                          name={r.ok ? "approve" : "close"}
+                          size={14}
+                          color={r.ok ? "var(--success)" : "var(--text-muted)"}
+                        />
+                        <small style={{ fontSize: "0.75rem", color: r.ok ? "var(--text-secondary)" : "var(--text-muted)" }}>{r.label}</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ marginTop: "0.5rem" }}>
+                  <Button disabled={busy} type="submit" variant="primary" style={{ width: "100%" }}>
+                    {busy ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Free Account"}
+                  </Button>
+                </div>
+
+                <div style={{ textAlign: "center", marginTop: "0.25rem" }}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setMode(mode === "signin" ? "signup" : "signin");
+                      setEmailError("");
+                    }}
+                  >
+                    {mode === "signin" ? "Need an account? Sign up" : "Already registered? Sign in"}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "1.25rem 0" }} />
+
+            {/* Kid Login Redirection */}
+            <div style={{ textAlign: "center" }}>
+              <Link
+                to="/kid-login"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  fontSize: "0.875rem",
+                  color: "var(--primary)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                <AppIcon name="kid" size={16} />
+                <span>Young Saver? Sign in with Kid Code →</span>
+              </Link>
+            </div>
+
+            {/* Dev Demo Bypass */}
+            {import.meta.env.DEV && (
+              <div
+                style={{
+                  marginTop: "1.5rem",
+                  padding: "0.875rem",
+                  borderRadius: "0.875rem",
+                  background: "var(--surface-soft)",
+                  border: "1px dashed var(--border)",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await adminBypassParent();
+                      toast.success("Admin bypass — parent demo activated");
+                      nav({ to: "/parent" });
+                    } catch (err: unknown) {
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : `Bypass failed. Seed ${ADMIN_BYPASS.parent.email} first.`,
+                      );
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                  style={{ width: "100%", justifyContent: "center" }}
+                >
+                  <AppIcon name="shieldcheck" size={16} />
+                  <span>Dev Mode: Bypass Parent Auth</span>
+                </Button>
+                <small style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>
+                  Uses {ADMIN_BYPASS.parent.email} · skips PIN gate in dev
+                </small>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
+

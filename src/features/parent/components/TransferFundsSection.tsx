@@ -3,6 +3,8 @@ import type { Kid } from "@/hooks/use-parent-data";
 import { edgeParentDeposit } from "@/lib/edge";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { AppIcon } from "@/components/ui/app-icon";
 
 interface TransferFundsSectionProps {
   kid: Kid;
@@ -36,21 +38,26 @@ export function TransferFundsSection({
     }
   };
 
+  const isDeposit = actionType === "DEPOSIT";
+
   return (
-    <div className="wireframe-box" style={{ marginTop: "1rem" }}>
-      <div>
-        <strong>
-          {actionType === "DEPOSIT" ? "[icon: deposit] Transmit Funds" : "[icon: withdrawal] Recall Funds"} for {kid.name}
+    <Card variant="default" className="p-5 mt-4 rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDeposit ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--primary-soft)] text-[var(--primary)]"}`}>
+          <AppIcon name={isDeposit ? "deposit" : "withdraw"} size={18} />
+        </div>
+        <strong className="text-sm font-bold text-[var(--ink)]">
+          {isDeposit ? "Transmit Funds" : "Recall Funds"} for {kid.name}
         </strong>
       </div>
       <MoneyKeypad
         min={0.5}
         max={actionType === "WITHDRAWAL" ? Number(kid.balance) : 100000}
         showReference
-        confirmLabel={actionType === "DEPOSIT" ? "Confirm Transmission" : "Confirm Recall"}
+        confirmLabel={isDeposit ? "Confirm Deposit" : "Confirm Recall"}
         onConfirm={submitAction}
         onCancel={onClose}
       />
-    </div>
+    </Card>
   );
 }

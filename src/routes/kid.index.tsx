@@ -1,7 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
+import { BalanceCard, QuickAction, TransactionRow, StatCard } from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
 import {
   edgeKidClaimCoins,
@@ -21,9 +25,8 @@ import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { cleanApprovalReason } from "@/lib/qard";
 import {
   StatChip,
-  ActionTile,
   RewardCoinPicker,
-  txEmoji,
+  TX_ICON_MAP,
 } from "@/features/kid/components";
 import { AppIcon } from "@/components/ui/app-icon";
 
@@ -33,6 +36,7 @@ export const Route = createFileRoute("/kid/")({
 });
 
 function KidHome() {
+  const nav = useNavigate();
   const { data, loading, refresh } = useKidData();
   const [showReward, setShowReward] = useState(false);
   const [rName, setRName] = useState("");
@@ -48,16 +52,17 @@ function KidHome() {
 
   if (loading || !data)
     return (
-      <div className="wireframe-col">
-        <Skeleton style={{ height: "4rem" }} />
-        <Skeleton style={{ height: "8rem" }} />
-        <div className="wireframe-grid-2">
-          <Skeleton style={{ height: "6rem" }} />
-          <Skeleton style={{ height: "6rem" }} />
+      <div className="space-y-4">
+        <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
+        <Skeleton style={{ height: "8rem", borderRadius: "20px" }} />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton style={{ height: "6rem", borderRadius: "16px" }} />
+          <Skeleton style={{ height: "6rem", borderRadius: "16px" }} />
         </div>
-        <Skeleton style={{ height: "10rem" }} />
+        <Skeleton style={{ height: "10rem", borderRadius: "20px" }} />
       </div>
     );
+
   const k = data.kid;
   const code = getKidSession()?.code;
 
@@ -178,115 +183,309 @@ function KidHome() {
         <QuoteCard variant="kid" />
       </div>
 
-      <Card variant="brand" className="balance-card">
-        <div className="wireframe-space-between">
-          <span className="balance-card__label">Hyperdrive Core (RM)</span>
+      <BalanceCard
+        title="Spending balance"
+        balance={Number(k.balance)}
+        secondaryBalance={{
+          label: "Total balance",
+          amount: Number(k.balance) + Number(k.invest_balance ?? 0),
+        }}
+        hideBalance={hideBalance}
+        onToggleHide={() => setHideBalance(!hideBalance)}
+        onArrowClick={() => nav({ to: "/kid/wallet" })}
+        showDots={true}
+        metadata={[
+          { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
+          { label: "100% Halal" },
+        ]}
+      />
+
+      {/* Benchmark Image 4: 2x4 Circular Quick Action Grid */}
+      <div className="aeon-quick-grid">
+        {/* Row 1 */}
+        <button
+          type="button"
+          onClick={() => {
+            sfx.tap();
+            setMoneyReq("DEPOSIT");
+          }}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <AppIcon name="deposit" size={24} />
+          </span>
+          <span className="aeon-quick-label">Transfer</span>
+        </button>
+
+        <Link
+          to="/kid/wallet"
+          onClick={() => sfx.tap()}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <AppIcon name="lock" size={22} />
+          </span>
+          <span className="aeon-quick-label">Secure</span>
+        </Link>
+
+        <Link
+          to="/kid/goals"
+          onClick={() => sfx.tap()}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <AppIcon name="money" size={24} />
+          </span>
+          <span className="aeon-quick-label">Goals</span>
+        </Link>
+
+        <Link
+          to="/kid/zakat"
+          onClick={() => sfx.tap()}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <span className="aeon-quick-circle__dot" aria-hidden="true" />
+            <AppIcon name="mosque" size={22} />
+          </span>
+          <span className="aeon-quick-label">Zakat</span>
+        </Link>
+
+        {/* Row 2 */}
+        <Link
+          to="/kid/loans"
+          onClick={() => sfx.tap()}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <AppIcon name="loan" size={22} />
+          </span>
+          <span className="aeon-quick-label">Loans</span>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => {
+            sfx.tap();
+            setShowReward(true);
+          }}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <AppIcon name="trophy" size={22} />
+          </span>
+          <span className="aeon-quick-label">Rewards</span>
+        </button>
+
+        <Link
+          to="/kid/sadaqah"
+          onClick={() => sfx.tap()}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <span className="aeon-quick-circle__dot" aria-hidden="true" />
+            <AppIcon name="sadaqah" size={22} />
+          </span>
+          <span className="aeon-quick-label">Sadaqah</span>
+        </Link>
+
+        <Link
+          to="/kid/chat"
+          onClick={() => sfx.tap()}
+          className="aeon-quick-btn"
+        >
+          <span className="aeon-quick-circle">
+            <AppIcon name="penny" size={24} />
+          </span>
+          <span className="aeon-quick-label">Penny</span>
+        </Link>
+      </div>
+
+      {/* Promotional banner — AEON layout, Centsibility copy */}
+      <div className="aeon-banner aeon-banner--purple">
+        <div className="max-w-[70%]">
+          <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
+            Give sadaqah and earn stardust — start with RM1
+          </h3>
           <button
             type="button"
-            className="balance-card__toggle"
-            onClick={() => setHideBalance(!hideBalance)}
-            aria-label={hideBalance ? "Show balance" : "Hide balance"}
+            onClick={() => {
+              sfx.pop();
+              nav({ to: "/kid/sadaqah" });
+            }}
+            className="aeon-banner__pill-btn"
           >
-            <AppIcon name={hideBalance ? "show" : "hide"} size={18} color="#fff" />
+            Give now
           </button>
         </div>
-        <div className="text-balance" style={{ color: "#fff", margin: "0.5rem 0" }}>
-          {hideBalance ? "RM •••" : `RM ${Number(k.balance).toFixed(2)}`}
-        </div>
-        <div className="balance-card__meta">
-          <small>Hibah {(Number(k.hibah_rate) * 100).toFixed(0)}%</small>
-          <small>100% Halal</small>
-        </div>
-      </Card>
-
-      <div className="wireframe-grid-2" style={{ marginTop: "0.75rem" }}>
-        <div className="metric-card">
-          <small className="text-secondary">Stardust</small>
-          <div className="metric-card__value">
-            {Math.round(Number(k.coins)).toLocaleString()}
-            <AppIcon name="star" size={18} color="var(--lavender-purple)" />
-          </div>
-          <small className="text-muted">Fuel for rewards.</small>
-        </div>
-        <div className="metric-card">
-          <small className="text-secondary">Cosmic Growth</small>
-          <div className="metric-card__value">
-            {hideBalance ? "RM •••" : `RM ${Number(k.invest_balance ?? 0).toFixed(2)}`}
-          </div>
-          <Link to="/kid/invest">Manage →</Link>
+        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+          <AppIcon name="shieldcheck" size={28} />
         </div>
       </div>
 
+      {/* Carousel Dots */}
+      <div className="aeon-dots" aria-hidden="true">
+        <span className="aeon-dot-active" />
+        <span className="aeon-dot-inactive" />
+        <span className="aeon-dot-inactive" />
+      </div>
+
+      {/* Benchmark Image 4 & 5: Insights */}
+      <div className="aeon-section-tag">
+        <span>INSIGHTS</span>
+        <span className="opacity-60 text-[10px]" aria-hidden="true">ⓘ</span>
+      </div>
+
+      <button
+        type="button"
+        className="p-4 rounded-2xl text-white flex items-center gap-3.5 shadow-md relative overflow-hidden w-full text-left"
+        style={{
+          background: "#221538",
+          border: "1.5px solid rgba(236, 0, 140, 0.4)",
+          boxShadow: "0 4px 16px rgba(45, 20, 69, 0.25)",
+        }}
+        onClick={() => {
+          sfx.tap();
+          nav({ to: "/kid/insights" });
+        }}
+      >
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: "var(--primary)" }}
+        >
+          <AppIcon name="star" size={20} color="#fff" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-xs font-bold tracking-wide leading-tight"
+            style={{ color: "#ffffff" }}
+          >
+            Big week for transfers! You made {data.txs.length} transactions and earned {Math.round(Number(k.coins))} stardust!
+          </p>
+        </div>
+      </button>
+
+      {/* Penny missions — Centsibility equivalent of AEON mission cards */}
+      <div className="aeon-section-tag">
+        <span>PENNY MISSIONS</span>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 border border-[var(--border)] shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--surface-pink)] flex items-center justify-center font-black text-xs text-[var(--primary)] shrink-0 shadow-inner">
+            BOOST
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-[var(--ink)]">Give Life a Boost!</h4>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">Ends 15 Oct 2026</p>
+            <Link
+              to="/kid/quiz"
+              onClick={() => sfx.tap()}
+              className="text-xs font-bold text-[var(--ink)] hover:text-[var(--primary)] inline-flex items-center gap-1 mt-2"
+            >
+              <span>Explore more</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="aeon-dots" aria-hidden="true">
+        <span className="aeon-dot-active" />
+        <span className="aeon-dot-inactive" />
+      </div>
+
+      {/* Benchmark Image 5: Spending Summary */}
+      <div className="aeon-section-tag">
+        <span>SPENDING SUMMARY</span>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 border border-[var(--border)] shadow-sm flex items-center justify-between gap-4">
+        <div>
+          <span className="text-xs text-[var(--text-secondary)] font-medium">This month's spending</span>
+          <div className="text-2xl font-extrabold text-[var(--ink)] mt-1 tabular-nums">
+            RM{data.txs.filter(isOutflow).reduce((acc, t) => acc + Number(t.amount), 0).toFixed(2)}
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              sfx.tap();
+              nav({ to: "/kid/insights" });
+            }}
+            className="mt-3 text-xs font-bold"
+          >
+            View Insights
+          </Button>
+        </div>
+
+        {/* Circular Donut Graphic */}
+        <div className="w-16 h-16 rounded-full border-4 border-[var(--primary)] border-t-[var(--navy-dark)] border-r-[var(--success)] flex items-center justify-center text-[var(--ink)] font-bold text-xs shrink-0 shadow-sm">
+          <AppIcon name="trend" size={22} color="var(--primary)" />
+        </div>
+      </div>
+
+      {/* Unclaimed Coins banner if present */}
       {k.unclaimed_coins > 0 && (
         <button
           type="button"
           onClick={claim}
           aria-label={`Claim ${Math.round(Number(k.unclaimed_coins))} unclaimed points`}
-          className="claim-banner"
+          className="w-full text-left mt-4 transition-transform active:scale-[0.98] cursor-pointer"
         >
-          <div className="wireframe-space-between">
-            <div>
-              <strong className="wireframe-row">
-                <AppIcon name="gift" size={18} color="var(--success)" />
-                Unclaimed stardust!
-              </strong>
+          <Card variant="soft" className="p-4 border border-[var(--success)]/30 bg-[var(--success-soft)]/30 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[var(--success-soft)] text-[var(--success)] flex items-center justify-center shrink-0">
+                <AppIcon name="gift" size={20} />
+              </div>
               <div>
-                <small className="text-secondary">Tap to claim your fuel</small>
+                <strong className="text-sm font-bold text-[var(--ink)] block">
+                  Unclaimed Points Available!
+                </strong>
+                <small className="text-xs text-[var(--text-secondary)]">Tap here to add to your balance</small>
               </div>
             </div>
-            <div className="text-amount" style={{ color: "var(--success)" }}>
+            <div className="text-base font-extrabold text-[var(--success)] tabular-nums shrink-0">
               +{Math.round(Number(k.unclaimed_coins))}
             </div>
-          </div>
+          </Card>
         </button>
       )}
 
-      <div className="wireframe-grid-3" style={{ marginTop: "0.75rem" }}>
+      {/* Stats Chips */}
+      <div className="grid grid-cols-3 gap-2.5 mt-4">
         <StatChip icon="star" label="Level" value={k.level.toString()} />
         <StatChip icon="target" label="XP" value={`${k.xp}/100`} />
         <StatChip icon="trust" label="Trust" value={k.trust_score.toString()} />
       </div>
 
-      <div className="wireframe-grid-2" style={{ marginTop: "1rem" }}>
-        <ActionTile to="/kid/goals" icon="target" title="Missions" sub="Save for things" />
-        <ActionTile to="/kid/quiz" icon="trend" title="Daily Quest" sub="Earn stardust" />
-        <ActionTile to="/kid/invest" icon="leaf" title="Invest" sub="Grow your money" />
-        <ActionTile to="/kid/loans" icon="loan" title="Qard Loan" sub="Borrow with sign" />
-        <ActionTile to="/kid/sadaqah" icon="users" title="Sadaqah" sub="Help others" />
-        <ActionTile to="/kid/zakat" icon="mosque" title="Zakat Calc" sub="2.5% calculator" />
-        <button
-          type="button"
-          data-variant="secondary"
-          onClick={() => setShowReward(true)}
-          className="action-tile"
-          style={{ width: "100%" }}
-        >
-          <span className="action-tile__icon" aria-hidden>
-            <AppIcon name="gift" size={22} color="var(--indigo-velvet)" />
-          </span>
-          <strong className="action-tile__title">Reward</strong>
-          <small className="action-tile__sub">Spend stardust</small>
-        </button>
-      </div>
-
-      <SectionTitle>Transmission Requests</SectionTitle>
-      <div className="wireframe-grid-2">
-        <button type="button" onClick={() => setMoneyReq("DEPOSIT")}>
+      <SectionTitle>Quick Money Requests</SectionTitle>
+      <div className="grid grid-cols-2 gap-3">
+        <Button variant="primary" onClick={() => setMoneyReq("DEPOSIT")} className="justify-center">
           <AppIcon name="plus" size={16} />
           Ask Deposit
-        </button>
-        <button type="button" data-variant="secondary" onClick={() => setMoneyReq("WITHDRAWAL")}>
+        </Button>
+        <Button variant="secondary" onClick={() => setMoneyReq("WITHDRAWAL")} className="justify-center">
           <AppIcon name="minus" size={16} />
           Ask Withdraw
-        </button>
+        </Button>
       </div>
 
       {moneyReq && (
-        <Card style={{ marginTop: "1rem" }}>
-          <h3 className="wireframe-row">
-            <AppIcon name={moneyReq === "DEPOSIT" ? "deposit" : "withdrawal"} size={20} />
-            {moneyReq === "DEPOSIT" ? "Ask parent to deposit" : "Ask parent to withdraw"}
-          </h3>
+        <Card variant="default" className="mt-4 p-5 space-y-4 border border-[var(--border)]">
+          <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border)]">
+            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <AppIcon name={moneyReq === "DEPOSIT" ? "deposit" : "withdrawal"} size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--ink)]">
+                {moneyReq === "DEPOSIT" ? "Ask Parent to Deposit" : "Ask Parent to Withdraw"}
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {moneyReq === "DEPOSIT" ? "Add savings to your digital wallet" : "Convert digital balance into cash"}
+              </p>
+            </div>
+          </div>
           <MoneyKeypad
             min={0.5}
             max={moneyReq === "WITHDRAWAL" ? Number(k.balance) : 10000}
@@ -301,21 +500,24 @@ function KidHome() {
       )}
 
       {showReward && (
-        <Card style={{ marginTop: "1rem" }}>
-          <h3 className="wireframe-row">
-            <AppIcon name="gift" size={20} />
-            Request a custom reward
-          </h3>
-          <p className="wireframe-row">
-            You have {Math.round(Number(k.coins)).toLocaleString()}
-            <AppIcon name="star" size={16} color="var(--lavender-purple)" />
-          </p>
-          <input
+        <Card variant="default" className="mt-4 p-5 space-y-4 border border-[var(--border)]">
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+                <AppIcon name="gift" size={18} />
+              </div>
+              <h3 className="text-sm font-bold text-[var(--ink)]">Custom Wishlist Request</h3>
+            </div>
+            <span className="text-xs font-bold text-[var(--primary)] flex items-center gap-1">
+              {Math.round(Number(k.coins)).toLocaleString()} <AppIcon name="star" size={12} />
+            </span>
+          </div>
+          <Input
+            label="What would you like to request?"
             value={rName}
             onChange={(e) => setRName(e.target.value)}
-            placeholder="e.g. New book, day trip, ice cream"
+            placeholder="e.g. New book, day trip, ice cream treat"
             maxLength={100}
-            style={{ marginBottom: "0.5rem" }}
           />
           <RewardCoinPicker
             maxPoints={Math.max(1, Math.floor(k.coins))}
@@ -329,96 +531,91 @@ function KidHome() {
       )}
 
       {pendingApprovals.length > 0 && (
-        <>
-          <SectionTitle>Waiting for parent</SectionTitle>
-          <div className="wireframe-col">
+        <div className="space-y-3">
+          <SectionTitle>Waiting for Parent Authorization</SectionTitle>
+          <div className="space-y-2.5">
             {pendingApprovals.map((a: (typeof pendingApprovals)[number]) => (
-              <Card key={a.id} variant="soft">
-                <div className="wireframe-space-between">
-                  <div>
-                    <strong>{a.kind}</strong>
-                    <div>
-                      <small className="text-secondary">{cleanApprovalReason(a.reason)}</small>
-                    </div>
+              <Card key={a.id} variant="default" className="p-4 border border-[var(--border)] flex items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>{a.kind}</Badge>
+                    <span className="text-xs font-semibold text-[var(--ink)]">{cleanApprovalReason(a.reason)}</span>
                   </div>
-                  <div className="text-amount">RM {a.amount}</div>
+                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Sent to parent for review</small>
+                </div>
+                <div className="text-base font-bold text-[var(--ink)] tabular-nums shrink-0">
+                  RM {Number(a.amount).toFixed(2)}
                 </div>
               </Card>
             ))}
           </div>
-        </>
+        </div>
       )}
 
       {data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length > 0 && (
-        <>
-          <SectionTitle>My Loans (Qard)</SectionTitle>
-          <div className="wireframe-col">
+        <div className="space-y-3">
+          <SectionTitle>My Benevolent Loans (Qard)</SectionTitle>
+          <div className="space-y-2.5">
             {data.loans
               .filter((l: (typeof data.loans)[number]) => l.status === "active")
               .map((l: (typeof data.loans)[number]) => {
                 const remaining = Number(l.amount) - Number(l.repaid);
                 const overdue = new Date(l.due_date) < new Date();
                 return (
-                  <Card key={l.id}>
-                    <div className="wireframe-space-between">
-                      <div>
-                        <strong>{l.reason || "Qard loan"}</strong>
-                        <div>
-                          <small className="text-secondary">
-                            Due {l.due_date}{" "}
-                            {overdue && <span style={{ color: "var(--error)" }}>· OVERDUE</span>}
-                          </small>
-                        </div>
+                  <Card key={l.id} variant="default" className="p-4 border border-[var(--border)] flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={overdue ? "error" : "warning"}>{overdue ? "Overdue" : "Active"}</Badge>
+                        <strong className="text-sm font-bold text-[var(--ink)]">{l.reason || "Qard loan"}</strong>
                       </div>
-                      <div className="text-amount">RM {remaining.toFixed(2)}</div>
+                      <small className="text-xs text-[var(--text-secondary)] mt-0.5 block">
+                        Due: {l.due_date}
+                      </small>
                     </div>
-                    <Link to="/kid/loans" style={{ marginTop: "0.5rem", display: "inline-block" }}>
-                      Repay →
-                    </Link>
+                    <div className="text-right shrink-0">
+                      <div className="text-base font-extrabold text-[var(--ink)] tabular-nums">
+                        RM {remaining.toFixed(2)}
+                      </div>
+                      <Link to="/kid/loans" className="text-xs font-bold text-[var(--primary)] hover:underline inline-block mt-0.5">
+                        Repay →
+                      </Link>
+                    </div>
                   </Card>
                 );
               })}
           </div>
-        </>
+        </div>
       )}
 
+
       <SectionTitle>Transaction History</SectionTitle>
-      <div className="wireframe-col">
+      <Card variant="default" className="p-2 divide-y divide-[var(--border)] overflow-hidden">
         {data.txs.map((t: (typeof data.txs)[number]) => (
-          <div key={t.id} className="tx-row">
-            <div className="wireframe-row">
-              {txEmoji(t.type)}
-              <div>
-                <strong>{t.label}</strong>
-                <div>
-                  <small className="text-muted">
-                    {new Date(t.created_at).toLocaleDateString()} · {t.type}
-                  </small>
-                </div>
-              </div>
-            </div>
-            <div
-              className={`tx-row__amount ${isOutflow(t) ? "amount-out" : "amount-in"}`}
-            >
-              {isOutflow(t) ? "-" : "+"}RM {Number(t.amount).toFixed(2)}
-            </div>
-          </div>
+          <TransactionRow
+            key={t.id}
+            title={t.label}
+            subtitle={t.type}
+            date={new Date(t.created_at).toLocaleDateString()}
+            amount={Number(t.amount)}
+            isIncome={!isOutflow(t)}
+            icon={TX_ICON_MAP[t.type] || "transaction"}
+          />
         ))}
         {data.txs.length === 0 && (
-          <Card variant="soft">No activity yet.</Card>
+          <div className="p-6 text-center text-xs text-[var(--text-muted)]">No activity yet.</div>
         )}
-      </div>
+      </Card>
 
       {showProfile && (
         <div className="profile-sheet">
           <div className="profile-sheet__header">
-            <h2>My Profile</h2>
-            <button type="button" data-variant="secondary" onClick={() => setShowProfile(false)}>
+            <h2 className="text-lg font-bold text-[var(--ink)]">My Profile</h2>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setShowProfile(false)}>
               Close
-            </button>
+            </Button>
           </div>
 
-          <div style={{ maxWidth: "500px", margin: "0 auto" }}>
+          <div style={{ maxWidth: "500px", margin: "0 auto" }} className="p-4 space-y-4">
             {showUpload ? (
               <ImageUploadCrop
                 busy={savingProfile}
@@ -426,87 +623,85 @@ function KidHome() {
                 onCancel={() => setShowUpload(false)}
               />
             ) : (
-              <div className="wireframe-col">
-                <div style={{ textAlign: "center" }}>
+              <div className="space-y-4">
+                <div className="text-center">
                   <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={96} ring />
-                  <div>
-                    <button
+                  <div className="mt-2">
+                    <Button
                       type="button"
-                      data-variant="secondary"
+                      variant="secondary"
+                      size="sm"
                       onClick={() => setShowUpload(true)}
-                      style={{ marginTop: "0.5rem" }}
                     >
                       Change Picture
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
-                <div className="wireframe-col">
-                  <div>
-                    <label>Name</label>
-                    <input value={k.name} disabled />
-                  </div>
-                  <div>
-                    <label>Username (Parent only)</label>
-                    <input value={k.username || ""} disabled />
-                  </div>
+                <div className="space-y-3">
+                  <Input label="Name" value={k.name} disabled />
+                  <Input label="Username (Parent only)" value={k.username || ""} disabled />
 
                   <div>
-                    <label>Short Bio</label>
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
+                      Short Bio
+                    </label>
                     <textarea
                       value={pBio}
                       onChange={(e) => setPBio(e.target.value)}
                       maxLength={150}
                       rows={3}
                       placeholder="I love to learn and save money!"
+                      className="w-full px-3.5 py-2.5 text-sm text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none resize-none"
                     />
-                    <small className="text-muted">{pBio.length}/150</small>
+                    <small className="text-[11px] text-[var(--text-muted)] block text-right mt-0.5">
+                      {pBio.length}/150
+                    </small>
                   </div>
 
-                  <div className="wireframe-grid-2">
-                    <div>
-                      <label>Birth Date</label>
-                      <input
-                        type="date"
-                        value={pBirthDate}
-                        onChange={(e) => setPBirthDate(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label>Birth Year</label>
-                      <input
-                        type="number"
-                        placeholder="YYYY"
-                        value={pBirthYear}
-                        onChange={(e) => setPBirthYear(e.target.value)}
-                      />
-                    </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="Birth Date"
+                      type="date"
+                      value={pBirthDate}
+                      onChange={(e) => setPBirthDate(e.target.value)}
+                    />
+                    <Input
+                      label="Birth Year"
+                      type="number"
+                      placeholder="YYYY"
+                      value={pBirthYear}
+                      onChange={(e) => setPBirthYear(e.target.value)}
+                    />
                   </div>
 
                   {data.parent && (
-                    <Card variant="soft">
-                      <small className="text-secondary">Linked to Parent</small>
-                      <div>
-                        <strong>{data.parent.display_name || "Parent"}</strong>
+                    <Card variant="soft" className="p-3 space-y-1">
+                      <small className="text-xs text-[var(--text-secondary)] font-medium">Linked to Parent</small>
+                      <div className="text-sm font-bold text-[var(--ink)]">
+                        {data.parent.display_name || "Parent"}
                       </div>
-                      <small className="text-muted">{data.parent.email}</small>
+                      <small className="text-xs text-[var(--text-muted)]">{data.parent.email}</small>
                     </Card>
                   )}
 
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     onClick={handleSaveProfile}
                     disabled={savingProfile}
-                    style={{ marginTop: "1rem" }}
+                    loading={savingProfile}
+                    className="w-full justify-center mt-2"
                   >
                     {savingProfile ? "Saving..." : "Save Profile"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
         </div>
       )}
+
     </>
   );
 }

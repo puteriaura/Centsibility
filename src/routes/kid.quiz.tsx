@@ -1,12 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
 import { edgeKidQuizState, edgeKidQuizAnswer } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { ALL_QUESTIONS } from "@/data/quiz-bank";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { sfx } from "@/lib/sounds";
 
 export const Route = createFileRoute("/kid/quiz")({
   head: () => ({ meta: [{ title: "Daily Quest — Centsibility" }] }),
@@ -15,8 +21,6 @@ export const Route = createFileRoute("/kid/quiz")({
 
 const MAX = 5;
 const MAX_WRONG = 2;
-
-/* Points awarded per correct answer */
 const PTS_PER_CORRECT = 100;
 
 function KidQuiz() {
@@ -37,14 +41,19 @@ function KidQuiz() {
     })();
   }, [code]);
 
-  if (!state)
+  if (!state) {
     return (
-      <Card className="wireframe-card">Loading…</Card>
+      <div className="space-y-4">
+        <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
+        <Skeleton style={{ height: "14rem", borderRadius: "20px" }} />
+      </div>
     );
+  }
 
   const totalPoints = Math.round(Number(data?.kid.coins ?? 0));
   const done = state.correct >= MAX;
   const q = ALL_QUESTIONS[state.index % ALL_QUESTIONS.length];
+  const livesLeft = MAX_WRONG - state.wrong;
 
   const submit = async () => {
     if (picked === null || !code) return;
@@ -53,9 +62,14 @@ function KidQuiz() {
     try {
       const res = await edgeKidQuizAnswer({ code, correct: isCorrect });
       setState({ correct: res.correct, wrong: res.wrong, index: res.index });
-      if (isCorrect) toast.success(`[✓] +${PTS_PER_CORRECT} pts`);
-      else toast.error("[✗] Not quite");
-      if (res.cycled) toast.info("New round! Try again.");
+      if (isCorrect) {
+        sfx.success();
+        toast.success(`+${PTS_PER_CORRECT} points earned!`);
+      } else {
+        sfx.error();
+        toast.error("Not quite! Try again next question.");
+      }
+      if (res.cycled) toast.info("New round started! Keep going.");
       setTimeout(() => setPicked(null), 700);
       refresh();
     } catch (e: unknown) {
@@ -65,139 +79,216 @@ function KidQuiz() {
     }
   };
 
-  /* ── Done screen ── */
+  const tiers = [
+    { pts: 100, label: "1 correct", icon: "approve", need: 1 },
+    { pts: 200, label: "2 correct", icon: "trend", need: 2 },
+    { pts: 500, label: "4 correct", icon: "star", need: 4 },
+    { pts: 1000, label: "All 5", icon: "trophy", need: 5 },
+  ];
+
   if (done) {
     return (
-      <>
+      <div className="space-y-6 pb-12">
         <PointsHeader totalPoints={totalPoints} />
 
-        <Card className="wireframe-card" style={{ textAlign: "center", marginTop: "1rem" }}>
-          <div>[icon: trophy]</div>
-          <h2>Mashallah!</h2>
-          <p>
-            5 correct today · <strong>{MAX * PTS_PER_CORRECT}</strong> pts earned
+        <Card variant="default" className="p-8 text-center space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center mx-auto shadow-sm">
+            <AppIcon name="trophy" size={36} />
+          </div>
+          <h2 className="text-2xl font-extrabold text-[var(--ink)]">Mashallah! Quest Complete!</h2>
+          <p className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto">
+            You solved 5 questions today and earned{" "}
+            <strong className="text-[var(--primary)] font-bold">{MAX * PTS_PER_CORRECT}</strong> bonus points!
           </p>
-          <p><small>Come back tomorrow for a fresh quest.</small></p>
+          <div className="pt-2">
+            <Link to="/kid/rewards">
+              <Button variant="primary" className="mx-auto">
+                <AppIcon name="gift" size={16} />
+                Visit Rewards Store →
+              </Button>
+            </Link>
+          </div>
         </Card>
 
-        {/* Points breakdown */}
-        <Card className="wireframe-card" style={{ marginTop: "1rem" }}>
-          <p><strong>[icon: gift] Quest Rewards</strong></p>
-          <div className="wireframe-grid-4" style={{ textAlign: "center", margin: "0.5rem 0" }}>
-            {[100, 200, 500, 1000].map((pts) => (
-              <div key={pts} className="wireframe-box">
-                <strong>{pts}</strong>
-                <div><small>pts</small></div>
+        {/* Reward milestones summary */}
+        <Card variant="soft" className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <AppIcon name="gift" size={18} color="var(--primary)" />
+            <span className="text-sm font-bold text-[var(--ink)]">Quest Rewards Tiers</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {tiers.map((tier) => (
+              <div
+                key={tier.pts}
+                className="p-2.5 rounded-xl text-center bg-white border border-[var(--border)]"
+              >
+                <div className="text-sm font-bold text-[var(--primary)]">{tier.pts}</div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{tier.label}</div>
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center" }}>
-            <small>Use your points in the Reward store [icon: star]</small>
-          </p>
         </Card>
 
         <QuizHistory attempts={data?.attempts ?? []} />
-      </>
+      </div>
     );
   }
 
-  const isPicked = picked !== null;
-
   return (
-    <>
-      <PointsHeader totalPoints={totalPoints} />
-
-      <div className="wireframe-space-between" style={{ marginTop: "1rem" }}>
-        <h1>[icon: quest] Daily Quest</h1>
-        <span>{state.correct} / {MAX}</span>
-      </div>
-
-      {/* Progress */}
-      <div style={{ margin: "0.5rem 0" }}>
-        <progress value={state.correct} max={MAX} style={{ width: "100%" }} />
-      </div>
-      <p style={{ textAlign: "center" }}>
-        <small>Lives: {MAX_WRONG - state.wrong} / {MAX_WRONG} · 2 wrong = round resets</small>
-      </p>
-
-      {/* Points per question teaser */}
-      <div style={{ textAlign: "center", margin: "0.5rem 0" }}>
-        <small>+{PTS_PER_CORRECT} pts per correct answer [icon: star]</small>
-      </div>
-
-      {/* Question card */}
-      <Card className="wireframe-card">
-        <div style={{ textAlign: "center" }}>[icon: brain]</div>
-        <h2 style={{ textAlign: "center", margin: "0.5rem 0" }}>{q.q}</h2>
-        <div className="wireframe-col" style={{ margin: "1rem 0" }}>
-          {q.options.map((o, i) => (
-            <button
-              key={i}
-              type="button"
-              disabled={busy}
-              onClick={() => setPicked(i)}
-              style={{
-                border: picked === i ? "2px solid #000" : "1px solid #ccc",
-                textAlign: "left",
-                fontWeight: picked === i ? "bold" : "normal",
-              }}
-            >
-              {o}
-            </button>
-          ))}
+    <div className="space-y-6 pb-12">
+      <section className="deposit-hero" aria-label="Daily quest progress">
+        <div className="deposit-hero__copy">
+          <p className="deposit-hero__label">Penny Sensei · Daily Quest</p>
+          <p className="deposit-hero__amount tabular-nums">
+            {state ? `${state.correct + state.wrong}/${MAX}` : "…"}
+          </p>
+          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
+            {totalPoints} stardust · {MAX_WRONG - (state?.wrong ?? 0)} lives left
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!isPicked || busy}
-          style={{ width: "100%" }}
-        >
-          {busy ? "…" : "Submit"}
-        </button>
+        <div className="deposit-hero__mascot" aria-hidden="true">
+          <AppIcon name="penny" size={32} color="#fff" />
+        </div>
+      </section>
+
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-bold text-[var(--ink)] m-0">
+            Learn & earn
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 mb-0">
+            Shariah principles in bite-sized quizzes.
+          </p>
+        </div>
+        <PointsHeader totalPoints={totalPoints} />
+      </div>
+
+      {/* Progress & Lives Indicator */}
+      <Card variant="default" className="p-4 sm:p-5 space-y-3 border border-[var(--border)]">
+        <div className="flex items-center justify-between text-xs font-semibold">
+          <span className="text-[var(--text-secondary)]">Daily Quest Progress</span>
+          <span className="text-[var(--primary)] font-bold">
+            {state.correct} of {MAX} Questions Solved
+          </span>
+        </div>
+        <Progress value={state.correct} max={MAX} height={8} />
+        <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pt-1">
+          <span className="flex items-center gap-1">
+            Lives remaining: <strong className="text-[var(--ink)]">{livesLeft} / {MAX_WRONG}</strong>
+          </span>
+          <span className="text-[var(--success)] font-medium">+{PTS_PER_CORRECT} pts each</span>
+        </div>
       </Card>
 
-      {/* Quest rewards info */}
-      <SectionTitle>Quest rewards</SectionTitle>
-      <div className="wireframe-grid-4">
-        {[
-          { pts: 100, label: "1 correct", iconLabel: "[icon: check]" },
-          { pts: 200, label: "2 correct", iconLabel: "[icon: trend]" },
-          { pts: 500, label: "4 correct", iconLabel: "[icon: star]" },
-          { pts: 1000, label: "All 5", iconLabel: "[icon: trophy]" },
-        ].map((tier) => (
-          <div
-            key={tier.pts}
-            className="wireframe-box"
-            style={{
-              textAlign: "center",
-              border: state.correct >= (tier.pts === 100 ? 1 : tier.pts === 200 ? 2 : tier.pts === 500 ? 4 : 5) ? "2px solid #000" : "1px solid #ccc",
-            }}
-          >
-            <div>{tier.iconLabel}</div>
-            <strong>{tier.pts}</strong>
-            <div><small>pts</small></div>
+      {/* Question Card */}
+      <Card variant="default" className="p-5 sm:p-6 space-y-5 border border-[var(--border)] shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <AppIcon name="brain" size={20} />
           </div>
-        ))}
+          <span className="text-xs font-bold text-[var(--primary)] uppercase tracking-wider">
+            Question #{((state.index % ALL_QUESTIONS.length) + 1)}
+          </span>
+        </div>
+
+        <h2 className="text-base sm:text-lg font-bold text-[var(--ink)] leading-snug">
+          {q.q}
+        </h2>
+
+        {/* Options */}
+        <div className="space-y-2.5">
+          {q.options.map((option, i) => {
+            const isSelected = picked === i;
+            return (
+              <button
+                key={i}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  sfx.tap();
+                  setPicked(i);
+                }}
+                className={`w-full flex items-center gap-3 p-3.5 sm:p-4 rounded-xl text-left text-sm font-medium transition-all duration-150 cursor-pointer min-h-[48px] border ${
+                  isSelected
+                    ? "border-[var(--primary)] bg-[var(--surface-pink)] text-[var(--primary)] font-bold shadow-xs"
+                    : "border-[var(--border)] bg-white text-[var(--ink)] hover:bg-[var(--surface-soft)]"
+                }`}
+              >
+                <span
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border ${
+                    isSelected
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                      : "bg-[var(--surface-soft)] text-[var(--text-secondary)] border-[var(--border)]"
+                  }`}
+                >
+                  {String.fromCharCode(65 + i)}
+                </span>
+                <span className="leading-snug">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Submit button */}
+        <Button
+          type="button"
+          variant="primary"
+          onClick={submit}
+          disabled={picked === null || busy}
+          loading={busy}
+          className="w-full justify-center text-sm font-bold min-h-[48px]"
+        >
+          {busy ? "Checking Answer…" : "Confirm Answer"}
+        </Button>
+      </Card>
+
+      {/* Quest Reward Milestones */}
+      <div className="space-y-3">
+        <SectionTitle>Reward Milestones</SectionTitle>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {tiers.map((tier) => {
+            const unlocked = state.correct >= tier.need;
+            return (
+              <Card
+                key={tier.pts}
+                variant="default"
+                className={`p-3.5 rounded-xl text-center border transition-all duration-150 ${
+                  unlocked
+                    ? "border-[var(--primary)] bg-[var(--surface-pink)]/40"
+                    : "border-[var(--border)] bg-white opacity-60"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1.5 ${
+                    unlocked
+                      ? "bg-[var(--primary)] text-white"
+                      : "bg-[var(--surface-soft)] text-[var(--text-muted)]"
+                  }`}
+                >
+                  <AppIcon name={tier.icon} size={16} />
+                </div>
+                <div className="text-base font-bold text-[var(--ink)]">{tier.pts} pts</div>
+                <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{tier.label}</div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       <QuizHistory attempts={data?.attempts ?? []} />
-    </>
-  );
-}
-
-/* ── Points balance header pill ── */
-function PointsHeader({ totalPoints }: { totalPoints: number }) {
-  return (
-    <div className="wireframe-space-between wireframe-box">
-      <small><strong>Your Points</strong></small>
-      <div>
-        <strong>{totalPoints.toLocaleString()} [icon: star]</strong>
-      </div>
     </div>
   );
 }
 
-/* ── Quiz history ── */
+function PointsHeader({ totalPoints }: { totalPoints: number }) {
+  return (
+    <div className="shrink-0 flex items-center gap-1.5 bg-[var(--surface-pink)] text-[var(--primary)] px-3.5 py-1.5 rounded-full text-xs font-bold border border-[var(--primary-soft)]">
+      <AppIcon name="star" size={14} />
+      <span>{totalPoints.toLocaleString()} Points</span>
+    </div>
+  );
+}
+
 function QuizHistory({
   attempts,
 }: {
@@ -205,25 +296,37 @@ function QuizHistory({
 }) {
   if (attempts.length === 0) return null;
   return (
-    <>
-      <SectionTitle>Quiz history</SectionTitle>
-      <Card className="wireframe-card">
-        <ul style={{ maxHeight: "250px", overflowY: "auto" }}>
-          {attempts.slice(0, 30).map((a) => (
-            <li
-              key={a.id}
-              className="wireframe-space-between"
-              style={{ padding: "0.25rem 0", borderBottom: "1px solid #eee" }}
-            >
-              <span>{a.correct ? "[✓]" : "[✗]"} {a.question_text}</span>
-              <span>
-                <small>{new Date(a.created_at).toLocaleDateString()}</small>{" "}
-                {a.correct && <strong>+{PTS_PER_CORRECT}</strong>}
+    <div className="space-y-3">
+      <SectionTitle>Recent Quiz Questions</SectionTitle>
+      <Card variant="default" className="p-3 divide-y divide-[var(--border)]">
+        {attempts.slice(0, 15).map((a) => (
+          <div key={a.id} className="py-2.5 px-2 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                  a.correct
+                    ? "bg-[var(--success-soft)] text-[var(--success)]"
+                    : "bg-[var(--error-soft)] text-[var(--error)]"
+                }`}
+              >
+                <AppIcon name={a.correct ? "approve" : "close"} size={13} />
+              </div>
+              <span className="text-[var(--ink)] font-medium truncate">{a.question_text}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[var(--text-muted)]">
+                {new Date(a.created_at).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                })}
               </span>
-            </li>
-          ))}
-        </ul>
+              {a.correct && (
+                <span className="text-[var(--success)] font-bold">+{PTS_PER_CORRECT}</span>
+              )}
+            </div>
+          </div>
+        ))}
       </Card>
-    </>
+    </div>
   );
 }

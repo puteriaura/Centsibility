@@ -6,6 +6,10 @@ import {
   edgeParentDeactivateScheduledHibah,
 } from "@/lib/edge";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { AppIcon } from "@/components/ui/app-icon";
 
 interface ScheduleHibahSectionProps {
   kid: Kid;
@@ -34,19 +38,28 @@ export function ScheduleHibahSection({
   const [busy, setBusy] = useState(false);
 
   const handleScheduleHibah = async () => {
-    if (!scheduleData.startDate || !scheduleData.amount) return;
+    const amt = parseFloat(scheduleData.amount);
+    if (isNaN(amt) || amt <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    if (!scheduleData.startDate) {
+      toast.error("Please select a start date");
+      return;
+    }
+
     setBusy(true);
     try {
       await edgeParentCreateScheduledHibah({
         kidId: kid.id,
-        amount: parseFloat(scheduleData.amount),
+        amount: amt,
         frequency: scheduleData.frequency,
         startDate: scheduleData.startDate.toISOString(),
-        endDate: scheduleData.endDate ? scheduleData.endDate.toISOString() : undefined,
+        endDate: scheduleData.endDate?.toISOString(),
       });
       toast.success("Auto-Hibah scheduled successfully");
-      onClose();
       onRefresh();
+      onClose();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
     } finally {
@@ -54,35 +67,44 @@ export function ScheduleHibahSection({
     }
   };
 
-  const handleDeactivateHibah = async (hibahId: string) => {
+  const handleDeactivateHibah = async (scheduleId: string) => {
     try {
-      await edgeParentDeactivateScheduledHibah({ hibahId });
-      toast.success("Schedule cancelled");
+      await edgeParentDeactivateScheduledHibah({ hibahId: scheduleId });
+      toast.success("Schedule deactivated");
       onRefresh();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to cancel");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "An error occurred");
     }
   };
 
   return (
-    <div className="wireframe-box" style={{ marginTop: "1rem" }}>
-      <div>
-        <strong>[icon: schedule] Schedule Auto-Hibah for {kid.name}</strong>
+    <Card variant="default" className="p-5 mt-4 rounded-2xl border border-[var(--border)] shadow-sm space-y-4">
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] flex items-center justify-center">
+          <AppIcon name="gift" size={18} />
+        </div>
+        <strong className="text-sm font-bold text-[var(--ink)]">
+          Schedule Auto-Hibah for {kid.name}
+        </strong>
       </div>
-      <div className="wireframe-col" style={{ marginTop: "0.5rem" }}>
-        <div className="wireframe-grid-2">
+
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label="Amount (RM)"
+            id="hibah-amount"
+            type="number"
+            step="0.5"
+            value={scheduleData.amount}
+            onChange={(e) => setScheduleData({ ...scheduleData, amount: e.target.value })}
+          />
+
           <div>
-            <label>Amount (RM)</label>
-            <input
-              type="number"
-              step="0.5"
-              value={scheduleData.amount}
-              onChange={(e) => setScheduleData({ ...scheduleData, amount: e.target.value })}
-            />
-          </div>
-          <div>
-            <label>Frequency</label>
+            <label htmlFor="hibah-frequency" className="block text-xs font-semibold text-[var(--ink)] mb-1">
+              Frequency
+            </label>
             <select
+              id="hibah-frequency"
               value={scheduleData.frequency}
               onChange={(e) =>
                 setScheduleData({
@@ -96,6 +118,7 @@ export function ScheduleHibahSection({
                     | "annually",
                 })
               }
+              className="w-full h-11 px-3 rounded-xl border border-[var(--border)] bg-white text-xs font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -106,9 +129,13 @@ export function ScheduleHibahSection({
             </select>
           </div>
         </div>
+
         <div>
-          <label>Start Date</label>
+          <label htmlFor="hibah-start-date" className="block text-xs font-semibold text-[var(--ink)] mb-1">
+            Start Date
+          </label>
           <input
+            id="hibah-start-date"
             type="date"
             value={scheduleData.startDate ? format(scheduleData.startDate, "yyyy-MM-dd") : ""}
             onChange={(e) =>
@@ -117,45 +144,60 @@ export function ScheduleHibahSection({
                 startDate: e.target.value ? new Date(e.target.value) : undefined,
               })
             }
+            className="w-full h-11 px-3 rounded-xl border border-[var(--border)] bg-white text-xs font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
           />
         </div>
-        <div className="wireframe-row">
-          <button type="button" onClick={onClose}>
+
+        <div className="flex items-center gap-2 pt-2">
+          <Button type="button" variant="secondary" size="sm" onClick={onClose} className="flex-1 justify-center">
             Cancel
-          </button>
-          <button type="button" onClick={handleScheduleHibah} disabled={busy}>
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={handleScheduleHibah}
+            disabled={busy}
+            className="flex-1 justify-center font-bold"
+          >
             {busy ? "Scheduling…" : "Schedule"}
-          </button>
+          </Button>
         </div>
       </div>
+
       {scheduledHibahs && scheduledHibahs.length > 0 && (
-        <div style={{ marginTop: "1rem" }}>
-          <div>
-            <strong>Active Schedules</strong>
-          </div>
-          <ul>
+        <div className="pt-4 border-t border-[var(--border)] space-y-2">
+          <strong className="text-xs font-bold text-[var(--ink)] block uppercase tracking-wider">
+            Active Schedules
+          </strong>
+          <ul className="space-y-2">
             {scheduledHibahs.map((h) => (
-              <li key={h.id} className="wireframe-space-between wireframe-box">
+              <li
+                key={h.id}
+                className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)]"
+              >
                 <div>
-                  <strong>
-                    RM {Number(h.amount).toFixed(2)} {h.frequency}
+                  <strong className="text-xs font-bold text-[var(--ink)] block tabular-nums">
+                    RM {Number(h.amount).toFixed(2)} ({h.frequency})
                   </strong>
-                  <div>
-                    <small>Next: {format(new Date(h.next_run_at), "PP")}</small>
-                  </div>
+                  <small className="text-[11px] text-[var(--text-muted)]">
+                    Next: {format(new Date(h.next_run_at), "PP")}
+                  </small>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleDeactivateHibah(h.id)}
+                  className="text-xs font-semibold text-[var(--error)] hover:underline inline-flex items-center gap-1"
                   title="Cancel this schedule"
                 >
-                  [icon: cancel] Cancel
+                  <AppIcon name="close" size={12} />
+                  <span>Cancel</span>
                 </button>
               </li>
             ))}
           </ul>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

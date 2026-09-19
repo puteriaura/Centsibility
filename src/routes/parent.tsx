@@ -6,7 +6,9 @@ import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
-import { NumericKeypad } from "@/components/ui/numeric-keypad";
+import { NumericKeypad, PIN_KEYPAD_KEYS } from "@/components/ui/numeric-keypad";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Button } from "@/components/ui/button";
 import { isParentBypassed, setParentBypassed } from "@/lib/admin-bypass";
 
 export const Route = createFileRoute("/parent")({
@@ -209,53 +211,112 @@ function ParentLayout() {
   // PIN not yet verified — show the PIN screen
   if (!pinVerified) {
     return (
-      <div>
-        {/* Cancel → sign out + go to kid-login */}
-        <button
-          onClick={() => {
-            clearParentSession();
-            supabase.auth.signOut().then(() => {
-              window.location.href = "/kid-login";
-            });
-          }}
-        >
-          [icon: back] Cancel
-        </button>
+      <div
+        className="min-h-screen flex flex-col justify-between p-6 sm:p-8"
+        style={{
+          background: "var(--surface-pink)",
+          maxWidth: "440px",
+          margin: "0 auto",
+        }}
+      >
+        {/* Benchmark Header: ✕ Cancel on left, ? Help on right */}
+        <div className="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              clearParentSession();
+              supabase.auth.signOut().then(() => {
+                window.location.href = "/kid-login";
+              });
+            }}
+            className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors"
+            aria-label="Cancel and exit"
+          >
+            <AppIcon name="close" size={24} />
+          </button>
 
-        <section>
-          {/* Lock icon */}
-          <div>[icon: lock]</div>
+          <button
+            type="button"
+            onClick={() => {
+              toast("Security PIN prevents children from accessing parent controls.");
+            }}
+            className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors"
+            aria-label="Help information"
+          >
+            <AppIcon name="messagecircle" size={22} />
+          </button>
+        </div>
 
-          <h2>
-            {isSettingPin ? "Set Commander PIN" : "Enter Commander PIN"}
-          </h2>
-          <p>
+        {/* PIN Title & Digit Boxes */}
+        <div className="text-center my-auto py-6">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
+            {isSettingPin ? "Create 6-digit PIN" : "Enter your 6-digit PIN"}
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-2">
             {isSettingPin
-              ? "Create a 4–6 digit PIN to protect the parent dashboard."
-              : "Enter your PIN to access the parent dashboard."}
+              ? "Create a secure PIN to protect the parent dashboard"
+              : "Enter your PIN to manage your family banking"}
           </p>
 
-          {/* PIN circles */}
-          <div>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i}>
-                {i < pinInput.length ? "[●]" : "[○]"}
-              </span>
-            ))}
+          {/* 6 Rounded Square Boxes */}
+          <div className="flex items-center justify-center gap-2.5 sm:gap-3 my-8">
+            {Array.from({ length: 6 }).map((_, i) => {
+              const filled = i < pinInput.length;
+              return (
+                <div
+                  key={i}
+                  className={`aeon-pin-box ${filled ? "is-filled" : ""}`}
+                  style={{
+                    width: "48px",
+                    height: "56px",
+                    borderRadius: "14px",
+                    fontSize: "24px",
+                  }}
+                  aria-hidden="true"
+                >
+                  {filled ? "●" : ""}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Numeric keypad */}
-          <NumericKeypad onKeyPress={handleKeyPress} disabled={pinProcessing} />
-
-          {/* Submit button with spinner */}
           <button
-            onClick={submitPin}
-            disabled={pinInput.length < 4 || pinProcessing}
+            type="button"
+            onClick={() => {
+              clearParentSession();
+              supabase.auth.signOut().then(() => {
+                window.location.href = "/login";
+              });
+            }}
+            className="text-xs sm:text-sm font-semibold text-[var(--ink)] hover:text-[var(--primary)] transition-colors inline-flex items-center gap-1.5"
           >
-            {pinProcessing && "[loading...] "}
-            {isSettingPin ? "Set PIN" : "Unlock"}
+            <span>Login with password</span>
+            <span aria-hidden="true">→</span>
           </button>
-        </section>
+        </div>
+
+        {/* Keypad & Submit Action */}
+        <div className="pb-4">
+          <NumericKeypad
+            keys={PIN_KEYPAD_KEYS}
+            onKeyPress={handleKeyPress}
+            disabled={pinProcessing}
+            variant="aeon"
+          />
+
+          {pinInput.length >= 4 && (
+            <div className="mt-4">
+              <Button
+                variant="primary"
+                onClick={submitPin}
+                disabled={pinProcessing}
+                className="w-full justify-center py-3 text-sm font-bold shadow-md"
+              >
+                {pinProcessing ? "Verifying..." : isSettingPin ? "Set PIN" : "Unlock Dashboard"}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

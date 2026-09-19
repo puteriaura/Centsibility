@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AppIcon } from "@/components/ui/app-icon";
+import { Button } from "@/components/ui/button";
 
 export function StatChip({
   icon,
@@ -14,7 +15,7 @@ export function StatChip({
 }) {
   return (
     <div className="stat-chip">
-      <AppIcon name={icon} size={18} color="var(--lavender-purple)" />
+      <AppIcon name={icon} size={18} color="var(--primary)" />
       <div className="stat-chip__value">{value}</div>
       <small className="stat-chip__label">{label}</small>
     </div>
@@ -37,7 +38,7 @@ export function ActionTile({
   return (
     <Link to={to} className="action-tile">
       <span className="action-tile__icon" aria-hidden>
-        <AppIcon name={icon} size={22} color="var(--indigo-velvet)" />
+        <AppIcon name={icon} size={22} color="var(--primary)" />
       </span>
       <strong className="action-tile__title">{title}</strong>
       <small className="action-tile__sub">{sub}</small>
@@ -82,38 +83,50 @@ export function RewardCoinPicker({
   ];
 
   return (
-    <div className="wireframe-col">
-      <div className="stat-chip" style={{ padding: "1rem" }}>
-        <div className="text-balance" style={{ fontSize: "2rem" }}>
+    <div className="flex flex-col gap-3">
+      <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
+        <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary)] flex items-center justify-center gap-1.5 tabular-nums">
           {coins}{" "}
-          <AppIcon name="star" size={22} color="var(--lavender-purple)" />
+          <AppIcon name="star" size={22} color="var(--primary)" />
         </div>
-        {coins > 0 && <small className="text-secondary">of {maxPoints} pts available</small>}
+        {coins > 0 && (
+          <small className="text-xs text-[var(--text-secondary)] mt-1 block">
+            of {maxPoints.toLocaleString()} pts available
+          </small>
+        )}
       </div>
-      <div className="wireframe-grid-3">
+      <div className="grid grid-cols-3 gap-2">
         {Keys.flat().map((k) => (
-          <button
+          <Button
             key={k}
             type="button"
-            data-variant="secondary"
+            variant="secondary"
             onClick={() => press(k)}
-            style={{ fontSize: "1.25rem", fontWeight: 700 }}
+            className="text-base font-bold min-h-[44px] justify-center"
           >
             {k}
-          </button>
+          </Button>
         ))}
       </div>
-      <button type="button" onClick={() => onConfirm(coins)} disabled={!valid || !rewardName.trim()}>
-        Request for {coins} pts
-      </button>
-      <button type="button" data-variant="ghost" onClick={onCancel}>
-        Cancel
-      </button>
+      <div className="flex items-center gap-2 pt-1">
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1 justify-center">
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => onConfirm(coins)}
+          disabled={!valid || !rewardName.trim()}
+          className="flex-1 justify-center"
+        >
+          Request ({coins} pts)
+        </Button>
+      </div>
     </div>
   );
 }
 
-const TX_ICON_MAP: Record<string, string> = {
+export const TX_ICON_MAP: Record<string, string> = {
   DEPOSIT: "deposit",
   WITHDRAWAL: "withdrawal",
   HIBAH: "hibah",
@@ -126,7 +139,8 @@ const TX_ICON_MAP: Record<string, string> = {
 export function txEmoji(t: string) {
   return (
     <span className="tx-icon" aria-hidden>
-      <AppIcon name={TX_ICON_MAP[t] ?? "transaction"} size={18} color="var(--indigo-velvet)" />
+      <AppIcon name={TX_ICON_MAP[t] ?? "transaction"} size={18} color="var(--primary)" />
     </span>
   );
 }
+

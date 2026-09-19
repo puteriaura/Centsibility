@@ -41,11 +41,13 @@ export const DEMO_PARENT_SESSION: Session = {
 };
 
 export function isParentBypassed(): boolean {
+  if (!import.meta.env.DEV) return false;
   if (typeof window === "undefined") return false;
   return sessionStorage.getItem(PARENT_BYPASS_KEY) === "true";
 }
 
 export function setParentBypassed(active: boolean) {
+  if (!import.meta.env.DEV) return;
   if (typeof window === "undefined") return;
   if (active) {
     sessionStorage.setItem(PARENT_BYPASS_KEY, "true");
@@ -56,11 +58,13 @@ export function setParentBypassed(active: boolean) {
 }
 
 export function isKidBypassed(): boolean {
+  if (!import.meta.env.DEV) return false;
   if (typeof window === "undefined") return false;
   return sessionStorage.getItem(KID_BYPASS_KEY) === "true";
 }
 
 export function setKidBypassed(active: boolean) {
+  if (!import.meta.env.DEV) return;
   if (typeof window === "undefined") return;
   if (active) {
     sessionStorage.setItem(KID_BYPASS_KEY, "true");
@@ -71,6 +75,7 @@ export function setKidBypassed(active: boolean) {
 
 /** Skip parent PIN gate after demo sign-in (same flag parent layout uses). */
 export function markParentPinBypassed() {
+  if (!import.meta.env.DEV) return;
   sessionStorage.setItem(
     "parentSessionValidUntil",
     String(Date.now() + PARENT_PIN_SESSION_MS),
@@ -78,6 +83,9 @@ export function markParentPinBypassed() {
 }
 
 export async function adminBypassParent() {
+  if (!import.meta.env.DEV) {
+    throw new Error("Admin bypass is only available in development mode.");
+  }
   const { email, password } = ADMIN_BYPASS.parent;
   // Activate bypass session immediately so UI is unblocked
   setParentBypassed(true);
@@ -96,6 +104,9 @@ export async function adminBypassParent() {
 }
 
 export async function adminBypassKid() {
+  if (!import.meta.env.DEV) {
+    throw new Error("Admin bypass is only available in development mode.");
+  }
   setKidBypassed(true);
   const fallbackKidSession = {
     kidId: "demo-kid-aiman",
