@@ -232,14 +232,12 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
       ? [
           { to: "/kid/insights", label: "Penny", icon: "penny", match: ["/kid/insights", "/kid/chat"] },
           { to: "/kid/wallet", label: "Deposit", icon: "wallet" },
-          { to: "/kid/wallet", label: "Scan", icon: "scan", isCenter: true },
           { to: "/kid/loans", label: "Financing", icon: "loan" },
           { to: "/kid/card", label: "Card", icon: "card" },
         ]
       : [
           { to: "/parent", label: "Home", icon: "home" },
           { to: "/parent/approvals", label: "Approve", icon: "approve", badge: unread },
-          { to: "/parent/approvals", label: "Scan", icon: "scan", isCenter: true },
           {
             to: "/parent/insights",
             label: "Insights",
@@ -254,15 +252,12 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
       <div className="shell-bottomnav__inner">
         {items.map((it) => {
           const badge = "badge" in it ? it.badge : 0;
-          const isCenter = "isCenter" in it && it.isCenter;
           const matchPaths = "match" in it && Array.isArray(it.match) ? it.match : null;
-          const active = isCenter
-            ? pathname.includes("/scan")
-            : matchPaths
-              ? matchPaths.some((p) => pathname.startsWith(p))
-              : it.to === "/kid" || it.to === "/parent"
-                ? pathname === it.to || pathname === it.to + "/"
-                : pathname.startsWith(it.to);
+          const active = matchPaths
+            ? matchPaths.some((p) => pathname.startsWith(p))
+            : it.to === "/kid" || it.to === "/parent"
+              ? pathname === it.to || pathname === it.to + "/"
+              : pathname.startsWith(it.to);
 
           return (
             <Link
@@ -270,19 +265,11 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
               to={it.to}
               aria-label={it.label}
               aria-current={active ? "page" : undefined}
-              className={`shell-navitem ${active ? "shell-navitem--active" : ""} ${
-                isCenter ? "shell-navitem--center" : ""
-              }`.trim()}
+              className={`shell-navitem ${active ? "shell-navitem--active" : ""}`.trim()}
               onClick={() => sfx.tap()}
             >
               <span className="shell-navitem__icon-wrap">
-                {isCenter ? (
-                  <span className="shell-navitem__center-pill">
-                    <AppIcon name={it.icon} size={20} color="#fff" />
-                  </span>
-                ) : (
-                  <AppIcon name={it.icon} size={22} strokeWidth={active ? 2.5 : 2} />
-                )}
+                <AppIcon name={it.icon} size={22} strokeWidth={active ? 2.5 : 2} />
                 {Boolean(badge) && (
                   <span className="shell-navitem__badge" aria-hidden>
                     {badge}
