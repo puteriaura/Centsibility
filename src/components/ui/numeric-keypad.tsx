@@ -78,7 +78,7 @@ export function NumericKeypad({
                       ? "Biometric Login"
                       : `Key ${key}`
               }
-              className="aeon-pin-btn"
+              className="aeon-pin-btn min-w-[48px] min-h-[48px]"
             >
               {isDelete ? (
                 <span className="aeon-pin-backspace" aria-hidden="true">
@@ -112,6 +112,7 @@ export function NumericKeypad({
                   ? "Clear"
                   : `Key ${key}`
             }
+            className="min-w-[48px] min-h-[48px]"
             style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
           >
             {key}

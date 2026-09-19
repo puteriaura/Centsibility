@@ -911,8 +911,8 @@ dialog::backdrop {
   gap: 8px;
   text-decoration: none;
   color: var(--ink);
-  min-width: var(--touch-min, 44px);
-  min-height: var(--touch-min, 44px);
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .shell-brand:hover {
@@ -1259,9 +1259,9 @@ a.shell-icon-btn {
 .deposit-hero__link {
   display: inline-flex;
   align-items: center;
-  min-height: var(--touch-min, 44px);
+  min-height: 44px;
   margin: 0;
-  padding: 4px 0;
+  padding: 8px 0;
   border: none;
   background: transparent;
   color: #fff;
@@ -1640,6 +1640,7 @@ a.shell-icon-btn {
   align-items: center;
   justify-content: center;
   min-height: 44px;
+  min-width: 44px;
   padding: 10px 20px;
   border-radius: 999px;
   background: #ffffff !important;
@@ -1700,7 +1701,10 @@ a.shell-icon-btn {
 }
 
 .aeon-pin-btn {
+  min-width: 48px;
+  min-height: 48px;
   height: 60px;
+  width: 100%;
   background: transparent !important;
   border: none !important;
   font-size: 24px !important;
@@ -2795,8 +2799,12 @@ button.action-tile:hover {
 
 .insights-month {
   flex-shrink: 0;
-  min-height: 36px;
-  padding: 6px 14px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
   border-radius: 999px;
   border: 1.5px solid var(--border);
   background: #fff;
@@ -3267,7 +3275,7 @@ button.action-tile:hover {
 @media (max-width: 360px) {
   :root {
     --page-pad: 12px;
-    --touch-min: 42px;
+    --touch-min: 44px;
   }
 
   .shell-navitem__label {
