@@ -84,11 +84,11 @@ function KidCard() {
 
           <div className="flex items-center gap-4 tabular-nums text-white/90">
             <div>
-              <span className="text-[10px] block opacity-75">CVV</span>
+              <span className="text-[11px] block opacity-75">CVV</span>
               <strong>{showDetails ? "428" : "•••"}</strong>
             </div>
             <div>
-              <span className="text-[10px] block opacity-75">EXP</span>
+              <span className="text-[11px] block opacity-75">EXP</span>
               <strong>10/29</strong>
             </div>
           </div>
@@ -109,7 +109,7 @@ function KidCard() {
         {/* Bottom: Name + MyDebit / VISA logos */}
         <div className="flex items-end justify-between relative z-10 text-xs font-bold">
           <div>
-            <span className="text-[10px] uppercase tracking-wider block opacity-75 font-normal">
+            <span className="text-[11px] uppercase tracking-wider block opacity-75 font-normal">
               Cardholder
             </span>
             <span className="text-sm font-semibold tracking-wide">

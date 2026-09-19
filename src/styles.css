@@ -1028,7 +1028,7 @@ a.shell-icon-btn {
   border-radius: 10px;
   text-decoration: none;
   color: var(--text-muted);
-  font-size: clamp(9px, 2.6vw, 11px);
+  font-size: clamp(11px, 2.6vw, 12px);
   font-weight: 600;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1105,7 +1105,7 @@ a.shell-icon-btn {
   border-radius: var(--radius-pill);
   background: var(--error);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -2971,7 +2971,7 @@ button.action-tile:hover {
 }
 
 .penny-chat__beta {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--aeon-pink);
   border: 1.5px solid var(--aeon-pink);
@@ -3064,7 +3064,7 @@ button.action-tile:hover {
 .penny-chat__disclaimer {
   margin: 0;
   padding: 6px var(--page-pad) 4px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   text-align: center;
   background: #F3E8FF;
