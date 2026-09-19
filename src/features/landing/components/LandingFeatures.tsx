@@ -37,7 +37,7 @@ export function LandingFeatures() {
   ];
 
   return (
-    <section id="features" style={{ padding: "5rem 1.5rem", maxWidth: "1200px", margin: "0 auto" }}>
+    <section id="features" style={{ padding: "5rem clamp(1rem, 3vw, 1.5rem)", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "3rem" }}>
         <div style={{ marginBottom: "0.75rem" }}>
           <Badge variant="soft">Features & Architecture</Badge>
@@ -53,7 +53,7 @@ export function LandingFeatures() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
           gap: "1.5rem",
         }}
       >

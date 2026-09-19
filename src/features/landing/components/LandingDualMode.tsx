@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 
 export function LandingDualMode() {
   return (
-    <section style={{ padding: "3rem 1.5rem 5rem", maxWidth: "1200px", margin: "0 auto" }}>
+    <section style={{ padding: "3rem clamp(1rem, 3vw, 1.5rem) 5rem", maxWidth: "1200px", margin: "0 auto" }}>
       <div
-        className="grid grid-cols-1 md:grid-cols-2 gap-8"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8"
       >
         {/* KID MODE CARD */}
         <Card

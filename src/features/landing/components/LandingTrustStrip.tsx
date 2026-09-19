@@ -11,7 +11,7 @@ export function LandingTrustStrip() {
         borderTop: "1px solid var(--border)",
         borderBottom: "1px solid var(--border)",
         background: "var(--surface-soft)",
-        padding: "2rem 1.5rem",
+        padding: "2rem clamp(1rem, 3vw, 1.5rem)",
       }}
     >
       <div
@@ -19,7 +19,7 @@ export function LandingTrustStrip() {
           maxWidth: "1200px",
           margin: "0 auto",
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
           gap: "1.5rem",
           textAlign: "center",
         }}

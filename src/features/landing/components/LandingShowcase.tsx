@@ -137,7 +137,7 @@ export function PhoneMockup() {
 
 export function LandingShowcase() {
   return (
-    <section id="showcase" style={{ padding: "5rem 1.5rem", background: "var(--surface-soft)" }}>
+    <section id="showcase" style={{ padding: "5rem clamp(1rem, 3vw, 1.5rem)", background: "var(--surface-soft)" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
         <div style={{ marginBottom: "0.75rem" }}>
           <Badge variant="brand">Interactive Experience</Badge>

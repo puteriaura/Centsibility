@@ -17,7 +17,7 @@ export function LandingCTA() {
     <section
       id="cta"
       style={{
-        padding: "5rem 1.5rem",
+        padding: "5rem clamp(1rem, 3vw, 1.5rem)",
         background: "var(--surface-pink)",
         borderTop: "1px solid var(--border)",
       }}

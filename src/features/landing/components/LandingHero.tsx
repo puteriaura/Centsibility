@@ -8,12 +8,12 @@ export function LandingHero() {
   return (
     <section
       style={{
-        padding: "4rem 1.5rem 3rem",
+        padding: "4rem clamp(1rem, 3vw, 1.5rem) 3rem",
         background: "var(--white)",
       }}
     >
       <div
-        className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
