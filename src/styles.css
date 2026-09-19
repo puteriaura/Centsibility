@@ -158,6 +158,13 @@ body {
   width: 100%;
 }
 
+input,
+select,
+textarea {
+  font-size: 16px;
+  min-height: 48px;
+}
+
 ::selection {
   background: rgba(236, 0, 140, 0.18);
   color: var(--ink);
@@ -3050,7 +3057,7 @@ button.action-tile:hover {
   border: 1px solid var(--border);
   background: #fff;
   padding: 0 16px;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink);
 }
 

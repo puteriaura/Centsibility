@@ -156,7 +156,7 @@ function KidZakat() {
                 value={a.amount}
                 onChange={(e) => updateRow(assets, setAssets, i, e.target.value)}
                 aria-label={a.label}
-                className="w-full min-h-[44px] px-3.5 py-2 text-sm text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
+                className="w-full min-h-[48px] px-3.5 py-2 text-base text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
               />
             </div>
           ))}
@@ -179,7 +179,7 @@ function KidZakat() {
                 value={d.amount}
                 onChange={(e) => updateRow(deductions, setDeductions, i, e.target.value)}
                 aria-label={d.label}
-                className="w-full min-h-[44px] px-3.5 py-2 text-sm text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
+                className="w-full min-h-[48px] px-3.5 py-2 text-base text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
               />
             </div>
           ))}

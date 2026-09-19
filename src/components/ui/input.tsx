@@ -32,7 +32,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
-            className={`w-full min-h-[48px] px-4 py-3 text-sm text-[var(--text-primary)] bg-white border rounded-[var(--radius-sm)] transition-all duration-150 outline-none
+            className={`w-full min-h-[48px] px-4 py-3 text-base text-[var(--text-primary)] bg-white border rounded-[var(--radius-sm)] transition-all duration-150 outline-none
               ${leftIcon ? "pl-10" : ""}
               ${rightIcon ? "pr-10" : ""}
               ${
