@@ -11,28 +11,35 @@
 :root {
   color-scheme: light;
 
-  /* AEON Bank Brand Palette (prompt.md §7) */
-  --aeon-red: #E60012;         /* AEON Primary Red Brand Identity */
-  --aeon-pink: #B60081;        /* AEON Magenta Accent & Logo Mark */
-  --primary: #EC008C;          /* Interaction Magenta / Primary CTA */
-  --primary-hover: #D9007F;    /* Hover / Active state */
-  --primary-active: #B60081;   /* Pressed state */
-  --primary-soft: #FCE4F3;     /* Soft pink tint for active surfaces & cards */
-  --primary-pale: #FFF4FA;     /* Subtle tinted background highlight */
+  /* Brand Palette (source of truth, the five hex values NEVER change) */
+  --brand-mint: #F3FFE1;        /* Frosted Mint */
+  --brand-raspberry: #DD2D4A;   /* Raspberry (primary) */
+  --brand-bubblegum: #F26A8D;   /* Bubblegum Pink */
+  --brand-mist: #F49CBB;        /* Pink Mist */
+  --brand-cyan: #CBEEF3;        /* Light Cyan */
 
-  /* Neutral & Supporting Colors (prompt.md §7) */
+  /* Mapped Brand Roles */
+  --aeon-red: var(--brand-raspberry);
+  --aeon-pink: var(--brand-bubblegum);
+  --primary: var(--brand-raspberry);
+  --primary-hover: #C5223D;     /* Hover state goes darker, never lighter */
+  --primary-active: #AA1B32;    /* Pressed state goes darker */
+  --primary-soft: var(--brand-mist);
+  --primary-pale: var(--brand-mint);
+
+  /* Neutral & Supporting Colors */
   --white: #FFFFFF;            /* Pure white primary background */
   --surface: #FFFFFF;          /* Card & container surface */
   --surface-soft: #FAFAFA;     /* Secondary soft surface */
-  --surface-pink: #FFF7FB;     /* Soft branded pink background tint */
+  --surface-pink: var(--brand-mint); /* Frosted Mint section tint (dark neutral text on top) */
 
-  --ink: #111111;              /* Primary text / major headings */
-  --text-primary: #252525;     /* Main body text */
-  --text-secondary: #5F5F5F;   /* Supporting & secondary text */
-  --text-muted: #6E6E6E;       /* Metadata, captions, disabled text (WCAG AA 4.8:1 on white) */
+  --ink: #111111;              /* Primary text / major headings (18.9:1 on white, 18.2:1 on mint) */
+  --text-primary: #252525;     /* Main body text (15.3:1 on white, 14.8:1 on mint) */
+  --text-secondary: #525252;   /* Supporting & secondary text (7.3:1 on white, 7.0:1 on mint) */
+  --text-muted: #646464;       /* Metadata, captions, disabled text (5.7:1 on white, 5.5:1 on mint) */
 
-  --border: #E9E9E9;           /* Default subtle divider & card border */
-  --navy-dark: #161A50;        /* Deep navy for dark hero / financial contrast */
+  --border: #E5E7EB;           /* Default subtle divider & card border */
+  --navy-dark: var(--ink);     /* No dark navy as brand color per spec */
 
   --success: #17A673;          /* Success states & positive balances */
   --success-soft: #E7F7F1;     /* Soft green background */
@@ -50,7 +57,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-pale: var(--primary-pale);
-  --color-secondary: var(--aeon-pink);
+  --color-secondary: var(--brand-bubblegum);
   --color-text: var(--text-primary);
   --color-text-heading: var(--ink);
   --color-text-secondary: var(--text-secondary);
@@ -59,22 +66,22 @@
 
   /* Compatibility aliases for existing components */
   --text: var(--text-primary);
-  --lavender-mist: var(--surface-pink);
-  --dark-amethyst: var(--navy-dark);
-  --indigo-velvet: var(--primary);
-  --lavender-purple: var(--aeon-pink);
-  --wisteria: var(--primary-soft);
-  --surface-lavender: var(--surface-pink);
+  --lavender-mist: var(--brand-mint);
+  --dark-amethyst: var(--ink);
+  --indigo-velvet: var(--brand-raspberry);
+  --lavender-purple: var(--brand-bubblegum);
+  --wisteria: var(--brand-mist);
+  --surface-lavender: var(--brand-mint);
 
   /* Illustration accents */
-  --navy-illustration: var(--navy-dark);
-  --lavender: #C9C4F3;
-  --peach: #FFC27D;
-  --pastel-pink: #F4B3CF;
-  --pastel-purple: #C7C2EF;
-  --illustration-dark: var(--navy-dark);
-  --illustration-purple: var(--aeon-pink);
-  --illustration-lavender: #F4B3CF;
+  --navy-illustration: var(--ink);
+  --lavender: var(--brand-cyan);
+  --peach: var(--brand-bubblegum);
+  --pastel-pink: var(--brand-mist);
+  --pastel-purple: var(--brand-cyan);
+  --illustration-dark: var(--ink);
+  --illustration-purple: var(--brand-raspberry);
+  --illustration-lavender: var(--brand-mist);
 
   /* Radius (prompt.md §12) */
   --radius-xs: 8px;
@@ -1214,16 +1221,18 @@ a.shell-icon-btn {
 }
 
 .aeon-banner--purple {
-  background: #8480D6;
+  background: var(--brand-mist);
+  color: var(--ink);
 }
 
 .aeon-banner--amber {
-  background: #FF9500;
+  background: var(--brand-bubblegum);
+  color: var(--ink);
 }
 
 .aeon-banner--dark {
-  background: #221538;
-  border: 1.5px solid rgba(236, 0, 140, 0.4);
+  background: var(--ink);
+  border: 1.5px solid var(--brand-raspberry);
 }
 
 /* —— Deposit centre (AEON Deposit screen layout) —— */
@@ -2662,7 +2671,7 @@ button.action-tile:hover {
 }
 
 .insights-ask-hero {
-  background: #F3E8FF;
+  background: var(--brand-mint);
   padding: var(--space-6) var(--page-pad) var(--space-8);
   text-align: center;
 }
@@ -2671,7 +2680,7 @@ button.action-tile:hover {
   margin: 0 0 var(--space-4);
   font-size: clamp(1.15rem, 4vw, 1.35rem);
   font-weight: 800;
-  color: #4A0E4E;
+  color: var(--ink);
 }
 
 .insights-ask-actions {
@@ -2755,14 +2764,15 @@ button.action-tile:hover {
 
 .insights-recap {
   width: 100%;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 12px;
   text-align: left;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1.5px solid rgba(236, 0, 140, 0.35);
-  background: #221538;
+  border: 1.5px solid var(--brand-raspberry);
+  background: var(--ink);
   color: #fff;
   cursor: pointer;
   margin-bottom: var(--space-4);

@@ -340,9 +340,9 @@ function KidHome() {
         type="button"
         className="p-4 rounded-2xl text-white flex items-center gap-3.5 shadow-md relative overflow-hidden w-full text-left"
         style={{
-          background: "#221538",
-          border: "1.5px solid rgba(236, 0, 140, 0.4)",
-          boxShadow: "0 4px 16px rgba(45, 20, 69, 0.25)",
+          background: "var(--ink)",
+          border: "1.5px solid var(--brand-raspberry)",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
         }}
         onClick={() => {
           sfx.tap();
