@@ -14,7 +14,10 @@ export function LandingNav() {
         background: "rgba(255, 255, 255, 0.92)",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid var(--border)",
-        padding: "0.75rem 1.5rem",
+        paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
+        paddingBottom: "0.75rem",
+        paddingLeft: "max(1.5rem, env(safe-area-inset-left, 0px))",
+        paddingRight: "max(1.5rem, env(safe-area-inset-right, 0px))",
       }}
     >
       <div

@@ -6,7 +6,10 @@ export function LandingFooter() {
       style={{
         borderTop: "1px solid var(--border)",
         background: "var(--white)",
-        padding: "2.5rem 1.5rem",
+        paddingTop: "2.5rem",
+        paddingBottom: "calc(2.5rem + env(safe-area-inset-bottom, 0px))",
+        paddingLeft: "max(1.5rem, env(safe-area-inset-left, 0px))",
+        paddingRight: "max(1.5rem, env(safe-area-inset-right, 0px))",
       }}
     >
       <div
