@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@source "../src";
+@source "../index.html";
+@source not "../.agents";
 
 /* Centsibility — AEON-inspired design tokens + base styles (Stage 1) */
 
