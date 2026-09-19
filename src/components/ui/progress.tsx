@@ -6,6 +6,7 @@ export interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
   height?: number | string;
   indicatorColor?: string;
   showLabel?: boolean;
+  label?: string;
 }
 
 export function Progress({
@@ -14,10 +15,12 @@ export function Progress({
   height = 8,
   indicatorColor,
   showLabel = false,
+  label,
   className = "",
   ...props
 }: ProgressProps) {
   const percentage = Math.min(Math.max(0, (value / max) * 100), 100);
+  const ariaLabel = props["aria-label"] || label || "Progress";
 
   return (
     <div className={`w-full ${className}`} {...props}>
@@ -28,6 +31,7 @@ export function Progress({
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={max}
+        aria-label={ariaLabel}
       >
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"

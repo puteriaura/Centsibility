@@ -124,7 +124,7 @@ export function PhoneMockup() {
             </div>
             <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "var(--primary)" }}>87%</span>
           </div>
-          <Progress value={87} />
+          <Progress value={87} aria-label="Cosmic Bicycle savings goal progress" />
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.35rem", fontSize: "0.6875rem", color: "var(--text-muted)" }}>
             <span>RM 261 saved</span>
             <span>RM 300 target</span>
