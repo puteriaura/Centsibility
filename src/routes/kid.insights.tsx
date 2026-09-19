@@ -171,7 +171,11 @@ function KidInsights() {
                 : `You have ${goals.length} savings pot${goals.length === 1 ? "" : "s"} tracking progress. Keep allocating!`}
             </p>
           </div>
-          <Link to={goals.length === 0 ? "/kid/goals" : "/kid/chat"} onClick={() => sfx.tap()}>
+          <Link
+            to={goals.length === 0 ? "/kid/goals" : "/kid/chat"}
+            onClick={() => sfx.tap()}
+            className="block w-full min-h-[44px]"
+          >
             <Button variant="outline" size="sm" className="w-full justify-center font-bold">
               {goals.length === 0 ? "Create budget" : "Ask Penny Sensei"}
             </Button>
