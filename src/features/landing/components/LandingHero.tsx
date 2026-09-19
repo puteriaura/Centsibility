@@ -13,13 +13,10 @@ export function LandingHero() {
       }}
     >
       <div
+        className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "3rem",
-          alignItems: "center",
         }}
       >
         {/* Left Column: Value Prop */}

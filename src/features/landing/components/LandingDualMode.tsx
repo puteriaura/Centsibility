@@ -6,11 +6,7 @@ export function LandingDualMode() {
   return (
     <section style={{ padding: "3rem 1.5rem 5rem", maxWidth: "1200px", margin: "0 auto" }}>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "2rem",
-        }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-8"
       >
         {/* KID MODE CARD */}
         <Card
