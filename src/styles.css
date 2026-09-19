@@ -373,7 +373,7 @@ button[data-variant="danger"]:hover:not(:disabled),
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-pill);
   border: none;
@@ -904,10 +904,12 @@ dialog::backdrop {
 .shell-brand {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   text-decoration: none;
   color: var(--ink);
-  min-height: var(--touch-min);
+  min-width: var(--touch-min, 44px);
+  min-height: var(--touch-min, 44px);
 }
 
 .shell-brand:hover {
@@ -1252,8 +1254,11 @@ a.shell-icon-btn {
 }
 
 .deposit-hero__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min, 44px);
   margin: 0;
-  padding: 0;
+  padding: 4px 0;
   border: none;
   background: transparent;
   color: #fff;
@@ -1630,11 +1635,13 @@ a.shell-icon-btn {
 .aeon-banner__pill-btn {
   display: inline-flex;
   align-items: center;
-  padding: 6px 18px;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
   border-radius: 999px;
   background: #ffffff !important;
   color: var(--primary) !important;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   border: none !important;
   cursor: pointer;

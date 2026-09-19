@@ -146,6 +146,7 @@ function Login() {
               fontWeight: 800,
               fontSize: "1.375rem",
               letterSpacing: "-0.02em",
+              minHeight: "44px",
             }}
           >
             <span
@@ -362,6 +363,8 @@ function Login() {
                   color: "var(--primary)",
                   fontWeight: 600,
                   textDecoration: "none",
+                  minHeight: "44px",
+                  padding: "0.5rem 0.75rem",
                 }}
               >
                 <AppIcon name="kid" size={16} />

@@ -41,6 +41,7 @@ export function LandingNav() {
             fontWeight: 800,
             fontSize: "1.25rem",
             letterSpacing: "-0.02em",
+            minHeight: "44px",
           }}
         >
           <span
@@ -119,7 +120,7 @@ export function LandingNav() {
             variant="ghost"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle navigation menu"
-            style={{ padding: "0.5rem" }}
+            style={{ minWidth: 44, minHeight: 44, padding: "0.5rem", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
             className="mobile-nav-toggle"
           >
             <AppIcon name="menu" size={20} />

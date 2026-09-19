@@ -228,6 +228,8 @@ function KidLogin() {
                   color: "var(--primary)",
                   fontWeight: 600,
                   textDecoration: "none",
+                  minHeight: "44px",
+                  padding: "0.5rem 0.75rem",
                 }}
               >
                 <AppIcon name="parent" size={16} />

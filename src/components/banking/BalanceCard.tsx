@@ -53,7 +53,7 @@ export function BalanceCard({
             <button
               type="button"
               onClick={onToggleHide}
-              className={`p-1.5 rounded-full transition-colors ${
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-1.5 rounded-full transition-colors ${
                 isDark
                   ? "text-white/85 hover:text-white hover:bg-white/10"
                   : "text-[var(--text-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-soft)]"
@@ -102,7 +102,7 @@ export function BalanceCard({
             <button
               type="button"
               onClick={onArrowClick}
-              className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-transform hover:scale-105 shrink-0"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-transform hover:scale-105 shrink-0"
               aria-label="View balance details"
             >
               <AppIcon name="forward" size={18} />
