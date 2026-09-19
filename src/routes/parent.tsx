@@ -212,7 +212,7 @@ function ParentLayout() {
   if (!pinVerified) {
     return (
       <div
-        className="min-h-screen flex flex-col justify-between p-6 sm:p-8"
+        className="min-h-[100dvh] flex flex-col justify-between p-6 sm:p-8"
         style={{
           background: "var(--surface-pink)",
           maxWidth: "440px",

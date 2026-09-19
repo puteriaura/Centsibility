@@ -11,7 +11,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 function NotFoundComponent() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--surface-pink)]">
+    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--surface-pink)]">
       <Card variant="default" className="max-w-md w-full p-8 text-center rounded-3xl shadow-lg border border-[var(--border)]">
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--primary-soft)] text-[var(--primary)] flex items-center justify-center">
           <AppIcon name="compass" size={32} />
@@ -36,7 +36,7 @@ function NotFoundComponent() {
 export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: () => void }) {
   const router = useRouter();
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--surface-pink)]">
+    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--surface-pink)]">
       <Card variant="default" className="max-w-md w-full p-8 text-center rounded-3xl shadow-lg border border-[var(--border)]">
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--error-soft)] text-[var(--error)] flex items-center justify-center">
           <AppIcon name="close" size={32} />

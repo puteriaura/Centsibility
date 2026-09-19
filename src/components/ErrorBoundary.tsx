@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--surface-pink)]">
+        <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--surface-pink)]">
           <Card
             variant="default"
             className="max-w-md w-full p-8 text-center rounded-3xl shadow-lg border border-[var(--border)]"
