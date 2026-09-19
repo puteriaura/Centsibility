@@ -97,14 +97,14 @@ function KidSadaqah() {
 
       <div className="aeon-banner aeon-banner--purple">
         <div className="max-w-[70%]">
-          <h2 className="text-sm sm:text-base font-extrabold text-white leading-snug m-0">
+          <h2 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug m-0">
             Give sadaqah and earn stardust — start with RM1
           </h2>
-          <p className="text-xs text-white/85 mt-1 mb-0">
+          <p className="text-xs text-[var(--ink)]/80 mt-1 mb-0">
             Your kindness reaches local masjids, orphans, and clean water projects.
           </p>
         </div>
-        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0">
+        <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0">
           <AppIcon name="heart" size={28} />
         </div>
       </div>

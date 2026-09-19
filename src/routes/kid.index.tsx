@@ -304,7 +304,7 @@ function KidHome() {
       {/* Promotional banner — AEON layout, Centsibility copy */}
       <div className="aeon-banner aeon-banner--purple">
         <div className="max-w-[70%]">
-          <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
+          <h3 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug">
             Give sadaqah and earn stardust — start with RM1
           </h3>
           <button
@@ -318,7 +318,7 @@ function KidHome() {
             Give now
           </button>
         </div>
-        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+        <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0 shadow-inner">
           <AppIcon name="shieldcheck" size={28} />
         </div>
       </div>

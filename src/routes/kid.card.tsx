@@ -251,7 +251,7 @@ function KidCard() {
         {/* Benchmark Image 1: Amber Banner (RM0 card issuance fee) */}
         <div className="aeon-banner aeon-banner--amber">
           <div className="max-w-[70%]">
-            <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug">
+            <h3 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug">
               RM0 card issuance fee
             </h3>
             <button
@@ -265,7 +265,7 @@ function KidCard() {
               View more
             </button>
           </div>
-          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+          <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0 shadow-inner">
             <AppIcon name="creditcard" size={28} />
           </div>
         </div>
