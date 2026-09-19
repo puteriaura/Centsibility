@@ -37,13 +37,13 @@ const ROUTES = [
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:4173";
 const RESULTS_DIR = path.resolve(process.cwd(), "tests/mobile/results");
-const OUTPUT_FILE = path.join(RESULTS_DIR, process.env.MATRIX_OUT || "before.json");
+const OUTPUT_FILE = path.join(RESULTS_DIR, process.env.MATRIX_OUT || "after.json");
 
 fs.mkdirSync(RESULTS_DIR, { recursive: true });
 
 const resultsRecord: Record<string, any> = {};
 
-test.afterAll(() => {
+function saveResults() {
   if (Object.keys(resultsRecord).length > 0) {
     let existing: Record<string, any> = {};
     try {
@@ -53,6 +53,10 @@ test.afterAll(() => {
     } catch {}
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify({ ...existing, ...resultsRecord }, null, 2));
   }
+}
+
+test.afterAll(() => {
+  saveResults();
 });
 
 for (const engineName of ["chromium", "webkit"] as const) {
@@ -70,20 +74,49 @@ for (const engineName of ["chromium", "webkit"] as const) {
 
             // Network layer mocking for Supabase calls to avoid 401 unhandled rejections
             await context.route("**/functions/v1/**", async (r) => {
-              await r.fulfill({
-                status: 200,
-                contentType: "application/json",
-                body: JSON.stringify({
-                  ok: true,
-                  pin_hash: null,
-                  kids: [{ id: "demo-kid-aiman", name: "Aiman" }],
-                  approvals: [],
-                  rewards: [],
-                  loans: [],
-                  transactions: [],
-                  scheduledHibahs: [],
-                }),
-              });
+              const url = r.request().url();
+              const postData = r.request().postDataJSON() || {};
+              if (url.includes("kid-finance") || postData.action === "get-state") {
+                await r.fulfill({
+                  status: 200,
+                  contentType: "application/json",
+                  body: JSON.stringify({
+                    kid: {
+                      id: "demo-kid-aiman",
+                      parent_id: "demo-parent-id",
+                      name: "Aiman",
+                      username: "aiman",
+                      login_code: "AIMAN1",
+                      balance: 142.5,
+                      coins: 520,
+                      avatar: "🚀",
+                      streak: 5,
+                      hibah_rate: 0.05,
+                      invest_balance: 50.0,
+                    },
+                    txs: [],
+                    goals: [],
+                    approvals: [],
+                    rewards: [],
+                    loans: [],
+                  }),
+                });
+              } else {
+                await r.fulfill({
+                  status: 200,
+                  contentType: "application/json",
+                  body: JSON.stringify({
+                    ok: true,
+                    pin_hash: null,
+                    kids: [{ id: "demo-kid-aiman", name: "Aiman" }],
+                    approvals: [],
+                    rewards: [],
+                    loans: [],
+                    transactions: [],
+                    scheduledHibahs: [],
+                  }),
+                });
+              }
             });
 
             await context.route("**/rest/v1/**", async (r) => {
@@ -126,8 +159,8 @@ for (const engineName of ["chromium", "webkit"] as const) {
               }
             });
 
-            await page.goto(`${BASE_URL}${route.path}`, { waitUntil: "networkidle" });
-            await page.waitForTimeout(300);
+            await page.goto(`${BASE_URL}${route.path}`, { waitUntil: "domcontentloaded" });
+            await page.waitForTimeout(400);
 
             // 1. Horizontal overflow measurement (walk DOM for right edge > innerWidth)
             const overflow = await page.evaluate(() => {
@@ -266,6 +299,8 @@ for (const engineName of ["chromium", "webkit"] as const) {
               axeViolations: axeViolations.length > 0 ? axeViolations : null,
               errors: errors.length > 0 ? errors : null,
             };
+
+            saveResults();
 
             await context.close();
             await browser.close();
