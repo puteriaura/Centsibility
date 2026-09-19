@@ -95,6 +95,7 @@ export function ScheduleHibahSection({
             id="hibah-amount"
             type="number"
             step="0.5"
+            inputMode="decimal"
             value={scheduleData.amount}
             onChange={(e) => setScheduleData({ ...scheduleData, amount: e.target.value })}
           />

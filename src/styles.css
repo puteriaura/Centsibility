@@ -129,6 +129,7 @@
   --text-caption: clamp(0.6875rem, 2vw, 0.75rem);
   --text-balance: clamp(1.5rem, 5.5vw, 2rem);
   --text-amount: clamp(1.1rem, 4vw, 1.25rem);
+  --input-font-size: 16px;
 }
 
 html {
@@ -405,6 +406,7 @@ input[type="password"],
 input[type="date"],
 input[type="search"],
 input[type="tel"],
+input[type="url"],
 select,
 textarea {
   width: 100%;
@@ -415,6 +417,7 @@ textarea {
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
+  font-size: var(--input-font-size, 16px) !important;
 }
 
 input::placeholder,

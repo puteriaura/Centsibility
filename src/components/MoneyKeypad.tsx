@@ -234,7 +234,7 @@ export function MoneyKeypad({
             onChange={(e) => setCustomRef(e.target.value)}
             placeholder="Log details..."
             maxLength={100}
-            className="w-full h-11 px-3 mt-2 rounded-xl border border-[var(--border)] bg-white text-xs font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
+            className="w-full h-11 px-3 mt-2 rounded-xl border border-[var(--border)] bg-white text-base font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
           />
         )}
       </div>
