@@ -98,6 +98,7 @@ export function LandingHero() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  WebkitBackdropFilter: "blur(4px)",
                   backdropFilter: "blur(4px)",
                 }}
               >
@@ -113,6 +114,7 @@ export function LandingHero() {
                 padding: "0.75rem 1rem",
                 background: "rgba(255, 255, 255, 0.15)",
                 borderRadius: "0.875rem",
+                WebkitBackdropFilter: "blur(8px)",
                 backdropFilter: "blur(8px)",
               }}
             >

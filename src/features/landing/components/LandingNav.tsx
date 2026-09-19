@@ -12,6 +12,7 @@ export function LandingNav() {
         top: 0,
         zIndex: 50,
         background: "rgba(255, 255, 255, 0.92)",
+        WebkitBackdropFilter: "blur(12px)",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid var(--border)",
         paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
