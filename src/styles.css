@@ -270,7 +270,7 @@ input,
 select,
 textarea {
   font-family: inherit;
-  font-size: var(--text-body);
+  font-size: max(16px, var(--text-body));
   line-height: 1.25;
   color: var(--text);
   border-radius: var(--radius-sm);
@@ -409,14 +409,7 @@ button[data-variant="danger"]:hover:not(:disabled),
   box-shadow: var(--shadow-sm);
 }
 
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="password"],
-input[type="date"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
 select,
 textarea {
   width: 100%;
