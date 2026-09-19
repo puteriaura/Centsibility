@@ -28,9 +28,21 @@ function KidInsights() {
     [data?.txs],
   );
   const slides = useMemo(
-    () => buildStorySlides(summary, Number(data?.kid.coins ?? 0)),
-    [summary, data?.kid.coins],
+    () => buildStorySlides(summary, Number(data?.kid?.coins ?? 0)),
+    [summary, data?.kid?.coins],
   );
+
+  useEffect(() => {
+    if (!storyOpen) return;
+    const t = window.setTimeout(() => {
+      if (storyIdx >= slides.length - 1) {
+        setStoryOpen(false);
+        return;
+      }
+      setStoryIdx((i) => i + 1);
+    }, 5500);
+    return () => window.clearTimeout(t);
+  }, [storyOpen, storyIdx, slides.length]);
 
   if (loading || !data) {
     return (
@@ -42,7 +54,8 @@ function KidInsights() {
     );
   }
 
-  const k = data.kid;
+  const k = data?.kid ?? { name: "Explorer", coins: 0 };
+  const goals = data?.goals ?? [];
   const openStory = () => {
     sfx.pop();
     setStoryIdx(0);
@@ -61,18 +74,6 @@ function KidInsights() {
     setStoryIdx((i) => i - 1);
     sfx.tap();
   };
-
-  useEffect(() => {
-    if (!storyOpen) return;
-    const t = window.setTimeout(() => {
-      if (storyIdx >= slides.length - 1) {
-        setStoryOpen(false);
-        return;
-      }
-      setStoryIdx((i) => i + 1);
-    }, 5500);
-    return () => window.clearTimeout(t);
-  }, [storyOpen, storyIdx, slides.length]);
 
   return (
     <div className="insights-page pb-12">
@@ -165,14 +166,14 @@ function KidInsights() {
               <AppIcon name="penny" size={18} color="#fff" />
             </span>
             <p className="text-sm text-[var(--ink)] m-0 leading-relaxed">
-              {data.goals.length === 0
+              {goals.length === 0
                 ? "You haven't created a budget plan. Let's create one together!"
-                : `You have ${data.goals.length} savings pot${data.goals.length === 1 ? "" : "s"} tracking progress. Keep allocating!`}
+                : `You have ${goals.length} savings pot${goals.length === 1 ? "" : "s"} tracking progress. Keep allocating!`}
             </p>
           </div>
-          <Link to={data.goals.length === 0 ? "/kid/goals" : "/kid/chat"} onClick={() => sfx.tap()}>
+          <Link to={goals.length === 0 ? "/kid/goals" : "/kid/chat"} onClick={() => sfx.tap()}>
             <Button variant="outline" size="sm" className="w-full justify-center font-bold">
-              {data.goals.length === 0 ? "Create budget" : "Ask Penny Sensei"}
+              {goals.length === 0 ? "Create budget" : "Ask Penny Sensei"}
             </Button>
           </Link>
         </Card>
