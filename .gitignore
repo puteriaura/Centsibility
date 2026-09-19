@@ -32,4 +32,6 @@ dist-ssr
 *.sln
 *.sw?
 screenshots/
+tests/mobile/results/
+test-results/
 
