@@ -384,7 +384,7 @@ function KidGoals() {
                         }}
                         title="Edit Mission"
                         aria-label={`Edit ${g.name}`}
-                        className="px-2.5 min-h-[38px] text-[var(--text-secondary)] hover:text-[var(--ink)]"
+                        className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--text-secondary)] hover:text-[var(--ink)]"
                       >
                         <AppIcon name="edit" size={16} />
                       </Button>
@@ -395,7 +395,7 @@ function KidGoals() {
                         onClick={() => setDeletingId(g.id)}
                         title="Delete Mission"
                         aria-label={`Delete ${g.name}`}
-                        className="px-2.5 min-h-[38px] text-[var(--error)] hover:text-[var(--error)] hover:bg-[var(--error-soft)]"
+                        className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--error)] hover:text-[var(--error)] hover:bg-[var(--error-soft)]"
                       >
                         <AppIcon name="delete" size={16} color="var(--error)" />
                       </Button>

@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "bg-[var(--primary)] text-white shadow-md hover:bg-[var(--primary-hover)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
       },
       size: {
-        sm: "h-9 px-3 text-xs rounded-full min-h-[36px]",
+        sm: "h-11 px-3.5 text-xs rounded-full min-h-[44px] min-w-[44px]",
         md: "h-11 px-5 text-sm rounded-full min-h-[44px]",
         lg: "h-13 px-6 text-base rounded-full min-h-[48px]",
         icon: "h-11 w-11 rounded-full min-h-[44px] min-w-[44px] p-0 flex items-center justify-center",
