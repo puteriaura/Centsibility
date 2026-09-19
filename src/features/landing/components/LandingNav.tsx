@@ -17,8 +17,8 @@ export function LandingNav() {
         borderBottom: "1px solid var(--border)",
         paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
         paddingBottom: "0.75rem",
-        paddingLeft: "max(1.5rem, env(safe-area-inset-left, 0px))",
-        paddingRight: "max(1.5rem, env(safe-area-inset-right, 0px))",
+        paddingLeft: "max(clamp(0.75rem, 3vw, 1.5rem), env(safe-area-inset-left, 0px))",
+        paddingRight: "max(clamp(0.75rem, 3vw, 1.5rem), env(safe-area-inset-right, 0px))",
       }}
     >
       <div
@@ -104,13 +104,13 @@ export function LandingNav() {
         </nav>
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link to="/kid-login" style={{ textDecoration: "none" }}>
-            <Button size="sm" variant="outline" style={{ display: "none" }} className="desktop-nav">
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Link to="/kid-login" style={{ textDecoration: "none" }} className="hidden md:inline-flex">
+            <Button size="sm" variant="outline">
               Young Saver
             </Button>
           </Link>
-          <Link to="/login" style={{ textDecoration: "none" }}>
+          <Link to="/login" style={{ textDecoration: "none" }} className="hidden sm:inline-flex">
             <Button size="sm" variant="primary">
               Launch App →
             </Button>
@@ -167,6 +167,11 @@ export function LandingNav() {
           <Link to="/kid-login" onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
             <Button size="sm" variant="outline" style={{ width: "100%", justifyContent: "center" }}>
               Young Saver Sign In
+            </Button>
+          </Link>
+          <Link to="/login" onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
+            <Button size="sm" variant="primary" style={{ width: "100%", justifyContent: "center" }}>
+              Launch App →
             </Button>
           </Link>
         </nav>
