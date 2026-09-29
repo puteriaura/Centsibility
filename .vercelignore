@@ -1,7 +1,8 @@
-supabase
-tests
-docs
-.claude
-.agents
+/supabase
+/tests
+/docs
+/.claude
+/.agents
 *.log
 *.dump
+
