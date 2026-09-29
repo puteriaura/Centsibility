@@ -1,23 +1,12 @@
-// Quick PIN-based parent re-login. Stores credentials in localStorage gated by PIN UI.
-// Demo-grade convenience layer; not a security boundary on its own.
-const KEY = "centsibility.parent.quicklogin";
+// Older builds stored the parent's email, password and PIN here in plain text
+// for "quick login". Credentials must never live in browser storage; this module
+// only wipes whatever an older build left behind.
+const LEGACY_KEY = "centsibility.parent.quicklogin";
 
-export type QuickLogin = { email: string; password: string; pin: string };
-
-export function getQuickLogin(): QuickLogin | null {
-  if (typeof window === "undefined") return null;
+export function purgeStoredCredentials() {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as QuickLogin) : null;
+    localStorage.removeItem(LEGACY_KEY);
   } catch {
-    return null;
+    /* storage unavailable: nothing to purge */
   }
-}
-
-export function saveQuickLogin(q: QuickLogin) {
-  localStorage.setItem(KEY, JSON.stringify(q));
-}
-
-export function clearQuickLogin() {
-  localStorage.removeItem(KEY);
 }

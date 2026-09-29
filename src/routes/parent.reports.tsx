@@ -6,13 +6,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
-import { isDebitTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
+import { isDebitTransaction, isWalletTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
 import type { StatementResult, StatementTx as Tx } from "@/types/domain";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { AppIcon } from "@/components/ui/app-icon";
+import { formatRM } from "@/lib/format";
+import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 
 export const Route = createFileRoute("/parent/reports")({
   head: () => ({ meta: [{ title: "Monthly Statement — Centsibility" }] }),
@@ -23,7 +25,7 @@ const isDebit = isDebitTransaction;
 const TYPE_LABELS = TRANSACTION_TYPE_LABELS;
 
 function fmtRM(n: number) {
-  return `RM ${Math.abs(n).toFixed(2)}`;
+  return `${formatRM(Math.abs(n))}`;
 }
 
 function groupByDate(txs: Tx[]): Record<string, Tx[]> {
@@ -40,12 +42,13 @@ function groupByDate(txs: Tx[]): Record<string, Tx[]> {
 const PIE_COLORS = ["#EC008C", "#B60081", "#161A50", "#F5A623", "#17A673", "#9B72CF"];
 
 function Reports() {
-  const { kids, loans, loading } = useParentData();
+  const { kids, loans, loading, error, hasLoaded, lastLoadedAt, refresh } = useParentData();
   const [kidId, setKidId] = useState<string>("");
   const [month, setMonth] = useState<Date>(startOfMonth(new Date()));
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [stmt, setStmt] = useState<StatementResult>(null);
   const [fetching, setFetching] = useState(false);
+  const [stmtError, setStmtError] = useState<string | null>(null);
   const stmtRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,6 +58,7 @@ function Reports() {
   const fetchStatement = useCallback(async () => {
     if (!kidId) return;
     setFetching(true);
+    setStmtError(null);
     try {
       const res = await edgeParentGetStatement({
         kidId,
@@ -62,8 +66,11 @@ function Reports() {
         to: format(endOfMonth(month), "yyyy-MM-dd"),
       });
       setStmt(res);
+      setStmtError(null);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to load statement");
+      const msg = e instanceof Error ? e.message : "Failed to load statement";
+      setStmtError(msg);
+      toast.error(msg);
     } finally {
       setFetching(false);
     }
@@ -110,7 +117,7 @@ function Reports() {
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
-  if (loading) {
+  if (loading && !hasLoaded && !error) {
     return (
       <div className="space-y-4">
         <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
@@ -120,10 +127,18 @@ function Reports() {
     );
   }
 
-  const stmtTxs: Tx[] = stmt?.transactions ?? [];
+  if (error && !hasLoaded) {
+    return (
+      <div className="space-y-6 pb-12">
+        <ParentLoadError variant="page" onRetry={refresh} message={error} />
+      </div>
+    );
+  }
+
+  const stmtTxs: Tx[] = (stmt?.transactions ?? []).filter((t) => isWalletTransaction(t.type));
   const filtered = typeFilter === "ALL" ? stmtTxs : stmtTxs.filter((t) => t.type === typeFilter);
-  const totalIn = stmtTxs.filter((t) => !isDebit(t.type)).reduce((s, t) => s + t.amount, 0);
-  const totalOut = stmtTxs.filter((t) => isDebit(t.type)).reduce((s, t) => s + t.amount, 0);
+  const totalIn = stmtTxs.filter((t) => !isDebit(t.type, t.label)).reduce((s, t) => s + t.amount, 0);
+  const totalOut = stmtTxs.filter((t) => isDebit(t.type, t.label)).reduce((s, t) => s + t.amount, 0);
   const net = totalIn - totalOut;
 
   const endBalance = stmt?.kid.balance ?? 0;
@@ -132,7 +147,7 @@ function Reports() {
   for (let i = 0; i < stmtTxs.length; i++) {
     const tx = stmtTxs[i];
     balanceMap.set(tx.id, runningBalance);
-    if (isDebit(tx.type)) runningBalance += tx.amount;
+    if (isDebit(tx.type, tx.label)) runningBalance += tx.amount;
     else runningBalance -= tx.amount;
   }
 
@@ -140,17 +155,22 @@ function Reports() {
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   const availableTypes = ["ALL", ...Array.from(new Set(stmtTxs.map((t) => t.type)))];
   const loanFees = stmtTxs.filter(
-    (t) => t.type === "WITHDRAWAL" && (t.label?.includes("fee") || t.label?.includes("Fee")),
+    (t) =>
+      t.type === "FEE" ||
+      (t.type === "WITHDRAWAL" && (t.label?.includes("fee") || t.label?.includes("Fee"))),
   );
   const overdue = loans.filter((l) => l.status === "active" && new Date(l.due_date) < new Date());
 
   return (
     <div className="space-y-6 pb-12">
+      {error && hasLoaded && (
+        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+      )}
       {/* Header + Selector Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[var(--ink)] flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="chart" size={20} />
             </div>
             Monthly Statements
@@ -190,12 +210,36 @@ function Reports() {
           <Skeleton style={{ height: "6rem", borderRadius: "16px" }} />
           <Skeleton style={{ height: "12rem", borderRadius: "16px" }} />
         </div>
+      ) : stmtError ? (
+        <Card variant="soft" className="p-8 text-center space-y-3">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[var(--error-soft)] border border-[var(--error)]/30 mx-auto text-[var(--error-strong-hover)]">
+            <AppIcon name="info" size={24} color="var(--error-strong-hover)" />
+          </div>
+          <h3 className="text-base font-bold text-[var(--ink)] m-0">Failed to load statement</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] m-0">
+            {stmtError}
+          </p>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={fetchStatement}
+            className="justify-center mx-auto mt-2"
+          >
+            Try again
+          </Button>
+        </Card>
       ) : !stmt ? (
         <Card variant="soft" className="p-8 text-center space-y-2">
           <AppIcon name="chart" size={28} color="var(--primary)" />
-          <h3 className="text-base font-bold text-[var(--ink)]">No Child Account Selected</h3>
+          <h3 className="text-base font-bold text-[var(--ink)]">
+            {hasLoaded && !error && kids.length === 0
+              ? "No Children Enrolled Yet"
+              : "No Child Account Selected"}
+          </h3>
           <p className="text-xs text-[var(--text-secondary)]">
-            Choose a child and statement month above to load the report.
+            {hasLoaded && !error && kids.length === 0
+              ? "Enroll a child account to generate monthly statements."
+              : "Choose a child and statement month above to load the report."}
           </p>
         </Card>
       ) : (
@@ -204,7 +248,7 @@ function Reports() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card variant="default" className="p-4 border border-[var(--border)]">
               <span className="text-xs text-[var(--text-secondary)] font-semibold block">Total Deposits</span>
-              <div className="text-lg sm:text-xl font-bold text-[var(--success)] tabular-nums mt-1">
+              <div className="text-lg sm:text-xl font-bold text-[var(--success-text)] tabular-nums mt-1">
                 +{fmtRM(totalIn)}
               </div>
             </Card>
@@ -220,7 +264,7 @@ function Reports() {
               <span className="text-xs text-[var(--text-secondary)] font-semibold block">Net Change</span>
               <div
                 className={`text-lg sm:text-xl font-bold tabular-nums mt-1 ${
-                  net >= 0 ? "text-[var(--success)]" : "text-[var(--error)]"
+                  net >= 0 ? "text-[var(--success-text)]" : "text-[var(--error-text)]"
                 }`}
               >
                 {net >= 0 ? "+" : "−"}{fmtRM(net)}
@@ -229,7 +273,7 @@ function Reports() {
 
             <Card variant="default" className="p-4 border border-[var(--border)]">
               <span className="text-xs text-[var(--text-secondary)] font-semibold block">Closing Balance</span>
-              <div className="text-lg sm:text-xl font-extrabold text-[var(--primary)] tabular-nums mt-1">
+              <div className="text-lg sm:text-xl font-extrabold text-[var(--primary-text)] tabular-nums mt-1">
                 {fmtRM(Number(stmt.kid.balance))}
               </div>
             </Card>
@@ -247,7 +291,7 @@ function Reports() {
                     <Pie
                       data={Object.entries(
                         stmtTxs
-                          .filter((t) => isDebit(t.type))
+                          .filter((t) => isDebit(t.type, t.label))
                           .reduce(
                             (acc, t) => {
                               const name = TYPE_LABELS[t.type] || t.type;
@@ -266,7 +310,7 @@ function Reports() {
                     >
                       {Object.entries(
                         stmtTxs
-                          .filter((t) => isDebit(t.type))
+                          .filter((t) => isDebit(t.type, t.label))
                           .reduce(
                             (acc, t) => {
                               const name = TYPE_LABELS[t.type] || t.type;
@@ -279,7 +323,7 @@ function Reports() {
                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value: number) => `RM ${value.toFixed(2)}`} />
+                    <RechartsTooltip formatter={(value: number) => `${formatRM(value)}`} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -292,7 +336,7 @@ function Reports() {
               {/* Statement Header */}
               <div className="flex items-start justify-between border-b border-[var(--border)] pb-4">
                 <div>
-                  <span className="text-xs font-bold text-[var(--primary)] uppercase tracking-wider block">
+                  <span className="text-xs font-bold text-[var(--primary-text)] uppercase tracking-wider block">
                     Centsibility Digital Bank
                   </span>
                   <h2 className="text-xl font-bold text-[var(--ink)] mt-0.5">
@@ -359,7 +403,7 @@ function Reports() {
                       </span>
                       <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-white overflow-hidden">
                         {grouped[date].map((tx) => {
-                          const debit = isDebit(tx.type);
+                          const debit = isDebit(tx.type, tx.label);
                           const runBal = balanceMap.get(tx.id);
                           return (
                             <div key={tx.id} className="p-3 flex items-center justify-between gap-3 text-xs">
@@ -380,7 +424,7 @@ function Reports() {
                               <div className="text-right shrink-0">
                                 <span
                                   className={`text-sm font-bold tabular-nums block ${
-                                    debit ? "text-[var(--ink)]" : "text-[var(--success)]"
+                                    debit ? "text-[var(--ink)]" : "text-[var(--success-text)]"
                                   }`}
                                 >
                                   {debit ? "−" : "+"}
@@ -456,13 +500,13 @@ function Reports() {
               <Card key={l.id} variant="default" className="p-4 border border-[var(--error)]/30 bg-[var(--error-soft)]/20 flex items-center justify-between gap-3">
                 <div>
                   <strong className="text-sm font-bold text-[var(--ink)]">{l.kids?.name}</strong>
-                  <span className="text-xs text-[var(--error)] block font-semibold">
+                  <span className="text-xs text-[var(--error-text)] block font-semibold">
                     Due Date: {l.due_date} (Overdue)
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-base font-extrabold text-[var(--error)] tabular-nums">
-                    RM {(Number(l.amount) - Number(l.repaid)).toFixed(2)}
+                  <span className="text-base font-extrabold text-[var(--error-text)] tabular-nums">
+                    {formatRM((Number(l.amount) - Number(l.repaid)))}
                   </span>
                 </div>
               </Card>

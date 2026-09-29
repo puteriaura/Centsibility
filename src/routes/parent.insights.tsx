@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
+import { formatRM } from "@/lib/format";
+import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 
 export const Route = createFileRoute("/parent/insights")({
   head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
@@ -17,7 +19,7 @@ export const Route = createFileRoute("/parent/insights")({
 
 function ParentInsights() {
   const nav = useNavigate();
-  const { kids, txs, loading } = useParentData();
+  const { kids, txs, loading, error, hasLoaded, lastLoadedAt, refresh } = useParentData();
   const [kidFilter, setKidFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
 
@@ -46,7 +48,7 @@ function ParentInsights() {
 
   const summary = useMemo(() => buildSpendingSummary(scopedTxs, 90), [scopedTxs]);
 
-  if (loading) {
+  if (loading && !hasLoaded && !error) {
     return (
       <div className="parent-page mobile-stack">
         <Skeleton style={{ height: "7rem", borderRadius: "16px" }} />
@@ -55,18 +57,29 @@ function ParentInsights() {
     );
   }
 
+  if (error && !hasLoaded) {
+    return (
+      <div className="parent-page">
+        <ParentLoadError variant="page" onRetry={refresh} message={error} />
+      </div>
+    );
+  }
+
   const selectedKid = kids.find((k) => k.id === kidFilter);
 
   return (
     <div className="parent-page mobile-stack pb-4">
+      {error && hasLoaded && (
+        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+      )}
       <section className="deposit-hero" aria-label="Family cashflow">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">
             {selectedKid ? `${selectedKid.name} · 90 days` : "Family · 90 days"}
           </p>
-          <p className="deposit-hero__amount tabular-nums">RM{summary.moneyOut.toFixed(2)}</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(summary.moneyOut)}</p>
           <p className="deposit-hero__link" style={{ opacity: 0.9, cursor: "default" }}>
-            Outflow · In RM{summary.moneyIn.toFixed(2)} · {summary.txCount} tx
+            Outflow · In {formatRM(summary.moneyIn)} · {summary.txCount} tx
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
@@ -136,7 +149,7 @@ function ParentInsights() {
         <p className="text-[10px] font-bold tracking-wider text-[var(--text-muted)] m-0 uppercase px-3.5 pt-3">
           Top categories
         </p>
-        {summary.topCategories.length === 0 ? (
+        {hasLoaded && !error && summary.topCategories.length === 0 ? (
           <p className="text-sm text-[var(--text-muted)] p-4 m-0 text-center">
             No expenses in this window yet.
           </p>
@@ -153,8 +166,8 @@ function ParentInsights() {
                     {c.pct.toFixed(0)}% · {c.count} tx
                   </span>
                 </div>
-                <span className="text-sm font-bold text-[var(--error)] tabular-nums">
-                  -RM {c.amount.toFixed(2)}
+                <span className="text-sm font-bold text-[var(--error-text)] tabular-nums">
+                  {formatRM(-(c.amount))}
                 </span>
               </li>
             ))}

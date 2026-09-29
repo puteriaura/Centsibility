@@ -9,6 +9,7 @@ import {
   edgeParentGetSelfAvatar,
 } from "@/lib/edge";
 import { CrewMemberCard } from "@/features/parent/components";
+import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { toast } from "sonner";
 import { QuoteCard } from "@/components/QuoteCard";
 import { AvatarBubble } from "@/components/AvatarBubble";
@@ -23,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { AppIcon } from "@/components/ui/app-icon";
 import { cleanApprovalReason } from "@/lib/qard";
+import { formatRM } from "@/lib/format";
+import { parentDisplayName } from "@/lib/display-name";
 
 export const Route = createFileRoute("/parent/")({
   head: () => ({ meta: [{ title: "Command Center — Centsibility" }] }),
@@ -31,8 +34,19 @@ export const Route = createFileRoute("/parent/")({
 
 function ParentHome() {
   const { user } = useAuth();
-  const { kids, approvals, rewards, txs, notifications, scheduledHibahs, loading, refresh } =
-    useParentData();
+  const {
+    kids,
+    approvals,
+    rewards,
+    txs,
+    notifications,
+    scheduledHibahs,
+    loading,
+    error,
+    hasLoaded,
+    lastLoadedAt,
+    refresh,
+  } = useParentData();
   const [deletingKidId, setDeletingKidId] = useState<string | null>(null);
   const [parentAvatar, setParentAvatar] = useState(DEFAULT_PARENT_AVATAR);
   const [kidQuery, setKidQuery] = useState("");
@@ -133,12 +147,20 @@ function ParentHome() {
     refresh();
   };
 
-  if (loading) {
+  if (loading && !hasLoaded && !error) {
     return (
       <div className="parent-page space-y-4">
         <Skeleton style={{ height: "6rem", borderRadius: "20px" }} />
         <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
         <Skeleton style={{ height: "10rem", borderRadius: "20px" }} />
+      </div>
+    );
+  }
+
+  if (error && !hasLoaded) {
+    return (
+      <div className="parent-page">
+        <ParentLoadError variant="page" onRetry={refresh} message={error} />
       </div>
     );
   }
@@ -151,10 +173,13 @@ function ParentHome() {
 
   return (
     <div className="parent-page mobile-stack pb-4">
+      {error && hasLoaded && (
+        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+      )}
       <section className="deposit-hero" aria-label="Family total balance">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Family total balance</p>
-          <p className="deposit-hero__amount tabular-nums">RM{familyTotal.toFixed(2)}</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(familyTotal)}</p>
           <Link to="/parent/insights" className="deposit-hero__link" onClick={() => sfx.tap()}>
             View Insights →
           </Link>
@@ -186,7 +211,7 @@ function ParentHome() {
             Family Guardian
           </span>
           <h1 className="text-base font-extrabold text-[var(--ink)] leading-tight truncate m-0">
-            {user?.user_metadata?.display_name ?? user?.email?.split("@")[0]}
+            {parentDisplayName(user)}
           </h1>
           <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
             {kids.length} {kids.length === 1 ? "child" : "children"}
@@ -235,15 +260,15 @@ function ParentHome() {
             variant="ghost"
             size="sm"
             onClick={openRecruit}
-            className="text-xs text-[var(--primary)] shrink-0"
+            className="text-xs text-[var(--primary-text)] shrink-0"
           >
             <AppIcon name="plus" size={14} /> Add
           </Button>
         </div>
 
-        {kids.length === 0 ? (
+        {hasLoaded && !error && kids.length === 0 ? (
           <Card variant="soft" className="p-8 text-center space-y-3 m-0">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center mx-auto">
               <AppIcon name="userplus" size={28} />
             </div>
             <h3 className="text-base font-bold text-[var(--ink)]">No Children Enrolled Yet</h3>
@@ -295,7 +320,7 @@ function ParentHome() {
           <SectionTitle>Pending Requests ({pendingCount})</SectionTitle>
           <Link
             to="/parent/approvals"
-            className="text-xs font-semibold text-[var(--primary)] hover:underline"
+            className="text-xs font-semibold text-[var(--primary-text)] hover:underline"
           >
             View all →
           </Link>
@@ -329,7 +354,7 @@ function ParentHome() {
                   </p>
                 </div>
                 <span className="text-base font-extrabold text-[var(--ink)] tabular-nums shrink-0">
-                  RM {Number(a.amount).toFixed(2)}
+                  {formatRM(Number(a.amount))}
                 </span>
               </Card>
             ))}
@@ -347,7 +372,7 @@ function ParentHome() {
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">{r.name}</p>
                 </div>
-                <span className="text-sm font-bold text-[var(--primary)] flex items-center gap-1 shrink-0">
+                <span className="text-sm font-bold text-[var(--primary-text)] flex items-center gap-1 shrink-0">
                   {r.cost} <AppIcon name="star" size={12} />
                 </span>
               </Card>
@@ -403,7 +428,7 @@ function ParentHome() {
               <span className="text-xs text-[var(--text-secondary)] uppercase tracking-widest block font-semibold mb-1">
                 6-Digit Login Code
               </span>
-              <div className="text-4xl font-extrabold text-[var(--primary)] tracking-widest tabular-nums">
+              <div className="text-4xl font-extrabold text-[var(--primary-text)] tracking-widest tabular-nums">
                 {setupCode}
               </div>
             </div>

@@ -26,7 +26,7 @@ const ROUTES = [
   { path: "/kid/sadaqah", type: "kid", name: "kid-sadaqah", proof: { selector: "text=Sadaqah, text=Local Masjid, text=Voluntary Charity" } },
   { path: "/kid/rewards", type: "kid", name: "kid-rewards", proof: { selector: "text=Reward Store, h1" } },
   { path: "/kid/quiz", type: "kid", name: "kid-quiz", proof: { selector: "text=Halal Quest, text=Question" } },
-  { path: "/kid/chat", type: "kid", name: "kid-chat", proof: { selector: "text=Penny Sensei, textarea, input[placeholder*='Ask']" } },
+  { path: "/kid/chat", type: "kid", name: "kid-chat", proof: { selector: "text=Penny, textarea, input[placeholder*='Ask']" } },
   { path: "/kid/insights", type: "kid", name: "kid-insights", proof: { selector: ".insights-ask-hero__title, text=Create budget, text=Financial Insights" } },
   { path: "/parent", type: "parent", name: "parent-home", proof: { selector: ".parent-home, .parent-page, text=Parent Dashboard" } },
   { path: "/parent/approvals", type: "parent", name: "parent-approvals", proof: { selector: "text=Notifications, .settings-page-title" } },

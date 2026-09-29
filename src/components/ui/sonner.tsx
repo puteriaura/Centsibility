@@ -6,13 +6,17 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
+      // Sit above the bottom dock instead of covering its labels.
+      offset={{ bottom: 104 }}
+      mobileOffset={{ bottom: 104 }}
       toastOptions={{
         style: {
-          border: "1px solid #777",
+          border: "none",
           background: "#fff",
-          color: "#000",
-          borderRadius: "0px",
-          boxShadow: "none",
+          color: "var(--ink)",
+          borderRadius: "16px",
+          boxShadow: "0 8px 24px rgba(17, 17, 17, 0.12)",
+          fontFamily: "var(--font-sans)",
         },
       }}
       {...props}

@@ -31,6 +31,9 @@ export function useKidData() {
     return null;
   });
   const [loading, setLoading] = useState(true);
+  // Set when the latest fetch failed. Pages keep showing the last good data;
+  // with nothing loaded yet they show <KidLoadError> with a retry button.
+  const [error, setError] = useState<string | null>(null);
   const firstLoad = useRef(true);
 
   const refresh = useCallback(async () => {
@@ -42,10 +45,10 @@ export function useKidData() {
       setLoading(false);
       return;
     }
-    if (document.visibilityState === "hidden") return; // Pause polling when tab is inactive
     try {
       const res = await edgeKidGetState({ code: s.code });
       setData((prev: KidState | null) => (equal(prev, res) ? prev : res));
+      setError(null);
 
       // Notify kid about parent decisions
       const seen = getSeen();
@@ -89,23 +92,37 @@ export function useKidData() {
       firstLoad.current = false;
     } catch (err) {
       console.warn("Failed to fetch kid state from edge function:", err);
-      if (isKidBypassed() || s.code === "AIMAN1" || !data) {
+      // Demo data only stands in for the DEV demo account. A real account must
+      // never show made-up balances because the server could not be reached.
+      if (isKidBypassed()) {
         setData((prev) => prev ?? (DEMO_KID_STATE as unknown as KidState));
+      } else {
+        setError(err instanceof Error ? err.message : "Could not load your account");
       }
     } finally {
       setLoading(false);
     }
-  }, [data]);
+  }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  // Poll every 20s so the kid sees parent decisions without a manual refresh
+  // Poll every 20s so the kid sees parent decisions without a manual refresh.
+  // Polls pause while the tab is hidden and catch up as soon as it is shown;
+  // the first load above always runs, so a page opened in a background tab
+  // does not sit on its skeleton.
   useEffect(() => {
-    const id = setInterval(refresh, 20000);
-    return () => clearInterval(id);
+    const poll = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const id = setInterval(poll, 20000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", poll);
+    };
   }, [refresh]);
 
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }

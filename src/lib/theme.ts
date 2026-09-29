@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-/** Light-only for now — DESIGN.md is a light AEON-inspired system. */
+/** Light-only for now — DESIGN.md defines a light-only system. */
 export function getTheme(): "light" | "dark" {
   return "light";
 }

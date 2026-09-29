@@ -3,7 +3,8 @@
 @source "../index.html";
 @source not "../.agents";
 
-/* Centsibility — AEON-inspired design tokens + base styles (Stage 1) */
+/* Centsibility design tokens + base styles.
+   Visual reference: docs/design/aeon-bank-mobile-dna (measured, see dna.json). */
 
 *,
 *::before,
@@ -14,42 +15,64 @@
 :root {
   color-scheme: light;
 
-  /* Brand Palette (source of truth, the five hex values NEVER change) */
-  --brand-mint: #F3FFE1;        /* Frosted Mint */
-  --brand-raspberry: #DD2D4A;   /* Raspberry (primary) */
-  --brand-bubblegum: #F26A8D;   /* Bubblegum Pink */
-  --brand-mist: #F49CBB;        /* Pink Mist */
-  --brand-cyan: #CBEEF3;        /* Light Cyan */
+  /* Brand palette: Cobalt (banking/primary) + Aqua (saving/growth), Amber and
+     Coral as minority accents. ~70% neutral, ~20% Cobalt, ~10% accent. */
+  --brand-cobalt: #3563E9;
+  --brand-cobalt-deep: #2448B8;      /* pressed states, dark fills needing white text */
+  --brand-cobalt-light: #DDEAFF;     /* selected states, chips, subtle cards */
+  --brand-aqua: #27C7B8;
+  --brand-aqua-light: #DDF8F4;
+  --brand-amber: #FFC857;
+  --brand-amber-deep: #A36808;       /* fills needing white text (4.6:1) */
+  --brand-amber-light: #FFF3D6;
+  --brand-coral: #FF785A;
+  --brand-coral-light: #FFF0EC;
 
-  /* Mapped Brand Roles */
-  --aeon-red: var(--brand-raspberry);
-  --aeon-pink: var(--brand-bubblegum);
-  --primary: var(--brand-raspberry);
-  --primary-hover: #C5223D;     /* Hover state goes darker, never lighter */
-  --primary-active: #AA1B32;    /* Pressed state goes darker */
-  --primary-soft: var(--brand-mist);
-  --primary-pale: var(--brand-mint);
+  /* Mapped brand roles */
+  --primary: var(--brand-cobalt);
+  --primary-hover: var(--brand-cobalt-deep);
+  --primary-active: #1D3A96;         /* pressed state goes darker still */
+  --primary-text: var(--brand-cobalt-deep); /* Cobalt fails AA on tints (4.2:1); deep cobalt: 7.8:1 white, 6.4:1 ice blue */
+  --primary-soft: var(--brand-cobalt-light);
+  --primary-pale: #EDF3FF;           /* very pale wash: hover backgrounds, Main Wallet card */
+
+  --secondary: var(--brand-aqua);           /* savings, growth, positive actions */
+  --secondary-text: #0D8478;                /* aqua as text/icon: 4.6:1 white, 4.1:1 own tint */
+  --secondary-soft: var(--brand-aqua-light);
+
+  --accent-amber: var(--brand-amber);       /* rewards, achievements, streaks */
+  --accent-amber-text: #A6650A;             /* 4.7:1 white, 4.2:1 own tint */
+  --accent-amber-soft: var(--brand-amber-light);
+
+  --accent-coral: var(--brand-coral);       /* kid-focused moments, Sadaqah, notifications */
+  --accent-coral-text: #C94420;             /* 4.9:1 white, 4.4:1 own tint */
+  --accent-coral-soft: var(--brand-coral-light);
 
   /* Neutral & Supporting Colors */
   --white: #FFFFFF;            /* Pure white primary background */
   --surface: #FFFFFF;          /* Card & container surface */
-  --surface-soft: #FAFAFA;     /* Secondary soft surface */
-  --surface-pink: var(--brand-mint); /* Frosted Mint section tint (dark neutral text on top) */
+  --surface-soft: #F7F9FC;     /* Secondary soft surface */
+  --canvas: #F6F9FF;           /* App canvas: white cards sit on this cool white */
+  --surface-pink: var(--brand-cobalt-light); /* Generic soft accent chip surface */
 
-  --ink: #111111;              /* Primary text / major headings (18.9:1 on white, 18.2:1 on mint) */
-  --text-primary: #252525;     /* Main body text (15.3:1 on white, 14.8:1 on mint) */
-  --text-secondary: #525252;   /* Supporting & secondary text (7.3:1 on white, 7.0:1 on mint) */
-  --text-muted: #646464;       /* Metadata, captions, disabled text (5.7:1 on white, 5.5:1 on mint) */
+  --ink: #17233C;              /* Ink Navy: headings, balances, important text */
+  --text-primary: #29344A;     /* Main body text */
+  --text-secondary: #586475;   /* Slate: labels, descriptions, inactive nav (4.9:1+ on every surface incl. Ice Blue) */
+  --text-muted: #657282;       /* Metadata, captions, disabled text (4.6:1+ on white/canvas) */
 
-  --border: #E5E7EB;           /* Default subtle divider & card border */
-  --navy-dark: var(--ink);     /* No dark navy as brand color per spec */
+  --border: #E6EAF2;           /* Cool Gray: dividers & card borders */
+  --navy-dark: var(--ink);     /* Dark navy surfaces (debit card, story slides) */
 
-  --success: #17A673;          /* Success states & positive balances */
-  --success-soft: #E7F7F1;     /* Soft green background */
-  --warning: #F5A623;          /* Warning states */
-  --warning-soft: #FFF4DC;     /* Soft yellow background */
-  --error: #D92D20;            /* Error / destructive states */
-  --error-soft: #FDECEC;       /* Soft red background */
+  --success: #20A779;          /* Money in / success fills, icons, borders */
+  --success-text: #187D5A;     /* AA-safe as text: 5.1:1 white */
+  --success-soft: #E3F6EE;     /* Soft green background */
+  --warning: #E9A23B;          /* Warning fills, icons, borders */
+  --warning-soft: #FCF0DC;     /* Soft amber background */
+  --error: #E5484D;            /* Error / destructive fills, icons, borders */
+  --error-strong: #C23D41;        /* destructive fills under white text: 5.2:1 */
+  --error-strong-hover: #A33236;  /* hover/pressed: 6.8:1 */
+  --error-text: var(--error-strong);       /* AA-safe as text: 5.2:1 white */
+  --error-soft: #FBEAEB;       /* Soft red background */
 
   /* Semantic tokens (prompt.md §9) */
   --color-bg: var(--white);
@@ -60,7 +83,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-pale: var(--primary-pale);
-  --color-secondary: var(--brand-bubblegum);
+  --color-secondary: var(--secondary);
   --color-text: var(--text-primary);
   --color-text-heading: var(--ink);
   --color-text-secondary: var(--text-secondary);
@@ -69,22 +92,11 @@
 
   /* Compatibility aliases for existing components */
   --text: var(--text-primary);
-  --lavender-mist: var(--brand-mint);
-  --dark-amethyst: var(--ink);
-  --indigo-velvet: var(--brand-raspberry);
-  --lavender-purple: var(--brand-bubblegum);
-  --wisteria: var(--brand-mist);
-  --surface-lavender: var(--brand-mint);
-
-  /* Illustration accents */
-  --navy-illustration: var(--ink);
-  --lavender: var(--brand-cyan);
-  --peach: var(--brand-bubblegum);
-  --pastel-pink: var(--brand-mist);
-  --pastel-purple: var(--brand-cyan);
-  --illustration-dark: var(--ink);
-  --illustration-purple: var(--brand-raspberry);
-  --illustration-lavender: var(--brand-mist);
+  --indigo-velvet: var(--primary-text);
+  --lavender-purple: var(--secondary-text);
+  --wisteria: var(--primary-soft);
+  --surface-lavender: var(--canvas);
+  --pastel-pink: var(--primary-soft);
 
   /* Radius (prompt.md §12) */
   --radius-xs: 8px;
@@ -106,10 +118,10 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* Shadows (AEON subtle elevation per §13 & ux-patterns) */
+  /* Shadows: surfaces are flat; use sparingly for overlays */
   --shadow-sm: 0 1px 3px rgba(17, 17, 17, 0.05);
-  --shadow-md: 0 6px 20px rgba(182, 0, 129, 0.07);
-  --shadow-lg: 0 14px 40px rgba(22, 26, 80, 0.10);
+  --shadow-md: 0 6px 20px rgba(17, 17, 17, 0.06);
+  --shadow-lg: 0 14px 40px rgba(17, 17, 17, 0.10);
 
   /* Motion (prompt.md §24) */
   --motion-fast: 140ms;
@@ -118,15 +130,15 @@
   --motion-large: 500ms;
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --font-sans: "Inter", "Nunito Sans", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  /* Rounded geometric sans, closest free match to the reference typeface */
+  --font-sans: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   --touch-min: 44px;
-  /* Fluid gutters: ~12px on 320px → ~20px on 430px+ */
-  --page-pad: clamp(0.75rem, 4.2vw, 1.25rem);
+  /* Side inset ≈ 6.4% of width (20px at 320, 25px at 390) */
+  --page-pad: clamp(20px, 6.4vw, 28px);
   --shell-nav-h: clamp(4.25rem, 14vw, 5rem);
   --shell-top-h: clamp(2.75rem, 8vw, 3.25rem);
-  --focus-ring: 0 0 0 3px rgba(236, 0, 140, 0.25);
+  --focus-ring: 0 0 0 3px rgba(53, 99, 233, 0.45);
 
   /* Fluid type scale for any phone width */
   --text-display: clamp(1.75rem, 6vw, 2.25rem);
@@ -142,6 +154,9 @@
   --input-font-size: 16px;
 }
 
+/* Element defaults live in the base layer so Tailwind utilities and component
+   classes override them. Unlayered element rules used to beat every utility. */
+@layer base {
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -177,7 +192,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(236, 0, 140, 0.18);
+  background: rgba(53, 99, 233, 0.18);
   color: var(--ink);
 }
 
@@ -187,12 +202,12 @@ textarea {
 }
 
 a {
-  color: var(--primary);
+  color: var(--primary-text);
   text-underline-offset: 0.15em;
 }
 
 a:hover {
-  color: var(--primary-hover);
+  color: var(--primary-active);
 }
 
 h1,
@@ -223,7 +238,6 @@ h3 {
 p {
   margin: 0 0 var(--space-3);
   text-wrap: pretty;
-  color: var(--text);
 }
 
 small {
@@ -232,7 +246,6 @@ small {
 }
 
 strong {
-  color: var(--ink);
   font-weight: 700;
 }
 
@@ -283,24 +296,21 @@ textarea {
     transform var(--motion-fast) var(--ease-standard);
 }
 
+/* Neutral by default: primary styling comes from <Button> or a component class */
 button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   min-height: var(--touch-min);
-  padding: var(--space-3) var(--space-5);
+  padding: 0;
   border: none;
-  border-radius: var(--radius-pill);
-  background: var(--primary);
-  color: #fff;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
   font-size: var(--text-label);
   font-weight: 600;
   cursor: pointer;
-}
-
-button:hover:not(:disabled) {
-  background: var(--primary-hover);
 }
 
 button:active:not(:disabled) {
@@ -311,6 +321,7 @@ button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+}
 }
 
 /* Variants when marked with data-variant */
@@ -325,7 +336,7 @@ button[data-variant="secondary"]:hover:not(:disabled),
 .btn-secondary:hover:not(:disabled) {
   background: var(--surface-soft) !important;
   border-color: var(--primary-soft) !important;
-  color: var(--primary) !important;
+  color: var(--primary-text) !important;
 }
 
 button[data-variant="outline"],
@@ -339,13 +350,13 @@ button[data-variant="outline"]:hover:not(:disabled),
 .btn-outline:hover:not(:disabled) {
   background: var(--primary-pale) !important;
   border-color: var(--primary) !important;
-  color: var(--primary) !important;
+  color: var(--primary-text) !important;
 }
 
 button[data-variant="ghost"],
 .btn-ghost {
   background: transparent !important;
-  color: var(--primary) !important;
+  color: var(--primary-text) !important;
   border: none !important;
   min-height: var(--touch-min);
   padding: var(--space-2) var(--space-3);
@@ -358,14 +369,14 @@ button[data-variant="ghost"]:hover:not(:disabled),
 
 button[data-variant="danger"],
 .btn-danger {
-  background: var(--error) !important;
+  background: var(--error-strong) !important;
   color: #ffffff !important;
   border: none !important;
 }
 
 button[data-variant="danger"]:hover:not(:disabled),
 .btn-danger:hover:not(:disabled) {
-  background: #b52419 !important;
+  background: var(--error-strong-hover) !important;
 }
 
 /* Dedicated segmented pill tabs (prompt.md §17 & ux-patterns) */
@@ -409,6 +420,7 @@ button[data-variant="danger"]:hover:not(:disabled),
   box-shadow: var(--shadow-sm);
 }
 
+@layer base {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]),
 select,
 textarea {
@@ -481,6 +493,28 @@ ol {
   margin: var(--space-2) 0;
 }
 
+dialog {
+  border: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-6);
+  background: var(--surface);
+  max-width: 90vw;
+  box-shadow: var(--shadow-lg);
+  color: var(--text);
+}
+
+dialog::backdrop {
+  background: rgba(17, 17, 17, 0.4);
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+}
+
 /* Soft surfaces — Common Region via tint, not hard chrome */
 .wireframe-box,
 .wireframe-card {
@@ -518,7 +552,6 @@ ol {
   margin: 0 var(--space-1);
 }
 
-dialog,
 .wireframe-modal {
   border: none;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -527,10 +560,6 @@ dialog,
   max-width: 90vw;
   box-shadow: var(--shadow-lg);
   color: var(--text);
-}
-
-dialog::backdrop {
-  background: rgba(17, 17, 17, 0.4);
 }
 
 /* Layout helpers — keep class names; update rhythm */
@@ -602,7 +631,7 @@ dialog::backdrop {
 }
 
 .amount-out {
-  color: var(--error);
+  color: var(--error-text);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -620,28 +649,23 @@ dialog::backdrop {
   }
 }
 
-@media (min-width: 768px) {
-  :root {
-    /* Keep phone density; don't blow out to desktop website padding */
-    --page-pad: clamp(1rem, 2vw, 1.25rem);
-  }
-}
-
 /* —— Stage 2: shared primitives —— */
+/* Flat white cards on the canvas. Components layer, so p-* and bg-* utilities win. */
+@layer components {
 .ui-card,
 .wireframe-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  margin-bottom: var(--space-4);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: 0;
+  box-shadow: none;
 }
 
 .ui-card.card-soft,
 .card-soft {
   background: var(--surface-pink);
-  border: 1px solid rgba(236, 0, 140, 0.12);
+  border: 1px solid rgba(221, 45, 74, 0.12);
   box-shadow: none;
 }
 
@@ -650,7 +674,6 @@ dialog::backdrop {
   background: var(--primary);
   color: #fff;
   border: none;
-  box-shadow: var(--shadow-md);
 }
 
 .ui-card.card-navy,
@@ -658,22 +681,13 @@ dialog::backdrop {
   background: var(--navy-dark);
   color: #fff;
   border: none;
-  box-shadow: var(--shadow-md);
+}
 }
 
-.card-brand h1,
-.card-brand h2,
-.card-brand h3,
-.card-brand strong,
-.card-brand .text-balance,
-.card-brand .text-amount {
+/* Text on saturated surfaces follows the surface: pure white, never tinted white */
+:is(.card-brand, .card-navy, .deposit-hero)
+  :is(h1, h2, h3, h4, strong, small, .text-balance, .text-amount, .text-secondary, .text-muted) {
   color: #fff;
-}
-
-.card-brand .text-secondary,
-.card-brand .text-muted,
-.card-brand small {
-  color: rgba(255, 255, 255, 0.78);
 }
 
 .section-title {
@@ -686,10 +700,12 @@ dialog::backdrop {
 
 .section-title__heading {
   margin: 0;
-  font-size: var(--text-h3);
+  font-size: 14px;
   font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   color: var(--ink);
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 .section-title__action {
@@ -702,7 +718,7 @@ dialog::backdrop {
   width: 100%;
   border-radius: var(--radius-sm);
   border: none;
-  background: var(--primary-soft);
+  background: #E8E8EB;
   animation: skeleton-pulse 1.2s ease-in-out infinite;
 }
 
@@ -745,7 +761,7 @@ dialog::backdrop {
 }
 
 .avatar-bubble--ring {
-  box-shadow: 0 0 0 3px rgba(236, 0, 140, 0.18);
+  box-shadow: 0 0 0 3px rgba(221, 45, 74, 0.18);
   border-color: var(--pastel-pink);
 }
 
@@ -778,7 +794,7 @@ dialog::backdrop {
 @media (prefers-reduced-motion: reduce) {
   .ui-skeleton {
     animation: none;
-    background: var(--primary-soft);
+    background: #E8E8EB;
     opacity: 0.7;
   }
 }
@@ -794,49 +810,15 @@ dialog::backdrop {
   min-height: 100dvh;
   min-height: 100svh;
   padding-bottom: calc(var(--shell-nav-h) + env(safe-area-inset-bottom, 0px));
-  background: var(--white);
+  background: var(--canvas);
   position: relative;
   overflow-x: clip;
   box-sizing: border-box;
 }
 
-/*
-  Desktop / wide preview only: optional phone frame.
-  Real phones (and emulators < 700px) always fill the full width.
-*/
-@media (min-width: 700px) {
-  body {
-    background: #e8e8ed;
-  }
-
-  #root {
-    display: flex;
-    justify-content: center;
-  }
-
-  .app-shell {
-    width: 100%;
-    max-width: min(100%, 480px);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 40px rgba(0, 0, 0, 0.12);
-  }
-
-  .shell-bottomnav {
-    left: 50%;
-    right: auto;
-    width: min(100%, 480px);
-    transform: translateX(-50%);
-  }
-}
-
 .app-shell--immersive {
   padding-bottom: 0;
   max-width: 100%;
-}
-
-@media (min-width: 700px) {
-  .app-shell--immersive {
-    max-width: min(100%, 480px);
-  }
 }
 
 .app-shell--loading {
@@ -870,13 +852,24 @@ dialog::backdrop {
     clamp(8px, 3vw, 14px)
     6px;
   margin: 0;
-  background: var(--white);
+  background: var(--canvas);
   border: none;
-  border-bottom: 1px solid var(--border);
   border-radius: 0;
   box-shadow: none;
   width: 100%;
   box-sizing: border-box;
+}
+
+.shell-topbar__center {
+  display: flex;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Equal side columns keep the assistant pill optically centred */
+.shell-topbar--home .shell-topbar__right {
+  flex: 1;
 }
 
 .shell-topbar__left {
@@ -929,7 +922,10 @@ dialog::backdrop {
   width: clamp(28px, 8vw, 32px);
   height: clamp(28px, 8vw, 32px);
   border-radius: 999px;
-  background: var(--aeon-pink);
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
@@ -955,7 +951,7 @@ dialog::backdrop {
 
 .shell-chip--alert {
   background: var(--error-soft);
-  color: var(--error);
+  color: var(--error-text);
   text-decoration: none;
 }
 
@@ -970,16 +966,16 @@ dialog::backdrop {
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: var(--surface-soft);
-  color: var(--indigo-velvet);
+  background: transparent;
+  color: var(--ink);
   text-decoration: none;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .shell-icon-btn:hover {
-  background: var(--primary-pale);
-  color: var(--primary-hover);
+  background: rgba(17, 17, 17, 0.06);
+  color: var(--ink);
 }
 
 .shell-icon-btn:active {
@@ -987,7 +983,7 @@ dialog::backdrop {
 }
 
 a.shell-icon-btn {
-  color: var(--indigo-velvet);
+  color: var(--ink);
 }
 
 .shell-bottomnav {
@@ -1000,11 +996,11 @@ a.shell-icon-btn {
   flex-wrap: nowrap;
   gap: 0;
   margin: 0;
-  padding: 4px clamp(4px, 2vw, 10px) calc(4px + env(safe-area-inset-bottom, 0px));
+  padding: 8px clamp(4px, 2vw, 10px) calc(8px + env(safe-area-inset-bottom, 0px));
   background: var(--white);
-  border-top: 1px solid var(--border);
-  border-radius: 0;
-  box-shadow: 0 -2px 12px rgba(17, 17, 17, 0.05);
+  border: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -4px 18px rgba(17, 17, 17, 0.06);
   overflow: visible;
   width: 100%;
   max-width: 100%;
@@ -1013,8 +1009,8 @@ a.shell-icon-btn {
 
 .shell-bottomnav__inner {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: end;
+  grid-template-columns: repeat(var(--nav-cols, 5), minmax(0, 1fr));
+  align-items: center;
   gap: 0;
   max-width: none;
   margin: 0;
@@ -1035,8 +1031,8 @@ a.shell-icon-btn {
   padding: 4px 1px;
   border-radius: 10px;
   text-decoration: none;
-  color: var(--text-muted);
-  font-size: clamp(11px, 2.6vw, 12px);
+  color: var(--text-secondary);
+  font-size: 12px;
   font-weight: 600;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1056,34 +1052,34 @@ a.shell-icon-btn {
   color: var(--primary);
 }
 
+/* One wide filled pill in the middle of the dock: the app's single daily action */
 .shell-navitem--center {
-  position: relative;
-  top: clamp(-8px, -2vw, -12px);
-  justify-content: flex-start;
-  min-height: clamp(52px, 14vw, 60px);
+  justify-content: center;
 }
 
 .shell-navitem__center-pill {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: clamp(44px, 13vw, 56px);
-  height: clamp(32px, 9vw, 40px);
-  border-radius: 12px;
+  gap: 2px;
+  width: clamp(72px, 21.5vw, 96px);
+  height: 52px;
+  border-radius: 999px;
   background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(236, 0, 140, 0.35);
-  transition: transform 0.15s, background-color 0.15s;
+  transition: transform var(--motion-fast) var(--ease-standard), background-color var(--motion-fast) var(--ease-standard);
 }
 
-.shell-navitem__center-pill:hover {
+.shell-navitem--center:hover .shell-navitem__center-pill {
   background: var(--primary-hover);
-  transform: scale(1.04);
 }
 
 .shell-navitem--center .shell-navitem__label {
-  color: var(--primary);
+  color: #ffffff;
+  font-size: 11px;
   font-weight: 700;
+  margin-top: 0;
 }
 
 .shell-navitem__icon-wrap {
@@ -1103,6 +1099,35 @@ a.shell-icon-btn {
   padding: 0 1px;
 }
 
+/*
+  Desktop / wide preview: phone frame. Declared after the base shell and nav
+  rules so the frame and nav centring win the cascade.
+*/
+@media (min-width: 700px) {
+  body {
+    background: #e8e8ed;
+  }
+
+  #root {
+    display: flex;
+    justify-content: center;
+  }
+
+  .app-shell,
+  .app-shell--immersive {
+    width: 100%;
+    max-width: min(100%, 480px);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .shell-bottomnav {
+    left: 50%;
+    right: auto;
+    width: min(100%, 480px);
+    transform: translateX(-50%);
+  }
+}
+
 .shell-navitem__badge {
   position: absolute;
   top: -6px;
@@ -1111,7 +1136,7 @@ a.shell-icon-btn {
   height: 18px;
   padding: 0 5px;
   border-radius: var(--radius-pill);
-  background: var(--error);
+  background: var(--error-strong);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -1120,19 +1145,21 @@ a.shell-icon-btn {
   justify-content: center;
 }
 
-/* AEON Benchmark Specific UI Classes */
+/* Home: assistant pill, quick actions, promo, pager, section tags */
 .shell-mascot-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  min-height: 40px;
+  padding: 6px 16px;
   border-radius: 999px;
   background: #ffffff;
-  border: 1.5px solid rgba(236, 0, 140, 0.35);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1.5px solid rgba(221, 45, 74, 0.18);
+  /* The assistant is the one element allowed a glow */
+  box-shadow: 0 0 0 4px rgba(244, 156, 187, 0.22), 0 6px 18px rgba(221, 45, 74, 0.16);
   color: var(--ink);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
@@ -1140,18 +1167,18 @@ a.shell-icon-btn {
 }
 
 .shell-mascot-pill:hover {
-  transform: scale(1.03);
-  box-shadow: 0 2px 8px rgba(236, 0, 140, 0.18);
+  color: var(--ink);
+  box-shadow: 0 0 0 5px rgba(244, 156, 187, 0.3), 0 8px 22px rgba(221, 45, 74, 0.2);
 }
 
-.aeon-quick-grid {
+.quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px 6px;
-  padding: 8px 0 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px 4px;
+  padding: 20px 0 22px;
 }
 
-.aeon-quick-btn {
+.quick-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1164,28 +1191,41 @@ a.shell-icon-btn {
   color: inherit;
 }
 
-.aeon-quick-circle {
+.quick-circle {
   position: relative;
-  width: 54px;
-  height: 54px;
+  width: clamp(40px, 11.3vw, 48px);
+  height: clamp(40px, 11.3vw, 48px);
   border-radius: 50%;
-  background: #ffffff;
-  border: 1.5px solid var(--border);
-  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.04);
+  background: var(--primary-soft);
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: var(--primary-text);
   transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
-.aeon-quick-btn:hover .aeon-quick-circle {
-  transform: translateY(-2px);
-  border-color: var(--primary-soft);
-  box-shadow: 0 6px 14px rgba(236, 0, 140, 0.15);
+.quick-circle--aqua {
+  background: var(--secondary-soft);
+  color: var(--secondary-text);
 }
 
-.aeon-quick-circle__dot {
+.quick-circle--amber {
+  background: var(--accent-amber-soft);
+  color: var(--accent-amber-text);
+}
+
+.quick-circle--coral {
+  background: var(--accent-coral-soft);
+  color: var(--accent-coral-text);
+}
+
+.quick-btn:hover .quick-circle {
+  transform: translateY(-2px);
+}
+
+.quick-circle__dot {
   position: absolute;
   top: 2px;
   right: 2px;
@@ -1196,60 +1236,78 @@ a.shell-icon-btn {
   border: 2px solid #ffffff;
 }
 
-.aeon-quick-label {
-  font-size: 11px;
-  font-weight: 600;
+.quick-label {
+  font-size: 14px;
+  font-weight: 500;
   color: var(--ink);
   text-align: center;
   line-height: 1.25;
 }
 
-.aeon-banner {
-  border-radius: 20px;
-  padding: 1.25rem 1.5rem;
+.promo-banner {
+  border-radius: var(--radius-md);
+  padding: 20px;
+  gap: 12px;
   color: #ffffff;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--shadow-sm);
 }
 
-.aeon-banner--purple {
-  background: var(--brand-mist);
+.promo-banner--aqua {
+  background: var(--secondary-soft);
   color: var(--ink);
 }
 
-.aeon-banner--amber {
-  background: var(--brand-bubblegum);
+.promo-banner--amber {
+  background: var(--accent-amber-soft);
   color: var(--ink);
 }
 
-.aeon-banner--dark {
+.promo-banner--ink {
   background: var(--ink);
-  border: 1.5px solid var(--brand-raspberry);
+  border: 1.5px solid var(--primary);
 }
 
-/* —— Deposit centre (AEON Deposit screen layout) —— */
+/* Sadaqah's solid Aqua CTA: the shared white pill would be invisible on a pale Aqua card */
+.promo-banner__btn--aqua {
+  background: #0A7A6E !important;
+  color: #fff !important;
+}
+
+/* —— Deposit centre: coloured header, sheet, product cards —— */
 .deposit-hero {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: clamp(0.5rem, 2vw, 1rem);
-  padding: clamp(1rem, 4vw, 1.35rem) var(--page-pad) clamp(0.9rem, 3vw, 1.15rem);
-  margin: calc(clamp(0.65rem, 2.5vw, 0.9rem) * -1) calc(var(--page-pad) * -1) clamp(0.65rem, 2vw, 0.85rem);
+  position: relative;
+  padding: clamp(1rem, 4vw, 1.35rem) var(--page-pad) calc(clamp(0.9rem, 3vw, 1.15rem) + 20px);
+  margin: calc(clamp(0.65rem, 2.5vw, 0.9rem) * -1) calc(var(--page-pad) * -1) 0;
   background: var(--primary);
   color: #fff;
-  border-radius: 0 0 clamp(16px, 4vw, 20px) clamp(16px, 4vw, 20px);
-  min-height: clamp(6.5rem, 28vw, 8.5rem);
+  border-radius: 0;
+  min-height: clamp(7.5rem, 32vw, 9.5rem);
+}
+
+/* The canvas rises over the header as a sheet with rounded top corners */
+.deposit-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 20px;
+  background: var(--canvas);
+  border-radius: 20px 20px 0 0;
 }
 
 .deposit-hero__label {
   margin: 0;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  opacity: 0.9;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .deposit-hero__amount {
@@ -1270,10 +1328,9 @@ a.shell-icon-btn {
   border: none;
   background: transparent;
   color: #fff;
-  font-size: var(--text-caption);
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  opacity: 0.92;
 }
 
 .deposit-hero__link:hover {
@@ -1308,12 +1365,12 @@ a.shell-icon-btn {
   min-width: 0;
   padding: clamp(0.5rem, 2vw, 0.75rem) 4px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border: none;
   background: var(--white);
   color: var(--ink);
   text-decoration: none;
-  font-size: clamp(0.65rem, 2.4vw, 0.75rem);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   text-align: center;
   line-height: 1.2;
 }
@@ -1328,8 +1385,7 @@ a.shell-icon-btn {
 }
 
 .deposit-quick-tile:hover {
-  border-color: var(--primary-soft);
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .deposit-account-stack {
@@ -1344,11 +1400,11 @@ a.shell-icon-btn {
   text-align: left;
   padding: var(--space-5);
   border: none;
-  border-radius: var(--radius-xl);
-  color: #fff;
+  border-radius: var(--radius-md);
+  color: var(--ink);
   text-decoration: none;
   cursor: pointer;
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
   transition: transform var(--motion-fast) var(--ease-standard);
 }
 
@@ -1356,16 +1412,22 @@ a.shell-icon-btn {
   transform: scale(0.99);
 }
 
-.deposit-account-card--pink {
-  background: var(--primary);
+.deposit-account-card--wallet {
+  --card-accent: var(--primary-text);
+  background: var(--primary-pale);
+  color: var(--ink);
 }
 
-.deposit-account-card--magenta {
-  background: var(--aeon-pink);
+.deposit-account-card--growth {
+  --card-accent: var(--secondary-text);
+  background: var(--secondary-soft);
+  color: var(--ink);
 }
 
-.deposit-account-card--navy {
-  background: var(--navy-dark);
+.deposit-account-card--neutral {
+  --card-accent: var(--text-secondary);
+  background: #F1F3F7;
+  color: var(--ink);
 }
 
 .deposit-account-card__top {
@@ -1385,7 +1447,6 @@ a.shell-icon-btn {
 .deposit-account-card__top p {
   margin: 4px 0 0;
   font-size: var(--text-caption);
-  opacity: 0.85;
 }
 
 .deposit-account-card__badge {
@@ -1393,8 +1454,8 @@ a.shell-icon-btn {
   align-items: center;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--navy-dark);
+  background: var(--card-accent, var(--primary-text));
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
@@ -1403,7 +1464,6 @@ a.shell-icon-btn {
 .deposit-account-card__bottom span {
   display: block;
   font-size: var(--text-caption);
-  opacity: 0.85;
   margin-bottom: 4px;
 }
 
@@ -1413,17 +1473,16 @@ a.shell-icon-btn {
   letter-spacing: -0.02em;
 }
 
-.deposit-hero--lilac {
-  background: #9381cf;
+.deposit-hero--amber {
+  background: var(--brand-amber-deep);
 }
 
 .financing-promo {
   display: block;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: none;
   background: var(--white);
-  box-shadow: var(--shadow-sm);
   text-decoration: none;
   color: inherit;
 }
@@ -1446,7 +1505,7 @@ a.shell-icon-btn {
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid var(--border);
-  background: var(--white);
+  background: var(--canvas);
   margin: 0 calc(var(--page-pad) * -1);
   padding: 0 var(--page-pad);
 }
@@ -1469,7 +1528,7 @@ a.shell-icon-btn {
 }
 
 .segment-tab[aria-selected="true"] {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .segment-tab[aria-selected="true"]::after {
@@ -1554,7 +1613,7 @@ a.shell-icon-btn {
 
 .settings-list__item:hover {
   background: var(--primary-pale);
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .settings-list__icon {
@@ -1589,7 +1648,7 @@ a.shell-icon-btn {
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--primary);
   background: transparent;
-  color: var(--primary);
+  color: var(--primary-text);
   font-size: var(--text-caption);
   font-weight: 700;
   cursor: pointer;
@@ -1640,7 +1699,7 @@ a.shell-icon-btn {
   line-height: 1.45;
 }
 
-.aeon-banner__pill-btn {
+.promo-banner__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1649,7 +1708,7 @@ a.shell-icon-btn {
   padding: 10px 20px;
   border-radius: 999px;
   background: #ffffff !important;
-  color: var(--primary) !important;
+  color: var(--primary-text) !important;
   font-size: 13px;
   font-weight: 700;
   border: none !important;
@@ -1659,11 +1718,67 @@ a.shell-icon-btn {
   transition: transform 0.15s;
 }
 
-.aeon-banner__pill-btn:hover {
+.promo-banner__btn:hover {
   transform: scale(1.03);
 }
 
-.aeon-dots {
+.balance-carousel {
+  display: flex;
+  gap: 12px;
+  margin: 16px calc(var(--page-pad) * -1) 0;
+  padding: 0 var(--page-pad);
+  scroll-padding: 0 var(--page-pad);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.balance-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* ~75% of the screen, like the reference, so the next card peeks in */
+.balance-carousel__slide {
+  flex: 0 0 86%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.points-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.points-card:hover {
+  color: var(--ink);
+}
+
+.points-card__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.points-card__value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.points-card__meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.pager-dots {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1671,33 +1786,33 @@ a.shell-icon-btn {
   margin: 10px 0 16px;
 }
 
-.aeon-dot-active {
+.pager-dot--active {
   width: 24px;
   height: 6px;
   border-radius: 999px;
   background: var(--primary);
 }
 
-.aeon-dot-inactive {
+.pager-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: #D5D7DC;
 }
 
-.aeon-section-tag {
+.section-tag {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--ink);
-  margin: 1.75rem 0 0.75rem;
+  margin: 28px 0 12px;
 }
 
-.aeon-pin-grid {
+.pin-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px 24px;
@@ -1705,7 +1820,7 @@ a.shell-icon-btn {
   margin: 0 auto;
 }
 
-.aeon-pin-btn {
+.pin-btn {
   min-width: 48px;
   min-height: 48px;
   height: 60px;
@@ -1723,11 +1838,11 @@ a.shell-icon-btn {
   transition: background-color 0.15s;
 }
 
-.aeon-pin-btn:hover {
+.pin-btn:hover {
   background: var(--surface-soft) !important;
 }
 
-.aeon-pin-box {
+.pin-box {
   width: 44px;
   height: 52px;
   border-radius: 12px;
@@ -1742,12 +1857,12 @@ a.shell-icon-btn {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.aeon-pin-box.is-filled {
+.pin-box.is-filled {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-soft);
 }
 
-.aeon-pin-backspace {
+.pin-backspace {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1891,7 +2006,7 @@ button.action-tile:hover {
   border-color: var(--primary-soft);
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .quick-action-tile:active {
@@ -2026,6 +2141,8 @@ button.action-tile:hover {
 .kid-streak {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-pill);
@@ -2171,7 +2288,7 @@ button.action-tile:hover {
   margin: 0;
   font-size: var(--text-caption);
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -2245,7 +2362,7 @@ button.action-tile:hover {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: 0.2em;
-  color: var(--aeon-pink);
+  color: var(--primary-text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2275,18 +2392,18 @@ button.action-tile:hover {
 }
 
 .field-error {
-  color: var(--error);
+  color: var(--error-text);
   font-size: var(--text-caption);
   font-weight: 600;
   margin: var(--space-1) 0 0;
 }
 
 .btn-danger {
-  background: var(--error) !important;
+  background: var(--error-strong) !important;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #b42318 !important;
+  background: var(--error-strong-hover) !important;
 }
 
 /* —— Stage 6: auth screens —— */
@@ -2635,7 +2752,7 @@ button.action-tile:hover {
 
 .sadaqah-arabic {
   font-size: var(--text-h3);
-  color: var(--aeon-pink);
+  color: var(--primary-text);
   margin: 0 0 var(--space-1);
   text-align: start;
 }
@@ -2649,7 +2766,7 @@ button.action-tile:hover {
   font-weight: 600;
 }
 
-/* Insights + Penny Sensei chat (AEON-inspired) */
+/* Insights + Penny chat */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -2666,8 +2783,12 @@ button.action-tile:hover {
   margin: calc(var(--space-4) * -1) calc(var(--page-pad) * -1) 0;
 }
 
+/* Soft pink and cyan wash: the assistant is the only screen with a glow */
 .insights-ask-hero {
-  background: var(--brand-mint);
+  background:
+    radial-gradient(90% 70% at 20% 10%, rgba(244, 156, 187, 0.45), transparent 70%),
+    radial-gradient(80% 70% at 90% 40%, rgba(203, 238, 243, 0.7), transparent 70%),
+    var(--canvas);
   padding: var(--space-6) var(--page-pad) var(--space-8);
   text-align: center;
 }
@@ -2693,14 +2814,18 @@ button.action-tile:hover {
   min-height: 44px;
   padding: 8px 16px;
   border-radius: 14px;
-  border: 1px solid var(--border);
+  border: none;
   background: #fff;
-  color: #4A0E4E;
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
   text-decoration: none;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.05);
   cursor: pointer;
+}
+
+.insights-ask-chip svg {
+  color: var(--primary);
 }
 
 .insights-ask-chip--wide {
@@ -2712,14 +2837,14 @@ button.action-tile:hover {
   margin-top: var(--space-5);
   border: none;
   background: transparent;
-  color: #4A0E4E;
-  font-size: 13px;
+  color: var(--ink);
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .insights-sheet {
-  background: #fff;
+  background: var(--canvas);
   border-radius: 24px 24px 0 0;
   margin-top: -16px;
   padding: var(--space-3) var(--page-pad) var(--space-8);
@@ -2730,7 +2855,7 @@ button.action-tile:hover {
   width: 40px;
   height: 4px;
   border-radius: 999px;
-  background: var(--border);
+  background: #D5D7DC;
   margin: 4px auto 16px;
   display: block;
 }
@@ -2755,7 +2880,7 @@ button.action-tile:hover {
 
 .insights-cashflow__out {
   font-size: 1.35rem;
-  color: #E55050;
+  color: var(--error-text);
 }
 
 .insights-recap {
@@ -2767,8 +2892,11 @@ button.action-tile:hover {
   text-align: left;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1.5px solid var(--brand-raspberry);
-  background: var(--ink);
+  /* Dark navy card with a bright Cobalt-to-Aqua gradient rim */
+  border: 2px solid transparent;
+  background:
+    linear-gradient(135deg, #0B1220 0%, #17233C 100%) padding-box,
+    linear-gradient(90deg, var(--brand-cobalt), var(--brand-aqua), var(--brand-cobalt-light)) border-box;
   color: #fff;
   cursor: pointer;
   margin-bottom: var(--space-4);
@@ -2786,8 +2914,8 @@ button.action-tile:hover {
 }
 
 .insights-recap__text {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -2805,13 +2933,13 @@ button.action-tile:hover {
 
 .insights-month {
   flex-shrink: 0;
-  min-width: 44px;
+  min-width: 56px;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 10px 16px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: 1.5px solid var(--border);
   background: #fff;
   color: var(--ink);
@@ -2823,7 +2951,8 @@ button.action-tile:hover {
 .insights-month.is-active,
 .insights-month[aria-selected="true"] {
   border-color: var(--primary);
-  color: var(--primary);
+  background: #fdecef;
+  color: var(--primary-hover);
 }
 
 .insights-donut-wrap {
@@ -2911,7 +3040,7 @@ button.action-tile:hover {
 }
 
 .story-card--primary { background: var(--primary); }
-.story-card--lilac { background: #8A80D8; }
+.story-card--lilac { background: #6e5fb8; }
 .story-card--navy { background: var(--navy-dark); }
 
 .story-card__top {
@@ -2970,7 +3099,10 @@ button.action-tile:hover {
   flex-direction: column;
   min-height: 100dvh;
   margin: 0;
-  background: #fff;
+  background:
+    radial-gradient(90% 40% at 15% 0%, rgba(244, 156, 187, 0.4), transparent 70%),
+    radial-gradient(70% 35% at 95% 10%, rgba(203, 238, 243, 0.65), transparent 70%),
+    #fff;
 }
 
 .penny-chat__header {
@@ -2979,8 +3111,9 @@ button.action-tile:hover {
   align-items: center;
   gap: 8px;
   padding: calc(8px + env(safe-area-inset-top, 0px)) var(--page-pad) 8px;
-  border-bottom: 1px solid var(--border);
-  background: #fff;
+  border-bottom: none;
+  background: transparent;
+  backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -2996,9 +3129,9 @@ button.action-tile:hover {
 
 .penny-chat__beta {
   font-size: 11px;
-  font-weight: 800;
-  color: var(--aeon-pink);
-  border: 1.5px solid var(--aeon-pink);
+  font-weight: 700;
+  color: var(--primary-text);
+  border: 1.5px solid var(--primary);
   border-radius: 999px;
   padding: 2px 8px;
 }
@@ -3044,6 +3177,7 @@ button.action-tile:hover {
 }
 
 .penny-assistant__actions button {
+  padding: 0;
   border: none;
   background: var(--surface-soft);
   width: 44px;
@@ -3070,8 +3204,8 @@ button.action-tile:hover {
   gap: 8px;
   align-items: center;
   padding: 12px var(--page-pad);
-  background: #F3E8FF;
-  border-top: 1px solid var(--border);
+  background: var(--canvas);
+  border-top: none;
 }
 
 .penny-chat__composer input {
@@ -3091,7 +3225,7 @@ button.action-tile:hover {
   font-size: 11px;
   color: var(--text-muted);
   text-align: center;
-  background: #F3E8FF;
+  background: var(--canvas);
 }
 
 .penny-chat__insights-link {
@@ -3256,7 +3390,7 @@ button.action-tile:hover {
 
 .kid-chip.is-active {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--primary-text);
   background: var(--primary-pale, #fff0f8);
 }
 
@@ -3268,56 +3402,35 @@ button.action-tile:hover {
   display: block;
 }
 
-.ui-card {
-  padding: 14px !important;
-  margin-bottom: 0 !important;
-}
-
-.aeon-section-tag {
-  margin: 4px 0 8px;
-}
-
 /* Extra-small phones (iPhone SE / 320–360) */
+/* Never below the 11px floor, even on the smallest phones */
 @media (max-width: 360px) {
-  :root {
-    --page-pad: 12px;
-    --touch-min: 44px;
-  }
-
   .shell-navitem__label {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .shell-topbar__title {
     font-size: 0.95rem;
   }
 
-  .aeon-quick-label,
+  .quick-label {
+    font-size: 13px;
+  }
+
   .deposit-quick-tile {
-    font-size: 0.62rem;
+    font-size: 12px;
   }
 }
 
-/* Tall / large phones — a bit more air, still full-bleed */
-@media (min-width: 400px) and (max-width: 699px) {
-  :root {
-    --page-pad: clamp(1rem, 4vw, 1.25rem);
-  }
-}
-
-/* Prevent accidental horizontal scroll on any phone */
-.app-shell,
+/* Prevent accidental horizontal scroll on any phone (the shell clips itself).
+   .insights-page is full-bleed via negative margins, so it must not be capped. */
 .app-shell__main,
 .parent-page,
-.insights-page,
 .penny-chat {
   max-width: 100%;
   overflow-x: clip;
 }
 
-img,
-svg,
-video {
-  max-width: 100%;
-  height: auto;
+.insights-page {
+  overflow-x: clip;
 }

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { NumericKeypad } from "@/components/ui/numeric-keypad";
 import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/ui/app-icon";
+import { formatRM } from "@/lib/format";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -50,12 +51,12 @@ interface MoneyKeypadProps {
 /** Convert raw digit string (no decimal) → display string "RM X.XX" */
 function rawToDisplay(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length === 0) return "RM 0.00";
+  if (digits.length === 0) return "RM0.00";
   const padded = digits.padStart(3, "0");
   const cents = padded.slice(-2);
   const ringgit = padded.slice(0, padded.length - 2);
   const num = parseInt(ringgit, 10);
-  return `RM ${num.toLocaleString("en-MY")}.${cents}`;
+  return `RM${num.toLocaleString("en-MY")}.${cents}`;
 }
 
 /** Raw digits → actual number value */
@@ -149,13 +150,13 @@ export function MoneyKeypad({
           </div>
 
           {tooLow && (
-            <p className="text-xs text-[var(--error)] mt-1 font-medium">
-              Minimum is RM {min.toFixed(2)}
+            <p className="text-xs text-[var(--error-text)] mt-1 font-medium">
+              Minimum is {formatRM(min)}
             </p>
           )}
           {tooHigh && (
-            <p className="text-xs text-[var(--error)] mt-1 font-medium">
-              Maximum is RM {max.toLocaleString("en-MY")}
+            <p className="text-xs text-[var(--error-text)] mt-1 font-medium">
+              Maximum is RM{max.toLocaleString("en-MY")}
             </p>
           )}
           {!tooLow && !tooHigh && amount > 0 && (
@@ -166,7 +167,7 @@ export function MoneyKeypad({
         </div>
 
         {/* Keypad grid */}
-        <NumericKeypad onKeyPress={press} variant="aeon" />
+        <NumericKeypad onKeyPress={press} variant="pin" />
 
         {/* Action row */}
         <div className="flex items-center gap-3 pt-2">

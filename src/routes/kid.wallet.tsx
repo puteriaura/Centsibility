@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SectionTitle } from "@/components/ui/section-title";
 import { StatCard, TransactionRow } from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import {
   edgeKidSadaqah,
   edgeKidInvestSettle,
@@ -18,8 +19,9 @@ import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
-import { formatTransactionSign } from "@/lib/finance";
+import { isDebitTransaction, isWalletTransaction } from "@/lib/finance";
 import { AppIcon } from "@/components/ui/app-icon";
+import { formatDate, formatRM } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
@@ -43,7 +45,7 @@ function riskLabel(risk: string | undefined) {
 }
 
 function KidWallet() {
-  const { data, loading, refresh } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [tab, setTab] = useState<Tab>("deposit");
 
   useEffect(() => {
@@ -53,7 +55,7 @@ function KidWallet() {
       .then((r) => {
         if (r.paid > 0) {
           sfx.coin();
-          toast.success(`Investment grew by RM${r.paid.toFixed(2)}!`);
+          toast.success(`Investment grew by ${formatRM(r.paid)}!`);
         }
         refresh();
       })
@@ -61,6 +63,7 @@ function KidWallet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -159,11 +162,11 @@ function KidWallet() {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* AEON Deposit-style total balance hero */}
+      {/* Total balance header; the canvas sheet rises over it */}
       <section className="deposit-hero" aria-label="Total balance">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Total balance</p>
-          <p className="deposit-hero__amount tabular-nums">RM{totalBalance.toFixed(2)}</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(totalBalance)}</p>
           <button
             type="button"
             className="deposit-hero__link"
@@ -204,7 +207,7 @@ function KidWallet() {
       <div className="deposit-account-stack">
         <button
           type="button"
-          className="deposit-account-card deposit-account-card--pink"
+          className="deposit-account-card deposit-account-card--wallet"
           onClick={() => {
             sfx.tap();
             setTab("deposit");
@@ -219,13 +222,13 @@ function KidWallet() {
           </div>
           <div className="deposit-account-card__bottom">
             <span>Account balance</span>
-            <strong className="tabular-nums">RM{balance.toFixed(2)}</strong>
+            <strong className="tabular-nums">{formatRM(balance)}</strong>
           </div>
         </button>
 
         <button
           type="button"
-          className="deposit-account-card deposit-account-card--magenta"
+          className="deposit-account-card deposit-account-card--growth"
           onClick={() => {
             sfx.tap();
             setTab("invest");
@@ -240,13 +243,13 @@ function KidWallet() {
           </div>
           <div className="deposit-account-card__bottom">
             <span>Account balance</span>
-            <strong className="tabular-nums">RM{invested.toFixed(2)}</strong>
+            <strong className="tabular-nums">{formatRM(invested)}</strong>
           </div>
         </button>
 
         <Link
           to="/kid/loans"
-          className="deposit-account-card deposit-account-card--navy"
+          className="deposit-account-card deposit-account-card--neutral"
           onClick={() => sfx.tap()}
         >
           <div className="deposit-account-card__top">
@@ -258,7 +261,7 @@ function KidWallet() {
           </div>
           <div className="deposit-account-card__bottom">
             <span>Outstanding</span>
-            <strong className="tabular-nums">RM{outstanding.toFixed(2)}</strong>
+            <strong className="tabular-nums">{formatRM(outstanding)}</strong>
           </div>
         </Link>
       </div>
@@ -294,7 +297,7 @@ function KidWallet() {
       {tab === "deposit" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="deposit" size={20} />
             </div>
             <div>
@@ -317,7 +320,7 @@ function KidWallet() {
       {tab === "withdraw" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="withdraw" size={20} />
             </div>
             <div>
@@ -340,7 +343,7 @@ function KidWallet() {
       {tab === "invest" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="invest" size={20} />
             </div>
             <div>
@@ -383,12 +386,12 @@ function KidWallet() {
           <div className="grid grid-cols-2 gap-3 pt-2">
             <StatCard
               label="Wallet Balance"
-              value={`RM ${balance.toFixed(2)}`}
+              value={`${formatRM(balance)}`}
               icon="wallet"
             />
             <StatCard
               label="Currently Invested"
-              value={`RM ${invested.toFixed(2)}`}
+              value={`${formatRM(invested)}`}
               icon="invest"
               subtitle={k.invest_balance && Number(k.invest_balance) > 0 ? "Growing" : undefined}
             />
@@ -401,7 +404,7 @@ function KidWallet() {
       {tab === "sadaqah" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="sadaqah" size={20} />
             </div>
             <div>
@@ -423,7 +426,7 @@ function KidWallet() {
       {tab === "loan" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="loan" size={20} />
             </div>
             <div>
@@ -459,15 +462,17 @@ function KidWallet() {
       <div id="wallet-history" className="space-y-3 scroll-mt-4">
         <SectionTitle>Recent Activity</SectionTitle>
         <Card variant="default" className="p-2 sm:p-3 divide-y divide-[var(--border)]">
-          {data.txs.length === 0 ? (
-            <div className="py-8 text-center text-sm text-[var(--text-muted)]">
-              No transactions yet. Start by requesting a deposit!
-            </div>
-          ) : (
-            data.txs.map((t: (typeof data.txs)[number]) => {
-              const isDebit =
-                formatTransactionSign(t.type, t.label) === "-" ||
-                ["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type);
+          {(() => {
+            const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type));
+            if (walletTxs.length === 0) {
+              return (
+                <div className="py-8 text-center text-sm text-[var(--text-muted)]">
+                  No transactions yet. Start by requesting a deposit!
+                </div>
+              );
+            }
+            return walletTxs.map((t: (typeof data.txs)[number]) => {
+              const isDebit = isDebitTransaction(t.type, t.label);
 
               const iconName = t.type.toLowerCase().includes("deposit")
                 ? "deposit"
@@ -483,17 +488,14 @@ function KidWallet() {
                 <TransactionRow
                   key={t.id}
                   title={t.label}
-                  subtitle={new Date(t.created_at).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  subtitle={formatDate(t.created_at)}
                   amount={Number(t.amount)}
                   isIncome={!isDebit}
                   icon={iconName}
                 />
               );
-            })
-          )}
+            });
+          })()}
         </Card>
       </div>
     </div>

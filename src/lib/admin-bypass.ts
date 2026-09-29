@@ -4,17 +4,22 @@ import { setKidSession } from "@/lib/kid-session";
 import type { Session, User } from "@supabase/supabase-js";
 
 /** Seeded demo account from `seed.ts` — for local/demo UI work only. */
-export const ADMIN_BYPASS = {
-  parent: {
-    email: "test@centsibility.com",
-    password: "password123",
-  },
-  kid: {
-    username: "aiman",
-    pin: "123456",
-    code: "AIMAN1",
-  },
-} as const;
+export const ADMIN_BYPASS = import.meta.env.DEV
+  ? ({
+      parent: {
+        email: "test@centsibility.com",
+        password: "password123",
+      },
+      kid: {
+        username: "aiman",
+        pin: "123456",
+        code: "AIMAN1",
+      },
+    } as const)
+  : {
+      parent: { email: "", password: "" },
+      kid: { code: "", username: "", pin: "" },
+    };
 
 export const PARENT_BYPASS_KEY = "centsibility:admin-bypass-parent";
 export const KID_BYPASS_KEY = "centsibility:admin-bypass-kid";

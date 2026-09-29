@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import { edgeKidQuizState, edgeKidQuizAnswer } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { ALL_QUESTIONS } from "@/data/quiz-bank";
@@ -13,6 +14,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
+import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/quiz")({
   head: () => ({ meta: [{ title: "Daily Quest — Centsibility" }] }),
@@ -29,7 +31,7 @@ function KidQuiz() {
   );
   const [picked, setPicked] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  const { data, refresh } = useKidData();
+  const { data, error, refresh } = useKidData();
 
   const code = getKidSession()?.code;
 
@@ -41,6 +43,7 @@ function KidQuiz() {
     })();
   }, [code]);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (!state) {
     return (
       <div className="space-y-4">
@@ -92,13 +95,13 @@ function KidQuiz() {
         <PointsHeader totalPoints={totalPoints} />
 
         <Card variant="default" className="p-8 text-center space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center mx-auto shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center mx-auto shadow-sm">
             <AppIcon name="trophy" size={36} />
           </div>
           <h2 className="text-2xl font-extrabold text-[var(--ink)]">Mashallah! Quest Complete!</h2>
           <p className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto">
             You solved 5 questions today and earned{" "}
-            <strong className="text-[var(--primary)] font-bold">{MAX * PTS_PER_CORRECT}</strong> bonus points!
+            <strong className="text-[var(--primary-text)] font-bold">{MAX * PTS_PER_CORRECT}</strong> bonus points!
           </p>
           <div className="pt-2">
             <Link to="/kid/rewards">
@@ -122,7 +125,7 @@ function KidQuiz() {
                 key={tier.pts}
                 className="p-2.5 rounded-xl text-center bg-white border border-[var(--border)]"
               >
-                <div className="text-sm font-bold text-[var(--primary)]">{tier.pts}</div>
+                <div className="text-sm font-bold text-[var(--primary-text)]">{tier.pts}</div>
                 <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{tier.label}</div>
               </div>
             ))}
@@ -138,7 +141,7 @@ function KidQuiz() {
     <div className="space-y-6 pb-12">
       <section className="deposit-hero" aria-label="Daily quest progress">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Penny Sensei · Daily Quest</p>
+          <p className="deposit-hero__label">Penny · Daily quest</p>
           <p className="deposit-hero__amount tabular-nums">
             {state ? `${state.correct + state.wrong}/${MAX}` : "…"}
           </p>
@@ -167,7 +170,7 @@ function KidQuiz() {
       <Card variant="default" className="p-4 sm:p-5 space-y-3 border border-[var(--border)]">
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="text-[var(--text-secondary)]">Daily Quest Progress</span>
-          <span className="text-[var(--primary)] font-bold">
+          <span className="text-[var(--primary-text)] font-bold">
             {state.correct} of {MAX} Questions Solved
           </span>
         </div>
@@ -176,17 +179,17 @@ function KidQuiz() {
           <span className="flex items-center gap-1">
             Lives remaining: <strong className="text-[var(--ink)]">{livesLeft} / {MAX_WRONG}</strong>
           </span>
-          <span className="text-[var(--success)] font-medium">+{PTS_PER_CORRECT} pts each</span>
+          <span className="text-[var(--success-text)] font-medium">+{PTS_PER_CORRECT} pts each</span>
         </div>
       </Card>
 
       {/* Question Card */}
       <Card variant="default" className="p-5 sm:p-6 space-y-5 border border-[var(--border)] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
             <AppIcon name="brain" size={20} />
           </div>
-          <span className="text-xs font-bold text-[var(--primary)] uppercase tracking-wider">
+          <span className="text-xs font-bold text-[var(--primary-text)] uppercase tracking-wider">
             Question #{((state.index % ALL_QUESTIONS.length) + 1)}
           </span>
         </div>
@@ -210,7 +213,7 @@ function KidQuiz() {
                 }}
                 className={`w-full flex items-center gap-3 p-3.5 sm:p-4 rounded-xl text-left text-sm font-medium transition-all duration-150 cursor-pointer min-h-[48px] border ${
                   isSelected
-                    ? "border-[var(--primary)] bg-[var(--surface-pink)] text-[var(--primary)] font-bold shadow-xs"
+                    ? "border-[var(--primary)] bg-[var(--surface-pink)] text-[var(--primary-text)] font-bold shadow-xs"
                     : "border-[var(--border)] bg-white text-[var(--ink)] hover:bg-[var(--surface-soft)]"
                 }`}
               >
@@ -282,7 +285,7 @@ function KidQuiz() {
 
 function PointsHeader({ totalPoints }: { totalPoints: number }) {
   return (
-    <div className="shrink-0 flex items-center gap-1.5 bg-[var(--surface-pink)] text-[var(--primary)] px-3.5 py-1.5 rounded-full text-xs font-bold border border-[var(--primary-soft)]">
+    <div className="shrink-0 flex items-center gap-1.5 bg-[var(--surface-pink)] text-[var(--primary-text)] px-3.5 py-1.5 rounded-full text-xs font-bold border border-[var(--primary-soft)]">
       <AppIcon name="star" size={14} />
       <span>{totalPoints.toLocaleString()} Points</span>
     </div>
@@ -305,8 +308,8 @@ function QuizHistory({
               <div
                 className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
                   a.correct
-                    ? "bg-[var(--success-soft)] text-[var(--success)]"
-                    : "bg-[var(--error-soft)] text-[var(--error)]"
+                    ? "bg-[var(--success-soft)] text-[var(--success-text)]"
+                    : "bg-[var(--error-soft)] text-[var(--error-text)]"
                 }`}
               >
                 <AppIcon name={a.correct ? "approve" : "close"} size={13} />
@@ -315,13 +318,10 @@ function QuizHistory({
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[var(--text-muted)]">
-                {new Date(a.created_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })}
+                {formatDate(a.created_at)}
               </span>
               {a.correct && (
-                <span className="text-[var(--success)] font-bold">+{PTS_PER_CORRECT}</span>
+                <span className="text-[var(--success-text)] font-bold">+{PTS_PER_CORRECT}</span>
               )}
             </div>
           </div>

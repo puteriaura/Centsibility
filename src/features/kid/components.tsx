@@ -46,6 +46,33 @@ export function ActionTile({
   );
 }
 
+/** Shown when the kid's account could not be loaded and there is no earlier data to show. */
+export function KidLoadError({ onRetry }: { onRetry: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const retry = async () => {
+    setBusy(true);
+    try {
+      await onRetry();
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div role="alert" className="ui-card p-6 flex flex-col items-center gap-3 text-center">
+      <AppIcon name="info" size={28} color="var(--primary)" />
+      <h2 className="text-base font-bold text-[var(--text-primary)] m-0">
+        We couldn't load your account
+      </h2>
+      <p className="text-sm text-[var(--text-secondary)] m-0">
+        Check your internet connection and try again.
+      </p>
+      <Button type="button" variant="primary" onClick={retry} disabled={busy} className="justify-center">
+        {busy ? "Trying again…" : "Try again"}
+      </Button>
+    </div>
+  );
+}
+
 /** Points keypad for reward requests — counts integer points */
 export function RewardCoinPicker({
   maxPoints,
@@ -85,7 +112,7 @@ export function RewardCoinPicker({
   return (
     <div className="flex flex-col gap-3">
       <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
-        <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary)] flex items-center justify-center gap-1.5 tabular-nums">
+        <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary-text)] flex items-center justify-center gap-1.5 tabular-nums">
           {coins}{" "}
           <AppIcon name="star" size={22} color="var(--primary)" />
         </div>

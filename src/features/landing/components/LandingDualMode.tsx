@@ -100,19 +100,19 @@ export function LandingDualMode() {
 
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success)" }}>
+                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success-text)" }}>
                   <AppIcon name="check" size={14} />
                 </div>
                 <span>One-tap approval for withdrawals, loans, and rewards</span>
               </li>
               <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success)" }}>
+                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success-text)" }}>
                   <AppIcon name="check" size={14} />
                 </div>
                 <span>Monthly financial analytics and spending reports per child</span>
               </li>
               <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success)" }}>
+                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success-text)" }}>
                   <AppIcon name="check" size={14} />
                 </div>
                 <span>Configure custom voluntary Hibah rates & device PIN locks</span>

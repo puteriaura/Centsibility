@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import { edgeKidRequestReward } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NumericKeypad } from "@/components/ui/numeric-keypad";
 import { AppIcon } from "@/components/ui/app-icon";
+import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/rewards")({
   head: () => ({ meta: [{ title: "Rewards — Centsibility" }] }),
@@ -31,10 +33,11 @@ const SUGGESTED = [
 ];
 
 function KidRewards() {
-  const { data, loading, refresh } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [name, setName] = useState("");
   const [rawPts, setRawPts] = useState("");
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -123,7 +126,7 @@ function KidRewards() {
 
         {!quizUnlocked && (
           <Card variant="soft" className="p-4 border border-[var(--primary-soft)] flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="lock" size={20} />
             </div>
             <div>
@@ -151,23 +154,23 @@ function KidRewards() {
                     ? `Locked — complete ${QUIZ_GATE} quiz answers first`
                     : `Request ${s.name} for ${s.cost} points`
                 }
-                className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${
+                className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between disabled:opacity-100 ${
                   !quizUnlocked
-                    ? "bg-[var(--surface-soft)] border-[var(--border)] opacity-60 cursor-not-allowed"
+                    ? "bg-white border-transparent cursor-not-allowed"
                     : can
-                      ? "bg-white border-[var(--border)] hover:border-[var(--primary)] hover:shadow-sm"
-                      : "bg-white border-[var(--border)] opacity-65 cursor-not-allowed"
+                      ? "bg-white border-transparent hover:border-[var(--primary)]"
+                      : "bg-white border-transparent cursor-not-allowed"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center">
                     <AppIcon name={!quizUnlocked ? "lock" : s.icon} size={18} />
                   </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)]">
-                    {s.cost} <AppIcon name="star" size={12} color="var(--primary)" />
+                  <span className="inline-flex items-center gap-1 text-sm font-bold text-[var(--primary-hover)]">
+                    {s.cost.toLocaleString("en-MY")} <AppIcon name="star" size={12} color="var(--primary)" />
                   </span>
                 </div>
-                <strong className="text-xs sm:text-sm font-bold text-[var(--ink)] line-clamp-2 leading-snug">
+                <strong className="text-sm font-semibold text-[var(--ink)] line-clamp-2 leading-snug">
                   {s.name}
                 </strong>
               </button>
@@ -195,7 +198,7 @@ function KidRewards() {
               <span>Balance: <strong>{totalPoints.toFixed(0)} pts</strong></span>
             </div>
             <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
-              <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary)] flex items-center justify-center gap-1.5 tabular-nums">
+              <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary-text)] flex items-center justify-center gap-1.5 tabular-nums">
                 {parsedPts.toLocaleString()}
                 <AppIcon name="star" size={20} />
               </div>
@@ -232,7 +235,7 @@ function KidRewards() {
                   <Badge variant="warning">Pending</Badge>
                   <strong className="text-[var(--ink)]">{r.name}</strong>
                 </div>
-                <span className="font-bold text-[var(--primary)] flex items-center gap-1">
+                <span className="font-bold text-[var(--primary-text)] flex items-center gap-1">
                   {r.cost} <AppIcon name="star" size={14} color="var(--primary)" />
                 </span>
               </div>
@@ -255,7 +258,7 @@ function KidRewards() {
                 <div>
                   <strong className="text-[var(--ink)] block">{r.name}</strong>
                   <span className="text-xs text-[var(--text-muted)]">
-                    {new Date(r.created_at).toLocaleDateString()} · {r.cost} pts
+                    {formatDate(r.created_at)} · {r.cost} pts
                   </span>
                 </div>
                 <div>

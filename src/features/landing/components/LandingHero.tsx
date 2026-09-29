@@ -122,7 +122,7 @@ export function LandingHero() {
                 <AppIcon name="gift" size={16} />
                 <span style={{ fontSize: "0.8125rem", fontWeight: 600 }}>+RM 5.00 Monthly Hibah Gift</span>
               </div>
-              <Badge variant="soft" style={{ background: "rgba(255,255,255,0.9)", color: "var(--primary)" }}>
+              <Badge variant="soft" style={{ background: "rgba(255,255,255,0.9)", color: "var(--primary-text)" }}>
                 Active
               </Badge>
             </div>
@@ -132,15 +132,15 @@ export function LandingHero() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
             <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Hibah Rate</div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--primary)", marginTop: "0.2rem" }}>5.0%</div>
+              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--primary-text)", marginTop: "0.2rem" }}>5.0%</div>
             </Card>
             <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Stardust</div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--warning)", marginTop: "0.2rem" }}>+50 pts</div>
+              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--accent-amber-text)", marginTop: "0.2rem" }}>+50 pts</div>
             </Card>
             <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Goal Target</div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--success)", marginTop: "0.2rem" }}>87%</div>
+              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--success-text)", marginTop: "0.2rem" }}>87%</div>
             </Card>
           </div>
         </div>

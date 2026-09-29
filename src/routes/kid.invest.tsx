@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import {
   edgeKidInvestDeposit,
   edgeKidInvestWithdraw,
@@ -18,6 +19,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
+import { formatRM } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/invest")({
   head: () => ({ meta: [{ title: "Invest — Centsibility" }] }),
@@ -43,7 +45,7 @@ const FREQ_OPTIONS = [
 ] as const;
 
 function KidInvest() {
-  const { data, loading, refresh } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [dir, setDir] = useState<"in" | "out">("in");
   const [savingRisk, setSavingRisk] = useState(false);
   const [savingFreq, setSavingFreq] = useState(false);
@@ -53,13 +55,14 @@ function KidInvest() {
     if (!code) return;
     edgeKidInvestSettle({ code })
       .then((r) => {
-        if (r.paid > 0) toast.success(`Your investment grew by RM${r.paid.toFixed(2)}!`);
-        else if (r.paid < 0) toast.error(`Investment dipped by RM${Math.abs(r.paid).toFixed(2)}`);
+        if (r.paid > 0) toast.success(`Your investment grew by ${formatRM(r.paid)}!`);
+        else if (r.paid < 0) toast.error(`Investment dipped by ${formatRM(Math.abs(r.paid))}`);
         refresh();
       })
       .catch(() => {});
   }, [refresh]);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -130,10 +133,9 @@ function KidInvest() {
   };
 
   // 7-day chart
-  const last7DaysTxs = data.txs.filter(
+  const potTxs = data.txs.filter(
     (t: (typeof data.txs)[number]) =>
-      ["INVEST_IN", "INVEST_OUT", "HIBAH"].includes(t.type) &&
-      (t.type !== "HIBAH" || t.label.includes("Investment")) &&
+      ["INVEST_IN", "INVEST_OUT", "INVEST_GAIN", "INVEST_LOSS"].includes(t.type) &&
       new Date(t.created_at).getTime() > Date.now() - 7 * 86400000,
   );
   const chartData = [];
@@ -145,13 +147,13 @@ function KidInvest() {
       name: d.toLocaleDateString("en-US", { weekday: "short" }),
       value: Math.max(0, runningBalance),
     });
-    const dayTxs = last7DaysTxs.filter(
-      (t: (typeof last7DaysTxs)[number]) => new Date(t.created_at).getDate() === d.getDate(),
+    const dayTxs = potTxs.filter(
+      (t: (typeof potTxs)[number]) =>
+        new Date(t.created_at).toDateString() === d.toDateString(),
     );
     for (const t of dayTxs) {
-      if (t.type === "INVEST_IN") runningBalance -= t.amount;
-      else if (t.type === "INVEST_OUT") runningBalance += t.amount;
-      else if (t.type === "HIBAH") runningBalance -= t.amount;
+      if (t.type === "INVEST_IN" || t.type === "INVEST_GAIN") runningBalance -= t.amount;
+      else if (t.type === "INVEST_OUT" || t.type === "INVEST_LOSS") runningBalance += t.amount;
     }
   }
   const startBal = chartData[0]?.value || 0;
@@ -168,10 +170,10 @@ function KidInvest() {
       <section className="deposit-hero" aria-label="Invested portfolio">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Invested portfolio</p>
-          <p className="deposit-hero__amount tabular-nums">RM{invested.toFixed(2)}</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(invested)}</p>
           <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
             {status === "PROFIT" ? "+" : status === "LOSS" ? "−" : ""}
-            RM{absChange.toFixed(2)} ({pctChange.toFixed(1)}%) · 7 days · Wallet RM{balance.toFixed(2)}
+            {formatRM(absChange)} ({pctChange.toFixed(1)}%) · 7 days · Wallet {formatRM(balance)}
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
@@ -197,13 +199,13 @@ function KidInvest() {
               <span
                 className={`font-bold tabular-nums ${
                   status === "PROFIT"
-                    ? "text-[var(--success)]"
+                    ? "text-[var(--success-text)]"
                     : status === "LOSS"
-                      ? "text-[var(--error)]"
+                      ? "text-[var(--error-text)]"
                       : "text-[var(--text-muted)]"
                 }`}
               >
-                {status === "PROFIT" ? "+ " : status === "LOSS" ? "- " : ""}RM {absChange.toFixed(2)} ({pctChange.toFixed(1)}%)
+                {status === "PROFIT" ? "+ " : status === "LOSS" ? "- " : ""}{formatRM(absChange)} ({pctChange.toFixed(1)}%)
               </span>
             </div>
           </div>
@@ -230,7 +232,7 @@ function KidInvest() {
                 stroke="var(--primary)"
                 strokeWidth={2.5}
                 fill="var(--primary-soft)"
-                fillOpacity={1}
+                fillOpacity={0.25}
                 isAnimationActive={false}
               />
             </AreaChart>
@@ -246,7 +248,7 @@ function KidInvest() {
             Cadence: <strong className="text-[var(--ink)]">{FREQ_OPTIONS.find((f) => f.key === currentFreq)?.label ?? currentFreq}</strong>
           </span>
           <span>
-            Projected (4 cycles): <strong className="text-[var(--primary)] font-bold">RM {projected.toFixed(2)}</strong>
+            Projected (4 cycles): <strong className="text-[var(--primary-text)] font-bold">{formatRM(projected)}</strong>
           </span>
         </div>
       </Card>
@@ -278,7 +280,7 @@ function KidInvest() {
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <strong className={`text-sm ${isSelected ? "text-[var(--primary)]" : "text-[var(--ink)]"}`}>
+                      <strong className={`text-sm ${isSelected ? "text-[var(--primary-text)]" : "text-[var(--ink)]"}`}>
                         {r.label}
                       </strong>
                       {isSelected && <Badge variant="brand">Active</Badge>}
@@ -289,7 +291,7 @@ function KidInvest() {
                     <span className="text-sm font-bold tabular-nums text-[var(--ink)]">
                       {(r.rate * 100).toFixed(2)}%
                     </span>
-                    <span className="block text-[10px] text-[var(--text-muted)]">rate</span>
+                    <span className="block text-[10px] text-[var(--text-secondary)]">rate</span>
                   </div>
                 </button>
               );
@@ -323,7 +325,7 @@ function KidInvest() {
                       : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
                   }`}
                 >
-                  <strong className={`text-xs sm:text-sm block ${isSelected ? "text-[var(--primary)]" : "text-[var(--ink)]"}`}>
+                  <strong className={`text-xs sm:text-sm block ${isSelected ? "text-[var(--primary-text)]" : "text-[var(--ink)]"}`}>
                     {f.label}
                   </strong>
                   <span className="text-[11px] text-[var(--text-secondary)] mt-0.5 block">
@@ -360,8 +362,8 @@ function KidInvest() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] py-1 border-b border-[var(--border)]">
-            <span>Core Wallet: <strong>RM {balance.toFixed(2)}</strong></span>
-            <span>Invested Pool: <strong>RM {invested.toFixed(2)}</strong></span>
+            <span>Core Wallet: <strong>{formatRM(balance)}</strong></span>
+            <span>Invested Pool: <strong>{formatRM(invested)}</strong></span>
           </div>
 
           <MoneyKeypad

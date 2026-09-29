@@ -8,14 +8,20 @@ import { Progress } from "@/components/ui/progress";
 import { Modal } from "@/components/ui/modal";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
-import { edgeKidContributeGoal } from "@/lib/edge";
+import { KidLoadError } from "@/features/kid/components";
+import {
+  edgeKidContributeGoal,
+  edgeKidCreateGoal,
+  edgeKidUpdateGoal,
+  edgeKidDeleteGoal,
+} from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
-import { supabase } from "@/integrations/supabase/client";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatRM } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/goals")({
   head: () => ({ meta: [{ title: "My Missions — Centsibility" }] }),
@@ -42,7 +48,7 @@ function iconName(key: string) {
 }
 
 function KidGoals() {
-  const { data, loading, refresh } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [activeGoal, setActiveGoal] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -58,6 +64,7 @@ function KidGoals() {
   const [editEmoji, setEditEmoji] = useState("Target");
   const [editBusy, setEditBusy] = useState(false);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -70,14 +77,13 @@ function KidGoals() {
 
   const balance = Number(data.kid.balance);
   const code = getKidSession()?.code;
-  const kidId = data.kid.id;
 
   const save = async (goalId: string, amount: number) => {
     if (!code) return;
     try {
-      await edgeKidContributeGoal({ code, goalId, amount });
+      const res = await edgeKidContributeGoal({ code, goalId, amount });
       sfx.coin();
-      toast.success("Saved! Keep it up");
+      toast.success(`Saved ${formatRM(res.added)}! Keep it up`);
       setActiveGoal(null);
       refresh();
     } catch (e: unknown) {
@@ -92,12 +98,15 @@ function KidGoals() {
       toast.error("Enter a valid name and target amount");
       return;
     }
+    if (!code) return;
     setAddBusy(true);
     try {
-      const { error } = await supabase
-        .from("goals")
-        .insert({ kid_id: kidId, name: newName.trim(), emoji: newEmoji, target });
-      if (error) throw new Error(error.message);
+      await edgeKidCreateGoal({
+        code,
+        name: newName.trim(),
+        emoji: newEmoji,
+        target,
+      });
       sfx.success();
       toast.success("Goal added!");
       setNewName("");
@@ -118,29 +127,21 @@ function KidGoals() {
       toast.error("Enter a valid name and target amount");
       return;
     }
+    if (!code) return;
     setEditBusy(true);
     try {
-      const goal = data.goals.find((g: (typeof data.goals)[number]) => g.id === goalId);
-      const currentSaved = goal ? Number(goal.saved) : 0;
-      const newSaved = Math.min(currentSaved, target);
-      const excess = currentSaved - newSaved;
-
-      const { error } = await supabase
-        .from("goals")
-        .update({ name: editName.trim(), emoji: editEmoji, target, saved: newSaved })
-        .eq("id", goalId);
-      if (error) throw new Error(error.message);
-
-      if (excess > 0 && code) {
-        const kid = data.kid;
-        await supabase
-          .from("kids")
-          .update({ balance: Number(kid.balance) + excess })
-          .eq("id", kid.id);
-      }
-
+      const res = await edgeKidUpdateGoal({
+        code,
+        goalId,
+        name: editName.trim(),
+        emoji: editEmoji,
+        target,
+      });
+      const refunded = res.refunded || 0;
       toast.success(
-        excess > 0 ? `Goal updated! RM ${excess.toFixed(2)} refunded.` : "Goal updated!",
+        refunded > 0
+          ? `Goal updated! ${formatRM(refunded)} moved back to your wallet.`
+          : "Goal updated!",
       );
       setEditingId(null);
       refresh();
@@ -152,11 +153,16 @@ function KidGoals() {
   };
 
   const deleteGoal = async (goalId: string) => {
+    if (!code) return;
     try {
-      const { error } = await supabase.from("goals").delete().eq("id", goalId);
-      if (error) throw new Error(error.message);
+      const res = await edgeKidDeleteGoal({ code, goalId });
+      const refunded = res.refunded || 0;
       sfx.tap();
-      toast.success("Goal removed");
+      toast.success(
+        refunded > 0
+          ? `Goal removed. ${formatRM(refunded)} moved back to your wallet.`
+          : "Goal removed",
+      );
       setDeletingId(null);
       refresh();
     } catch (e: unknown) {
@@ -181,7 +187,7 @@ function KidGoals() {
       <section className="deposit-hero" aria-label="Savings pots summary">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Saved across pots</p>
-          <p className="deposit-hero__amount tabular-nums">RM{totalSaved.toFixed(2)}</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(totalSaved)}</p>
           <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
             {data.goals.length} pot{data.goals.length === 1 ? "" : "s"}
             {totalTarget > 0 ? ` · of RM${totalTarget.toFixed(0)}` : ""}
@@ -197,7 +203,7 @@ function KidGoals() {
         <div>
           <h1 className="text-lg font-bold text-[var(--ink)] m-0">Savings Pots</h1>
           <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-            Wallet RM{balance.toFixed(2)} ready to allocate
+            Wallet {formatRM(balance)} ready to allocate
           </p>
         </div>
         {!showAdd && (
@@ -220,7 +226,7 @@ function KidGoals() {
       <div className="space-y-4">
         {data.goals.length === 0 && (
           <Card variant="soft" className="p-8 text-center space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--primary-pale)] text-[var(--primary)] flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--primary-pale)] text-[var(--primary-text)] flex items-center justify-center mx-auto">
               <AppIcon name="target" size={32} />
             </div>
             <h3 className="text-base font-bold text-[var(--ink)]">No Active Missions Yet</h3>
@@ -315,7 +321,7 @@ function KidGoals() {
                   {/* Top row: Icon, Name, Target, and Completion Badge */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
                         <AppIcon
                           name={iconName(g.emoji || "Target")}
                           size={24}
@@ -331,14 +337,14 @@ function KidGoals() {
                           )}
                         </div>
                         <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                          Target: RM {Number(g.target).toFixed(2)}
+                          Target: {formatRM(Number(g.target))}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
                       <span className="text-base font-bold tabular-nums text-[var(--ink)] block">
-                        RM {Number(g.saved).toFixed(2)}
+                        {formatRM(Number(g.saved))}
                       </span>
                       <span className="text-xs font-semibold text-[var(--text-muted)]">
                         {pct}% reached
@@ -364,7 +370,7 @@ function KidGoals() {
                         {activeGoal === g.id ? "Cancel" : "Add Funds"}
                       </Button>
                     ) : (
-                      <span className="text-xs font-medium text-[var(--success)] flex items-center gap-1">
+                      <span className="text-xs font-medium text-[var(--success-text)] flex items-center gap-1">
                         <AppIcon name="approve" size={14} />
                         Ready to claim or enjoy!
                       </span>
@@ -395,7 +401,7 @@ function KidGoals() {
                         onClick={() => setDeletingId(g.id)}
                         title="Delete Mission"
                         aria-label={`Delete ${g.name}`}
-                        className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--error)] hover:text-[var(--error)] hover:bg-[var(--error-soft)]"
+                        className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--error-text)] hover:text-[var(--error-text)] hover:bg-[var(--error-soft)]"
                       >
                         <AppIcon name="delete" size={16} color="var(--error)" />
                       </Button>
@@ -406,8 +412,8 @@ function KidGoals() {
                   {activeGoal === g.id && (
                     <div className="pt-3 mt-3 border-t border-dashed border-[var(--border)]">
                       <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-3">
-                        <span>Wallet: <strong>RM {balance.toFixed(2)}</strong></span>
-                        <span>Remaining to goal: <strong>RM {remaining.toFixed(2)}</strong></span>
+                        <span>Wallet: <strong>{formatRM(balance)}</strong></span>
+                        <span>Remaining to goal: <strong>{formatRM(remaining)}</strong></span>
                       </div>
                       <MoneyKeypad
                         key={g.id}
@@ -548,15 +554,15 @@ function KidGoals() {
         <Card variant="soft" className="p-4 sm:p-5">
           <ul className="space-y-2 text-xs sm:text-sm text-[var(--text-secondary)]">
             <li className="flex items-start gap-2">
-              <span className="text-[var(--primary)] font-bold">·</span>
+              <span className="text-[var(--primary-text)] font-bold">·</span>
               Transfer money from your main wallet anytime to speed up goal progress.
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[var(--primary)] font-bold">·</span>
+              <span className="text-[var(--primary-text)] font-bold">·</span>
               Reach 100% to complete the mission and claim your reward milestone.
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[var(--primary)] font-bold">·</span>
+              <span className="text-[var(--primary-text)] font-bold">·</span>
               You can adjust your target or mission name at any point without losing saved money.
             </li>
           </ul>
@@ -586,7 +592,7 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer min-h-[44px] ${
               selected
                 ? "bg-[var(--primary)] text-white shadow-sm scale-105"
-                : "bg-white text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--surface-pink)] border border-[var(--border)]"
+                : "bg-white text-[var(--text-secondary)] hover:text-[var(--primary-text)] hover:bg-[var(--surface-pink)] border border-[var(--border)]"
             }`}
           >
             <AppIcon name={iconName(e)} size={20} />

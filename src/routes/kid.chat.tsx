@@ -1,16 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import {
   buildSpendingSummary,
   pennyReply,
-  type ChatMessage,
 } from "@/lib/penny-insights";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
+import { getKidSession } from "@/lib/kid-session";
+import { isKidBypassed } from "@/lib/admin-bypass";
+import { edgeKidPennyChat } from "@/lib/edge";
+
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  remaining?: number;
+  offline?: boolean;
+};
 
 type ChatSearch = { q?: string };
 
@@ -18,7 +29,7 @@ export const Route = createFileRoute("/kid/chat")({
   validateSearch: (s: Record<string, unknown>): ChatSearch => ({
     q: typeof s.q === "string" ? s.q : undefined,
   }),
-  head: () => ({ meta: [{ title: "Penny Sensei — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Penny — Centsibility" }] }),
   component: KidChat,
 });
 
@@ -32,7 +43,7 @@ const STARTERS = [
 function KidChat() {
   const nav = useNavigate();
   const { q } = Route.useSearch();
-  const { data, loading } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -55,7 +66,7 @@ function KidChat() {
     const opener: ChatMessage = {
       id: "welcome",
       role: "assistant",
-      text: `Hi there! I'm Penny Sensei, your financial best friend.\n\nAsk me about spending, savings, sadaqah, or investments — I'll use your real activity to guide you.`,
+      text: `Hi there! I'm Penny, your money buddy.\n\nAsk me about spending, savings, sadaqah, or investments — I'll use your real activity to guide you.`,
     };
     setMessages([opener]);
 
@@ -90,16 +101,64 @@ function KidChat() {
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setBusy(true);
-    // Local rule-based reply (no external AI dependency)
-    await new Promise((r) => setTimeout(r, 350));
-    const reply: ChatMessage = {
-      id: `a-${Date.now()}`,
-      role: "assistant",
-      text: pennyReply(trimmed, summary, data.kid.name),
-    };
-    setMessages((m) => [...m, reply]);
-    setBusy(false);
-    sfx.pop();
+
+    const code = getKidSession()?.code ?? (isKidBypassed() ? "DEMO_CODE" : null);
+
+    // If no code available, answer using local rules
+    if (!code) {
+      await new Promise((r) => setTimeout(r, 350));
+      const reply: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: "assistant",
+        text: pennyReply(trimmed, summary, data.kid.name),
+        offline: true,
+      };
+      setMessages((m) => [...m, reply]);
+      setBusy(false);
+      sfx.pop();
+      return;
+    }
+
+    // Send only the last 10 turns as history
+    const history = messages.slice(-10).map((m) => ({
+      role: m.role,
+      content: m.text,
+    }));
+
+    try {
+      const res = await edgeKidPennyChat({
+        code,
+        message: trimmed,
+        history,
+      });
+
+      const reply: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: "assistant",
+        text: res.reply,
+        remaining: res.remaining,
+      };
+      setMessages((m) => [...m, reply]);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (
+        errMsg.includes("429") ||
+        errMsg.toLowerCase().includes("rest") ||
+        errMsg.toLowerCase().includes("tomorrow")
+      ) {
+        toast("Penny needs a rest. Try again tomorrow.");
+      }
+      const reply: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: "assistant",
+        text: pennyReply(trimmed, summary, data.kid.name),
+        offline: true,
+      };
+      setMessages((m) => [...m, reply]);
+    } finally {
+      setBusy(false);
+      sfx.pop();
+    }
   };
 
   const newChat = () => {
@@ -113,12 +172,13 @@ function KidChat() {
         {
           id: "welcome",
           role: "assistant",
-          text: `Fresh chat! I'm Penny Sensei. What would you like to explore, ${data.kid.name}?`,
+          text: `Fresh chat! I'm Penny. What would you like to explore, ${data.kid.name}?`,
         },
       ]);
     }
   };
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4 p-4">
@@ -143,7 +203,7 @@ function KidChat() {
           <AppIcon name="close" size={20} />
         </button>
         <div className="penny-chat__title">
-          <strong>Penny Sensei</strong>
+          <strong>Penny</strong>
           <span className="penny-chat__beta">Beta</span>
         </div>
         <button
@@ -165,6 +225,16 @@ function KidChat() {
           ) : (
             <div key={m.id} className="penny-assistant">
               <p className="penny-assistant__text">{m.text}</p>
+              {m.offline && (
+                <p className="text-[11px] text-[var(--text-secondary)] m-0 mt-1 italic">
+                  Penny is using offline answers right now
+                </p>
+              )}
+              {m.remaining !== undefined && m.remaining <= 5 && (
+                <p className="text-[11px] text-[var(--text-secondary)] m-0 mt-1 font-medium">
+                  {m.remaining} AI chat{m.remaining === 1 ? "" : "s"} left today
+                </p>
+              )}
               <div className="penny-assistant__actions">
                 <button
                   type="button"
@@ -199,7 +269,11 @@ function KidChat() {
           ),
         )}
         {busy && (
-          <p className="text-xs text-[var(--text-muted)] px-1">Penny is thinking…</p>
+          <div className="penny-assistant">
+            <p className="penny-assistant__text text-[var(--text-secondary)] italic flex items-center gap-1.5">
+              <span>Penny is thinking…</span>
+            </p>
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -227,17 +301,23 @@ function KidChat() {
         }}
       >
         <label htmlFor="penny-input" className="sr-only">
-          Ask Penny Sensei
+          Ask Penny
         </label>
         <input
           id="penny-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask Penny Sensei"
+          placeholder="Ask Penny"
           autoComplete="off"
           disabled={busy}
         />
-        <Button type="submit" variant="primary" size="sm" disabled={busy || !input.trim()}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          disabled={busy || !input.trim()}
+          aria-label="Send message to Penny"
+        >
           Send
         </Button>
       </form>

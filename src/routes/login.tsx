@@ -2,14 +2,11 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
-import { getQuickLogin, clearQuickLogin } from "@/lib/quick-login";
 import { adminBypassParent, ADMIN_BYPASS } from "@/lib/admin-bypass";
 import { AppIcon } from "@/components/ui/app-icon";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Parent Login — Centsibility" }] }),
@@ -19,107 +16,41 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const nav = useNavigate();
   const { session, loading } = useAuth();
-  const quick = typeof window !== "undefined" ? getQuickLogin() : null;
-  const [usePin, setUsePin] = useState(!!quick);
-  const [pin, setPin] = useState("");
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState(quick?.email ?? "");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [childHasDevice, setChildHasDevice] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
-  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     if (!loading && session) nav({ to: "/parent" });
   }, [session, loading, nav]);
 
-  const handleEmailChange = (v: string) => {
-    setEmail(v);
-    if (emailError) setEmailError("");
-  };
-
-  const submitPin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quick) return;
-    if (pin !== quick.pin) {
-      toast.error("Wrong PIN");
-      return;
-    }
+  const handleGoogleSignIn = async () => {
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: quick.email,
-        password: quick.password,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+          queryParams: { prompt: "select_account" },
+        },
       });
-      if (error) throw error;
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Sign-in failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setEmailError("");
-    try {
-      if (mode === "signup") {
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", email.trim().toLowerCase())
-          .maybeSingle();
-        if (existingProfile) {
-          setEmailError("An account with this email already exists. Please sign in.");
-          setBusy(false);
-          return;
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes("not enabled") || msg.includes("disabled") || msg.includes("unsupported provider")) {
+          toast.error("Google sign-in isn't switched on yet.");
+        } else {
+          toast.error(error.message);
         }
-
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/parent`,
-            data: { display_name: name, child_has_device: childHasDevice },
-          },
-        });
-        if (error) {
-          if (
-            error.message.toLowerCase().includes("already registered") ||
-            error.message.toLowerCase().includes("already exists")
-          ) {
-            setEmailError("An account with this email already exists. Please sign in.");
-            setBusy(false);
-            return;
-          }
-          throw error;
-        }
-        toast.success("Account created!");
-        nav({ to: "/parent" });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (error) throw error;
-        nav({ to: "/parent" });
       }
     } catch (err: unknown) {
-      console.error("Authentication error detail:", err);
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      const msg = err instanceof Error ? err.message : "Failed to connect to Google";
+      if (msg.toLowerCase().includes("not enabled") || msg.toLowerCase().includes("disabled") || msg.toLowerCase().includes("unsupported provider")) {
+        toast.error("Google sign-in isn't switched on yet.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBusy(false);
     }
   };
-
-  const strength = [
-    { ok: password.length >= 8, label: "At least 8 characters" },
-    { ok: /[A-Z]/.test(password), label: "One uppercase letter" },
-    { ok: /\d/.test(password), label: "One number" },
-    { ok: /[^A-Za-z0-9]/.test(password), label: "One special character" },
-  ];
 
   return (
     <div
@@ -158,11 +89,11 @@ function Login() {
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#fff",
-                boxShadow: "0 2px 8px rgba(230, 0, 18, 0.25)",
+                color: "var(--white)",
+                boxShadow: "var(--shadow-sm)",
               }}
             >
-              <AppIcon name="penny" size={20} color="#fff" />
+              <AppIcon name="penny" size={20} color="var(--white)" />
             </span>
             <span>Centsibility</span>
           </Link>
@@ -175,179 +106,54 @@ function Login() {
         <Card variant="default" style={{ padding: "0.5rem" }}>
           <CardHeader style={{ textAlign: "center", padding: "1.5rem 1.5rem 0.5rem" }}>
             <CardTitle style={{ fontSize: "1.35rem" }}>
-              {usePin && quick
-                ? "Device Quick PIN"
-                : mode === "signin"
-                ? "Parent Sign In"
-                : "Create Parent Account"}
+              Parent Sign In
             </CardTitle>
             <CardDescription>
-              {usePin && quick
-                ? `Welcome back, ${quick.email}`
-                : mode === "signin"
-                ? "Access your family commander dashboard"
-                : "Start your child's halal financial voyage"}
+              Use your Google account. New parents get an account automatically.
             </CardDescription>
           </CardHeader>
 
           <CardContent style={{ padding: "1rem 1.5rem 1.5rem" }}>
-            {usePin && quick ? (
-              <form onSubmit={submitPin} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                <div>
-                  <label htmlFor="quick-pin" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                    Security PIN
-                  </label>
-                  <Input
-                    id="quick-pin"
-                    required
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    inputMode="numeric"
-                    pattern="\d{4,6}"
-                    maxLength={6}
-                    placeholder="••••••"
-                    autoComplete="one-time-code"
-                    style={{ textAlign: "center", fontSize: "1.25rem", letterSpacing: "0.25em" }}
-                    autoFocus
-                  />
-                </div>
-                <Button disabled={busy} type="submit" variant="primary" style={{ width: "100%" }}>
-                  {busy ? "Authenticating…" : "Unlock Dashboard"}
-                </Button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={busy}
+                aria-busy={busy}
+                style={{
+                  width: "100%",
+                  minHeight: "44px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.75rem",
+                  padding: "0.625rem 1rem",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--ink)",
+                  fontWeight: 600,
+                  fontSize: "0.9375rem",
+                  cursor: busy ? "not-allowed" : "pointer",
+                  opacity: busy ? 0.7 : 1,
+                  boxShadow: "var(--shadow-sm)",
+                  transition: "background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard)",
+                }}
+              >
+                {/* Google brand colors - the only permitted raw hex on this page per spec */}
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z" />
+                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
+                  <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z" />
+                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" />
+                </svg>
+                <span>{busy ? "Connecting to Google…" : "Continue with Google"}</span>
+              </button>
 
-                <div style={{ textAlign: "center", marginTop: "0.5rem" }}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      clearQuickLogin();
-                      setUsePin(false);
-                    }}
-                  >
-                    Use email and password instead
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {mode === "signup" && (
-                  <>
-                    <div>
-                      <label htmlFor="parent-name" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                        Full Name
-                      </label>
-                      <Input
-                        id="parent-name"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Sarah Ahmad"
-                        autoComplete="name"
-                      />
-                    </div>
-
-                    <div>
-                      <span style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                        Does your child have their own device?
-                      </span>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                        <Button
-                          type="button"
-                          variant={childHasDevice === true ? "primary" : "outline"}
-                          size="sm"
-                          onClick={() => setChildHasDevice(true)}
-                        >
-                          Yes, own device
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={childHasDevice === false ? "primary" : "outline"}
-                          size="sm"
-                          onClick={() => setChildHasDevice(false)}
-                        >
-                          No, shared device
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label htmlFor="parent-email" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                    Parent Email
-                  </label>
-                  <Input
-                    id="parent-email"
-                    required
-                    type="email"
-                    value={email}
-                    onChange={(e) => handleEmailChange(e.target.value)}
-                    placeholder="parent@example.com"
-                    autoComplete="email"
-                    aria-invalid={!!emailError}
-                    aria-describedby={emailError ? "parent-email-error" : undefined}
-                  />
-                  {emailError && (
-                    <p id="parent-email-error" style={{ margin: "0.35rem 0 0", fontSize: "0.75rem", color: "var(--error)" }} role="alert">
-                      {emailError}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="parent-password" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                    Password
-                  </label>
-                  <Input
-                    id="parent-password"
-                    required
-                    type="password"
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={mode === "signup" ? "Choose secure password" : "Enter password"}
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  />
-                </div>
-
-                {mode === "signup" && password.length > 0 && (
-                  <div style={{ padding: "0.75rem", background: "var(--surface-soft)", borderRadius: "0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem" }} aria-live="polite">
-                    <small style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)" }}>Password Requirements</small>
-                    {strength.map((r) => (
-                      <div key={r.label} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <AppIcon
-                          name={r.ok ? "approve" : "close"}
-                          size={14}
-                          color={r.ok ? "var(--success)" : "var(--text-muted)"}
-                        />
-                        <small style={{ fontSize: "0.75rem", color: r.ok ? "var(--text-secondary)" : "var(--text-muted)" }}>{r.label}</small>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ marginTop: "0.5rem" }}>
-                  <Button disabled={busy} type="submit" variant="primary" style={{ width: "100%" }}>
-                    {busy ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Free Account"}
-                  </Button>
-                </div>
-
-                <div style={{ textAlign: "center", marginTop: "0.25rem" }}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setMode(mode === "signin" ? "signup" : "signin");
-                      setEmailError("");
-                    }}
-                  >
-                    {mode === "signin" ? "Need an account? Sign up" : "Already registered? Sign in"}
-                  </Button>
-                </div>
-              </form>
-            )}
+              <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", lineHeight: 1.4 }}>
+                Use the same Google email as your existing parent account to keep your family's data.
+              </p>
+            </div>
 
             <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "1.25rem 0" }} />
 
@@ -424,4 +230,3 @@ function Login() {
     </div>
   );
 }
-

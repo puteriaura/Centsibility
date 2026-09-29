@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { edgeParentGetPin, edgeParentSetPin, edgeParentGetProfile } from "@/lib/edge";
+import { edgeParentGetPin, edgeParentSetPin, edgeParentVerifyPin, edgeParentGetProfile, clearParentPinSession } from "@/lib/edge";
 import { useAuth } from "@/providers/auth";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
@@ -19,17 +19,10 @@ export const Route = createFileRoute("/parent")({
 // Helpers (outside component so they're stable references)
 // ---------------------------------------------------------------------------
 
-/** SHA-256 hash a PIN string, returns lowercase hex. */
-async function hashPin(pin: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 /** Clear every parent-session flag from sessionStorage. */
 function clearParentSession() {
   sessionStorage.removeItem("parentSessionValidUntil");
+  clearParentPinSession();
   setParentBypassed(false);
 }
 
@@ -59,6 +52,23 @@ function ParentLayout() {
   const [isSettingPin, setIsSettingPin] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinProcessing, setPinProcessing] = useState(false);
+
+  // -----------------------------------------------------------------------
+  // Listen for server-side 403 PIN required events
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    const handlePinRequired = () => {
+      clearParentSession();
+      setPinVerified(false);
+      setPinInput("");
+      toast.error("Enter your PIN to continue");
+    };
+
+    window.addEventListener("centsibility:pin-required", handlePinRequired);
+    return () => {
+      window.removeEventListener("centsibility:pin-required", handlePinRequired);
+    };
+  }, []);
 
   // -----------------------------------------------------------------------
   // 1️⃣  INIT — runs once when auth settles
@@ -102,10 +112,10 @@ function ParentLayout() {
 
       // ------ STEP 3: Does a PIN already exist? ------
       try {
-        const { pin_hash } = await edgeParentGetPin();
+        const { hasPin } = await edgeParentGetPin();
         if (cancelled) return;
 
-        if (pin_hash) {
+        if (hasPin) {
           // PIN exists → user must enter it
           setIsSettingPin(false);
         } else {
@@ -156,30 +166,34 @@ function ParentLayout() {
     setPinProcessing(true);
 
     try {
-      const hashed = await hashPin(pinInput);
-
       if (isSettingPin) {
         // ---- SET new PIN ----
-        await edgeParentSetPin({ pin_hash: hashed });
+        const res = await edgeParentSetPin({ pin: pinInput });
 
         setPinVerified(true);
         setIsSettingPin(false);
-        sessionStorage.setItem("parentSessionValidUntil", String(Date.now() + SESSION_DURATION_MS));
+        const expiry = res.pinSessionExpiresAt
+          ? new Date(res.pinSessionExpiresAt).getTime()
+          : Date.now() + SESSION_DURATION_MS;
+        sessionStorage.setItem("parentSessionValidUntil", String(expiry));
         sfx.success();
         toast.success("Commander PIN set!");
       } else {
         // ---- VERIFY existing PIN ----
-        const { pin_hash } = await edgeParentGetPin();
+        const res = await edgeParentVerifyPin({ pin: pinInput });
 
-        if (pin_hash === hashed) {
+        if (res.valid) {
           setPinVerified(true);
-          sessionStorage.setItem(
-            "parentSessionValidUntil",
-            String(Date.now() + SESSION_DURATION_MS),
-          );
+          const expiry = res.pinSessionExpiresAt
+            ? new Date(res.pinSessionExpiresAt).getTime()
+            : Date.now() + SESSION_DURATION_MS;
+          sessionStorage.setItem("parentSessionValidUntil", String(expiry));
           sfx.success();
         } else {
-          toast.error("Incorrect PIN");
+          const attemptsMsg = res.attemptsLeft !== undefined
+            ? `Incorrect PIN — ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
+            : "Incorrect PIN";
+          toast.error(attemptsMsg);
           sfx.error();
           setPinInput("");
         }
@@ -187,6 +201,7 @@ function ParentLayout() {
     } catch (e: any) {
       toast.error(e?.message ?? "PIN operation failed");
       sfx.error();
+      setPinInput("");
     } finally {
       setPinProcessing(false);
     }
@@ -214,12 +229,12 @@ function ParentLayout() {
       <div
         className="min-h-[100dvh] flex flex-col justify-between p-6 sm:p-8"
         style={{
-          background: "var(--surface-pink)",
+          background: "linear-gradient(180deg, #fdf0f3 0%, #ffffff 60%)",
           maxWidth: "440px",
           margin: "0 auto",
         }}
       >
-        {/* Benchmark Header: ✕ Cancel on left, ? Help on right */}
+        {/* Quiet outline controls: close on the left, help on the right */}
         <div className="flex items-center justify-between pt-2">
           <button
             type="button"
@@ -229,7 +244,7 @@ function ParentLayout() {
                 window.location.href = "/kid-login";
               });
             }}
-            className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors"
+            className="w-11 h-11 rounded-full hover:bg-black/5 text-[var(--ink)] transition-colors"
             aria-label="Cancel and exit"
           >
             <AppIcon name="close" size={24} />
@@ -240,7 +255,7 @@ function ParentLayout() {
             onClick={() => {
               toast("Security PIN prevents children from accessing parent controls.");
             }}
-            className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors"
+            className="w-11 h-11 rounded-full hover:bg-black/5 text-[var(--ink)] transition-colors"
             aria-label="Help information"
           >
             <AppIcon name="messagecircle" size={22} />
@@ -265,7 +280,7 @@ function ParentLayout() {
               return (
                 <div
                   key={i}
-                  className={`aeon-pin-box ${filled ? "is-filled" : ""}`}
+                  className={`pin-box ${filled ? "is-filled" : ""}`}
                   style={{
                     width: "48px",
                     height: "56px",
@@ -288,7 +303,7 @@ function ParentLayout() {
                 window.location.href = "/login";
               });
             }}
-            className="text-xs sm:text-sm font-semibold text-[var(--ink)] hover:text-[var(--primary)] transition-colors inline-flex items-center gap-1.5"
+            className="text-xs sm:text-sm font-semibold text-[var(--ink)] hover:text-[var(--primary-text)] transition-colors inline-flex items-center gap-1.5"
           >
             <span>Login with password</span>
             <span aria-hidden="true">→</span>
@@ -301,7 +316,7 @@ function ParentLayout() {
             keys={PIN_KEYPAD_KEYS}
             onKeyPress={handleKeyPress}
             disabled={pinProcessing}
-            variant="aeon"
+            variant="pin"
           />
 
           {pinInput.length >= 4 && (

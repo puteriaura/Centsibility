@@ -9,13 +9,13 @@ const buttonVariants = cva(
         primary:
           "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
         secondary:
-          "bg-white text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--surface-soft)] hover:border-[var(--primary-soft)] hover:text-[var(--primary)] shadow-sm",
+          "bg-white text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--surface-soft)] hover:border-[var(--primary-soft)] hover:text-[var(--primary-text)] shadow-sm",
         outline:
-          "bg-transparent text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--primary-pale)] hover:border-[var(--primary)] hover:text-[var(--primary)]",
+          "bg-transparent text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--primary-pale)] hover:border-[var(--primary)] hover:text-[var(--primary-text)]",
         ghost:
-          "bg-transparent text-[var(--primary)] hover:bg-[var(--primary-pale)] border-transparent",
+          "bg-transparent text-[var(--primary-text)] hover:bg-[var(--primary-pale)] border-transparent",
         danger:
-          "bg-[var(--error)] text-white hover:opacity-90 shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--error)]",
+          "bg-[var(--error-strong)] text-white hover:bg-[var(--error-strong-hover)] shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--error)]",
         brand:
           "bg-[var(--primary)] text-white shadow-md hover:bg-[var(--primary-hover)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
       },

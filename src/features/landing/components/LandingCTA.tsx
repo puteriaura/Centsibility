@@ -43,7 +43,7 @@ export function LandingCTA() {
               gap: "0.5rem",
             }}
           >
-            <div style={{ color: "var(--success)" }}>
+            <div style={{ color: "var(--success-text)" }}>
               <AppIcon name="check" size={28} />
             </div>
             <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>

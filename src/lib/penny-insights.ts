@@ -1,4 +1,5 @@
-import { isDebitTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
+import { isDebitTransaction, isWalletTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
+import { formatDate, formatRM } from "@/lib/format";
 
 export type InsightTx = {
   id: string;
@@ -22,13 +23,19 @@ export type SpendingSummary = {
 };
 
 function categoryKey(type: string, label: string) {
-  if (type === "WITHDRAWAL" || type === "SADAQAH" || type === "INVEST_IN" || type === "QARD") {
+  if (type === "FEE") return "FEE";
+  if (type === "QARD_REPAY" || (type === "QARD" && label === "Loan repayment")) {
+    return "QARD_REPAY";
+  }
+  if (type === "GOAL_IN") return "GOAL_IN";
+  if (type === "WITHDRAWAL" || type === "SADAQAH" || type === "INVEST_IN") {
     return type;
   }
-  if (label.toLowerCase().includes("food") || label.toLowerCase().includes("snack")) {
+  const lower = (label || "").toLowerCase();
+  if (lower.includes("food") || lower.includes("snack")) {
     return "FOOD";
   }
-  if (label.toLowerCase().includes("transport") || label.toLowerCase().includes("grab")) {
+  if (lower.includes("transport") || lower.includes("grab")) {
     return "TRANSPORT";
   }
   return type || "OTHER";
@@ -40,7 +47,9 @@ function categoryLabel(key: string) {
   if (key === "WITHDRAWAL") return "Withdrawals";
   if (key === "SADAQAH") return "Sadaqah";
   if (key === "INVEST_IN") return "Investments";
-  if (key === "QARD") return "Loan activity";
+  if (key === "FEE") return "Fees";
+  if (key === "QARD_REPAY" || key === "QARD") return "Loan repayments";
+  if (key === "GOAL_IN") return "Savings goals";
   if (key === "DEPOSIT") return "Deposits";
   return TRANSACTION_TYPE_LABELS[key] ?? key;
 }
@@ -55,6 +64,7 @@ export function buildSpendingSummary(
   rangeStart.setDate(rangeEnd.getDate() - days);
 
   const inRange = txs.filter((t) => {
+    if (!isWalletTransaction(t.type)) return false;
     const d = new Date(t.created_at);
     return d >= rangeStart && d <= rangeEnd;
   });
@@ -102,12 +112,12 @@ export function buildSpendingSummary(
         : `You completed ${txCount} transactions recently. Keep tracking to level up your savings game.`;
 
   if (biggest) {
-    const day = new Date(biggest.created_at).toLocaleDateString(undefined, { weekday: "long" });
-    highlight = `Big week for transfers! You made 1 outgoing move of RM${Number(biggest.amount).toFixed(2)} on ${day}, showing standout engagement this week.`;
+    const day = new Date(biggest.created_at).toLocaleDateString("en-MY", { weekday: "long" });
+    highlight = `Big week for transfers! You made 1 outgoing move of ${formatRM(Number(biggest.amount))} on ${day}, showing standout engagement this week.`;
   }
 
   const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+    formatDate(d);
 
   return {
     moneyIn,
@@ -125,7 +135,7 @@ export function buildSpendingSummary(
 
 export type ChatMessage = { id: string; role: "user" | "assistant"; text: string };
 
-/** Rule-based Penny Sensei replies grounded in the kid’s own numbers. */
+/** Rule-based Penny replies grounded in the kid’s own numbers. */
 export function pennyReply(userText: string, summary: SpendingSummary, kidName: string): string {
   const q = userText.toLowerCase();
   const topLine =
@@ -137,22 +147,22 @@ export function pennyReply(userText: string, summary: SpendingSummary, kidName: 
       : "no major spending categories yet";
 
   if (/spend|spending|expense|out/.test(q)) {
-    return `Hi ${kidName}! Over the past months you spent RM ${summary.moneyOut.toFixed(2)} across ${summary.txCount} transactions, averaging RM ${summary.avgTx.toFixed(2)} each. Your daily average outflow is RM ${summary.dailyAvg.toFixed(2)}, with most going to ${topLine}.\n\nHere's a thought: Tracking by category helps you spot where to save. Want tips on cutting one category?`;
+    return `Hi ${kidName}! Over the past months you spent ${formatRM(summary.moneyOut)} across ${summary.txCount} transactions, averaging ${formatRM(summary.avgTx)} each. Your daily average outflow is ${formatRM(summary.dailyAvg)}, with most going to ${topLine}.\n\nHere's a thought: Tracking by category helps you spot where to save. Want tips on cutting one category?`;
   }
   if (/save|saving|goal|pot/.test(q)) {
-    return `Saving tip from Penny Sensei: move a little from wallet into a Savings Pot right after you get money in. You've taken in RM ${summary.moneyIn.toFixed(2)} recently — even RM5 toward a goal builds the habit. Open Goals to start a pot!`;
+    return `Saving tip from Penny: move a little from your wallet into a savings goal right after you get money in. You've taken in ${formatRM(summary.moneyIn)} recently — even RM5 toward a goal builds the habit. Open Goals to start a pot!`;
   }
   if (/sadaqah|charity|give|zakat/.test(q)) {
-    return `Sadaqah extinguishes sin as water extinguishes fire. Even RM1 counts. Your recent outflow is RM ${summary.moneyOut.toFixed(2)} — if you can spare a little, visit Sadaqah and give with intention.`;
+    return `Sadaqah extinguishes sin as water extinguishes fire. Even RM1 counts. Your recent outflow is ${formatRM(summary.moneyOut)}. If you can spare a little, visit Sadaqah and give with intention.`;
   }
   if (/invest|growth|halal/.test(q)) {
     return `Halal growth means risk you understand. Check Invest to set a low risk appetite first, then move small amounts from your wallet. Ask your parent if you're unsure — that's wise, not weak.`;
   }
   if (/hello|hi |salam|hey/.test(q)) {
-    return `Hi there! I'm Penny Sensei, your financial best friend. Ask me about spending, savings, sadaqah, or investments — I'll ground answers in your own activity.`;
+    return `Hi there! I'm Penny, your money buddy. Ask me about spending, savings, sadaqah, or investments — I'll ground answers in your own activity.`;
   }
 
-  return `Got it! Here's your snapshot: money in RM ${summary.moneyIn.toFixed(2)}, money out RM ${summary.moneyOut.toFixed(2)}, ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending, saving, sadaqah, or investments for a deeper dive. (This is educational guidance — not formal financial advice.)`;
+  return `Got it! Here's your snapshot: money in ${formatRM(summary.moneyIn)}, money out ${formatRM(summary.moneyOut)}, ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending, saving, sadaqah, or investments for a deeper dive. (This is educational guidance — not formal financial advice.)`;
 }
 
 export function buildStorySlides(summary: SpendingSummary, coins: number) {
@@ -182,12 +192,12 @@ export function buildStorySlides(summary: SpendingSummary, coins: number) {
     },
     {
       title: "Stardust",
-      body: `You’ve earned ${Math.round(coins)} stardust. Keep questing with Penny Sensei to unlock rewards — and ask me in chat anytime.`,
+      body: `You’ve earned ${Math.round(coins)} stardust. Keep questing with Penny to unlock rewards — and ask me in chat anytime.`,
       tone: "lilac" as const,
     },
     {
       title: "Next step",
-      body: "Chat with Penny Sensei for personalised tips, or open Savings Pots to lock in progress. You’ve got this!",
+      body: "Chat with Penny for personalised tips, or open Goals to lock in progress. You’ve got this!",
       tone: "navy" as const,
     },
   ];

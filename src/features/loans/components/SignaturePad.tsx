@@ -81,7 +81,7 @@ export function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) 
         <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
           <span className="flex items-center gap-1">
             {hasInk ? (
-              <span className="text-[var(--success)] font-semibold flex items-center gap-1">
+              <span className="text-[var(--success-text)] font-semibold flex items-center gap-1">
                 <AppIcon name="approve" size={14} /> Signed
               </span>
             ) : (

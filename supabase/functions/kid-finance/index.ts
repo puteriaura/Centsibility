@@ -4,6 +4,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import bcrypt from "npm:bcryptjs";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
+import {
+  buildPennyRequest,
+  createClient as createDeepSeekClient,
+  extractReplyText,
+  DEFAULT_PENNY_DAILY_LIMIT,
+  DEFAULT_PENNY_MAX_TOKENS,
+  MAX_MESSAGE_CHARS,
+  PennyChatMessage,
+} from "../_shared/deepseek.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +47,40 @@ function jsonError(message: string, status = 400, detail?: unknown): Response {
       "Content-Type": "application/json",
     },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Database client & error mapping
+// ---------------------------------------------------------------------------
+const makeAdmin = (url: string, key: string) => createClient(url, key);
+type Admin = ReturnType<typeof makeAdmin>;
+
+const RESOLVE_ERRORS: Record<string, [string, number]> = {
+  not_found: ["Not found", 404],
+  already_resolved: ["Already resolved", 409],
+  insufficient_balance: ["Insufficient balance", 400],
+  insufficient_coins: ["Kid doesn't have enough coins", 400],
+  insufficient_invested: ["Insufficient invested balance", 400],
+  invalid_amount: ["Invalid amount", 400],
+  invalid_type: ["Invalid type", 400],
+  invalid_limit: ["Invalid limit", 400],
+  missing_loan_terms: ["Loan terms missing", 400],
+  unknown_kind: ["Unknown request type", 400],
+  loan_closed: ["This loan is already repaid", 400],
+  goal_complete: ["This goal is already complete", 400],
+  invalid_goal: [
+    "Check the goal name (1–40 characters) and target (RM1–RM100,000). Up to 10 goals.",
+    400,
+  ],
+  card_frozen: ["Your card is frozen. Unfreeze it on the Card page to continue.", 403],
+  card_limit_exceeded: ["That is over your daily card limit.", 403],
+  card_locked: ["Your parent manages these card settings. You can still make them stricter.", 403],
+  quota_exceeded: ["Penny needs a rest. Try again tomorrow.", 429],
+};
+
+function handleRpcError(error: { message: string }) {
+  const known = RESOLVE_ERRORS[error.message];
+  return known ? jsonError(known[0], known[1]) : jsonError(error.message, 500);
 }
 
 // ---------------------------------------------------------------------------
@@ -99,13 +142,15 @@ serve(async (req: Request) => {
   if ("pin" in logBody) logBody.pin = "[REDACTED]";
   if ("signature" in logBody) logBody.signature = "[TRUNCATED]";
   if ("base64Image" in logBody) logBody.base64Image = "[TRUNCATED]";
+  if ("message" in logBody) logBody.message = "[REDACTED]";
+  if ("history" in logBody) logBody.history = "[REDACTED]";
 
   console.log(`[kid-finance][${requestId}] action="${action ?? "MISSING"}"`, 
     JSON.stringify(logBody).slice(0, 300));
 
   if (!action) return jsonError('Missing required field: "action"', 400);
 
-  const admin = createClient(supabaseUrl, serviceRoleKey);
+  const admin = makeAdmin(supabaseUrl, serviceRoleKey);
   const params = { ...body } as Record<string, unknown>;
   delete params.action;
 
@@ -151,6 +196,9 @@ serve(async (req: Request) => {
       case "sadaqah":          return await handleSadaqah(admin, params, requestId);
       case "loan-repay":       return await handleLoanRepay(admin, params, requestId);
       case "invest-settle":    return await handleInvestSettle(admin, params, requestId);
+      case "create-goal":      return await handleCreateGoal(admin, params, requestId);
+      case "update-goal":      return await handleUpdateGoal(admin, params, requestId);
+      case "delete-goal":      return await handleDeleteGoal(admin, params, requestId);
       case "contribute-goal":  return await handleContributeGoal(admin, params, requestId);
       case "claim-coins":      return await handleClaimCoins(admin, params, requestId);
       case "quiz-state":       return await handleQuizState(admin, params, requestId);
@@ -162,8 +210,10 @@ serve(async (req: Request) => {
       case "request-approval": return await handleRequestApproval(admin, params, requestId);
       case "request-loan":     return await handleRequestLoan(admin, params, requestId);
       case "request-reward":   return await handleRequestReward(admin, params, requestId);
+      case "set-card-controls": return await handleSetCardControls(admin, params, requestId);
       case "update-profile":   return await handleUpdateProfile(admin, params, requestId);
       case "upload-avatar":    return await handleUploadAvatar(admin, params, requestId);
+      case "penny-chat":       return await handlePennyChat(admin, params, requestId);
       default:
         return jsonError(`Unknown action: "${action}"`, 400);
     }
@@ -191,7 +241,7 @@ async function sha256(text: string): Promise<string> {
   return encodeHex(new Uint8Array(hashBuffer));
 }
 
-async function getKid(admin: ReturnType<typeof createClient>, token: unknown, requestId: string) {
+async function getKid(admin: Admin, token: unknown, requestId: string) {
   if (!token || typeof token !== "string" || token.trim() === "") {
     throw new Error("Missing or invalid session code");
   }
@@ -215,7 +265,7 @@ async function getKid(admin: ReturnType<typeof createClient>, token: unknown, re
 }
 
 async function notifyParent(
-  admin: ReturnType<typeof createClient>,
+  admin: Admin,
   parentId: string, kidId: string, kind: string, message: string, link?: string,
 ) {
   const resolvedLink = link ?? (["WITHDRAWAL","DEPOSIT","QARD","REWARD"].includes(kind) ? "/parent/approvals" : "/parent");
@@ -223,7 +273,7 @@ async function notifyParent(
   if (error) console.warn(`[kid-finance] notifyParent failed (non-fatal): ${error.message}`);
 }
 
-async function normalizeQuizState(admin: ReturnType<typeof createClient>, kid: Record<string, unknown>, requestId: string) {
+async function normalizeQuizState(admin: Admin, kid: Record<string, unknown>, requestId: string) {
   const today = new Date().toISOString().slice(0, 10);
   if (kid.quiz_date !== today) {
     const { error } = await admin.from("kids").update({ quiz_date: today, quiz_correct: 0, quiz_wrong: 0 }).eq("id", kid.id);
@@ -239,7 +289,7 @@ const QUIZ_QUESTION_COUNT = 200;
 // Auth handlers (pre-auth)
 // ---------------------------------------------------------------------------
 
-async function handleLogin(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleLogin(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const username = typeof params.username === "string" ? params.username.trim() : "";
   const pin = typeof params.pin === "string" ? params.pin.trim() : "";
   if (!username || !pin) return jsonError("Missing username or PIN", 400);
@@ -278,7 +328,7 @@ async function handleLogin(admin: ReturnType<typeof createClient>, params: Recor
   return jsonOk({ kidId: kid.id, name: kid.name, code: sessionToken });
 }
 
-async function handleLoginByCode(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleLoginByCode(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
   if (!loginCode) return jsonError("Missing loginCode", 400);
   console.log(`[kid-finance][${requestId}] handleLoginByCode code="${loginCode}"`);
@@ -298,7 +348,7 @@ async function handleLoginByCode(admin: ReturnType<typeof createClient>, params:
   return jsonOk({ kidId: kid.id, name: kid.name, code: sessionToken });
 }
 
-async function handleRegister(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleRegister(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const setupCode = typeof params.setupCode === "string" ? params.setupCode.trim() : "";
   const name = typeof params.name === "string" ? params.name.trim() : "";
   const username = typeof params.username === "string" ? params.username.trim() : "";
@@ -347,7 +397,7 @@ async function handleRegister(admin: ReturnType<typeof createClient>, params: Re
 // Remaining handlers (unchanged except they now use fixed jsonOk/jsonError)
 // ---------------------------------------------------------------------------
 
-async function handleGetState(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleGetState(admin: Admin, params: Record<string, unknown>, requestId: string) {
   let kid = await getKid(admin, params.code, requestId);
   const today = new Date().toISOString().slice(0, 10);
   const lastLogin = kid.last_login_date ?? null;
@@ -384,18 +434,16 @@ async function handleGetState(admin: ReturnType<typeof createClient>, params: Re
   });
 }
 
-async function handleClaimCoins(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleClaimCoins(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const kid = await getKid(admin, params.code, requestId);
-  const unclaimed = Number(kid.unclaimed_coins) || 0;
-  if (unclaimed <= 0) return jsonOk({ claimed: 0 });
-  const { error } = await admin.from("kids").update({
-    coins: (Number(kid.coins) || 0) + unclaimed, unclaimed_coins: 0,
-  }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to claim coins: ${error.message}`, 500);
-  return jsonOk({ claimed: unclaimed });
+  const { data, error } = await admin.rpc("kid_claim_coins", {
+    p_kid_id: kid.id,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ claimed: Number(data ?? 0) });
 }
 
-async function handleQuizState(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleQuizState(admin: Admin, params: Record<string, unknown>, requestId: string) {
   let kid = await getKid(admin, params.code, requestId);
   kid = await normalizeQuizState(admin, kid, requestId);
   return jsonOk({
@@ -408,7 +456,7 @@ async function handleQuizState(admin: ReturnType<typeof createClient>, params: R
   });
 }
 
-async function handleQuizAnswer(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleQuizAnswer(admin: Admin, params: Record<string, unknown>, requestId: string) {
   if (typeof params.correct !== "boolean") return jsonError("Field 'correct' must be boolean", 400);
   let kid = await getKid(admin, params.code, requestId);
   kid = await normalizeQuizState(admin, kid, requestId);
@@ -449,36 +497,31 @@ async function handleQuizAnswer(admin: ReturnType<typeof createClient>, params: 
   return jsonOk({ correct: qc, wrong: qw, index: qi, cycled, doneForToday: false });
 }
 
-async function handleInvestDeposit(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleInvestDeposit(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const amount = Number(params.amount);
-  if (!amount || amount < 0.5 || amount > 100000) return jsonError("Invalid amount", 400);
   const kid = await getKid(admin, params.code, requestId);
-  if (amount > Number(kid.balance)) return jsonError(`Insufficient balance (have ${kid.balance})`, 400);
-  const { error } = await admin.from("kids").update({
-    balance: Number(kid.balance) - amount,
-    invest_balance: (Number(kid.invest_balance) || 0) + amount,
-  }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to update balances: ${error.message}`, 500);
-  await admin.from("transactions").insert({ kid_id: kid.id, type: "INVEST_IN", amount, label: "Invested" });
-  return jsonOk({ ok: true });
+  const { data, error } = await admin.rpc("kid_invest_transfer", {
+    p_kid_id: kid.id,
+    p_direction: "IN",
+    p_amount: amount,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ ok: true, ...(data ?? {}) });
 }
 
-async function handleInvestWithdraw(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleInvestWithdraw(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const amount = Number(params.amount);
-  if (!amount || amount < 0.5 || amount > 100000) return jsonError("Invalid amount", 400);
   const kid = await getKid(admin, params.code, requestId);
-  const investBal = Number(kid.invest_balance) || 0;
-  if (amount > investBal) return jsonError(`Insufficient invested balance (have ${investBal})`, 400);
-  const { error } = await admin.from("kids").update({
-    balance: Number(kid.balance) + amount,
-    invest_balance: investBal - amount,
-  }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to update balances: ${error.message}`, 500);
-  await admin.from("transactions").insert({ kid_id: kid.id, type: "INVEST_OUT", amount, label: "Withdrew investment" });
-  return jsonOk({ ok: true });
+  const { data, error } = await admin.rpc("kid_invest_transfer", {
+    p_kid_id: kid.id,
+    p_direction: "OUT",
+    p_amount: amount,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ ok: true, ...(data ?? {}) });
 }
 
-async function handleSetInvestRisk(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleSetInvestRisk(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const riskAppetite = typeof params.riskAppetite === "string" ? params.riskAppetite : "";
   const rateMap: Record<string, number> = { very_low: 0.0005, low: 0.001, medium: 0.002, high: 0.003, very_high: 0.004 };
   if (!rateMap[riskAppetite]) return jsonError(`Invalid riskAppetite "${riskAppetite}"`, 400);
@@ -488,7 +531,7 @@ async function handleSetInvestRisk(admin: ReturnType<typeof createClient>, param
   return jsonOk({ ok: true });
 }
 
-async function handleSetInvestFrequency(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleSetInvestFrequency(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const frequency = typeof params.frequency === "string" ? params.frequency : "";
   const valid = ["minute", "hourly", "daily", "weekly", "monthly"];
   if (!valid.includes(frequency)) return jsonError(`Invalid frequency "${frequency}"`, 400);
@@ -498,64 +541,52 @@ async function handleSetInvestFrequency(admin: ReturnType<typeof createClient>, 
   return jsonOk({ ok: true });
 }
 
-function calculateInvestmentGrowth(principal: number, rate: number, weeks: number) {
-  if (weeks <= 0 || principal <= 0 || rate <= 0) return { grown: principal, gain: 0 };
-  let minReturn = 0, maxReturn = rate;
-  if (rate === 0.001) { minReturn = -0.01; maxReturn = 0.03; }
-  else if (rate === 0.002) { minReturn = -0.05; maxReturn = 0.08; }
-  else if (rate === 0.003) { minReturn = -0.15; maxReturn = 0.2; }
-  else if (rate === 0.004) { minReturn = -0.3; maxReturn = 0.5; }
-  let grown = principal;
-  for (let i = 0; i < weeks; i++) grown *= (1 + minReturn + Math.random() * (maxReturn - minReturn));
-  grown = Math.max(0, Math.min(grown, principal * 2));
-  return { grown, gain: grown - principal };
-}
-
-async function handleInvestSettle(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleInvestSettle(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const kid = await getKid(admin, params.code, requestId);
-  const last = kid.invest_last_paid ? new Date(kid.invest_last_paid as string) : null;
-  if (!last) return jsonOk({ paid: 0 });
-  const weeks = Math.floor((Date.now() - last.getTime()) / (7 * 86400 * 1000));
-  if (weeks <= 0) return jsonOk({ paid: 0 });
-  const rate = Number(kid.invest_rate) || 0;
-  const principal = Number(kid.invest_balance) || 0;
-  const newLast = new Date(last.getTime() + weeks * 7 * 86400 * 1000).toISOString();
-  if (principal <= 0 || rate <= 0) {
-    await admin.from("kids").update({ invest_last_paid: newLast }).eq("id", kid.id);
-    return jsonOk({ paid: 0 });
-  }
-  const { grown, gain } = calculateInvestmentGrowth(principal, rate, weeks);
-  const { error } = await admin.from("kids").update({ invest_balance: grown, invest_last_paid: newLast }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to settle investment: ${error.message}`, 500);
-  if (Math.abs(gain) > 0.01) {
-    await admin.from("transactions").insert({
-      kid_id: kid.id, type: gain > 0 ? "HIBAH" : "INVEST_OUT",
-      amount: Math.abs(gain), label: `Investment ${gain > 0 ? "growth" : "loss"} (${weeks}w)`,
-    });
-  }
-  return jsonOk({ paid: gain });
+  const { data, error } = await admin.rpc("kid_invest_settle", {
+    p_kid_id: kid.id,
+  });
+  if (error) return handleRpcError(error);
+  const paid = typeof data?.paid === "number" ? data.paid : Number(data?.paid ?? 0);
+  return jsonOk({ paid });
 }
 
-async function handleRequestApproval(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleRequestApproval(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const kind = typeof params.kind === "string" ? params.kind : "";
   const amount = Number(params.amount);
   const reason = typeof params.reason === "string" ? params.reason.trim() : "";
   if (!kind || !amount || !reason) return jsonError("Missing required fields: kind, amount, reason", 400);
   if (!["WITHDRAWAL", "DEPOSIT"].includes(kind)) return jsonError(`Invalid kind "${kind}"`, 400);
   const kid = await getKid(admin, params.code, requestId);
-  const { error } = await admin.from("approvals").insert({ kid_id: kid.id, kind, amount, reason });
-  if (error) return jsonError(`Failed to create approval: ${error.message}`, 500);
+
+  if (kind === "WITHDRAWAL") {
+    const { error } = await admin.rpc("kid_request_withdrawal", {
+      p_kid_id: kid.id,
+      p_amount: amount,
+      p_reason: reason,
+    });
+    if (error) return handleRpcError(error);
+  } else {
+    const { error } = await admin.from("approvals").insert({ kid_id: kid.id, kind, amount, reason });
+    if (error) return jsonError(`Failed to create approval: ${error.message}`, 500);
+  }
+
   await notifyParent(admin, kid.parent_id as string, kid.id as string, kind,
     `${kid.name} requested ${kind.toLowerCase()} of RM${amount} (${reason})`);
   return jsonOk({ ok: true });
 }
 
-async function handleRequestLoan(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleRequestLoan(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const amount = Number(params.amount);
   const reason = typeof params.reason === "string" ? params.reason.trim() : "";
   const signature = typeof params.signature === "string" ? params.signature : "";
   const dueDays = Number(params.dueDays) || 14;
-  if (!amount || amount < 1 || !reason || !signature) return jsonError("Missing required fields: amount, reason, signature", 400);
+  if (params.amount === undefined || params.amount === null || !reason || !signature) {
+    return jsonError("Missing required fields: amount, reason, signature", 400);
+  }
+  if (typeof amount !== "number" || isNaN(amount) || amount < 10 || amount > 500) {
+    return jsonError("Loan amount must be between RM10.00 and RM500.00", 400);
+  }
   const kid = await getKid(admin, params.code, requestId);
   const { error } = await admin.from("approvals").insert({
     kid_id: kid.id, kind: "QARD", amount,
@@ -567,7 +598,7 @@ async function handleRequestLoan(admin: ReturnType<typeof createClient>, params:
   return jsonOk({ ok: true });
 }
 
-async function handleRequestReward(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleRequestReward(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const name = typeof params.name === "string" ? params.name.trim() : "";
   const cost = Number(params.cost);
   if (!name || !cost || cost < 1) return jsonError("Missing required fields: name, cost", 400);
@@ -580,71 +611,118 @@ async function handleRequestReward(admin: ReturnType<typeof createClient>, param
   return jsonOk({ ok: true });
 }
 
-function calculateLoanRepayment(loanAmount: number, currentRepaid: number, paymentAmount: number) {
-  const newRepaid = Math.min(loanAmount, currentRepaid + paymentAmount);
-  const fullyRepaid = Math.abs(loanAmount - newRepaid) < 0.001;
-  return { newRepaid, fullyRepaid };
-}
-
-async function handleLoanRepay(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleLoanRepay(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const loanId = typeof params.loanId === "string" ? params.loanId : "";
   const amount = Number(params.amount);
-  if (!loanId || !amount || amount < 0.5) return jsonError("Missing required fields: loanId, amount", 400);
   const kid = await getKid(admin, params.code, requestId);
-  if (amount > Number(kid.balance)) return jsonError(`Insufficient balance (have ${kid.balance})`, 400);
-  const { data: loan, error: loanErr } = await admin.from("loans").select("*").eq("id", loanId).eq("kid_id", kid.id).maybeSingle();
-  if (loanErr) return jsonError(`DB error: ${loanErr.message}`, 500);
-  if (!loan) return jsonError("Loan not found", 404);
-  const { newRepaid, fullyRepaid } = calculateLoanRepayment(Number(loan.amount), Number(loan.repaid) || 0, amount);
-  const onTime = new Date() <= new Date(loan.due_date as string);
-  let trustDelta = 0;
-  let status = loan.status;
-  if (fullyRepaid) { status = "repaid"; trustDelta = onTime ? 25 : -50; }
-  const { error: loanUpdateErr } = await admin.from("loans").update({ repaid: newRepaid, status }).eq("id", loan.id);
-  if (loanUpdateErr) return jsonError(`Failed to update loan: ${loanUpdateErr.message}`, 500);
-  const { error: balErr } = await admin.rpc("adjust_kid_balance", { p_kid_id: kid.id, p_delta: -amount });
-  if (balErr) return jsonError(`Failed to adjust balance: ${balErr.message}`, 500);
-  if (trustDelta !== 0) {
-    const newTrust = Math.max(300, Math.min(900, (Number(kid.trust_score) || 500) + trustDelta));
-    await admin.from("kids").update({ trust_score: newTrust }).eq("id", kid.id);
-  }
-  await admin.from("transactions").insert({ kid_id: kid.id, type: "QARD", amount, label: "Loan repayment" });
-  return jsonOk({ ok: true, fullyRepaid, trustDelta });
+  const { data, error } = await admin.rpc("kid_repay_loan", {
+    p_kid_id: kid.id,
+    p_loan_id: loanId,
+    p_amount: amount,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({
+    ok: true,
+    paid: Number(data?.paid ?? amount),
+    fullyRepaid: Boolean(data?.fullyRepaid),
+    trustDelta: Number(data?.trustDelta ?? 0),
+  });
 }
 
-async function handleSadaqah(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleSadaqah(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const amount = Number(params.amount);
-  if (!amount || amount < 0.5 || amount > 10000) return jsonError("Invalid amount (min 0.50, max 10000)", 400);
   const kid = await getKid(admin, params.code, requestId);
-  if (amount > Number(kid.balance)) return jsonError(`Insufficient balance (have ${kid.balance})`, 400);
-  const { error: balErr } = await admin.rpc("adjust_kid_balance", { p_kid_id: kid.id, p_delta: -amount });
-  if (balErr) return jsonError(`Failed to deduct balance: ${balErr.message}`, 500);
-  const coinDelta = Math.floor(amount * 2);
-  const { error: coinErr } = await admin.rpc("adjust_kid_coins", { p_kid_id: kid.id, p_delta: coinDelta });
-  if (coinErr) console.warn(`[kid-finance] coin award failed (non-fatal): ${coinErr.message}`);
-  await admin.from("transactions").insert({ kid_id: kid.id, type: "SADAQAH", amount, label: "Sadaqah given" });
-  return jsonOk({ ok: true });
+  const { data, error } = await admin.rpc("kid_give_sadaqah", {
+    p_kid_id: kid.id,
+    p_amount: amount,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ ok: true, ...(data ?? {}) });
 }
 
-async function handleContributeGoal(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleContributeGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const goalId = typeof params.goalId === "string" ? params.goalId : "";
   const amount = Number(params.amount);
-  if (!goalId || !amount || amount < 0.5 || amount > 10000) return jsonError("Missing or invalid fields: goalId, amount", 400);
   const kid = await getKid(admin, params.code, requestId);
-  if (amount > Number(kid.balance)) return jsonError(`Insufficient balance (have ${kid.balance})`, 400);
-  const { data: goal, error: goalErr } = await admin.from("goals").select("*").eq("id", goalId).eq("kid_id", kid.id).maybeSingle();
-  if (goalErr) return jsonError(`DB error: ${goalErr.message}`, 500);
-  if (!goal) return jsonError("Goal not found", 404);
-  const newSaved = Math.min(Number(goal.target), (Number(goal.saved) || 0) + amount);
-  const { error: goalUpdateErr } = await admin.from("goals").update({ saved: newSaved }).eq("id", goal.id);
-  if (goalUpdateErr) return jsonError(`Failed to update goal: ${goalUpdateErr.message}`, 500);
-  const { error: balErr } = await admin.rpc("adjust_kid_balance", { p_kid_id: kid.id, p_delta: -amount });
-  if (balErr) return jsonError(`Failed to adjust balance: ${balErr.message}`, 500);
-  await admin.from("transactions").insert({ kid_id: kid.id, type: "DEPOSIT", amount, label: `Saved to ${goal.name}` });
-  return jsonOk({ ok: true });
+  const { data, error } = await admin.rpc("kid_contribute_goal", {
+    p_kid_id: kid.id,
+    p_goal_id: goalId,
+    p_amount: amount,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({
+    ok: true,
+    added: Number(data?.added ?? amount),
+    saved: Number(data?.saved ?? 0),
+  });
 }
 
-async function handleUpdateProfile(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleCreateGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const name = typeof params.name === "string" ? params.name : "";
+  const emoji = typeof params.emoji === "string" ? params.emoji : "🎯";
+  const target = Number(params.target);
+  const kid = await getKid(admin, params.code, requestId);
+  const { data, error } = await admin.rpc("kid_create_goal", {
+    p_kid_id: kid.id,
+    p_name: name,
+    p_emoji: emoji,
+    p_target: target,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ ok: true, goalId: data });
+}
+
+async function handleUpdateGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const goalId = typeof params.goalId === "string" ? params.goalId : "";
+  const name = typeof params.name === "string" ? params.name : "";
+  const emoji = typeof params.emoji === "string" ? params.emoji : "🎯";
+  const target = Number(params.target);
+  const kid = await getKid(admin, params.code, requestId);
+  const { data, error } = await admin.rpc("kid_update_goal", {
+    p_kid_id: kid.id,
+    p_goal_id: goalId,
+    p_name: name,
+    p_emoji: emoji,
+    p_target: target,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ ok: true, ...(data ?? {}) });
+}
+
+async function handleDeleteGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const goalId = typeof params.goalId === "string" ? params.goalId : "";
+  const kid = await getKid(admin, params.code, requestId);
+  const { data, error } = await admin.rpc("kid_delete_goal", {
+    p_kid_id: kid.id,
+    p_goal_id: goalId,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ ok: true, ...(data ?? {}) });
+}
+
+async function handleSetCardControls(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  if (params.frozen !== undefined && typeof params.frozen !== "boolean") {
+    return jsonError("Field 'frozen' must be a boolean", 400);
+  }
+  if (params.dailyLimit !== undefined && typeof params.dailyLimit !== "number") {
+    return jsonError("Field 'dailyLimit' must be a number", 400);
+  }
+  if (params.onlineEnabled !== undefined && typeof params.onlineEnabled !== "boolean") {
+    return jsonError("Field 'onlineEnabled' must be a boolean", 400);
+  }
+
+  const { data, error } = await admin.rpc("kid_set_card_controls", {
+    p_kid_id: kid.id,
+    p_frozen: params.frozen !== undefined ? params.frozen : null,
+    p_daily_limit: params.dailyLimit !== undefined ? params.dailyLimit : null,
+    p_online_enabled: params.onlineEnabled !== undefined ? params.onlineEnabled : null,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
+}
+
+async function handleUpdateProfile(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const kid = await getKid(admin, params.code, requestId);
   const updates: Record<string, unknown> = {};
   if (params.birth_date !== undefined) updates.birth_date = params.birth_date ?? null;
@@ -655,7 +733,7 @@ async function handleUpdateProfile(admin: ReturnType<typeof createClient>, param
   return jsonOk({ ok: true });
 }
 
-async function handleUploadAvatar(admin: ReturnType<typeof createClient>, params: Record<string, unknown>, requestId: string) {
+async function handleUploadAvatar(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const base64Image = typeof params.base64Image === "string" ? params.base64Image : "";
   if (!base64Image) return jsonError("Missing base64Image", 400);
   const kid = await getKid(admin, params.code, requestId);
@@ -680,3 +758,121 @@ async function handleUploadAvatar(admin: ReturnType<typeof createClient>, params
   console.log(`[kid-finance][${requestId}] handleUploadAvatar success url=${avatarUrl}`);
   return jsonOk({ avatarUrl });
 }
+
+async function handlePennyChat(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+
+  const message = typeof params.message === "string" ? params.message.trim() : "";
+  if (!message) {
+    return jsonError("Message cannot be empty", 400);
+  }
+  if (message.length > MAX_MESSAGE_CHARS) {
+    return jsonError(`Message exceeds maximum length of ${MAX_MESSAGE_CHARS} characters`, 400);
+  }
+
+  const rawHistory = Array.isArray(params.history) ? (params.history as PennyChatMessage[]) : undefined;
+
+  const rawDailyLimit = Deno.env.get("PENNY_DAILY_LIMIT");
+  const dailyLimit = rawDailyLimit && !isNaN(Number(rawDailyLimit)) && Number(rawDailyLimit) > 0
+    ? Number(rawDailyLimit)
+    : DEFAULT_PENNY_DAILY_LIMIT;
+
+  const rawMaxTokens = Deno.env.get("PENNY_MAX_TOKENS");
+  const configuredMaxTokens = rawMaxTokens && !isNaN(Number(rawMaxTokens)) && Number(rawMaxTokens) > 0
+    ? Number(rawMaxTokens)
+    : undefined;
+
+  const allowPro = Deno.env.get("DEEPSEEK_ALLOW_PRO") === "true";
+
+  // Fetch kid goals for context (if any)
+  const { data: goals } = await admin
+    .from("goals")
+    .select("name")
+    .eq("kid_id", kid.id)
+    .limit(5);
+
+  const kidContext = {
+    balance: typeof kid.balance === "number" ? kid.balance : Number(kid.balance) || 0,
+    goalNames: goals?.map((g: { name: string }) => g.name) ?? [],
+  };
+
+  const isThinking = params.thinking !== false;
+
+  // 1. Validate and build the request first (do not burn quota if invalid)
+  let requestParams;
+  try {
+    requestParams = buildPennyRequest({
+      model: typeof params.model === "string" ? params.model : undefined,
+      thinking: isThinking,
+      history: rawHistory,
+      message,
+      kidContext,
+      maxTokens: configuredMaxTokens,
+      allowPro,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return jsonError(msg, 400);
+  }
+
+  // 2. Check API key (503 if not set up; do not burn quota)
+  const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
+  if (!apiKey || apiKey.trim() === "") {
+    return jsonError("Penny AI is not set up yet", 503);
+  }
+
+  // 3. Consume quota atomically in DB
+  const { data: remaining, error: quotaErr } = await admin.rpc("kid_consume_penny_quota", {
+    p_kid_id: kid.id,
+    p_limit: dailyLimit,
+  });
+  if (quotaErr) {
+    return handleRpcError(quotaErr);
+  }
+
+  console.log(`[kid-finance][${requestId}] handlePennyChat kidId=${kid.id} model=${requestParams.model} thinking=${isThinking}`);
+
+  // 4. Call DeepSeek
+  let response;
+  try {
+    const client = createDeepSeekClient(apiKey);
+    response = await client.messages.create(
+      requestParams as unknown as Parameters<typeof client.messages.create>[0],
+      { timeout: 30000 }
+    );
+  } catch (err: unknown) {
+    const errObj = err as { status?: number; name?: string; message?: string };
+    if (errObj?.status === 401) {
+      console.error(`[kid-finance][${requestId}] Penny AI is misconfigured (401 from provider)`);
+      return jsonError("Penny AI is misconfigured", 502);
+    }
+    if (errObj?.status === 429) {
+      console.warn(`[kid-finance][${requestId}] Penny AI rate limited (429 from provider)`);
+      return jsonError("Penny is busy, try again soon", 503);
+    }
+    if (
+      errObj?.name === "AbortError" ||
+      errObj?.name === "APIConnectionTimeoutError" ||
+      errObj?.message?.toLowerCase().includes("timeout")
+    ) {
+      console.warn(`[kid-finance][${requestId}] Penny AI request timed out`);
+      return jsonError("Penny timed out, try again soon", 504);
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[kid-finance][${requestId}] DeepSeek call failed:`, msg);
+    return jsonError("Penny AI service error", 500);
+  }
+
+  // 5. Extract reply and ensure non-empty
+  const reply = extractReplyText(response as { content?: Array<{ type: string; text?: string }> });
+  if (!reply || reply.trim() === "") {
+    return jsonError("Penny couldn't finish that answer", 502);
+  }
+
+  return jsonOk({
+    reply,
+    model: requestParams.model,
+    thinking: isThinking,
+    remaining: typeof remaining === "number" ? remaining : 0,
+  });
+}

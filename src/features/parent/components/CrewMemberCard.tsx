@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { AppIcon } from "@/components/ui/app-icon";
 import { resolveAvatar } from "@/lib/avatar";
 import type { Kid, Transaction, ScheduledHibah } from "@/hooks/use-parent-data";
 import { sfx } from "@/lib/sounds";
+import { toast } from "sonner";
+import { edgeParentSetKidCardControls } from "@/lib/edge";
 import { EditKidForm } from "./EditKidForm";
 import { TransferFundsSection } from "./TransferFundsSection";
 import { ScheduleHibahSection } from "./ScheduleHibahSection";
 import { FlightLogSection } from "./FlightLogSection";
+import { formatRM } from "@/lib/format";
 
 export interface CrewMemberCardProps {
   kid: Kid;
@@ -37,6 +41,111 @@ export function CrewMemberCard({
   const [actType, setActType] = useState<"DEPOSIT" | "WITHDRAWAL">("DEPOSIT");
   const [isScheduling, setIsScheduling] = useState(false);
 
+  // Card controls state
+  const [cardOpen, setCardOpen] = useState(false);
+  const [cardFrozen, setCardFrozen] = useState(() => Boolean(kid.card_frozen));
+  const [dailyLimit, setDailyLimit] = useState(() => Number(kid.card_daily_limit ?? 50));
+  const [sliderLimit, setSliderLimit] = useState(() => Number(kid.card_daily_limit ?? 50));
+  const [onlineEnabled, setOnlineEnabled] = useState(() =>
+    kid.card_online_enabled !== undefined ? Boolean(kid.card_online_enabled) : true,
+  );
+  const [controlsLocked, setControlsLocked] = useState(() => Boolean(kid.card_controls_locked));
+  const [savingLimit, setSavingLimit] = useState(false);
+  const [savingFrozen, setSavingFrozen] = useState(false);
+  const [savingOnline, setSavingOnline] = useState(false);
+  const [savingLock, setSavingLock] = useState(false);
+
+  useEffect(() => {
+    setCardFrozen(Boolean(kid.card_frozen));
+    setDailyLimit(Number(kid.card_daily_limit ?? 50));
+    setSliderLimit(Number(kid.card_daily_limit ?? 50));
+    setOnlineEnabled(
+      kid.card_online_enabled !== undefined ? Boolean(kid.card_online_enabled) : true,
+    );
+    setControlsLocked(Boolean(kid.card_controls_locked));
+  }, [
+    kid.card_frozen,
+    kid.card_daily_limit,
+    kid.card_online_enabled,
+    kid.card_controls_locked,
+  ]);
+
+  const handleToggleFreeze = async () => {
+    sfx.pop();
+    const prev = cardFrozen;
+    const next = !prev;
+    setCardFrozen(next);
+    setSavingFrozen(true);
+    try {
+      await edgeParentSetKidCardControls({ kidId: kid.id, frozen: next });
+      toast.success(next ? "Card frozen" : "Card unfrozen");
+      onRefresh();
+    } catch (e: unknown) {
+      setCardFrozen(prev);
+      const msg = e instanceof Error ? e.message : "Failed to update card status";
+      toast.error(msg);
+    } finally {
+      setSavingFrozen(false);
+    }
+  };
+
+  const handleSaveLimit = async () => {
+    sfx.tap();
+    const prev = dailyLimit;
+    setDailyLimit(sliderLimit);
+    setSavingLimit(true);
+    try {
+      await edgeParentSetKidCardControls({ kidId: kid.id, dailyLimit: sliderLimit });
+      toast.success(`Daily limit saved: ${formatRM(sliderLimit)}`);
+      onRefresh();
+    } catch (e: unknown) {
+      setDailyLimit(prev);
+      setSliderLimit(prev);
+      const msg = e instanceof Error ? e.message : "Failed to save daily limit";
+      toast.error(msg);
+    } finally {
+      setSavingLimit(false);
+    }
+  };
+
+  const handleToggleOnline = async () => {
+    sfx.pop();
+    const prev = onlineEnabled;
+    const next = !prev;
+    setOnlineEnabled(next);
+    setSavingOnline(true);
+    try {
+      await edgeParentSetKidCardControls({ kidId: kid.id, onlineEnabled: next });
+      toast.success(next ? "Online purchases enabled" : "Online purchases disabled");
+      onRefresh();
+    } catch (e: unknown) {
+      setOnlineEnabled(prev);
+      const msg = e instanceof Error ? e.message : "Failed to update online purchases";
+      toast.error(msg);
+    } finally {
+      setSavingOnline(false);
+    }
+  };
+
+  const handleToggleLock = async () => {
+    sfx.pop();
+    const prev = controlsLocked;
+    const next = !prev;
+    setControlsLocked(next);
+    setSavingLock(true);
+    try {
+      await edgeParentSetKidCardControls({ kidId: kid.id, locked: next });
+      toast.success(next ? "Card controls locked" : "Card controls unlocked");
+      onRefresh();
+    } catch (e: unknown) {
+      setControlsLocked(prev);
+      const msg = e instanceof Error ? e.message : "Failed to update lock status";
+      toast.error(msg);
+    } finally {
+      setSavingLock(false);
+    }
+  };
+
   const total = Number(kid.balance) + Number(kid.invest_balance ?? 0);
   const avatar = resolveAvatar(kid.avatar, "kid");
 
@@ -53,7 +162,16 @@ export function CrewMemberCard({
       >
         <AvatarBubble emoji={avatar} size={44} ring />
         <div className="crew-card__meta min-w-0 flex-1 text-left">
-          <strong className="crew-card__name truncate">{kid.name}</strong>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <strong className="crew-card__name truncate">{kid.name}</strong>
+            <Badge
+              variant={cardFrozen ? "error" : "default"}
+              className="text-[11px] px-2 py-0.5 font-medium"
+            >
+              {cardFrozen ? "Card frozen" : `Card limit RM${dailyLimit}/day`}
+              {controlsLocked && " 🔒"}
+            </Badge>
+          </div>
           <span className="crew-card__sub truncate">
             {kid.username ? `@${kid.username}` : "Child account"}
             {" · "}
@@ -62,7 +180,7 @@ export function CrewMemberCard({
         </div>
         <div className="crew-card__balance text-right shrink-0">
           <span className="tabular-nums font-extrabold text-[var(--ink)]">
-            {hideBalance ? "RM •••" : `RM ${total.toFixed(2)}`}
+            {hideBalance ? "RM •••" : `${formatRM(total)}`}
           </span>
           <span className={`crew-card__chevron${open ? " is-open" : ""}`} aria-hidden="true">
             <AppIcon name="chevron" size={18} />
@@ -98,7 +216,7 @@ export function CrewMemberCard({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="p-1 min-h-[40px] text-[var(--error)]"
+                  className="p-1 min-h-[40px] text-[var(--error-text)]"
                   onClick={() => onDeleteInitiate(kid.id)}
                   aria-label={`Delete ${kid.name}`}
                 >
@@ -121,23 +239,166 @@ export function CrewMemberCard({
           <div className="grid grid-cols-3 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
             <div className="text-center">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `RM ${Number(kid.balance).toFixed(2)}`}
+                {hideBalance ? "•••" : `${formatRM(Number(kid.balance))}`}
               </div>
-              <small className="text-[10px] text-[var(--text-secondary)]">Core</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">Core</small>
             </div>
             <div className="text-center border-x border-[var(--border)]">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `RM ${Number(kid.invest_balance ?? 0).toFixed(2)}`}
+                {hideBalance ? "•••" : `${formatRM(Number(kid.invest_balance ?? 0))}`}
               </div>
-              <small className="text-[10px] text-[var(--text-secondary)]">Growth</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">Growth</small>
             </div>
             <div className="text-center">
-              <div className="text-sm font-bold text-[var(--primary)] tabular-nums">
+              <div className="text-sm font-bold text-[var(--primary-text)] tabular-nums">
                 {hideBalance ? "•••" : Math.round(Number(kid.coins)).toLocaleString()}
               </div>
-              <small className="text-[10px] text-[var(--text-secondary)]">Points</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">Points</small>
             </div>
           </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full justify-center text-xs font-semibold"
+            aria-expanded={cardOpen}
+            aria-controls={`card-controls-panel-${kid.id}`}
+            onClick={() => {
+              sfx.tap();
+              setCardOpen((v) => !v);
+            }}
+          >
+            <AppIcon name="creditcard" size={14} />
+            {cardOpen ? "Hide card controls" : "Card controls"}
+          </Button>
+
+          {cardOpen && (
+            <div
+              id={`card-controls-panel-${kid.id}`}
+              className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] space-y-3 text-xs"
+              aria-label={`Card controls for ${kid.name}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-[var(--ink)]">
+                  <AppIcon name="creditcard" size={16} />
+                  <span>Card Controls</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCardOpen(false)}
+                  className="text-[11px] font-semibold text-[var(--primary-text)] hover:underline"
+                  aria-label="Close card controls"
+                >
+                  Done
+                </button>
+              </div>
+
+              {/* Freeze Toggle */}
+              <div className="flex items-center justify-between gap-3 pt-1 border-t border-[var(--border)]">
+                <div>
+                  <label htmlFor={`freeze-toggle-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                    Freeze card
+                  </label>
+                  <span className="text-[11px] text-[var(--text-secondary)] block">
+                    Temporarily block all card transactions and requests.
+                  </span>
+                </div>
+                <input
+                  id={`freeze-toggle-${kid.id}`}
+                  type="checkbox"
+                  aria-label={`Freeze card for ${kid.name}`}
+                  checked={cardFrozen}
+                  disabled={savingFrozen}
+                  onChange={handleToggleFreeze}
+                  className="toggle-switch accent-[var(--primary)] shrink-0"
+                />
+              </div>
+
+              {/* Limit Slider */}
+              <div className="pt-2 border-t border-[var(--border)] space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor={`daily-limit-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                      Daily spending limit
+                    </label>
+                    <span className="text-[11px] text-[var(--text-secondary)] block">
+                      Max sadaqah or withdrawal per day (RM10–RM200).
+                    </span>
+                  </div>
+                  <strong className="text-xs text-[var(--primary-text)] tabular-nums font-bold">
+                    {formatRM(sliderLimit)}
+                  </strong>
+                </div>
+                <input
+                  id={`daily-limit-${kid.id}`}
+                  type="range"
+                  min={10}
+                  max={200}
+                  step={10}
+                  value={sliderLimit}
+                  onChange={(e) => setSliderLimit(Number(e.target.value))}
+                  aria-label={`Daily spending limit for ${kid.name}`}
+                  className="w-full accent-[var(--primary)]"
+                />
+                <div className="flex justify-end pt-0.5">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={savingLimit || sliderLimit === dailyLimit}
+                    loading={savingLimit}
+                    onClick={handleSaveLimit}
+                    className="text-[11px] min-h-[32px] px-3"
+                    aria-label={`Save daily limit for ${kid.name}`}
+                  >
+                    Save limit
+                  </Button>
+                </div>
+              </div>
+
+              {/* Online Purchases Toggle */}
+              <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--border)]">
+                <div>
+                  <label htmlFor={`online-toggle-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                    Online purchases
+                  </label>
+                  <span className="text-[11px] text-[var(--text-secondary)] block">
+                    Allow online transactions on the practice card.
+                  </span>
+                </div>
+                <input
+                  id={`online-toggle-${kid.id}`}
+                  type="checkbox"
+                  aria-label={`Allow online purchases for ${kid.name}`}
+                  checked={onlineEnabled}
+                  disabled={savingOnline}
+                  onChange={handleToggleOnline}
+                  className="toggle-switch accent-[var(--primary)] shrink-0"
+                />
+              </div>
+
+              {/* Lock Controls Toggle */}
+              <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--border)]">
+                <div>
+                  <label htmlFor={`lock-controls-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                    Lock these settings
+                  </label>
+                  <span className="text-[11px] text-[var(--text-secondary)] block">
+                    Your child can make them stricter but not looser.
+                  </span>
+                </div>
+                <input
+                  id={`lock-controls-${kid.id}`}
+                  type="checkbox"
+                  aria-label={`Lock card controls for ${kid.name}`}
+                  checked={controlsLocked}
+                  disabled={savingLock}
+                  onChange={handleToggleLock}
+                  className="toggle-switch accent-[var(--primary)] shrink-0"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <Button

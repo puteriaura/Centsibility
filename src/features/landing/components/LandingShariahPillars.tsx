@@ -4,25 +4,21 @@ import { Badge } from "@/components/ui/badge";
 export function LandingShariahPillars() {
   const pillars = [
     {
-      ar: "قَرْض",
       en: "Qard al-Hasan",
       meaning: "Benevolent Loan",
       text: "Interest-free loans between parent and child, complete with formal digital signatures and zero penalty fees.",
     },
     {
-      ar: "هِبَة",
       en: "Hibah",
       meaning: "Voluntary Gift",
       text: "Parents reward saving habits with voluntary percentage gifts — never fixed or guaranteed riba.",
     },
     {
-      ar: "صَدَقَة",
       en: "Sadaqah",
       meaning: "Voluntary Charity",
       text: "Hands-on charitable giving to verified community causes, teaching empathy, gratitude, and social impact.",
     },
     {
-      ar: "زَكَاة",
       en: "Zakat",
       meaning: "Obligatory Alms",
       text: "Automated 2.5% calculation on savings exceeding the lunar Nisab threshold, teaching sacred obligations.",
@@ -32,9 +28,6 @@ export function LandingShariahPillars() {
   return (
     <section id="pillars" style={{ padding: "5rem 1.5rem", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-        <div style={{ fontSize: "1.25rem", color: "var(--primary)", fontWeight: 700, marginBottom: "0.5rem" }}>
-          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-        </div>
         <h2 style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)", fontWeight: 800, color: "var(--ink)", margin: 0, letterSpacing: "-0.02em" }}>
           Built on sacred pillars, designed for the next generation.
         </h2>
@@ -63,12 +56,9 @@ export function LandingShariahPillars() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "2rem", fontWeight: 700, color: "var(--primary)", fontFamily: "serif" }}>
-                {p.ar}
-              </span>
+              <strong style={{ fontSize: "1.15rem", color: "var(--ink)" }}>{p.en}</strong>
               <Badge variant="soft">{p.meaning}</Badge>
             </div>
-            <strong style={{ fontSize: "1.15rem", color: "var(--ink)" }}>{p.en}</strong>
             <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
               {p.text}
             </p>

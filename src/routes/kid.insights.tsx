@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import { buildSpendingSummary, buildStorySlides } from "@/lib/penny-insights";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
+import { formatRM } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/insights")({
   head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
@@ -14,11 +16,11 @@ export const Route = createFileRoute("/kid/insights")({
 });
 
 const MONTHS = ["May", "Jun", "Jul", "Aug", "Sep"];
-const CAT_COLORS = ["#3B5BDB", "#17A673", "#F5A623", "#EC008C", "#161A50"];
+const CAT_COLORS = ["#3B5BDB", "#DD2D4A", "#F5A623", "#0F8FA3", "#6E5FB8"];
 
 function KidInsights() {
   const nav = useNavigate();
-  const { data, loading } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [month, setMonth] = useState("Sep");
   const [storyOpen, setStoryOpen] = useState(false);
   const [storyIdx, setStoryIdx] = useState(0);
@@ -44,6 +46,7 @@ function KidInsights() {
     return () => window.clearTimeout(t);
   }, [storyOpen, storyIdx, slides.length]);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -77,8 +80,8 @@ function KidInsights() {
 
   return (
     <div className="insights-page pb-12">
-      {/* AEON-style ask hero */}
-      <section className="insights-ask-hero" aria-label="Ask Penny Sensei">
+      {/* Assistant hero: the one place with a soft glow */}
+      <section className="insights-ask-hero" aria-label="Ask Penny">
         <h1 className="insights-ask-hero__title">
           Hi {k.name}! Ask me about:
         </h1>
@@ -129,25 +132,25 @@ function KidInsights() {
       <div className="insights-sheet">
         <div className="insights-sheet__handle" aria-hidden="true" />
 
-        <div className="aeon-section-tag">
+        <div className="section-tag">
           <span>MONTHLY CASHFLOW</span>
         </div>
         <div className="insights-cashflow">
           <Card variant="default" className="insights-cashflow__card p-4 m-0">
             <span className="text-xs text-[var(--text-muted)]">Money in</span>
             <strong className="insights-cashflow__in tabular-nums">
-              RM{summary.moneyIn.toFixed(2)}
+              {formatRM(summary.moneyIn)}
             </strong>
           </Card>
           <Card variant="default" className="insights-cashflow__card p-4 m-0">
             <span className="text-xs text-[var(--text-muted)]">Money out</span>
             <strong className="insights-cashflow__out tabular-nums">
-              RM{summary.moneyOut.toFixed(2)}
+              {formatRM(summary.moneyOut)}
             </strong>
           </Card>
         </div>
 
-        <div className="aeon-section-tag">
+        <div className="section-tag">
           <span>SPENDING RECAP</span>
         </div>
         <button type="button" className="insights-recap" onClick={openStory}>
@@ -157,7 +160,7 @@ function KidInsights() {
           <span className="insights-recap__text">{summary.highlight}</span>
         </button>
 
-        <div className="aeon-section-tag">
+        <div className="section-tag">
           <span>SPENDING TRACKER</span>
         </div>
         <Card variant="default" className="p-4 space-y-3">
@@ -177,12 +180,12 @@ function KidInsights() {
             className="block w-full min-h-[44px]"
           >
             <Button variant="outline" size="sm" className="w-full justify-center font-bold">
-              {goals.length === 0 ? "Create budget" : "Ask Penny Sensei"}
+              {goals.length === 0 ? "Create budget" : "Ask Penny"}
             </Button>
           </Link>
         </Card>
 
-        <div className="aeon-section-tag">
+        <div className="section-tag">
           <span>MONTHLY EXPENSES</span>
         </div>
         <div className="insights-months" role="tablist" aria-label="Month">
@@ -206,10 +209,10 @@ function KidInsights() {
         <Card variant="default" className="p-5 space-y-4">
           <div className="insights-donut-wrap" aria-hidden="true">
             <svg viewBox="0 0 120 120" className="insights-donut-svg" width="160" height="160">
-              <circle cx="60" cy="60" r="44" fill="none" stroke="var(--border)" strokeWidth="12" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" strokeWidth="4" />
               {summary.topCategories.length > 0 &&
                 (() => {
-                  const r = 44;
+                  const r = 50;
                   const c = 2 * Math.PI * r;
                   let offset = 0;
                   return summary.topCategories.map((cat, i) => {
@@ -222,7 +225,7 @@ function KidInsights() {
                         r={r}
                         fill="none"
                         stroke={CAT_COLORS[i % CAT_COLORS.length]}
-                        strokeWidth="12"
+                        strokeWidth="4"
                         strokeDasharray={`${len} ${c - len}`}
                         strokeDashoffset={-offset}
                         transform="rotate(-90 60 60)"
@@ -234,9 +237,9 @@ function KidInsights() {
                 })()}
             </svg>
             <div className="insights-donut__hole insights-donut__hole--overlay">
-              <span className="text-[10px] text-[var(--text-muted)]">Monthly spending</span>
-              <strong className="tabular-nums text-[var(--ink)] text-lg">
-                RM{summary.moneyOut.toFixed(2)}
+              <span className="text-sm text-[var(--text-secondary)]">Monthly spending</span>
+              <strong className="tabular-nums text-[var(--ink)] text-2xl font-bold">
+                {formatRM(summary.moneyOut)}
               </strong>
             </div>
           </div>
@@ -261,8 +264,8 @@ function KidInsights() {
                       {c.count} transaction{c.count === 1 ? "" : "s"}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-[var(--error)] tabular-nums">
-                    -RM {c.amount.toFixed(2)}
+                  <span className="text-sm font-bold text-[var(--error-text)] tabular-nums">
+                    {formatRM(-(c.amount))}
                   </span>
                 </li>
               ))
@@ -341,7 +344,7 @@ function KidInsights() {
               <button
                 type="button"
                 className="story-footer__btn"
-                aria-label="Chat with Penny Sensei"
+                aria-label="Chat with Penny"
                 onClick={() => {
                   setStoryOpen(false);
                   nav({ to: "/kid/chat" });

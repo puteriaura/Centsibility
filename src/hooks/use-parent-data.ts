@@ -52,10 +52,14 @@ export function useParentData() {
     isParentBypassed() ? DEMO_SCHEDULED_HIBAHS : [],
   );
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(() => isParentBypassed());
+  const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(() =>
+    isParentBypassed() ? new Date() : null,
+  );
 
   const refresh = useCallback(async () => {
     if (!user) return;
-    if (document.visibilityState === "hidden") return; // Pause polling when tab is inactive
     try {
       const [k, a, r, l, t, n] = await Promise.all([
         supabase.from("kids").select("*").order("created_at"),
@@ -82,6 +86,37 @@ export function useParentData() {
           .limit(30),
       ]);
 
+      // Collect .error from the core queries
+      const queryResults = [
+        { name: "kids", res: k },
+        { name: "approvals", res: a },
+        { name: "rewards", res: r },
+        { name: "loans", res: l },
+        { name: "transactions", res: t },
+        { name: "notifications", res: n },
+      ];
+      const failed = queryResults.find((item) => item.res.error);
+
+      if (failed) {
+        console.warn(`Failed to fetch ${failed.name} from Supabase:`, failed.res.error);
+        if (isParentBypassed()) {
+          setKids([DEMO_KID]);
+          setApprovals(DEMO_APPROVALS);
+          setRewards(DEMO_REWARDS);
+          setLoans(DEMO_LOANS);
+          setTxs(DEMO_TRANSACTIONS);
+          setNotifications(DEMO_NOTIFICATIONS);
+          setScheduledHibahs(DEMO_SCHEDULED_HIBAHS);
+          setHasLoaded(true);
+          setLastLoadedAt(new Date());
+          setError(null);
+        } else {
+          setError(failed.res.error?.message || "Could not load parent data");
+          // Keep last good data: do not overwrite state arrays
+        }
+        return;
+      }
+
       // Fetch scheduled_hibahs separately to gracefully handle missing table
       let sh: { data: ScheduledHibah[] | null; error: unknown } = { data: [], error: null };
       try {
@@ -89,9 +124,17 @@ export function useParentData() {
           .from("scheduled_hibahs")
           .select("*")
           .order("next_run_at", { ascending: true });
-      } catch {
+        if (sh.error) {
+          console.warn("Failed to fetch scheduled_hibahs:", sh.error);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch scheduled_hibahs:", err);
         sh = { data: [], error: null };
       }
+
+      setError(null);
+      setHasLoaded(true);
+      setLastLoadedAt(new Date());
 
       const hasKids = Boolean(k.data && k.data.length > 0);
 
@@ -127,6 +170,12 @@ export function useParentData() {
         setTxs(DEMO_TRANSACTIONS);
         setNotifications(DEMO_NOTIFICATIONS);
         setScheduledHibahs(DEMO_SCHEDULED_HIBAHS);
+        setHasLoaded(true);
+        setLastLoadedAt(new Date());
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err.message : "Could not load parent data");
+        // Keep last good data: do not overwrite state arrays
       }
     } finally {
       setLoading(false);
@@ -137,12 +186,33 @@ export function useParentData() {
     refresh();
   }, [refresh]);
 
-  // Polling for updates
+  // Poll for updates. Polls pause while the tab is hidden and catch up as soon
+  // as it is shown; the first load above always runs.
   useEffect(() => {
     if (!user) return;
-    const interval = setInterval(refresh, 20000);
-    return () => clearInterval(interval);
+    const poll = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const interval = setInterval(poll, 20000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", poll);
+    };
   }, [user, refresh]);
 
-  return { kids, approvals, rewards, loans, txs, notifications, scheduledHibahs, loading, refresh };
+  return {
+    kids,
+    approvals,
+    rewards,
+    loans,
+    txs,
+    notifications,
+    scheduledHibahs,
+    loading,
+    error,
+    hasLoaded,
+    lastLoadedAt,
+    refresh,
+  };
 }

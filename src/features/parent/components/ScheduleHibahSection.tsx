@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppIcon } from "@/components/ui/app-icon";
+import { formatRM } from "@/lib/format";
 
 interface ScheduleHibahSectionProps {
   kid: Kid;
@@ -80,7 +81,7 @@ export function ScheduleHibahSection({
   return (
     <Card variant="default" className="p-5 mt-4 rounded-2xl border border-[var(--border)] shadow-sm space-y-4">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-[var(--primary-soft)] text-[var(--primary)] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-lg bg-[var(--primary-soft)] text-[var(--primary-text)] flex items-center justify-center">
           <AppIcon name="gift" size={18} />
         </div>
         <strong className="text-sm font-bold text-[var(--ink)]">
@@ -179,7 +180,7 @@ export function ScheduleHibahSection({
               >
                 <div>
                   <strong className="text-xs font-bold text-[var(--ink)] block tabular-nums">
-                    RM {Number(h.amount).toFixed(2)} ({h.frequency})
+                    {formatRM(Number(h.amount))} ({h.frequency})
                   </strong>
                   <small className="text-[11px] text-[var(--text-muted)]">
                     Next: {format(new Date(h.next_run_at), "PP")}
@@ -188,7 +189,7 @@ export function ScheduleHibahSection({
                 <button
                   type="button"
                   onClick={() => handleDeactivateHibah(h.id)}
-                  className="text-xs font-semibold text-[var(--error)] hover:underline inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-[var(--error-text)] hover:underline inline-flex items-center gap-1"
                   title="Cancel this schedule"
                 >
                   <AppIcon name="close" size={12} />

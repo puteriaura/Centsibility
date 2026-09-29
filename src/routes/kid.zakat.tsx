@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { calculateZakat, DEFAULT_NISAB, DEFAULT_ZAKAT_RATE } from "@/lib/math";
+import { formatRM } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/zakat")({
   head: () => ({ meta: [{ title: "Zakat Calculator — Centsibility" }] }),
@@ -37,12 +39,13 @@ const DEFAULT_DEDUCTIONS: AssetRow[] = [
 ];
 
 function KidZakat() {
-  const { data, loading } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [assets, setAssets] = useState<AssetRow[]>(DEFAULT_ASSETS);
   const [deductions, setDeductions] = useState<AssetRow[]>(DEFAULT_DEDUCTIONS);
   const [useWallet, setUseWallet] = useState(false);
   const [calculated, setCalculated] = useState(false);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -83,11 +86,11 @@ function KidZakat() {
 
   return (
     <div className="space-y-6 pb-12">
-      <section className="deposit-hero deposit-hero--lilac" aria-label="Zakat calculator">
+      <section className="deposit-hero deposit-hero--amber" aria-label="Zakat calculator">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Estimated zakat due</p>
           <p className="deposit-hero__amount tabular-nums">
-            {calculated && aboveNisab ? `RM${zakatDue.toFixed(2)}` : "RM0.00"}
+            {calculated && aboveNisab ? `${formatRM(zakatDue)}` : "RM0.00"}
           </p>
           <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
             Nisab RM{NISAB_RM.toLocaleString()} · Rate {(ZAKAT_RATE * 100).toFixed(1)}%
@@ -99,24 +102,22 @@ function KidZakat() {
       </section>
 
       <div className="p-3 rounded-xl bg-[var(--surface-pink)] border border-[var(--primary-soft)] text-center">
-        <p className="text-sm font-bold text-[var(--primary)] mb-0.5">
-          خُذْ مِنْ أَمْوَالِهِمْ صَدَقَةً تُطَهِّرُهُمْ
+        <p className="text-sm font-bold text-[var(--primary-text)] m-0">
+          &ldquo;Take from their wealth a charity by which you purify them.&rdquo;
         </p>
-        <p className="text-xs text-[var(--text-secondary)] m-0">
-          &ldquo;Take from their wealth a charity by which you purify them.&rdquo; — Quran 9:103
-        </p>
+        <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">— Quran 9:103</p>
       </div>
 
       {/* Info Banner */}
       <Card variant="soft" className="p-4 sm:p-5 flex items-start gap-3 border border-[var(--border)]">
-        <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0 mt-0.5">
           <AppIcon name="info" size={18} />
         </div>
         <div>
           <h2 className="text-sm font-bold text-[var(--ink)] m-0">How Zakat on Wealth Works</h2>
           <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed mb-0">
             Zakat is due once per lunar year at <strong className="text-[var(--ink)]">2.5%</strong> on total wealth exceeding
-            the <strong className="text-[var(--primary)]">Nisab</strong> threshold (approx. RM {NISAB_RM.toLocaleString()} — the value of 85g gold).
+            the <strong className="text-[var(--primary-text)]">Nisab</strong> threshold (approx. RM{NISAB_RM.toLocaleString()}, the value of 85g gold).
           </p>
         </div>
       </Card>
@@ -134,7 +135,7 @@ function KidZakat() {
           <div className="text-xs sm:text-sm">
             <strong className="text-[var(--ink)] block">Include My Centsibility Balance</strong>
             <span className="text-[var(--text-secondary)]">
-              Wallet + Investment Pool = <strong className="text-[var(--primary)] tabular-nums">RM {walletBalance.toFixed(2)}</strong>
+              Wallet + Investment Pool = <strong className="text-[var(--primary-text)] tabular-nums">{formatRM(walletBalance)}</strong>
             </span>
           </div>
         </label>
@@ -221,7 +222,7 @@ function KidZakat() {
             </div>
             <div className="flex items-center justify-between pt-1 text-xs text-[var(--text-secondary)]">
               <span>Nisab Threshold (85g Gold)</span>
-              <span className="font-semibold tabular-nums">RM {NISAB_RM.toLocaleString()}</span>
+              <span className="font-semibold tabular-nums">RM{NISAB_RM.toLocaleString()}</span>
             </div>
           </div>
 
@@ -230,8 +231,8 @@ function KidZakat() {
             <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider block">
               Zakat Due (2.5%)
             </span>
-            <div className="text-3xl font-extrabold text-[var(--primary)] tabular-nums">
-              RM {zakatDue.toFixed(2)}
+            <div className="text-3xl font-extrabold text-[var(--primary-text)] tabular-nums">
+              {formatRM(zakatDue)}
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
               {aboveNisab
@@ -262,8 +263,8 @@ function KidZakat() {
                       <span className="text-[10px] text-[var(--text-muted)] font-semibold">{cat.pct}%</span>
                     </div>
                     <strong className="block text-[var(--ink)] leading-snug">{cat.name}</strong>
-                    <span className="text-xs font-bold text-[var(--primary)] tabular-nums">
-                      RM {((zakatDue * cat.pct) / 100).toFixed(2)}
+                    <span className="text-xs font-bold text-[var(--primary-text)] tabular-nums">
+                      {formatRM(((zakatDue * cat.pct) / 100))}
                     </span>
                   </div>
                 ))}
@@ -287,20 +288,17 @@ function KidZakat() {
         <SectionTitle>The 8 Beneficiaries of Zakat (Asnaf)</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {[
-            { ar: "الفُقَرَاء", en: "The Poor (Fuqara)", desc: "Individuals with wealth well below the basic poverty threshold." },
-            { ar: "المَسَاكِين", en: "The Needy (Masakeen)", desc: "Those who have insufficient income to cover daily necessities." },
-            { ar: "العَامِلِين عَلَيْهَا", en: "Zakat Administrators", desc: "Those appointed to collect, manage, and distribute Zakat funds." },
-            { ar: "المُؤَلَّفَة قُلُوبُهُمْ", en: "New Muslims / Reconciled", desc: "Those whose hearts are being supported and welcomed." },
-            { ar: "فِي الرِّقَاب", en: "Freeing Captives", desc: "Liberating individuals from human bondage or oppression." },
-            { ar: "الغَارِمِين", en: "Debtors (Gharimin)", desc: "Those burdened by overwhelming debt incurred for basic survival." },
-            { ar: "فِي سَبِيلِ الله", en: "In the Cause of Allah", desc: "Welfare and community advancement for the public good." },
-            { ar: "ابْن السَّبِيل", en: "Stranded Wayfarers", desc: "Travelers in distress with no access to their resources." },
+            { en: "The Poor (Fuqara)", desc: "Individuals with wealth well below the basic poverty threshold." },
+            { en: "The Needy (Masakeen)", desc: "Those who have insufficient income to cover daily necessities." },
+            { en: "Zakat Administrators", desc: "Those appointed to collect, manage, and distribute Zakat funds." },
+            { en: "New Muslims / Reconciled", desc: "Those whose hearts are being supported and welcomed." },
+            { en: "Freeing Captives", desc: "Liberating individuals from human bondage or oppression." },
+            { en: "Debtors (Gharimin)", desc: "Those burdened by overwhelming debt incurred for basic survival." },
+            { en: "In the Cause of Allah", desc: "Welfare and community advancement for the public good." },
+            { en: "Stranded Wayfarers", desc: "Travelers in distress with no access to their resources." },
           ].map((r) => (
             <Card key={r.en} variant="default" className="p-3.5 rounded-xl border border-[var(--border)]">
-              <div className="flex items-center justify-between mb-1">
-                <strong className="text-xs font-bold text-[var(--ink)]">{r.en}</strong>
-                <span className="text-xs font-bold text-[var(--primary)] font-serif">{r.ar}</span>
-              </div>
+              <strong className="text-xs font-bold text-[var(--ink)] block mb-1">{r.en}</strong>
               <p className="text-[11px] text-[var(--text-secondary)] leading-snug">{r.desc}</p>
             </Card>
           ))}
@@ -330,7 +328,7 @@ function SummaryRow({
     <div className={`flex items-center justify-between ${bold ? "font-bold text-[var(--ink)]" : "text-[var(--text-secondary)]"}`}>
       <span>{label}</span>
       <span className={`tabular-nums ${bold ? "text-base text-[var(--ink)]" : ""}`}>
-        {negative ? "− " : ""}RM {value.toFixed(2)}
+        {formatRM(negative ? -value : value)}
       </span>
     </div>
   );

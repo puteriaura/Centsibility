@@ -1,12 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
+import { formatRM } from "@/lib/format";
+import { getKidSession } from "@/lib/kid-session";
+import { edgeKidSetCardControls } from "@/lib/edge";
 
 export const Route = createFileRoute("/kid/card")({
   head: () => ({ meta: [{ title: "Debit Card-i — Centsibility" }] }),
@@ -14,13 +18,34 @@ export const Route = createFileRoute("/kid/card")({
 });
 
 function KidCard() {
-  const { data, loading } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [showDetails, setShowDetails] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState(() => Boolean(data?.kid?.card_frozen));
   const [showSettings, setShowSettings] = useState(false);
-  const [dailyLimit, setDailyLimit] = useState(50);
-  const [onlineEnabled, setOnlineEnabled] = useState(true);
+  const [dailyLimit, setDailyLimit] = useState(() =>
+    data?.kid?.card_daily_limit != null ? Number(data.kid.card_daily_limit) : 50,
+  );
+  const [onlineEnabled, setOnlineEnabled] = useState(() =>
+    data?.kid?.card_online_enabled !== undefined ? Boolean(data.kid.card_online_enabled) : true,
+  );
+  const [savingLimit, setSavingLimit] = useState(false);
+  const [savingOnline, setSavingOnline] = useState(false);
 
+  useEffect(() => {
+    if (data?.kid) {
+      if (data.kid.card_frozen !== undefined && data.kid.card_frozen !== null) {
+        setIsLocked(Boolean(data.kid.card_frozen));
+      }
+      if (data.kid.card_daily_limit != null) {
+        setDailyLimit(Number(data.kid.card_daily_limit));
+      }
+      if (data.kid.card_online_enabled !== undefined && data.kid.card_online_enabled !== null) {
+        setOnlineEnabled(Boolean(data.kid.card_online_enabled));
+      }
+    }
+  }, [data?.kid?.card_frozen, data?.kid?.card_daily_limit, data?.kid?.card_online_enabled]);
+
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -37,42 +62,129 @@ function KidCard() {
   }
 
   const k = data.kid;
+  const isControlsLocked = Boolean(k.card_controls_locked);
+  const parentLimit = k.card_daily_limit != null ? Number(k.card_daily_limit) : 50;
+  const sliderMax = isControlsLocked ? parentLimit : 200;
+  const parentOnline = k.card_online_enabled !== undefined ? Boolean(k.card_online_enabled) : true;
 
-  const toggleLock = () => {
+  const toggleLock = async () => {
     sfx.pop();
-    setIsLocked(!isLocked);
-    toast.success(isLocked ? "Debit Card-i unlocked!" : "Debit Card-i temporarily locked");
+    if (isControlsLocked && isLocked) {
+      toast.error("Your parent manages these card settings. You can still make them stricter.");
+      return;
+    }
+    const prevLocked = isLocked;
+    const nextLocked = !prevLocked;
+    setIsLocked(nextLocked);
+
+    const code = getKidSession()?.code;
+    if (!code) {
+      toast.success(
+        nextLocked
+          ? "Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it."
+          : "Card unfrozen",
+      );
+      return;
+    }
+
+    try {
+      await edgeKidSetCardControls({ code, frozen: nextLocked });
+      toast.success(
+        nextLocked
+          ? "Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it."
+          : "Card unfrozen",
+      );
+      refresh();
+    } catch (e: unknown) {
+      setIsLocked(prevLocked);
+      toast.error(e instanceof Error ? e.message : "Failed to update card status");
+    }
+  };
+
+  const saveDailyLimit = async () => {
+    const code = getKidSession()?.code;
+    if (!code) return;
+    if (isControlsLocked && dailyLimit > sliderMax) {
+      toast.error("Your parent manages these card settings. You can still make them stricter.");
+      return;
+    }
+    setSavingLimit(true);
+    try {
+      await edgeKidSetCardControls({ code, dailyLimit });
+      toast.success(`Daily limit saved: ${formatRM(dailyLimit)}`);
+      refresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to save daily limit");
+      if (data?.kid?.card_daily_limit != null) {
+        setDailyLimit(Number(data.kid.card_daily_limit));
+      }
+    } finally {
+      setSavingLimit(false);
+    }
+  };
+
+  const saveOnlineEnabled = async () => {
+    const code = getKidSession()?.code;
+    if (!code) return;
+    if (isControlsLocked && !parentOnline && onlineEnabled) {
+      toast.error("Your parent manages these card settings. You can still make them stricter.");
+      return;
+    }
+    setSavingOnline(true);
+    try {
+      await edgeKidSetCardControls({ code, onlineEnabled });
+      toast.success("Online purchase setting saved");
+      refresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to save online setting");
+      if (data?.kid?.card_online_enabled !== undefined) {
+        setOnlineEnabled(Boolean(data.kid.card_online_enabled));
+      }
+    } finally {
+      setSavingOnline(false);
+    }
   };
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Benchmark Image 1: Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-bold text-[var(--ink)]">Debit Card-i</h1>
-        <button
-          type="button"
-          onClick={() => {
-            sfx.tap();
-            toast("Customer Care: Card support available 24/7.");
-          }}
-          className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors"
-          aria-label="Card support chat"
+      <div className="flex items-center justify-between gap-3 -mt-2">
+        <p className="text-xs font-semibold text-[var(--text-secondary)] m-0">
+          Practice card for learning. It is not a real bank card.
+        </p>
+        <Link
+          to="/kid/chat"
+          onClick={() => sfx.tap()}
+          className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors shrink-0"
+          aria-label="Ask Penny about cards"
         >
           <AppIcon name="messagecircle" size={22} />
-        </button>
+        </Link>
       </div>
 
-      {/* Benchmark Image 1: Deep Blue Physical Debit Card */}
+      {isLocked && (
+        <div
+          role="status"
+          className="p-3.5 rounded-xl border border-[var(--error)]/30 text-xs flex items-start gap-2.5 max-w-[420px] mx-auto bg-[var(--error-soft)] text-[var(--ink)]"
+        >
+          <AppIcon name="info" size={18} color="var(--error-strong)" className="shrink-0 mt-0.5" />
+          <p className="m-0 leading-relaxed font-medium">
+            Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it.
+          </p>
+        </div>
+      )}
+
       <div
-        className="relative rounded-3xl p-6 text-white shadow-xl overflow-hidden transition-all"
+        className="relative rounded-3xl p-6 text-white shadow-xl transition-all flex flex-col justify-between"
         style={{
-          background: isLocked ? "#4A5568" : "var(--navy-dark)",
+          background: isLocked ? "var(--text-secondary)" : "var(--navy-dark)",
+          // No overflow clipping, so on narrow phones the card grows to fit its
+          // content instead of cutting off the cardholder row.
           aspectRatio: "1.586",
           maxWidth: "420px",
-          margin: "0 auto",
+          // Inline-only margin keeps the space-y gap below the card.
+          marginInline: "auto",
         }}
       >
-
         {/* Top: brand + CVV/EXP */}
         <div className="flex items-center justify-between relative z-10 text-xs font-semibold">
           <div className="flex items-center gap-2">
@@ -82,14 +194,14 @@ function KidCard() {
             <span className="text-sm font-black tracking-wider uppercase">Centsibility</span>
           </div>
 
-          <div className="flex items-center gap-4 tabular-nums text-white/90">
+          <div className="flex items-center gap-4 tabular-nums text-white">
             <div>
-              <span className="text-[11px] block opacity-75">CVV</span>
-              <strong>{showDetails ? "428" : "•••"}</strong>
+              <span className="text-[11px] block">CVV</span>
+              <strong className="text-white">{showDetails ? "428" : "•••"}</strong>
             </div>
             <div>
-              <span className="text-[11px] block opacity-75">EXP</span>
-              <strong>10/29</strong>
+              <span className="text-[11px] block">EXP</span>
+              <strong className="text-white">10/29</strong>
             </div>
           </div>
         </div>
@@ -106,10 +218,10 @@ function KidCard() {
           </div>
         </div>
 
-        {/* Bottom: Name + MyDebit / VISA logos */}
+        {/* Bottom: cardholder and card type (no third-party card network marks) */}
         <div className="flex items-end justify-between relative z-10 text-xs font-bold">
           <div>
-            <span className="text-[11px] uppercase tracking-wider block opacity-75 font-normal">
+            <span className="text-[11px] uppercase tracking-wider block font-normal">
               Cardholder
             </span>
             <span className="text-sm font-semibold tracking-wide">
@@ -117,28 +229,22 @@ function KidCard() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-black tracking-wider uppercase text-white/90">
-              MyDebit
-            </span>
-            <span className="text-base font-black italic tracking-tighter text-white">
-              VISA
-            </span>
-          </div>
+          <span className="text-[11px] font-bold tracking-wider uppercase text-white">
+            Kids debit
+          </span>
         </div>
 
         {/* Locked Overlay */}
         {isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20" style={{ background: "rgba(17, 17, 17, 0.72)" }}>
+          <div className="absolute inset-0 rounded-[inherit] flex flex-col items-center justify-center gap-2 z-20" style={{ background: "rgba(17, 17, 17, 0.72)" }}>
             <AppIcon name="lock" size={36} color="#fff" />
             <strong className="text-sm font-bold text-white uppercase tracking-wider">
-              Card Locked
+              Card Frozen
             </strong>
           </div>
         )}
       </div>
 
-      {/* Benchmark Image 1: 4 Circular Actions (View details, Settings, Lock, Report) */}
       <div className="grid grid-cols-4 gap-2 max-w-[420px] mx-auto text-center">
         <button
           type="button"
@@ -146,12 +252,14 @@ function KidCard() {
             sfx.tap();
             setShowDetails(!showDetails);
           }}
-          className="aeon-quick-btn"
+          aria-label={showDetails ? "Hide card details" : "View card details"}
+          aria-pressed={showDetails}
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle">
             <AppIcon name={showDetails ? "hide" : "show"} size={22} />
           </span>
-          <span className="aeon-quick-label">{showDetails ? "Hide details" : "View details"}</span>
+          <span className="quick-label">{showDetails ? "Hide details" : "View details"}</span>
         </button>
 
         <button
@@ -160,37 +268,61 @@ function KidCard() {
             sfx.tap();
             setShowSettings(!showSettings);
           }}
-          className="aeon-quick-btn"
+          aria-label="Card settings"
+          aria-expanded={showSettings}
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle">
             <AppIcon name="settings" size={22} />
           </span>
-          <span className="aeon-quick-label">Settings</span>
+          <span className="quick-label">Settings</span>
         </button>
 
         <button
           type="button"
           onClick={toggleLock}
-          className="aeon-quick-btn"
+          disabled={isControlsLocked && isLocked}
+          aria-label={
+            isLocked
+              ? isControlsLocked
+                ? "Card frozen (managed by parent)"
+                : "Unfreeze card (currently frozen)"
+              : "Freeze card"
+          }
+          aria-pressed={isLocked}
+          className={`quick-btn ${isControlsLocked && isLocked ? "opacity-60 cursor-not-allowed" : ""}`}
         >
-          <span className="aeon-quick-circle" style={isLocked ? { borderColor: "var(--error)", color: "var(--error)" } : undefined}>
+          <span
+            className="quick-circle"
+            style={
+              isLocked
+                ? { background: "var(--error-soft)", color: "var(--error-text)" }
+                : undefined
+            }
+          >
             <AppIcon name="lock" size={22} />
           </span>
-          <span className="aeon-quick-label">{isLocked ? "Unlock" : "Lock"}</span>
+          <span
+            className="quick-label"
+            style={isLocked ? { color: "var(--error-text)", fontWeight: 700 } : undefined}
+          >
+            {isLocked ? "Unfreeze" : "Freeze"}
+          </span>
         </button>
 
         <button
           type="button"
           onClick={() => {
             sfx.tap();
-            toast.error("Card replacement request sent to branch.");
+            toast.info("Practice card, so no report is sent. If a real card is lost, tell your parent.");
           }}
-          className="aeon-quick-btn"
+          aria-label="Report card issue"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle">
             <AppIcon name="recall" size={22} />
           </span>
-          <span className="aeon-quick-label">Report</span>
+          <span className="quick-label">Report</span>
         </button>
       </div>
 
@@ -198,82 +330,145 @@ function KidCard() {
       {showSettings && (
         <Card variant="default" className="p-5 space-y-4 max-w-[420px] mx-auto border border-[var(--border)]">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-[var(--ink)]">Card Security Controls</h3>
+            <h3 className="text-sm font-bold text-[var(--ink)]">Practice card controls</h3>
             <button
               type="button"
               onClick={() => setShowSettings(false)}
-              className="text-xs text-[var(--text-muted)] hover:text-[var(--ink)]"
+              className="text-sm font-semibold text-[var(--primary-text)] hover:underline"
+              aria-label="Close card controls"
             >
               Done
             </button>
           </div>
 
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <strong className="block text-[var(--ink)]">Daily Spending Limit</strong>
-                <span className="text-[var(--text-muted)]">Max contactless & store spend</span>
-              </div>
-              <strong className="text-sm text-[var(--primary)] tabular-nums">RM {dailyLimit}</strong>
+          {isControlsLocked && (
+            <div
+              role="status"
+              className="p-3 rounded-xl border border-[var(--border)] text-xs flex items-start gap-2 bg-[var(--surface-soft)] text-[var(--ink)]"
+            >
+              <AppIcon name="info" size={16} color="var(--primary)" className="shrink-0 mt-0.5" />
+              <p className="m-0 font-medium leading-relaxed">
+                Your parent manages these settings. You can still make them stricter.
+              </p>
             </div>
-            <input
-              type="range"
-              min={10}
-              max={200}
-              step={10}
-              value={dailyLimit}
-              onChange={(e) => setDailyLimit(Number(e.target.value))}
-              className="w-full accent-[var(--primary)]"
-            />
+          )}
 
-            <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
-              <div>
-                <strong className="block text-[var(--ink)]">Online Purchases</strong>
-                <span className="text-[var(--text-muted)]">Allow e-commerce transactions</span>
+          <div className="space-y-4 text-xs">
+            {/* Daily Spending Limit */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label htmlFor="daily-limit-slider" className="block font-bold text-[var(--ink)]">
+                    Daily Spending Limit
+                  </label>
+                  <span className="text-[var(--text-secondary)] text-[11px] block mt-0.5">
+                    Most you can give as sadaqah or ask to withdraw in one day.
+                  </span>
+                </div>
+                <strong className="text-sm text-[var(--primary-text)] tabular-nums font-bold">
+                  {formatRM(dailyLimit)}
+                </strong>
               </div>
               <input
-                type="checkbox"
-                checked={onlineEnabled}
-                onChange={(e) => setOnlineEnabled(e.target.checked)}
-                className="toggle-switch accent-[var(--primary)]"
+                id="daily-limit-slider"
+                type="range"
+                min={10}
+                max={sliderMax}
+                step={10}
+                value={dailyLimit}
+                onChange={(e) => setDailyLimit(Number(e.target.value))}
+                aria-label="Daily spending limit"
+                className="w-full accent-[var(--primary)]"
               />
+              <div className="flex justify-end pt-1">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={
+                    savingLimit ||
+                    dailyLimit ===
+                      (data?.kid?.card_daily_limit != null
+                        ? Number(data.kid.card_daily_limit)
+                        : 50)
+                  }
+                  loading={savingLimit}
+                  onClick={saveDailyLimit}
+                >
+                  Save limit
+                </Button>
+              </div>
+            </div>
+
+            {/* Online Purchases */}
+            <div className="pt-3 border-t border-[var(--border)] space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label htmlFor="online-purchases-toggle" className="block font-bold text-[var(--ink)]">
+                    Online Purchases
+                  </label>
+                  <span className="text-[var(--text-secondary)] text-[11px] block mt-0.5">
+                    Practice setting. There are no online payments in Centsibility yet. Your parent can see this.
+                  </span>
+                </div>
+                <input
+                  id="online-purchases-toggle"
+                  type="checkbox"
+                  aria-label="Online Purchases"
+                  checked={onlineEnabled}
+                  disabled={isControlsLocked && !parentOnline}
+                  onChange={(e) => setOnlineEnabled(e.target.checked)}
+                  className="toggle-switch accent-[var(--primary)] shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div className="flex justify-end pt-1">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={
+                    savingOnline ||
+                    onlineEnabled ===
+                      (data?.kid?.card_online_enabled !== undefined
+                        ? Boolean(data.kid.card_online_enabled)
+                        : true)
+                  }
+                  loading={savingOnline}
+                  onClick={saveOnlineEnabled}
+                >
+                  Save setting
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Benchmark Image 1: Section Header TAP & SAVE */}
       <div className="max-w-[420px] mx-auto">
-        <div className="aeon-section-tag">
-          <span>TAP & SAVE</span>
+        <div className="section-tag">
+          <span>Spend smart</span>
         </div>
 
-        {/* Benchmark Image 1: Amber Banner (RM0 card issuance fee) */}
-        <div className="aeon-banner aeon-banner--amber">
+        <div className="promo-banner promo-banner--amber">
           <div className="max-w-[70%]">
-            <h3 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug">
-              RM0 card issuance fee
+            <h3 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
+              Set a daily limit your parent can see
             </h3>
             <button
               type="button"
               onClick={() => {
                 sfx.pop();
-                toast.success("Free Visa debit card waiver active for all accounts!");
+                setShowSettings(true);
               }}
-              className="aeon-banner__pill-btn"
+              className="promo-banner__btn"
+              aria-label="Open card settings to set daily limit"
             >
-              View more
+              Set limit
             </button>
           </div>
-          <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0 shadow-inner">
-            <AppIcon name="creditcard" size={28} />
+          <div className="w-16 h-16 rounded-full bg-white/60 flex items-center justify-center text-[var(--ink)] shrink-0">
+            <AppIcon name="creditcard" size={30} />
           </div>
-        </div>
-
-        {/* Carousel Dots */}
-        <div className="aeon-dots" aria-hidden="true">
-          <span className="aeon-dot-active" />
-          <span className="aeon-dot-inactive" />
         </div>
       </div>
     </div>

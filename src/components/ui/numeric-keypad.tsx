@@ -6,10 +6,8 @@ export interface NumericKeypadProps {
   onKeyPress: (key: string) => void;
   keys?: string[][];
   disabled?: boolean;
-  variant?: "default" | "pin" | "aeon";
+  variant?: "default" | "pin";
   className?: string;
-  showBiometric?: boolean;
-  onBiometricPress?: () => void;
 }
 
 export const DEFAULT_KEYPAD_KEYS = [
@@ -19,50 +17,46 @@ export const DEFAULT_KEYPAD_KEYS = [
   ["00", "0", "⌫"],
 ];
 
+// Bottom-left is empty: browsers can't do Face ID, so no fake biometric key.
 export const PIN_KEYPAD_KEYS = [
   ["1", "2", "3"],
   ["4", "5", "6"],
   ["7", "8", "9"],
-  ["biometric", "0", "delete"],
+  ["", "0", "delete"],
 ];
 
 export function NumericKeypad({
   onKeyPress,
   keys = DEFAULT_KEYPAD_KEYS,
   disabled = false,
-  variant = "aeon",
+  variant = "pin",
   className = "",
-  showBiometric = false,
-  onBiometricPress,
 }: NumericKeypadProps) {
-  const isAeonStyle = variant === "aeon" || variant === "pin";
+  const isPinStyle = variant === "pin";
 
   const handlePress = (key: string) => {
     if (disabled) return;
     sfx.tap();
-    if (key === "biometric") {
-      if (onBiometricPress) onBiometricPress();
-      return;
-    }
     onKeyPress(key);
   };
 
   return (
     <div
       className={
-        isAeonStyle
-          ? `aeon-pin-grid ${className}`.trim()
+        isPinStyle
+          ? `pin-grid ${className}`.trim()
           : `grid grid-cols-3 gap-2.5 ${className}`.trim()
       }
 
-      style={isAeonStyle ? undefined : { margin: "0.5rem 0" }}
+      style={isPinStyle ? undefined : { margin: "0.5rem 0" }}
     >
       {keys.flat().map((key, idx) => {
         const isDelete = key === "⌫" || key === "delete";
         const isClear = key === "clear";
-        const isBio = key === "biometric";
 
-        if (isAeonStyle) {
+        if (key === "") return <span key={`blank-${idx}`} aria-hidden="true" />;
+
+        if (isPinStyle) {
           return (
             <button
               key={`${key}-${idx}`}
@@ -74,19 +68,13 @@ export function NumericKeypad({
                   ? "Backspace"
                   : isClear
                     ? "Clear"
-                    : isBio
-                      ? "Biometric Login"
-                      : `Key ${key}`
+                    : `Key ${key}`
               }
-              className="aeon-pin-btn min-w-[48px] min-h-[48px]"
+              className="pin-btn min-w-[48px] min-h-[48px]"
             >
               {isDelete ? (
-                <span className="aeon-pin-backspace" aria-hidden="true">
+                <span className="pin-backspace" aria-hidden="true">
                   <AppIcon name="backspace" size={20} />
-                </span>
-              ) : isBio ? (
-                <span style={{ color: "var(--ink)" }} aria-hidden="true">
-                  <AppIcon name="faceid" size={26} />
                 </span>
               ) : isClear ? (
                 <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-secondary)" }}>

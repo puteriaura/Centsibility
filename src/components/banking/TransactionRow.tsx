@@ -1,5 +1,6 @@
 import * as React from "react";
 import { AppIcon } from "@/components/ui/app-icon";
+import { formatRM } from "@/lib/format";
 
 export interface TransactionRowProps {
   id?: string;
@@ -7,7 +8,6 @@ export interface TransactionRowProps {
   subtitle?: string;
   date?: string;
   amount: number;
-  currency?: string;
   isIncome?: boolean;
   icon?: string;
   onClick?: () => void;
@@ -19,7 +19,6 @@ export function TransactionRow({
   subtitle,
   date,
   amount,
-  currency = "RM",
   isIncome = false,
   icon,
   onClick,
@@ -39,8 +38,8 @@ export function TransactionRow({
         <div
           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
             isIncome
-              ? "bg-[var(--success-soft)] text-[var(--success)]"
-              : "bg-[var(--surface-soft)] text-[var(--primary)]"
+              ? "bg-[var(--success-soft)] text-[var(--success-text)]"
+              : "bg-[var(--surface-soft)] text-[var(--primary-text)]"
           }`}
         >
           <AppIcon name={iconName} size={20} />
@@ -60,11 +59,10 @@ export function TransactionRow({
       <div className="text-right shrink-0 ml-3">
         <span
           className={`text-sm font-bold tabular-nums block leading-snug ${
-            isIncome ? "text-[var(--success)]" : "text-[var(--ink)]"
+            isIncome ? "text-[var(--success-text)]" : "text-[var(--ink)]"
           }`}
         >
-          {isIncome ? "+" : "-"}
-          {currency} {Math.abs(amount).toFixed(2)}
+          {formatRM(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
         </span>
       </div>
     </div>

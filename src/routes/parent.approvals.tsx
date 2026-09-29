@@ -7,12 +7,14 @@ import {
   edgeParentMarkNotificationsRead,
 } from "@/lib/edge";
 import { toast } from "sonner";
-import { parseQardReason } from "@/lib/qard";
+import { parseQardReason, computeQardPayout } from "@/lib/qard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate, formatRM } from "@/lib/format";
+import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 
 export const Route = createFileRoute("/parent/approvals")({
   head: () => ({ meta: [{ title: "Approvals — Centsibility" }] }),
@@ -22,7 +24,8 @@ export const Route = createFileRoute("/parent/approvals")({
 const parseQard = parseQardReason;
 
 function Approvals() {
-  const { approvals, rewards, loading, refresh } = useParentData();
+  const { approvals, rewards, loading, error, hasLoaded, lastLoadedAt, refresh } =
+    useParentData();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [tab, setTab] = useState<"requests" | "rewards">("requests");
 
@@ -56,7 +59,7 @@ function Approvals() {
     }
   };
 
-  if (loading) {
+  if (loading && !hasLoaded && !error) {
     return (
       <div className="space-y-4">
         <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
@@ -66,10 +69,21 @@ function Approvals() {
     );
   }
 
+  if (error && !hasLoaded) {
+    return (
+      <div className="space-y-5 pb-12">
+        <ParentLoadError variant="page" onRetry={refresh} message={error} />
+      </div>
+    );
+  }
+
   const totalPending = approvals.length + rewards.length;
 
   return (
     <div className="space-y-5 pb-12">
+      {error && hasLoaded && (
+        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+      )}
       <div>
         <h1 className="settings-page-title">Notifications</h1>
         <p className="text-sm text-[var(--text-secondary)] mt-1 mb-0">
@@ -89,7 +103,7 @@ function Approvals() {
         >
           Alerts
           {approvals.length > 0 ? (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--error)] text-white text-[10px] font-bold">
+            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--error-strong)] text-white text-[10px] font-bold">
               {approvals.length > 99 ? "99+" : approvals.length}
             </span>
           ) : null}
@@ -105,16 +119,16 @@ function Approvals() {
         >
           Rewards
           {rewards.length > 0 ? (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--error)] text-white text-[10px] font-bold">
+            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--error-strong)] text-white text-[10px] font-bold">
               {rewards.length > 99 ? "99+" : rewards.length}
             </span>
           ) : null}
         </button>
       </div>
 
-      {totalPending === 0 && (
+      {hasLoaded && !error && totalPending === 0 && (
         <Card variant="soft" className="p-8 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--success-soft)] text-[var(--success)] flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--success-soft)] text-[var(--success-text)] flex items-center justify-center mx-auto">
             <AppIcon name="approve" size={24} />
           </div>
           <h3 className="text-base font-bold text-[var(--ink)]">All Clear!</h3>
@@ -126,7 +140,7 @@ function Approvals() {
 
       {tab === "requests" && (
         <div className="space-y-3" role="tabpanel" id="panel-req" aria-labelledby="tab-req">
-          {approvals.length === 0 ? (
+          {hasLoaded && !error && approvals.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)] py-6 text-center">No money or loan alerts.</p>
           ) : (
             approvals.map((a) => {
@@ -142,11 +156,7 @@ function Approvals() {
                 >
                   <div className="notif-item__meta">
                     <span className="notif-item__date">
-                      {new Date(a.created_at).toLocaleDateString(undefined, {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(a.created_at)}
                     </span>
                     <span className="notif-item__dot" aria-label="Unread" />
                   </div>
@@ -160,14 +170,14 @@ function Approvals() {
                       </div>
                       <p className="notif-item__body mt-1">{parsed?.reason ?? a.reason}</p>
                       {isQard && parsed?.dueDays && (
-                        <p className="text-xs font-semibold text-[var(--primary)] mt-1">
+                        <p className="text-xs font-semibold text-[var(--primary-text)] mt-1">
                           Promise to repay in {parsed.dueDays} days
                         </p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-xl font-extrabold text-[var(--ink)] tabular-nums block">
-                        RM {Number(a.amount).toFixed(2)}
+                        {formatRM(Number(a.amount))}
                       </span>
                     </div>
                   </div>
@@ -193,17 +203,22 @@ function Approvals() {
                       <div className="flex justify-between text-[var(--text-secondary)]">
                         <span>Requested Amount</span>
                         <span className="tabular-nums font-semibold">
-                          RM {Number(a.amount).toFixed(2)}
+                          {formatRM(Number(a.amount))}
                         </span>
                       </div>
                       <div className="flex justify-between text-[var(--text-secondary)]">
                         <span>Interest / Admin Charges</span>
-                        <span className="text-[var(--success)] font-bold">RM 0.00 (Halal Qard)</span>
+                        <span className="text-[var(--ink)] font-bold">
+                          {(() => {
+                            const q = computeQardPayout(Number(a.amount));
+                            return `Fees ${formatRM(q.totalFees)} · Child receives ${formatRM(q.payout)}`;
+                          })()}
+                        </span>
                       </div>
                       <div className="flex justify-between pt-1 border-t border-[var(--border)] font-bold text-[var(--ink)]">
                         <span>Child Repayment Due</span>
-                        <span className="tabular-nums text-[var(--primary)]">
-                          RM {Number(a.amount).toFixed(2)}
+                        <span className="tabular-nums text-[var(--primary-text)]">
+                          {formatRM(Number(a.amount))}
                         </span>
                       </div>
                     </div>
@@ -239,7 +254,7 @@ function Approvals() {
 
       {tab === "rewards" && (
         <div className="space-y-3" role="tabpanel" id="panel-rew" aria-labelledby="tab-rew">
-          {rewards.length === 0 ? (
+          {hasLoaded && !error && rewards.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)] py-6 text-center">No reward requests.</p>
           ) : (
             rewards.map((r) => {
@@ -252,11 +267,7 @@ function Approvals() {
                 >
                   <div className="notif-item__meta">
                     <span className="notif-item__date">
-                      {new Date(r.created_at).toLocaleDateString(undefined, {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(r.created_at)}
                     </span>
                     <span className="notif-item__dot" aria-label="Unread" />
                   </div>
@@ -271,7 +282,7 @@ function Approvals() {
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-base font-bold text-[var(--primary)] flex items-center gap-1 justify-end">
+                      <span className="text-base font-bold text-[var(--primary-text)] flex items-center gap-1 justify-end">
                         {r.cost} <AppIcon name="star" size={14} />
                       </span>
                     </div>

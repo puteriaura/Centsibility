@@ -22,3 +22,21 @@ export function parseQardReason(rawReason: string | null | undefined): ParsedQar
 export function cleanApprovalReason(rawReason: string | null | undefined): string {
   return parseQardReason(rawReason).reason;
 }
+
+// Keep in sync with resolve_approval in supabase/migrations/20260929070000_qard_admin_fee_and_limits.sql
+export const QARD_FEES = { admin: 1.0 } as const;
+export const QARD_MIN_LOAN = 10;
+export const QARD_MAX_LOAN = 500;
+
+export function computeQardPayout(amount: number) {
+  const amountCents = Math.round(amount * 100);
+  const feeCents = Math.min(Math.round(QARD_FEES.admin * 100), amountCents);
+  const payoutCents = amountCents - feeCents;
+
+  const adminFee = feeCents / 100;
+  return {
+    adminFee,
+    totalFees: adminFee,
+    payout: payoutCents / 100,
+  };
+}

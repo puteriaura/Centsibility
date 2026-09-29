@@ -31,7 +31,7 @@ export function StatCard({
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="text-xs font-semibold text-[var(--text-secondary)]">{label}</span>
         {icon && (
-          <div className="text-[var(--primary)]" style={{ color: iconColor }}>
+          <div className="text-[var(--primary-text)]" style={{ color: iconColor }}>
             <AppIcon name={icon} size={18} />
           </div>
         )}
@@ -53,7 +53,7 @@ export function StatCard({
           <button
             type="button"
             onClick={onAction}
-            className="text-xs font-semibold text-[var(--primary)] hover:underline inline-flex items-center gap-1"
+            className="text-xs font-semibold text-[var(--primary-text)] hover:underline inline-flex items-center gap-1"
           >
             {actionText}
           </button>

@@ -53,7 +53,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error ? (
-          <p className="mt-1 text-xs text-[var(--error)] font-medium" role="alert">
+          <p className="mt-1 text-xs text-[var(--error-text)] font-medium" role="alert">
             {error}
           </p>
         ) : helperText ? (

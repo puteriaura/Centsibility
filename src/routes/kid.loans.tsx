@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
+import { KidLoadError } from "@/features/kid/components";
 import { edgeKidRepayLoan, edgeKidRequestLoan } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { SignaturePad } from "@/features/loans/components/SignaturePad";
@@ -14,6 +15,8 @@ import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { formatDate, formatRM } from "@/lib/format";
+import { computeQardPayout } from "@/lib/qard";
 
 export const Route = createFileRoute("/kid/loans")({
   head: () => ({ meta: [{ title: "My Loans — Centsibility" }] }),
@@ -21,7 +24,7 @@ export const Route = createFileRoute("/kid/loans")({
 });
 
 function KidLoans() {
-  const { data, loading, refresh } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [active, setActive] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<"active" | "closed">("active");
 
@@ -32,6 +35,7 @@ function KidLoans() {
   const [signature, setSignature] = useState<string | null>(null);
   const [signStep, setSignStep] = useState(false);
 
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
@@ -57,10 +61,10 @@ function KidLoans() {
       if (res.fullyRepaid)
         toast.success(
           res.trustDelta > 0
-            ? `Alhamdulillah! Trust +${res.trustDelta}`
-            : `Repaid late. Trust ${res.trustDelta}`,
+            ? `Alhamdulillah! Repaid ${formatRM(res.paid)} · Trust +${res.trustDelta}`
+            : `Repaid ${formatRM(res.paid)} late · Trust ${res.trustDelta}`,
         );
-      else toast.success("Partial repayment recorded");
+      else toast.success(`Repaid ${formatRM(res.paid)}`);
       setActive(null);
       refresh();
     } catch (e: unknown) {
@@ -100,10 +104,10 @@ function KidLoans() {
 
   return (
     <div className="space-y-4 pb-12">
-      <section className="deposit-hero deposit-hero--lilac" aria-label="Total outstanding balance">
+      <section className="deposit-hero" aria-label="Loan balance">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Total Outstanding Balance</p>
-          <p className="deposit-hero__amount tabular-nums">RM{totalOutstanding.toFixed(2)}</p>
+          <p className="deposit-hero__label">Loan balance</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(totalOutstanding)}</p>
           <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
             Trust {data.kid.trust_score} · 0% interest (Halal)
           </p>
@@ -145,15 +149,13 @@ function KidLoans() {
       {selectedTab === "active" && !requesting && (
         <article className="financing-promo">
           <div className="financing-promo__art">
-            <span className="bg-white text-[var(--ink)] text-[11px] font-extrabold px-3 py-1 rounded-full">
-              Financing
+            <span className="bg-white text-[var(--ink)] text-xs font-bold px-3 py-1 rounded-full">
+              Interest free
             </span>
             <AppIcon name="handshake" size={36} color="#fff" />
           </div>
           <div className="financing-promo__body">
-            <h2 className="text-base font-bold text-[var(--ink)] m-0">
-              Personal Financing-i (Qard Hasan)
-            </h2>
+            <h2 className="text-base font-bold text-[var(--ink)] m-0">Qard Hasan loan</h2>
             <p className="text-xs text-[var(--text-secondary)] mt-1 mb-4 leading-relaxed">
               Interest-free support anytime. Repay on schedule to grow your trust score.
             </p>
@@ -167,7 +169,7 @@ function KidLoans() {
               }}
               className="text-xs font-bold"
             >
-              <AppIcon name="plus" size={14} /> Apply for Financing
+              <AppIcon name="plus" size={14} /> Ask for a loan
             </Button>
           </div>
         </article>
@@ -177,7 +179,7 @@ function KidLoans() {
       {requesting && (
         <Card variant="default" className="p-5 sm:p-6 space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="agreement" size={20} />
             </div>
             <div>
@@ -191,10 +193,10 @@ function KidLoans() {
           {!signStep ? (
             <div className="space-y-3 pt-2">
               <div className="text-xs font-semibold text-[var(--text-secondary)]">
-                Select loan amount (Min. RM 1.00 — Max RM 500.00)
+                Select loan amount (Min. RM10.00 — Max RM500.00)
               </div>
               <MoneyKeypad
-                min={1.0}
+                min={10.0}
                 max={500}
                 confirmLabel="Next: Fill Details →"
                 onConfirm={(amt) => {
@@ -206,33 +208,50 @@ function KidLoans() {
           ) : (
             <div className="space-y-4 pt-2">
               {/* Summary Card */}
-              <Card variant="soft" className="p-4 space-y-2 border border-[var(--border)]">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[var(--text-secondary)]">Requested Amount</span>
-                  <strong className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                    RM {reqAmt!.toFixed(2)}
-                  </strong>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[var(--text-secondary)]">Interest / Admin Fees</span>
-                  <strong className="text-sm font-bold text-[var(--success)]">RM 0.00 (Halal)</strong>
-                </div>
-                <div className="flex justify-between items-center text-xs pt-1 border-t border-[var(--border)]">
-                  <span className="font-semibold text-[var(--ink)]">Total Repayable</span>
-                  <strong className="text-base font-extrabold text-[var(--primary)] tabular-nums">
-                    RM {reqAmt!.toFixed(2)}
-                  </strong>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSignStep(false)}
-                  className="mt-1 text-xs"
-                >
-                  <AppIcon name="back" size={14} /> Change Amount
-                </Button>
-              </Card>
+              {(() => {
+                const qard = computeQardPayout(reqAmt!);
+                return (
+                  <Card variant="soft" className="p-4 space-y-2 border border-[var(--border)]">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[var(--text-secondary)]">Requested Amount</span>
+                      <strong className="text-sm font-bold text-[var(--ink)] tabular-nums">
+                        {formatRM(reqAmt!)}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[var(--text-secondary)]">Interest</span>
+                      <strong className="text-sm font-bold text-[var(--success-text)]">RM0.00 (Halal)</strong>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[var(--text-secondary)]">Admin fee</span>
+                      <strong className="text-sm font-semibold text-[var(--ink)] tabular-nums">
+                        {formatRM(qard.adminFee)}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between items-center text-xs pt-1 border-t border-[var(--border)]">
+                      <span className="font-semibold text-[var(--ink)]">You receive</span>
+                      <strong className="text-base font-extrabold text-[var(--success-text)] tabular-nums">
+                        {formatRM(qard.payout)}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-semibold text-[var(--ink)]">You repay</span>
+                      <strong className="text-sm font-bold text-[var(--primary-text)] tabular-nums">
+                        {formatRM(reqAmt!)}
+                      </strong>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSignStep(false)}
+                      className="mt-1 text-xs"
+                    >
+                      <AppIcon name="back" size={14} /> Change Amount
+                    </Button>
+                  </Card>
+                );
+              })()}
 
               {/* Purpose Input */}
               <Input
@@ -296,12 +315,12 @@ function KidLoans() {
         aria-labelledby={selectedTab === "active" ? "tab-loans-active" : "tab-loans-closed"}
       >
         <SectionTitle>
-          {selectedTab === "active" ? "Active Financing Agreements" : "Settled History"}
+          {selectedTab === "active" ? "Active loans" : "Settled loans"}
         </SectionTitle>
         {(selectedTab === "active" ? activeLoans : closedLoans).length === 0 ? (
           <Card variant="soft" className="p-8 text-center text-sm text-[var(--text-muted)]">
             {selectedTab === "active"
-              ? "No active loans. Tap 'Apply for Financing' above to request interest-free support."
+              ? "No active loans. Tap 'Ask for a loan' above to request interest-free support."
               : "No closed loans yet. Fully repaid loans will be recorded here."}
           </Card>
         ) : (
@@ -334,20 +353,16 @@ function KidLoans() {
                         )}
                       </div>
                       <p className="text-xs text-[var(--text-muted)] mt-1">
-                        Due: {new Date(l.due_date).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        Due {formatDate(l.due_date)}
                       </p>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-right shrink-0 whitespace-nowrap">
                       <span className="text-base font-bold tabular-nums text-[var(--ink)] block">
-                        RM {remaining.toFixed(2)}
+                        {formatRM(remaining)}
                       </span>
                       <span className="text-xs text-[var(--text-muted)]">
-                        of RM {Number(l.amount).toFixed(2)}
+                        of {formatRM(Number(l.amount))}
                       </span>
                     </div>
                   </div>
@@ -381,8 +396,8 @@ function KidLoans() {
                   {l.status === "active" && active === l.id && (
                     <div className="pt-3 mt-3 border-t border-dashed border-[var(--border)] space-y-3">
                       <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
-                        <span>Wallet Balance: <strong>RM {kidBalance.toFixed(2)}</strong></span>
-                        <span>Outstanding: <strong>RM {remaining.toFixed(2)}</strong></span>
+                        <span>Wallet Balance: <strong>{formatRM(kidBalance)}</strong></span>
+                        <span>Outstanding: <strong>{formatRM(remaining)}</strong></span>
                       </div>
                       <MoneyKeypad
                         key={l.id}

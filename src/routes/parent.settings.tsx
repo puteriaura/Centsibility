@@ -1,4 +1,4 @@
-﻿import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
@@ -7,11 +7,12 @@ import {
   edgeParentSetHibah,
   edgeParentSetPin,
   edgeParentGetPin,
+  edgeParentClearPin,
   edgeParentSetAvatar,
   edgeParentSetSelfAvatar,
   edgeParentGetSelfAvatar,
+  clearParentPinSession,
 } from "@/lib/edge";
-import { saveQuickLogin, getQuickLogin, clearQuickLogin } from "@/lib/quick-login";
 import { setParentBypassed } from "@/lib/admin-bypass";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,6 +24,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppIcon } from "@/components/ui/app-icon";
+import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
+import { parentDisplayName } from "@/lib/display-name";
 
 export const Route = createFileRoute("/parent/settings")({
   head: () => ({ meta: [{ title: "Settings — Centsibility" }] }),
@@ -31,13 +34,12 @@ export const Route = createFileRoute("/parent/settings")({
 
 function Settings() {
   const { user } = useAuth();
-  const { kids, loading, refresh } = useParentData();
+  const { kids, loading, error, hasLoaded, lastLoadedAt, refresh } = useParentData();
   const { theme, toggle } = useTheme();
   const [editing, setEditing] = useState<string | null>(null);
   const [custom, setCustom] = useState(5);
   const [pin, setPin] = useState("");
-  const [pwd, setPwd] = useState("");
-  const [hasQuick, setHasQuick] = useState(false);
+  const [currentPin, setCurrentPin] = useState("");
   const [hasPin, setHasPin] = useState(false);
   const [selfAvatar, setSelfAvatar] = useState(DEFAULT_PARENT_AVATAR);
   const [kidAvatarQuery, setKidAvatarQuery] = useState("");
@@ -47,8 +49,7 @@ function Settings() {
   >(null);
 
   useEffect(() => {
-    setHasQuick(!!getQuickLogin());
-    edgeParentGetPin().then((res) => setHasPin(!!res.pin_hash));
+    edgeParentGetPin().then((res) => setHasPin(res.hasPin));
     edgeParentGetSelfAvatar().then((res) => {
       if (res.avatar) setSelfAvatar(resolveAvatar(res.avatar, "parent"));
     });
@@ -66,7 +67,6 @@ function Settings() {
 
   const doLogout = async () => {
     sfx.tap();
-    clearQuickLogin();
     setParentBypassed(false);
     await supabase.auth.signOut();
     toast.success("Signed out");
@@ -111,40 +111,34 @@ function Settings() {
       toast.error("PIN must be 4-6 digits");
       return;
     }
-    if (!pwd) {
-      toast.error("Confirm your password to enable PIN login");
-      return;
-    }
     try {
-      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin));
-      const hashed = Array.from(new Uint8Array(buf))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      await edgeParentSetPin({ pin_hash: hashed });
-      saveQuickLogin({ email: user!.email!, password: pwd, pin });
-      setHasQuick(true);
+      await edgeParentSetPin({ pin });
       setHasPin(true);
       setPin("");
-      setPwd("");
-      toast.success("PIN set! Use it on next login.");
+      toast.success("Dashboard PIN saved");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
     }
   };
 
   const removePin = async () => {
-    try {
-      await edgeParentSetPin({ pin_hash: "" });
-    } catch {
-      /* ignore */
+    if (!/^\d{4,6}$/.test(currentPin)) {
+      toast.error("Enter your 4–6 digit current PIN to turn off");
+      return;
     }
-    clearQuickLogin();
-    setHasQuick(false);
-    setHasPin(false);
-    toast.success("Device PIN disabled on this browser");
+    try {
+      await edgeParentClearPin({ currentPin });
+      clearParentPinSession();
+      sessionStorage.removeItem("parentSessionValidUntil");
+      setHasPin(false);
+      setCurrentPin("");
+      toast.success("Dashboard PIN turned off");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to turn off PIN");
+    }
   };
 
-  if (loading)
+  if (loading && !hasLoaded && !error)
     return (
       <div className="parent-page space-y-4">
         <Skeleton style={{ height: "40px", width: "200px" }} />
@@ -152,12 +146,22 @@ function Settings() {
       </div>
     );
 
+  if (error && !hasLoaded) {
+    return (
+      <div className="parent-page">
+        <ParentLoadError variant="page" onRetry={refresh} message={error} />
+      </div>
+    );
+  }
+
   const presets = [0.0, 0.025, 0.05, 0.1, 0.15];
-  const displayName =
-    user?.user_metadata?.display_name ?? user?.email?.split("@")[0] ?? "Parent";
+  const displayName = parentDisplayName(user);
 
   return (
     <div className="parent-page settings-page mobile-stack pb-4">
+      {error && hasLoaded && (
+        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+      )}
       <div className="settings-profile">
         <div className="settings-profile__identity">
           <AvatarBubble emoji={selfAvatar} size={48} ring kind="parent" />
@@ -178,7 +182,7 @@ function Settings() {
             [
               { id: "profile" as const, label: "My profile", icon: "user" },
               { id: "kids" as const, label: "Children avatars", icon: "users" },
-              { id: "pin" as const, label: "Device PIN", icon: "lock" },
+              { id: "pin" as const, label: "Dashboard PIN", icon: "lock" },
               { id: "prefs" as const, label: "Sound & theme", icon: "settings" },
               { id: "hibah" as const, label: "Hibah preferences", icon: "sparkles" },
             ] as const
@@ -228,7 +232,7 @@ function Settings() {
             <CardDescription>Search, then update a child</CardDescription>
           </CardHeader>
           <CardContent style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {kids.length === 0 ? (
+            {hasLoaded && !error && kids.length === 0 ? (
               <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: 0 }}>
                 No children enrolled yet.
               </p>
@@ -290,21 +294,19 @@ function Settings() {
       <div className={`settings-panel${panel === "pin" ? " is-open" : ""}`}>
         <Card variant="default" className="m-0">
           <CardHeader>
-            <CardTitle style={{ fontSize: "1rem" }}>Quick device PIN</CardTitle>
-            <CardDescription>Skip password on this phone</CardDescription>
+            <CardTitle style={{ fontSize: "1rem" }}>Dashboard PIN</CardTitle>
+            <CardDescription>Asked for whenever the parent dashboard opens</CardDescription>
           </CardHeader>
           <CardContent>
             <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", margin: "0 0 0.85rem" }}>
-              Set a 4–6 digit PIN for this device.
+              Set a 4–6 digit PIN. It is stored only as a hash on the server.
             </p>
-            {hasQuick ? (
+            {hasPin ? (
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "0.75rem",
-                  flexWrap: "wrap",
+                  flexDirection: "column",
+                  gap: "0.85rem",
                   padding: "0.85rem 1rem",
                   background: "var(--success-soft)",
                   borderRadius: "12px",
@@ -315,9 +317,22 @@ function Settings() {
                   <AppIcon name="check" size={18} color="var(--success)" />
                   <strong style={{ fontSize: "0.875rem", color: "var(--ink)" }}>PIN active</strong>
                 </div>
-                <Button variant="danger" size="sm" onClick={removePin}>
-                  Disable
-                </Button>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <Input
+                    id="settings-current-pin-input"
+                    value={currentPin}
+                    onChange={(e) => setCurrentPin(e.target.value)}
+                    placeholder="Current PIN"
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoComplete="off"
+                    aria-label="Current PIN"
+                    style={{ maxWidth: "140px" }}
+                  />
+                  <Button variant="danger" size="sm" onClick={removePin}>
+                    Turn off PIN
+                  </Button>
+                </div>
               </div>
             ) : (
               <form
@@ -348,31 +363,8 @@ function Settings() {
                     aria-required="true"
                   />
                 </div>
-                <div>
-                  <label
-                    htmlFor="settings-pin-password"
-                    style={{
-                      display: "block",
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "var(--text-secondary)",
-                      marginBottom: "0.3rem",
-                    }}
-                  >
-                    Password confirmation
-                  </label>
-                  <Input
-                    id="settings-pin-password"
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    type="password"
-                    placeholder="Current password"
-                    autoComplete="current-password"
-                    aria-required="true"
-                  />
-                </div>
                 <Button type="submit" variant="primary">
-                  {hasPin ? "Update PIN" : "Save PIN"}
+                  Save PIN
                 </Button>
               </form>
             )}
@@ -422,7 +414,7 @@ function Settings() {
             <CardDescription>Monthly gift per child</CardDescription>
           </CardHeader>
           <CardContent style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {kids.length === 0 ? (
+            {hasLoaded && !error && kids.length === 0 ? (
               <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: 0 }}>
                 No children enrolled yet.
               </p>

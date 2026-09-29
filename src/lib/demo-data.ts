@@ -8,12 +8,28 @@ import type {
   ScheduledHibah,
 } from "@/types/domain";
 
+export const DEMO_IDENTITY = import.meta.env.DEV
+  ? {
+      parentEmail: "test@centsibility.com",
+      kidUsername: "aiman",
+      kidCode: "AIMAN1",
+      kidId: "demo-kid-aiman",
+      sessionToken: "demo-token-aiman",
+    }
+  : {
+      parentEmail: "demo@example.com",
+      kidUsername: "demo",
+      kidCode: "DEMO00",
+      kidId: "demo-kid-demo",
+      sessionToken: "demo-token-demo",
+    };
+
 export const DEMO_KID: Kid = {
-  id: "demo-kid-aiman",
+  id: DEMO_IDENTITY.kidId,
   parent_id: "demo-parent-id",
   name: "Aiman",
-  username: "aiman",
-  login_code: "AIMAN1",
+  username: DEMO_IDENTITY.kidUsername,
+  login_code: DEMO_IDENTITY.kidCode,
   balance: 142.5,
   coins: 520,
   coins_decimal: 520,
@@ -38,7 +54,7 @@ export const DEMO_KID: Kid = {
   trust_score: 95,
   unclaimed_coins: 10,
   xp: 450,
-  session_token: "demo-token-aiman",
+  session_token: DEMO_IDENTITY.sessionToken,
   created_at: "2026-01-01T00:00:00.000Z",
   last_login_date: new Date().toISOString().slice(0, 10),
 };
@@ -172,7 +188,7 @@ export const DEMO_KID_STATE = {
   attempts: [],
   parent: {
     id: "demo-parent-id",
-    email: "test@centsibility.com",
+    email: DEMO_IDENTITY.parentEmail,
     name: "Test Parent",
   },
 };

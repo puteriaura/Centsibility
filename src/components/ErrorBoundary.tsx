@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
             variant="default"
             className="max-w-md w-full p-8 text-center rounded-3xl shadow-lg border border-[var(--border)]"
           >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--error-soft)] text-[var(--error)] flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--error-soft)] text-[var(--error-text)] flex items-center justify-center">
               <AppIcon name="close" size={32} />
             </div>
             <h1 className="text-2xl font-extrabold text-[var(--ink)]">System Malfunction</h1>
@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
               data inconsistency.
             </p>
             {this.state.error && (
-              <div className="mt-4 p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-left overflow-auto max-h-32 text-xs font-mono text-[var(--error)]">
+              <div className="mt-4 p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-left overflow-auto max-h-32 text-xs font-mono text-[var(--error-text)]">
                 <code>{this.state.error.message}</code>
               </div>
             )}

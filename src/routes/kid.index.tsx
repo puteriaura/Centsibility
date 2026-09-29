@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,11 +24,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { cleanApprovalReason } from "@/lib/qard";
 import {
+  KidLoadError,
   StatChip,
   RewardCoinPicker,
   TX_ICON_MAP,
 } from "@/features/kid/components";
 import { AppIcon } from "@/components/ui/app-icon";
+import { startOfMonth } from "date-fns";
+import { formatDate, formatRM } from "@/lib/format";
+import { isDebitTransaction, isSpendingTransaction, isWalletTransaction } from "@/lib/finance";
 
 export const Route = createFileRoute("/kid/")({
   head: () => ({ meta: [{ title: "Kid Home — Centsibility" }] }),
@@ -37,7 +41,7 @@ export const Route = createFileRoute("/kid/")({
 
 function KidHome() {
   const nav = useNavigate();
-  const { data, loading, refresh } = useKidData();
+  const { data, loading, error, refresh } = useKidData();
   const [showReward, setShowReward] = useState(false);
   const [rName, setRName] = useState("");
   const [moneyReq, setMoneyReq] = useState<null | "DEPOSIT" | "WITHDRAWAL">(null);
@@ -49,7 +53,30 @@ function KidHome() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
+  const [balanceSlide, setBalanceSlide] = useState(0);
+  // Mouse drag-to-scroll for the balance carousel (touch already scrolls natively).
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ down: false, startX: 0, startScroll: 0, moved: false });
 
+  const onCarouselPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "touch") return;
+    const el = carouselRef.current;
+    if (!el) return;
+    drag.current = { down: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false };
+    el.setPointerCapture(e.pointerId);
+  };
+  const onCarouselPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = carouselRef.current;
+    if (!drag.current.down || !el) return;
+    const dx = e.clientX - drag.current.startX;
+    if (Math.abs(dx) > 4) drag.current.moved = true;
+    el.scrollLeft = drag.current.startScroll - dx;
+  };
+  const onCarouselPointerUp = () => {
+    drag.current.down = false;
+  };
+
+  if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data)
     return (
       <div className="space-y-4">
@@ -65,6 +92,7 @@ function KidHome() {
 
   const k = data.kid;
   const code = getKidSession()?.code;
+  const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type));
 
   const claim = async () => {
     if (!code) return;
@@ -154,9 +182,7 @@ function KidHome() {
     }
   };
 
-  const isOutflow = (t: (typeof data.txs)[number]) =>
-    ["WITHDRAWAL", "SADAQAH", "INVEST_IN"].includes(t.type) ||
-    (t.type === "QARD" && t.label === "Loan repayment");
+
 
   return (
     <>
@@ -167,9 +193,8 @@ function KidHome() {
           aria-label="Open profile settings"
           className="kid-greeting__profile"
         >
-          <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={56} ring />
+          <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={48} ring />
           <div>
-            <p className="kid-greeting__salaam">السلام عليكم</p>
             <h1 className="kid-greeting__name">Cmdr. {k.name}!</h1>
           </div>
         </button>
@@ -179,10 +204,25 @@ function KidHome() {
         </div>
       </div>
 
-      <div style={{ marginTop: "1rem" }}>
-        <QuoteCard variant="kid" />
-      </div>
-
+      {/* Balance carousel: the next card peeks in, so the dots mean something */}
+      <div
+        ref={carouselRef}
+        className="balance-carousel"
+        role="region"
+        aria-label="Balances"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const first = el.firstElementChild as HTMLElement | null;
+          const step = first ? first.offsetWidth + 12 : el.clientWidth;
+          setBalanceSlide(Math.round(el.scrollLeft / step));
+        }}
+        onPointerDown={onCarouselPointerDown}
+        onPointerMove={onCarouselPointerMove}
+        onPointerUp={onCarouselPointerUp}
+        onPointerLeave={onCarouselPointerUp}
+        onPointerCancel={onCarouselPointerUp}
+      >
+        <div className="balance-carousel__slide">
       <BalanceCard
         title="Spending balance"
         balance={Number(k.balance)}
@@ -193,15 +233,41 @@ function KidHome() {
         hideBalance={hideBalance}
         onToggleHide={() => setHideBalance(!hideBalance)}
         onArrowClick={() => nav({ to: "/kid/wallet" })}
-        showDots={true}
         metadata={[
           { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
           { label: "100% Halal" },
         ]}
       />
+        </div>
+        <Link
+          to="/kid/rewards"
+          onClick={(e) => {
+            if (drag.current.moved) {
+              e.preventDefault();
+              return;
+            }
+            sfx.tap();
+          }}
+          className="balance-carousel__slide points-card"
+          aria-label={`${Math.round(Number(k.coins))} stardust points, open rewards`}
+        >
+          <span className="points-card__label">Stardust points</span>
+          <strong className="points-card__value tabular-nums">
+            {hideBalance ? "******" : Math.round(Number(k.coins)).toLocaleString("en-MY")}
+          </strong>
+          <span className="points-card__meta">
+            Level {k.level} · {k.xp} XP
+          </span>
+        </Link>
+      </div>
+      <div className="pager-dots" aria-hidden="true">
+        {[0, 1].map((i) => (
+          <span key={i} className={i === balanceSlide ? "pager-dot--active" : "pager-dot"} />
+        ))}
+      </div>
 
-      {/* Benchmark Image 4: 2x4 Circular Quick Action Grid */}
-      <div className="aeon-quick-grid">
+      {/* 4 x 2 quick actions: white circles on the canvas */}
+      <div className="quick-grid">
         {/* Row 1 */}
         <button
           type="button"
@@ -209,58 +275,58 @@ function KidHome() {
             sfx.tap();
             setMoneyReq("DEPOSIT");
           }}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle">
             <AppIcon name="deposit" size={24} />
           </span>
-          <span className="aeon-quick-label">Transfer</span>
+          <span className="quick-label">Transfer</span>
         </button>
 
         <Link
           to="/kid/wallet"
           onClick={() => sfx.tap()}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle">
             <AppIcon name="lock" size={22} />
           </span>
-          <span className="aeon-quick-label">Secure</span>
+          <span className="quick-label">Secure</span>
         </Link>
 
         <Link
           to="/kid/goals"
           onClick={() => sfx.tap()}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle quick-circle--aqua">
             <AppIcon name="money" size={24} />
           </span>
-          <span className="aeon-quick-label">Goals</span>
+          <span className="quick-label">Goals</span>
         </Link>
 
         <Link
           to="/kid/zakat"
           onClick={() => sfx.tap()}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
-            <span className="aeon-quick-circle__dot" aria-hidden="true" />
+          <span className="quick-circle quick-circle--amber">
+            <span className="quick-circle__dot" aria-hidden="true" />
             <AppIcon name="mosque" size={22} />
           </span>
-          <span className="aeon-quick-label">Zakat</span>
+          <span className="quick-label">Zakat</span>
         </Link>
 
         {/* Row 2 */}
         <Link
           to="/kid/loans"
           onClick={() => sfx.tap()}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle">
             <AppIcon name="loan" size={22} />
           </span>
-          <span className="aeon-quick-label">Loans</span>
+          <span className="quick-label">Loans</span>
         </Link>
 
         <button
@@ -269,43 +335,43 @@ function KidHome() {
             sfx.tap();
             setShowReward(true);
           }}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle quick-circle--amber">
             <AppIcon name="trophy" size={22} />
           </span>
-          <span className="aeon-quick-label">Rewards</span>
+          <span className="quick-label">Rewards</span>
         </button>
 
         <Link
           to="/kid/sadaqah"
           onClick={() => sfx.tap()}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
-            <span className="aeon-quick-circle__dot" aria-hidden="true" />
+          <span className="quick-circle quick-circle--aqua">
+            <span className="quick-circle__dot" aria-hidden="true" />
             <AppIcon name="sadaqah" size={22} />
           </span>
-          <span className="aeon-quick-label">Sadaqah</span>
+          <span className="quick-label">Sadaqah</span>
         </Link>
 
         <Link
           to="/kid/chat"
           onClick={() => sfx.tap()}
-          className="aeon-quick-btn"
+          className="quick-btn"
         >
-          <span className="aeon-quick-circle">
+          <span className="quick-circle quick-circle--coral">
             <AppIcon name="penny" size={24} />
           </span>
-          <span className="aeon-quick-label">Penny</span>
+          <span className="quick-label">Penny</span>
         </Link>
       </div>
 
-      {/* Promotional banner — AEON layout, Centsibility copy */}
-      <div className="aeon-banner aeon-banner--purple">
+      {/* One promotion, text left and art right */}
+      <div className="promo-banner promo-banner--aqua">
         <div className="max-w-[70%]">
-          <h3 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug">
-            Give sadaqah and earn stardust — start with RM1
+          <h3 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
+            Give sadaqah and earn stardust. Start with RM1.
           </h3>
           <button
             type="button"
@@ -313,98 +379,78 @@ function KidHome() {
               sfx.pop();
               nav({ to: "/kid/sadaqah" });
             }}
-            className="aeon-banner__pill-btn"
+            className="promo-banner__btn promo-banner__btn--aqua"
           >
             Give now
           </button>
         </div>
-        <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0 shadow-inner">
-          <AppIcon name="shieldcheck" size={28} />
+        <div className="w-16 h-16 rounded-full bg-white/60 flex items-center justify-center text-[var(--secondary-text)] shrink-0">
+          <AppIcon name="sadaqah" size={30} />
         </div>
       </div>
 
-      {/* Carousel Dots */}
-      <div className="aeon-dots" aria-hidden="true">
-        <span className="aeon-dot-active" />
-        <span className="aeon-dot-inactive" />
-        <span className="aeon-dot-inactive" />
-      </div>
-
-      {/* Benchmark Image 4 & 5: Insights */}
-      <div className="aeon-section-tag">
-        <span>INSIGHTS</span>
-        <span className="opacity-60 text-[10px]" aria-hidden="true">ⓘ</span>
+      <div className="section-tag">
+        <span>Insights</span>
       </div>
 
       <button
         type="button"
-        className="p-4 rounded-2xl text-white flex items-center gap-3.5 shadow-md relative overflow-hidden w-full text-left"
-        style={{
-          background: "var(--ink)",
-          border: "1.5px solid var(--brand-raspberry)",
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
-        }}
+        className="insights-recap"
         onClick={() => {
           sfx.tap();
           nav({ to: "/kid/insights" });
         }}
       >
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: "var(--primary)" }}
-        >
+        <span className="insights-recap__avatar" aria-hidden="true">
           <AppIcon name="star" size={20} color="#fff" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p
-            className="text-xs font-bold tracking-wide leading-tight"
-            style={{ color: "#ffffff" }}
-          >
-            Big week for transfers! You made {data.txs.length} transactions and earned {Math.round(Number(k.coins))} stardust!
-          </p>
-        </div>
+        </span>
+        <span className="insights-recap__text">
+          Big week! You made {walletTxs.length} transactions and earned{" "}
+          {Math.round(Number(k.coins))} stardust.
+        </span>
       </button>
 
-      {/* Penny missions — Centsibility equivalent of AEON mission cards */}
-      <div className="aeon-section-tag">
-        <span>PENNY MISSIONS</span>
+      <div className="section-tag">
+        <span>Penny missions</span>
       </div>
 
-      <div className="bg-white rounded-2xl p-5 border border-[var(--border)] shadow-sm flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--surface-pink)] flex items-center justify-center font-black text-xs text-[var(--primary)] shrink-0 shadow-inner">
-            BOOST
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-[var(--ink)]">Give Life a Boost!</h4>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Ends 15 Oct 2026</p>
-            <Link
-              to="/kid/quiz"
-              onClick={() => sfx.tap()}
-              className="text-xs font-bold text-[var(--ink)] hover:text-[var(--primary)] inline-flex items-center gap-1 mt-2"
-            >
-              <span>Explore more</span>
-              <span aria-hidden="true">→</span>
-            </Link>
-          </div>
+      <div className="bg-white rounded-2xl p-5 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary-text)] shrink-0">
+          <AppIcon name="quest" size={24} />
+        </div>
+        <div className="min-w-0">
+          <h4 className="text-base font-bold text-[var(--ink)] m-0">Daily money quest</h4>
+          <p className="text-sm text-[var(--text-muted)] mt-0.5 mb-0">
+            Answer 3 questions to unlock rewards
+          </p>
+          <Link
+            to="/kid/quiz"
+            onClick={() => sfx.tap()}
+            className="text-sm font-bold text-[var(--ink)] hover:text-[var(--primary-text)] inline-flex items-center gap-1 mt-2"
+          >
+            <span>Start quest</span>
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
       </div>
 
-      <div className="aeon-dots" aria-hidden="true">
-        <span className="aeon-dot-active" />
-        <span className="aeon-dot-inactive" />
+      <div className="section-tag">
+        <span>Spending summary</span>
       </div>
 
-      {/* Benchmark Image 5: Spending Summary */}
-      <div className="aeon-section-tag">
-        <span>SPENDING SUMMARY</span>
-      </div>
-
-      <div className="bg-white rounded-2xl p-5 border border-[var(--border)] shadow-sm flex items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-5 flex items-center justify-between gap-4">
         <div>
-          <span className="text-xs text-[var(--text-secondary)] font-medium">This month's spending</span>
+          <span className="text-sm text-[var(--text-secondary)] font-medium">This month's spending</span>
           <div className="text-2xl font-extrabold text-[var(--ink)] mt-1 tabular-nums">
-            RM{data.txs.filter(isOutflow).reduce((acc, t) => acc + Number(t.amount), 0).toFixed(2)}
+            {formatRM(
+              walletTxs
+                .filter(
+                  (t) =>
+                    isSpendingTransaction(t.type, t.label) &&
+                    new Date(t.created_at) >= startOfMonth(new Date()),
+                )
+                .reduce((acc, t) => acc + Number(t.amount), 0),
+            )}
           </div>
           <Button
             variant="primary"
@@ -419,10 +465,13 @@ function KidHome() {
           </Button>
         </div>
 
-        {/* Circular Donut Graphic */}
-        <div className="w-16 h-16 rounded-full border-4 border-[var(--primary)] border-t-[var(--navy-dark)] border-r-[var(--success)] flex items-center justify-center text-[var(--ink)] font-bold text-xs shrink-0 shadow-sm">
+        <div className="w-16 h-16 rounded-full border-2 border-[var(--primary)] flex items-center justify-center shrink-0">
           <AppIcon name="trend" size={22} color="var(--primary)" />
         </div>
+      </div>
+
+      <div className="mt-6">
+        <QuoteCard variant="kid" />
       </div>
 
       {/* Unclaimed Coins banner if present */}
@@ -431,11 +480,11 @@ function KidHome() {
           type="button"
           onClick={claim}
           aria-label={`Claim ${Math.round(Number(k.unclaimed_coins))} unclaimed points`}
-          className="w-full text-left mt-4 transition-transform active:scale-[0.98] cursor-pointer"
+          className="block w-full text-left mt-4 transition-transform active:scale-[0.98] cursor-pointer"
         >
           <Card variant="soft" className="p-4 border border-[var(--success)]/30 bg-[var(--success-soft)]/30 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--success-soft)] text-[var(--success)] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-[var(--success-soft)] text-[var(--success-text)] flex items-center justify-center shrink-0">
                 <AppIcon name="gift" size={20} />
               </div>
               <div>
@@ -445,7 +494,7 @@ function KidHome() {
                 <small className="text-xs text-[var(--text-secondary)]">Tap here to add to your balance</small>
               </div>
             </div>
-            <div className="text-base font-extrabold text-[var(--success)] tabular-nums shrink-0">
+            <div className="text-base font-extrabold text-[var(--success-text)] tabular-nums shrink-0">
               +{Math.round(Number(k.unclaimed_coins))}
             </div>
           </Card>
@@ -455,11 +504,11 @@ function KidHome() {
       {/* Stats Chips */}
       <div className="grid grid-cols-3 gap-2.5 mt-4">
         <StatChip icon="star" label="Level" value={k.level.toString()} />
-        <StatChip icon="target" label="XP" value={`${k.xp}/100`} />
+        <StatChip icon="target" label="XP" value={k.xp.toString()} />
         <StatChip icon="trust" label="Trust" value={k.trust_score.toString()} />
       </div>
 
-      <SectionTitle>Quick Money Requests</SectionTitle>
+      <SectionTitle>Money requests</SectionTitle>
       <div className="grid grid-cols-2 gap-3">
         <Button variant="primary" onClick={() => setMoneyReq("DEPOSIT")} className="justify-center">
           <AppIcon name="plus" size={16} />
@@ -474,7 +523,7 @@ function KidHome() {
       {moneyReq && (
         <Card variant="default" className="mt-4 p-5 space-y-4 border border-[var(--border)]">
           <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border)]">
-            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name={moneyReq === "DEPOSIT" ? "deposit" : "withdrawal"} size={18} />
             </div>
             <div>
@@ -503,12 +552,12 @@ function KidHome() {
         <Card variant="default" className="mt-4 p-5 space-y-4 border border-[var(--border)]">
           <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
                 <AppIcon name="gift" size={18} />
               </div>
               <h3 className="text-sm font-bold text-[var(--ink)]">Custom Wishlist Request</h3>
             </div>
-            <span className="text-xs font-bold text-[var(--primary)] flex items-center gap-1">
+            <span className="text-xs font-bold text-[var(--primary-text)] flex items-center gap-1">
               {Math.round(Number(k.coins)).toLocaleString()} <AppIcon name="star" size={12} />
             </span>
           </div>
@@ -532,7 +581,7 @@ function KidHome() {
 
       {pendingApprovals.length > 0 && (
         <div className="space-y-3">
-          <SectionTitle>Waiting for Parent Authorization</SectionTitle>
+          <SectionTitle>Waiting for approval</SectionTitle>
           <div className="space-y-2.5">
             {pendingApprovals.map((a: (typeof pendingApprovals)[number]) => (
               <Card key={a.id} variant="default" className="p-4 border border-[var(--border)] flex items-center justify-between gap-3">
@@ -544,7 +593,7 @@ function KidHome() {
                   <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Sent to parent for review</small>
                 </div>
                 <div className="text-base font-bold text-[var(--ink)] tabular-nums shrink-0">
-                  RM {Number(a.amount).toFixed(2)}
+                  {formatRM(Number(a.amount))}
                 </div>
               </Card>
             ))}
@@ -554,7 +603,7 @@ function KidHome() {
 
       {data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length > 0 && (
         <div className="space-y-3">
-          <SectionTitle>My Benevolent Loans (Qard)</SectionTitle>
+          <SectionTitle>My Qard loans</SectionTitle>
           <div className="space-y-2.5">
             {data.loans
               .filter((l: (typeof data.loans)[number]) => l.status === "active")
@@ -569,14 +618,14 @@ function KidHome() {
                         <strong className="text-sm font-bold text-[var(--ink)]">{l.reason || "Qard loan"}</strong>
                       </div>
                       <small className="text-xs text-[var(--text-secondary)] mt-0.5 block">
-                        Due: {l.due_date}
+                        Due {formatDate(l.due_date)}
                       </small>
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-base font-extrabold text-[var(--ink)] tabular-nums">
-                        RM {remaining.toFixed(2)}
+                        {formatRM(remaining)}
                       </div>
-                      <Link to="/kid/loans" className="text-xs font-bold text-[var(--primary)] hover:underline inline-block mt-0.5">
+                      <Link to="/kid/loans" className="text-xs font-bold text-[var(--primary-text)] hover:underline inline-block mt-0.5">
                         Repay →
                       </Link>
                     </div>
@@ -590,18 +639,18 @@ function KidHome() {
 
       <SectionTitle>Transaction History</SectionTitle>
       <Card variant="default" className="p-2 divide-y divide-[var(--border)] overflow-hidden">
-        {data.txs.map((t: (typeof data.txs)[number]) => (
+        {walletTxs.map((t: (typeof walletTxs)[number]) => (
           <TransactionRow
             key={t.id}
             title={t.label}
             subtitle={t.type}
-            date={new Date(t.created_at).toLocaleDateString()}
+            date={formatDate(t.created_at)}
             amount={Number(t.amount)}
-            isIncome={!isOutflow(t)}
+            isIncome={!isDebitTransaction(t.type, t.label)}
             icon={TX_ICON_MAP[t.type] || "transaction"}
           />
         ))}
-        {data.txs.length === 0 && (
+        {walletTxs.length === 0 && (
           <div className="p-6 text-center text-xs text-[var(--text-muted)]">No activity yet.</div>
         )}
       </Card>

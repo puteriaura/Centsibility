@@ -119,7 +119,7 @@ function KidLogin() {
                 style={{ borderRadius: "0.625rem" }}
               >
                 <AppIcon name="key" size={16} />
-                <span>6-Digit Code</span>
+                <span>Access code</span>
               </Button>
               <Button
                 type="button"
@@ -148,7 +148,7 @@ function KidLogin() {
                     required
                     value={quickCode}
                     onChange={(e) => setQuickCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. AIMAN1"
+                    placeholder="e.g. ABC123"
                     maxLength={6}
                     autoFocus
                     autoComplete="one-time-code"
@@ -167,7 +167,7 @@ function KidLogin() {
                 </div>
 
                 <Button disabled={busy} type="submit" variant="primary" style={{ width: "100%", height: "48px", fontSize: "1rem" }}>
-                  {busy ? "Checking Code…" : "Let's Go! 🚀"}
+                  {busy ? "Checking code…" : "Let's go"}
                 </Button>
               </form>
             )}
@@ -183,7 +183,7 @@ function KidLogin() {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="e.g. aiman"
+                    placeholder="Your username"
                     autoComplete="username"
                   />
                 </div>

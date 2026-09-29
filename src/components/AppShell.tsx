@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ReactNode, useEffect, useState } from "react";
+import { type CSSProperties, ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/providers/auth";
 import { getKidSession, clearKidSession, KidSession } from "@/lib/kid-session";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +52,7 @@ export function AppShell({ mode, children }: { mode: Mode; children: ReactNode }
   if (mode === "kid" && kid === undefined) return <FullPageLoader />;
   if (mode === "kid" && !kid) return <FullPageLoader />;
 
-  // Full-bleed chat like AEON Neko Sensei (own header + Insights handle)
+  // Full-bleed chat (own header + Insights handle)
   const immersiveChat = mode === "kid" && pathname.startsWith("/kid/chat");
 
   return (
@@ -103,20 +103,20 @@ function IconBtn({
   );
 }
 
-function pageTitle(pathname: string, mode: Mode, kidName?: string) {
+function pageTitle(pathname: string, mode: Mode) {
   if (mode === "kid") {
     if (pathname.startsWith("/kid/insights")) return "Insights";
-    if (pathname.startsWith("/kid/chat")) return "Penny Sensei";
+    if (pathname.startsWith("/kid/chat")) return "Penny";
     if (pathname.startsWith("/kid/wallet")) return "Deposit";
-    if (pathname.startsWith("/kid/loans")) return "Financing";
-    if (pathname.startsWith("/kid/card")) return "Card";
+    if (pathname.startsWith("/kid/loans")) return "Loans";
+    if (pathname.startsWith("/kid/card")) return "Debit Card-i";
     if (pathname.startsWith("/kid/goals")) return "Goals";
     if (pathname.startsWith("/kid/rewards")) return "Rewards";
     if (pathname.startsWith("/kid/sadaqah")) return "Sadaqah";
     if (pathname.startsWith("/kid/zakat")) return "Zakat";
     if (pathname.startsWith("/kid/quiz")) return "Quest";
     if (pathname.startsWith("/kid/invest")) return "Invest";
-    return kidName ? `Hi, ${kidName}` : "Home";
+    return "Home";
   }
   if (pathname.startsWith("/parent/insights")) return "Insights";
   if (pathname.startsWith("/parent/reports")) return "Reports";
@@ -133,7 +133,7 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
   const isHome = isKid
     ? currentPath === "/kid" || currentPath === "/kid/"
     : currentPath === "/parent" || currentPath === "/parent/";
-  const title = pageTitle(currentPath, mode, kidName);
+  const title = pageTitle(currentPath, mode);
 
   const switchMode = async () => {
     sfx.swoosh();
@@ -160,6 +160,37 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
     }
   };
 
+  // Kid home: avatar, the Penny assistant pill, then account actions.
+  if (isKid && isHome) {
+    return (
+      <header className="shell-topbar shell-topbar--home">
+        <div className="shell-topbar__left">
+          <Link to="/kid" onClick={() => sfx.tap()} className="shell-brand" aria-label="Centsibility home">
+            <span className="shell-brand__mark" aria-hidden>
+              {(kidName ?? "C").charAt(0).toUpperCase()}
+            </span>
+          </Link>
+          <h1 className="sr-only">{title}</h1>
+        </div>
+        <div className="shell-topbar__center">
+          <Link to="/kid/insights" className="shell-mascot-pill" onClick={() => sfx.pop()}>
+            <AppIcon name="sparkles" size={16} color="var(--primary)" />
+            Penny
+          </Link>
+        </div>
+        <div className="shell-topbar__right">
+          <IconBtn label="Switch to parent view" onClick={switchMode}>
+            <AppIcon name="parent" size={20} />
+          </IconBtn>
+          <IconBtn label="Sign out" onClick={logout}>
+            <AppIcon name="exit" size={20} />
+          </IconBtn>
+        </div>
+      </header>
+    );
+  }
+
+  // Detail screens keep only back and a title; account actions live on home.
   return (
     <header className="shell-topbar">
       <div className="shell-topbar__left">
@@ -174,7 +205,7 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
           </Link>
         ) : (
           <Link
-            to={isKid ? "/kid" : "/parent"}
+            to="/parent"
             onClick={() => sfx.tap()}
             className="shell-brand"
             aria-label="Centsibility home"
@@ -187,40 +218,23 @@ function TopBar({ mode, kidName, unread }: { mode: Mode; kidName?: string; unrea
         <h1 className="shell-topbar__title">{title}</h1>
       </div>
 
-      <div className="shell-topbar__right">
-        {!isKid && unread > 0 ? (
-          <Link
-            to="/parent/approvals"
-            className="shell-chip shell-chip--alert"
-            aria-label={`${unread} unread notifications`}
-          >
-            <AppIcon name="bell" size={14} />
-            {unread}
-          </Link>
-        ) : null}
-        {isKid ? (
-          <IconBtn
-            label="Open Penny Sensei"
-            onClick={() => {
-              sfx.pop();
-              nav({ to: "/kid/chat" });
-            }}
-          >
-            <AppIcon name="penny" size={18} />
+      {!isKid ? (
+        <div className="shell-topbar__right">
+          {unread > 0 ? (
+            <Link
+              to="/parent/approvals"
+              className="shell-chip shell-chip--alert"
+              aria-label={`${unread} unread notifications`}
+            >
+              <AppIcon name="bell" size={14} />
+              {unread}
+            </Link>
+          ) : null}
+          <IconBtn label="Switch to kid view" onClick={switchMode}>
+            <AppIcon name="kid" size={20} />
           </IconBtn>
-        ) : null}
-        <IconBtn
-          label={isKid ? "Switch to parent view" : "Switch to kid view"}
-          onClick={switchMode}
-        >
-          <AppIcon name={isKid ? "parent" : "kid"} size={18} />
-        </IconBtn>
-        {isKid ? (
-          <IconBtn label="Sign out" onClick={logout}>
-            <AppIcon name="exit" size={18} />
-          </IconBtn>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -230,9 +244,11 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
   const items =
     mode === "kid"
       ? [
-          { to: "/kid/insights", label: "Penny", icon: "penny", match: ["/kid/insights", "/kid/chat"] },
+          { to: "/kid", label: "Home", icon: "home" },
           { to: "/kid/wallet", label: "Deposit", icon: "wallet" },
-          { to: "/kid/loans", label: "Financing", icon: "loan" },
+          // The dock's single wide pill: saving is the app's core daily action.
+          { to: "/kid/goals", label: "Save", icon: "save", center: true },
+          { to: "/kid/loans", label: "Loans", icon: "loan" },
           { to: "/kid/card", label: "Card", icon: "card" },
         ]
       : [
@@ -249,15 +265,26 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
 
   return (
     <nav className="shell-bottomnav" aria-label="Main navigation">
-      <div className="shell-bottomnav__inner">
+      <div
+        className="shell-bottomnav__inner"
+        style={{ "--nav-cols": items.length } as CSSProperties}
+      >
         {items.map((it) => {
           const badge = "badge" in it ? it.badge : 0;
+          const center = "center" in it && it.center;
           const matchPaths = "match" in it && Array.isArray(it.match) ? it.match : null;
           const active = matchPaths
             ? matchPaths.some((p) => pathname.startsWith(p))
             : it.to === "/kid" || it.to === "/parent"
               ? pathname === it.to || pathname === it.to + "/"
               : pathname.startsWith(it.to);
+          const classes = [
+            "shell-navitem",
+            active ? "shell-navitem--active" : "",
+            center ? "shell-navitem--center" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
 
           return (
             <Link
@@ -265,18 +292,27 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
               to={it.to}
               aria-label={it.label}
               aria-current={active ? "page" : undefined}
-              className={`shell-navitem ${active ? "shell-navitem--active" : ""}`.trim()}
+              className={classes}
               onClick={() => sfx.tap()}
             >
-              <span className="shell-navitem__icon-wrap">
-                <AppIcon name={it.icon} size={22} strokeWidth={active ? 2.5 : 2} />
-                {Boolean(badge) && (
-                  <span className="shell-navitem__badge" aria-hidden>
-                    {badge}
+              {center ? (
+                <span className="shell-navitem__center-pill">
+                  <AppIcon name={it.icon} size={22} color="#fff" />
+                  <span className="shell-navitem__label">{it.label}</span>
+                </span>
+              ) : (
+                <>
+                  <span className="shell-navitem__icon-wrap">
+                    <AppIcon name={it.icon} size={22} strokeWidth={active ? 2.5 : 2} />
+                    {Boolean(badge) && (
+                      <span className="shell-navitem__badge" aria-hidden>
+                        {badge}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-              <span className="shell-navitem__label">{it.label}</span>
+                  <span className="shell-navitem__label">{it.label}</span>
+                </>
+              )}
             </Link>
           );
         })}

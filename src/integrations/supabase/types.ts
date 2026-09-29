@@ -10,19 +10,25 @@ export type Database = {
     Tables: {
       commander_pins: {
         Row: {
+          created_at: string;
+          failed_attempts: number;
+          locked_until: string | null;
           parent_id: string;
           pin_hash: string;
-          created_at: string;
         };
         Insert: {
+          created_at?: string;
+          failed_attempts?: number;
+          locked_until?: string | null;
           parent_id: string;
           pin_hash: string;
-          created_at?: string;
         };
         Update: {
+          created_at?: string;
+          failed_attempts?: number;
+          locked_until?: string | null;
           parent_id?: string;
           pin_hash?: string;
-          created_at?: string;
         };
         Relationships: [
           {
@@ -185,6 +191,12 @@ export type Database = {
           username: string | null;
           xp: number;
           session_token: string | null;
+          card_daily_limit?: number;
+          card_frozen?: boolean;
+          card_online_enabled?: boolean;
+          card_controls_locked?: boolean;
+          penny_ai_date?: string | null;
+          penny_ai_count?: number;
         };
         Insert: {
           avatar?: string;
@@ -219,6 +231,12 @@ export type Database = {
           username?: string | null;
           xp?: number;
           session_token?: string | null;
+          card_daily_limit?: number;
+          card_frozen?: boolean;
+          card_online_enabled?: boolean;
+          card_controls_locked?: boolean;
+          penny_ai_date?: string | null;
+          penny_ai_count?: number;
         };
         Update: {
           avatar?: string;
@@ -253,6 +271,12 @@ export type Database = {
           username?: string | null;
           xp?: number;
           session_token?: string | null;
+          card_daily_limit?: number;
+          card_frozen?: boolean;
+          card_online_enabled?: boolean;
+          card_controls_locked?: boolean;
+          penny_ai_date?: string | null;
+          penny_ai_count?: number;
         };
         Relationships: [];
       };
@@ -343,7 +367,6 @@ export type Database = {
           display_name: string | null;
           email: string | null;
           id: string;
-          pin: string | null;
         };
         Insert: {
           avatar?: string;
@@ -351,7 +374,6 @@ export type Database = {
           display_name?: string | null;
           email?: string | null;
           id: string;
-          pin?: string | null;
         };
         Update: {
           avatar?: string;
@@ -359,7 +381,6 @@ export type Database = {
           display_name?: string | null;
           email?: string | null;
           id?: string;
-          pin?: string | null;
         };
         Relationships: [];
       };
@@ -432,6 +453,7 @@ export type Database = {
           id: string;
           kid_id: string;
           label: string;
+          loan_id?: string | null;
           type: string;
         };
         Insert: {
@@ -440,6 +462,7 @@ export type Database = {
           id?: string;
           kid_id: string;
           label: string;
+          loan_id?: string | null;
           type: string;
         };
         Update: {
@@ -448,6 +471,7 @@ export type Database = {
           id?: string;
           kid_id?: string;
           label?: string;
+          loan_id?: string | null;
           type?: string;
         };
         Relationships: [
@@ -456,6 +480,13 @@ export type Database = {
             columns: ["kid_id"];
             isOneToOne: false;
             referencedRelation: "kids";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_loan_id_fkey";
+            columns: ["loan_id"];
+            isOneToOne: false;
+            referencedRelation: "loans";
             referencedColumns: ["id"];
           },
         ];
@@ -519,7 +550,19 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      parent_pin_begin_attempt: {
+        Args: {
+          p_parent_id: string;
+        };
+        Returns: Json;
+      };
+      parent_pin_attempt_succeeded: {
+        Args: {
+          p_parent_id: string;
+          p_new_hash?: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

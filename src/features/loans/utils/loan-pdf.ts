@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { formatDate } from "@/lib/format";
 
 export function exportLoanPdf(loan: {
   amount: number;
@@ -54,7 +55,7 @@ export function exportLoanPdf(loan: {
   row("Borrower:", loan.kidName);
   row("Amount:", `RM ${Number(loan.amount).toFixed(2)}`);
   row("Reason:", (loan.reason || "-").slice(0, 80));
-  row("Issued:", new Date(loan.created_at).toLocaleDateString());
+  row("Issued:", formatDate(loan.created_at));
   row("Pay back by:", loan.due_date);
   row("Interest:", "0% (100% halal)");
 

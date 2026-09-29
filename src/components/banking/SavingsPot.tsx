@@ -42,7 +42,7 @@ export function SavingsPot({
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
             <AppIcon name={icon} size={22} />
           </div>
           <div>
@@ -58,7 +58,7 @@ export function SavingsPot({
         </div>
 
         {isCompleted && (
-          <span className="inline-flex items-center gap-1 bg-[var(--success-soft)] text-[var(--success)] text-xs font-semibold px-2.5 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 bg-[var(--success-soft)] text-[var(--success-text)] text-xs font-semibold px-2.5 py-0.5 rounded-full">
             <AppIcon name="approve" size={14} />
             Completed
           </span>
@@ -85,7 +85,7 @@ export function SavingsPot({
               e.stopPropagation();
               onAddFunds();
             }}
-            className="text-xs font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)] inline-flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-[var(--primary-pale)] transition-colors"
+            className="text-xs font-semibold text-[var(--primary-text)] hover:text-[var(--primary-hover)] inline-flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-[var(--primary-pale)] transition-colors"
           >
             <AppIcon name="plus" size={14} />
             Add Funds
