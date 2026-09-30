@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,8 +52,8 @@ function KidRewards() {
   const k = data.kid;
   const code = getKidSession()?.code;
   const totalPoints = Number(k.coins);
-  const maxPts = Math.max(1, Math.floor(totalPoints));
-  const parsedPts = Math.min(parseInt(rawPts || "0", 10), maxPts);
+  const maxAllowedInput = 99999;
+  const parsedPts = parseInt(rawPts || "0", 10);
 
   const quizTotalCorrect = Number((k as Record<string, unknown>).quiz_total_correct ?? 0);
   const QUIZ_GATE = 3;
@@ -62,7 +63,7 @@ function KidRewards() {
     if (!code || !n.trim()) return;
     if (cost > totalPoints) {
       sfx.error();
-      toast.error("Not enough points!");
+      toast.error(`Not enough points! (Need ${cost.toLocaleString()} pts, you have ${Math.round(totalPoints).toLocaleString()} pts)`);
       return;
     }
     try {
@@ -86,10 +87,11 @@ function KidRewards() {
     setRawPts((r) => {
       const next = r + key;
       const val = parseInt(next, 10);
-      if (val > maxPts) return r;
+      if (val > maxAllowedInput) return r;
       return next.slice(0, 6);
     });
   };
+
 
   const pending = data.rewards.filter(
     (r: (typeof data.rewards)[number]) => r.status === "requested",
@@ -125,49 +127,63 @@ function KidRewards() {
         <SectionTitle>Quick Wishlist Picks</SectionTitle>
 
         {!quizUnlocked && (
-          <Card variant="soft" className="p-4 border border-[var(--primary-soft)] flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-              <AppIcon name="lock" size={20} />
+          <Card variant="soft" className="p-4 border border-[var(--primary-soft)] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
+                <AppIcon name="lock" size={20} />
+              </div>
+              <div>
+                <strong className="text-xs sm:text-sm text-[var(--ink)] block">
+                  Answer {QUIZ_GATE} Quiz Questions to Unlock
+                </strong>
+                <small className="text-xs text-[var(--text-secondary)]">
+                  Current progress: {quizTotalCorrect}/{QUIZ_GATE} completed
+                </small>
+              </div>
             </div>
-            <div>
-              <strong className="text-xs sm:text-sm text-[var(--ink)] block">
-                Answer {QUIZ_GATE} Quiz Questions to Unlock
-              </strong>
-              <small className="text-xs text-[var(--text-secondary)]">
-                Current progress: {quizTotalCorrect}/{QUIZ_GATE} completed
-              </small>
-            </div>
+            <Link
+              to="/kid/quiz"
+              onClick={() => sfx.tap()}
+              className="text-xs font-bold text-[var(--primary-text)] hover:underline shrink-0"
+            >
+              Start Quiz →
+            </Link>
           </Card>
         )}
 
         <div className="grid grid-cols-2 gap-3">
           {SUGGESTED.map((s) => {
-            const can = quizUnlocked && totalPoints >= s.cost;
+            const hasEnough = totalPoints >= s.cost;
             return (
               <button
                 key={s.name}
                 type="button"
-                onClick={() => can && submit(s.name, s.cost)}
-                disabled={!can}
+                onClick={() => {
+                  if (!quizUnlocked) {
+                    toast.error(`Answer ${QUIZ_GATE} daily quiz questions to unlock rewards!`);
+                    return;
+                  }
+                  void submit(s.name, s.cost);
+                }}
                 aria-label={
                   !quizUnlocked
                     ? `Locked — complete ${QUIZ_GATE} quiz answers first`
                     : `Request ${s.name} for ${s.cost} points`
                 }
-                className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between disabled:opacity-100 ${
+                className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${
                   !quizUnlocked
-                    ? "bg-white border-transparent cursor-not-allowed"
-                    : can
-                      ? "bg-white border-transparent hover:border-[var(--primary)]"
-                      : "bg-white border-transparent cursor-not-allowed"
+                    ? "bg-white/80 border-transparent opacity-75"
+                    : hasEnough
+                      ? "bg-white border-transparent hover:border-[var(--primary)] shadow-sm"
+                      : "bg-white/90 border-dashed border-[var(--border)] opacity-85 hover:border-[var(--primary-soft)]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center">
                     <AppIcon name={!quizUnlocked ? "lock" : s.icon} size={18} />
                   </div>
-                  <span className="inline-flex items-center gap-1 text-sm font-bold text-[var(--primary-hover)]">
-                    {s.cost.toLocaleString("en-MY")} <AppIcon name="star" size={12} color="var(--primary)" />
+                  <span className={`inline-flex items-center gap-1 text-sm font-bold ${hasEnough ? "text-[var(--primary-hover)]" : "text-[var(--text-muted)]"}`}>
+                    {s.cost.toLocaleString("en-MY")} <AppIcon name="star" size={12} color={hasEnough ? "var(--primary)" : "var(--text-muted)"} />
                   </span>
                 </div>
                 <strong className="text-sm font-semibold text-[var(--ink)] line-clamp-2 leading-snug">
@@ -195,7 +211,7 @@ function KidRewards() {
           <div>
             <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1.5">
               <span>Points to Spend</span>
-              <span>Balance: <strong>{totalPoints.toFixed(0)} pts</strong></span>
+              <span>Balance: <strong>{Math.round(totalPoints).toLocaleString()} pts</strong></span>
             </div>
             <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
               <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary-text)] flex items-center justify-center gap-1.5 tabular-nums">
@@ -203,8 +219,10 @@ function KidRewards() {
                 <AppIcon name="star" size={20} />
               </div>
               {parsedPts > 0 && (
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  of {maxPts.toLocaleString()} points available
+                <p className={`text-xs mt-1 ${parsedPts > totalPoints ? "text-[var(--error)] font-medium" : "text-[var(--text-muted)]"}`}>
+                  {parsedPts > totalPoints
+                    ? `Exceeds available points (${Math.round(totalPoints).toLocaleString()} pts)`
+                    : `of ${Math.round(totalPoints).toLocaleString()} points available`}
                 </p>
               )}
             </div>
@@ -216,13 +234,14 @@ function KidRewards() {
             type="button"
             variant="primary"
             onClick={() => submit(name, parsedPts)}
-            disabled={!name.trim() || parsedPts < 1 || parsedPts > totalPoints}
+            disabled={!name.trim() || parsedPts < 1}
             className="w-full justify-center text-sm font-bold min-h-[48px]"
           >
             Submit Request for {parsedPts.toLocaleString()} Points
           </Button>
         </Card>
       </div>
+
 
       {/* Waiting for Parent Section */}
       {pending.length > 0 && (

@@ -8,7 +8,7 @@ import { resolveAvatar } from "@/lib/avatar";
 import type { Kid, Transaction, ScheduledHibah } from "@/hooks/use-parent-data";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
-import { edgeParentSetKidCardControls } from "@/lib/edge";
+import { edgeParentSetKidCardControls, edgeParentResetKidPin } from "@/lib/edge";
 import { EditKidForm } from "./EditKidForm";
 import { TransferFundsSection } from "./TransferFundsSection";
 import { ScheduleHibahSection } from "./ScheduleHibahSection";
@@ -54,6 +54,26 @@ export function CrewMemberCard({
   const [savingFrozen, setSavingFrozen] = useState(false);
   const [savingOnline, setSavingOnline] = useState(false);
   const [savingLock, setSavingLock] = useState(false);
+  const [resetCode, setResetCode] = useState<string | null>(null);
+  const [resettingPin, setResettingPin] = useState(false);
+
+  const handleResetPin = async () => {
+    if (!confirm(`Reset PIN for ${kid.name}? This will create a fresh one-time access code so they can set a new 6-digit PIN.`)) {
+      return;
+    }
+    setResettingPin(true);
+    try {
+      const res = await edgeParentResetKidPin({ kidId: kid.id });
+      setResetCode(res.loginCode);
+      sfx.coin();
+      toast.success(`New access code for ${kid.name}: ${res.loginCode}. Their old PIN no longer works.`);
+      onRefresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to reset child PIN");
+    } finally {
+      setResettingPin(false);
+    }
+  };
 
   useEffect(() => {
     setCardFrozen(Boolean(kid.card_frozen));
@@ -148,6 +168,7 @@ export function CrewMemberCard({
 
   const total = Number(kid.balance) + Number(kid.invest_balance ?? 0);
   const avatar = resolveAvatar(kid.avatar, "kid");
+  const activeCode = resetCode || (!kid.hashed_pin ? kid.login_code : null);
 
   return (
     <Card variant="default" className="crew-card border border-[var(--border)] shadow-xs m-0">
@@ -176,6 +197,15 @@ export function CrewMemberCard({
             {kid.username ? `@${kid.username}` : "Child account"}
             {" · "}
             Trust {kid.trust_score}
+          </span>
+          <span className="crew-card__sub block truncate text-[11px]">
+            {activeCode ? (
+              <span>
+                Access code: <strong className="font-mono text-[var(--primary-text)] font-semibold">{activeCode}</strong> · give this to your child once
+              </span>
+            ) : (
+              <span className="text-[var(--success-text)] font-medium">PIN set</span>
+            )}
           </span>
         </div>
         <div className="crew-card__balance text-right shrink-0">
@@ -216,6 +246,18 @@ export function CrewMemberCard({
                   type="button"
                   variant="ghost"
                   size="sm"
+                  className="p-1 min-h-[40px] text-[var(--primary)]"
+                  disabled={resettingPin}
+                  onClick={handleResetPin}
+                  aria-label={`Reset PIN for ${kid.name}`}
+                  title="Generate new access code / reset PIN"
+                >
+                  <AppIcon name="key" size={15} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   className="p-1 min-h-[40px] text-[var(--error-text)]"
                   onClick={() => onDeleteInitiate(kid.id)}
                   aria-label={`Delete ${kid.name}`}
@@ -235,6 +277,39 @@ export function CrewMemberCard({
               </div>
             )}
           </div>
+
+          {resetCode && (
+            <div className="p-3 bg-[var(--surface-soft)] border border-[var(--primary)] rounded-xl text-center space-y-2">
+              <div className="text-xs font-semibold text-[var(--ink)]">
+                New One-Time Access Code for {kid.name}:
+              </div>
+              <div className="text-2xl font-black tracking-widest text-[var(--primary)] font-mono">
+                {resetCode}
+              </div>
+              <p className="text-[11px] text-[var(--text-secondary)] m-0">
+                Give this code to {kid.name}. They will enter it on the login screen to set their new 6-digit PIN.
+              </p>
+              <div className="flex gap-2 justify-center pt-1">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(resetCode);
+                    toast.success("Code copied!");
+                  }}
+                >
+                  Copy Code
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setResetCode(null)}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
             <div className="text-center">

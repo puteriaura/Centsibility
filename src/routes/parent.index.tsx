@@ -28,7 +28,7 @@ import { formatRM } from "@/lib/format";
 import { parentDisplayName } from "@/lib/display-name";
 
 export const Route = createFileRoute("/parent/")({
-  head: () => ({ meta: [{ title: "Command Center — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Parent Dashboard — Centsibility" }] }),
   component: ParentHome,
 });
 
@@ -203,6 +203,28 @@ function ParentHome() {
           <span>Add Child</span>
         </button>
       </div>
+
+      {!(user?.user_metadata as any)?.comfort_name && (
+        <div className="flex items-center justify-between gap-3 p-3 bg-[var(--surface-pink)] border border-[var(--primary-soft)] rounded-2xl">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 text-[var(--primary)] shadow-xs">
+              <AppIcon name="penny" size={18} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-[var(--ink)] m-0">Set your Comfort Name</p>
+              <p className="text-[11px] text-[var(--text-secondary)] m-0 truncate">
+                Tell Penny and your kids what to call you (e.g. Mama, Papa)
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/parent/settings"
+            className="text-xs font-bold text-[var(--primary)] bg-white px-3 py-1.5 rounded-full border border-[var(--primary-soft)] hover:bg-[var(--primary-soft)] shrink-0 transition-colors"
+          >
+            Set Name
+          </Link>
+        </div>
+      )}
 
       <div className="flex items-center gap-3 p-3.5 bg-white rounded-2xl border border-[var(--border)]">
         <AvatarBubble emoji={parentAvatar} size={44} ring kind="parent" />

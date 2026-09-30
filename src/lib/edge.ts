@@ -118,22 +118,34 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
  * Falls back to error.message, then "Edge function call failed".
  */
 export async function extractEdgeErrorMessage(error: unknown): Promise<string> {
+  const friendlyUnknownAction = "This feature isn't available yet. The app is being updated. Please try again later.";
+
   if (error instanceof FunctionsHttpError && error.context) {
     try {
       const res =
         typeof error.context.clone === "function" ? error.context.clone() : error.context;
       const body = await res.json();
       if (body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string") {
-        return (body as { error: string }).error;
+        const errorMsg = (body as { error: string }).error;
+        if (errorMsg.startsWith("Unknown action:")) {
+          return friendlyUnknownAction;
+        }
+        return errorMsg;
       }
     } catch {
       // JSON parse failure must never throw out of the helper
     }
   }
   if (error instanceof Error && error.message) {
+    if (error.message.startsWith("Unknown action:")) {
+      return friendlyUnknownAction;
+    }
     return error.message;
   }
   if (typeof error === "string" && error.length > 0) {
+    if (error.startsWith("Unknown action:")) {
+      return friendlyUnknownAction;
+    }
     return error;
   }
   return "Edge function call failed";
@@ -261,6 +273,10 @@ export async function edgeParentDeleteKid(params: { kidId: string }) {
 
 export async function edgeParentUpdateKid(params: { kidId: string; name: string; username?: string; birth_date?: string; birth_year?: number }) {
   return invoke<{ ok: boolean }>("parent-finance", { action: "update-kid", ...params });
+}
+
+export async function edgeParentResetKidPin(params: { kidId: string }) {
+  return invoke<{ ok: boolean; kidId: string; name: string; loginCode: string }>("parent-finance", { action: "reset-kid-pin", ...params });
 }
 
 export async function edgeParentApproveRequest(params: { approvalId: string; decision: "approve" | "decline" }) {
@@ -422,7 +438,15 @@ export async function edgeKidLogin(params: { username: string; pin: string }) {
 }
 
 export async function edgeKidLoginByCode(params: { loginCode: string }) {
-  return invoke<{ kidId: string; name: string; code: string }>("kid-finance", { action: "login-by-code", ...params });
+  return invoke<{ kidId: string; name: string; code?: string; needsPinSetup?: boolean; username?: string }>("kid-finance", { action: "login-by-code", ...params });
+}
+
+export async function edgeKidVerifyAccessCode(params: { loginCode: string }) {
+  return invoke<{ ok: boolean; kidId: string; username: string; name: string }>("kid-finance", { action: "verify-access-code", ...params });
+}
+
+export async function edgeKidSetInitialPin(params: { loginCode: string; pin: string; comfortName?: string }) {
+  return invoke<{ ok: boolean; kidId: string; name: string; code: string }>("kid-finance", { action: "set-initial-pin", ...params });
 }
 
 export async function edgeKidRegister(params: { setupCode: string; name: string; username: string; pin: string }) {

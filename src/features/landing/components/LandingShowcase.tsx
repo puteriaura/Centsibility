@@ -32,7 +32,7 @@ export function PhoneMockup() {
         {/* Top Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Astronaut</div>
+            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Young Saver</div>
             <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--ink)" }}>Aiman</div>
           </div>
           <div
@@ -120,11 +120,11 @@ export function PhoneMockup() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <AppIcon name="bicycle" size={18} color="var(--primary)" />
-              <strong style={{ fontSize: "0.875rem", color: "var(--ink)" }}>Cosmic Bicycle</strong>
+              <strong style={{ fontSize: "0.875rem", color: "var(--ink)" }}>New Bicycle</strong>
             </div>
             <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "var(--primary)" }}>87%</span>
           </div>
-          <Progress value={87} aria-label="Cosmic Bicycle savings goal progress" />
+          <Progress value={87} aria-label="New Bicycle savings goal progress" />
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.35rem", fontSize: "0.6875rem", color: "var(--text-muted)" }}>
             <span>RM 261 saved</span>
             <span>RM 300 target</span>

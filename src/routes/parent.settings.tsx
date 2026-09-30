@@ -44,9 +44,42 @@ function Settings() {
   const [selfAvatar, setSelfAvatar] = useState(DEFAULT_PARENT_AVATAR);
   const [kidAvatarQuery, setKidAvatarQuery] = useState("");
   const [muted, setMuted] = useState(isMuted());
+  const [comfortName, setComfortName] = useState(
+    (user?.user_metadata as any)?.comfort_name ?? ""
+  );
+  const [savingName, setSavingName] = useState(false);
   const [panel, setPanel] = useState<
     null | "profile" | "kids" | "pin" | "prefs" | "hibah"
   >(null);
+
+  useEffect(() => {
+    if ((user?.user_metadata as any)?.comfort_name) {
+      setComfortName((user?.user_metadata as any).comfort_name);
+    }
+  }, [user]);
+
+  const updateComfortName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = comfortName.trim();
+    if (!trimmed) {
+      toast.error("Please enter a comfort name");
+      return;
+    }
+    setSavingName(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { comfort_name: trimmed },
+      });
+      if (error) throw error;
+      sfx.success();
+      toast.success(`Comfort name updated to "${trimmed}"`);
+    } catch (err: unknown) {
+      sfx.error();
+      toast.error(err instanceof Error ? err.message : "Failed to update comfort name");
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   useEffect(() => {
     edgeParentGetPin().then((res) => setHasPin(res.hasPin));
@@ -107,8 +140,8 @@ function Settings() {
 
   const savePin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^\d{4,6}$/.test(pin)) {
-      toast.error("PIN must be 4-6 digits");
+    if (!/^\d{6}$/.test(pin)) {
+      toast.error("PIN must be exactly 6 digits");
       return;
     }
     try {
@@ -122,8 +155,8 @@ function Settings() {
   };
 
   const removePin = async () => {
-    if (!/^\d{4,6}$/.test(currentPin)) {
-      toast.error("Enter your 4–6 digit current PIN to turn off");
+    if (!/^\d{6}$/.test(currentPin)) {
+      toast.error("Enter your 6-digit current PIN to turn off");
       return;
     }
     try {
@@ -214,6 +247,27 @@ function Settings() {
       </nav>
 
       <div className={`settings-panel${panel === "profile" ? " is-open" : ""}`}>
+        <Card variant="default" className="m-0 mb-4">
+          <CardHeader>
+            <CardTitle style={{ fontSize: "1rem" }}>Your Comfort Name</CardTitle>
+            <CardDescription>What Centsibility calls you across the app</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={updateComfortName} className="space-y-3">
+              <Input
+                type="text"
+                value={comfortName}
+                onChange={(e) => setComfortName(e.target.value)}
+                placeholder="e.g. Mama, Papa, Ummi, Abi, Coach Dan"
+                maxLength={30}
+              />
+              <Button type="submit" variant="primary" size="sm" disabled={savingName}>
+                {savingName ? "Saving..." : "Save Comfort Name"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
         <Card variant="default" className="m-0">
           <CardHeader>
             <CardTitle style={{ fontSize: "1rem" }}>Your profile avatar</CardTitle>
@@ -356,7 +410,7 @@ function Settings() {
                     id="settings-pin-input"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    placeholder="4–6 digits"
+                    placeholder="6 digits"
                     inputMode="numeric"
                     maxLength={6}
                     autoComplete="off"

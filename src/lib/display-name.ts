@@ -1,4 +1,5 @@
 export interface UserMetadataLike {
+  comfort_name?: string | null;
   display_name?: string | null;
   full_name?: string | null;
   name?: string | null;
@@ -12,15 +13,19 @@ export interface UserLike {
 
 /**
  * Derives parent display name following precedence:
- * 1. user_metadata.display_name
- * 2. user_metadata.full_name
- * 3. user_metadata.name
- * 4. email username (part before @)
- * 5. "Parent"
+ * 1. user_metadata.comfort_name (custom name set during onboarding/settings)
+ * 2. user_metadata.display_name
+ * 3. user_metadata.full_name
+ * 4. user_metadata.name
+ * 5. email username (part before @)
+ * 6. "Parent"
  */
 export function parentDisplayName(user: UserLike | null | undefined): string {
   if (!user) return "Parent";
   const meta = user.user_metadata;
+  const comfortName = meta?.comfort_name?.trim();
+  if (comfortName) return comfortName;
+
   const displayName = meta?.display_name?.trim();
   if (displayName) return displayName;
 

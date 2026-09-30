@@ -6,17 +6,18 @@ import {
   verifyStoredPin,
 } from "./pin.ts";
 
-Deno.test("isValidPinFormat accepts 4 to 6 digits only", () => {
-  assertEquals(isValidPinFormat("1234"), true);
-  assertEquals(isValidPinFormat("12345"), true);
+Deno.test("isValidPinFormat accepts 6 digits only", () => {
+  assertEquals(isValidPinFormat("1234"), false);
+  assertEquals(isValidPinFormat("12345"), false);
   assertEquals(isValidPinFormat("123456"), true);
 
   assertEquals(isValidPinFormat("123"), false);
   assertEquals(isValidPinFormat("1234567"), false);
-  assertEquals(isValidPinFormat("12a4"), false);
+  assertEquals(isValidPinFormat("12a456"), false);
   assertEquals(isValidPinFormat(""), false);
-  assertEquals(isValidPinFormat("abcd"), false);
+  assertEquals(isValidPinFormat("abcdef"), false);
 });
+
 
 Deno.test("constantTimeEqual compares strings correctly", () => {
   assertEquals(constantTimeEqual("hello", "hello"), true);

@@ -50,20 +50,20 @@ export function LandingHero() {
               maxWidth: "520px",
             }}
           >
-            A friendly Islamic finance app where young savers learn through interest-free Qard, voluntary Hibah, purposeful Sadaqah, and automated Zakat — while parents guide their mission with clarity and trust.
+            A friendly Islamic finance app where young savers learn through interest-free Qard, voluntary Hibah, purposeful Sadaqah, and automated Zakat — while parents guide their journey with clarity and trust.
           </p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center" }}>
             <Link to="/kid-login" style={{ textDecoration: "none" }}>
               <Button size="lg" variant="primary" style={{ height: "52px", padding: "0 1.75rem", fontSize: "1rem" }}>
-                <AppIcon name="rocket" size={20} />
+                <AppIcon name="penny" size={20} />
                 <span>Young Saver Access</span>
               </Button>
             </Link>
             <Link to="/login" style={{ textDecoration: "none" }}>
               <Button size="lg" variant="outline" style={{ height: "52px", padding: "0 1.75rem", fontSize: "1rem" }}>
                 <AppIcon name="user" size={20} />
-                <span>Parent Commander</span>
+                <span>Parent Sign In</span>
               </Button>
             </Link>
           </div>
@@ -135,7 +135,7 @@ export function LandingHero() {
               <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--primary-text)", marginTop: "0.2rem" }}>5.0%</div>
             </Card>
             <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Stardust</div>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Points</div>
               <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--accent-amber-text)", marginTop: "0.2rem" }}>+50 pts</div>
             </Card>
             <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>

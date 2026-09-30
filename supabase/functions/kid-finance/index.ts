@@ -12,6 +12,10 @@ import {
   DEFAULT_PENNY_MAX_TOKENS,
   MAX_MESSAGE_CHARS,
   PennyChatMessage,
+  KidContext,
+  categoryKey,
+  categoryLabel,
+  isSpendingTransaction,
 } from "../_shared/deepseek.ts";
 
 const corsHeaders = {
@@ -101,7 +105,7 @@ async function safeParseBody(req: Request): Promise<Record<string, unknown>> {
 // ---------------------------------------------------------------------------
 // Actions that do NOT require a session token (pre-auth only)
 // ---------------------------------------------------------------------------
-const PRE_AUTH_ACTIONS = new Set(["login", "login-by-code", "register"]);
+const PRE_AUTH_ACTIONS = new Set(["login", "login-by-code", "register", "verify-access-code", "set-initial-pin"]);
 
 // ---------------------------------------------------------------------------
 // Main handler
@@ -168,22 +172,13 @@ serve(async (req: Request) => {
       .eq("session_token", token)
       .maybeSingle();
 
-    if (gateErr && gateErr.code !== "42703") {
+    if (gateErr) {
       return jsonError(`Auth check failed: ${gateErr.message}`, 500);
     }
 
     if (!exists) {
-      if (gateErr?.code === "42703") {
-        const { data: fallback } = await admin
-          .from("kids").select("id").eq("login_code", token).maybeSingle();
-        if (!fallback) {
-          console.warn(`[kid-finance][${requestId}] Rejected action="${action}": invalid token`);
-          return jsonError("Unauthorized: invalid or expired session", 401);
-        }
-      } else {
-        console.warn(`[kid-finance][${requestId}] Rejected action="${action}": invalid token`);
-        return jsonError("Unauthorized: invalid or expired session", 401);
-      }
+      console.warn(`[kid-finance][${requestId}] Rejected action="${action}": invalid token`);
+      return jsonError("Unauthorized: invalid or expired session", 401);
     }
   }
 
@@ -191,6 +186,8 @@ serve(async (req: Request) => {
     switch (action) {
       case "login":            return await handleLogin(admin, params, requestId);
       case "login-by-code":    return await handleLoginByCode(admin, params, requestId);
+      case "verify-access-code": return await handleVerifyAccessCode(admin, params, requestId);
+      case "set-initial-pin":  return await handleSetInitialPin(admin, params, requestId);
       case "register":         return await handleRegister(admin, params, requestId);
       case "get-state":        return await handleGetState(admin, params, requestId);
       case "sadaqah":          return await handleSadaqah(admin, params, requestId);
@@ -249,13 +246,6 @@ async function getKid(admin: Admin, token: unknown, requestId: string) {
     .from("kids").select("*").eq("session_token", token).maybeSingle();
 
   if (error) {
-    if (error.code === "42703") {
-      const { data: fallback, error: fbErr } = await admin
-        .from("kids").select("*").eq("login_code", token).maybeSingle();
-      if (fbErr) throw new Error(`DB error: ${fbErr.message}`);
-      if (!fallback) throw new Error("Invalid or expired session");
-      return fallback;
-    }
     throw new Error(`DB error: ${error.message}`);
   }
   if (!data) throw new Error("Invalid or expired session");
@@ -293,11 +283,18 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
   const username = typeof params.username === "string" ? params.username.trim() : "";
   const pin = typeof params.pin === "string" ? params.pin.trim() : "";
   if (!username || !pin) return jsonError("Missing username or PIN", 400);
+  if (pin.length < 6 || !/^\d{6}$/.test(pin)) {
+    return jsonError("PINs are now 6 digits. Ask your parent to tap Reset PIN for a new access code.", 400);
+  }
   console.log(`[kid-finance][${requestId}] handleLogin username="${username}"`);
 
   const { data: kid, error: kidErr } = await admin.from("kids").select("*").eq("username", username).maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
   if (!kid) return jsonError("Invalid username or PIN", 400);
+
+  if (!kid.hashed_pin) {
+    return jsonError("Account setup incomplete. Please enter your one-time access code to set your 6-digit PIN.", 400);
+  }
 
   if (kid.locked_until && new Date() < new Date(kid.locked_until)) {
     const mins = Math.ceil((new Date(kid.locked_until).getTime() - Date.now()) / 60000);
@@ -325,27 +322,109 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
   const sessionToken = randomHex(32);
   await admin.from("kids").update({ session_token: sessionToken }).eq("id", kid.id);
   console.log(`[kid-finance][${requestId}] handleLogin success kid id=${kid.id}`);
-  return jsonOk({ kidId: kid.id, name: kid.name, code: sessionToken });
+  return jsonOk({ kidId: kid.id, name: kid.comfort_name || kid.name, code: sessionToken });
 }
 
 async function handleLoginByCode(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
   if (!loginCode) return jsonError("Missing loginCode", 400);
-  console.log(`[kid-finance][${requestId}] handleLoginByCode code="${loginCode}"`);
 
   const { data: kid, error: kidErr } = await admin.from("kids").select("*").eq("login_code", loginCode).maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
-  if (!kid) return jsonError("Invalid login code. Please check and try again.", 400);
+  if (!kid) return jsonError("Invalid access code. Please check and try again.", 400);
 
-  let sessionToken = kid.login_code as string;
+  if (kid.hashed_pin) {
+    return jsonError("This access code has already been redeemed. Please sign in with your 6-digit PIN.", 400);
+  }
+
+  console.log(`[kid-finance][${requestId}] handleLoginByCode success kidId=${kid.id}`);
+  return jsonOk({ needsPinSetup: true, kidId: kid.id, username: kid.username, name: kid.comfort_name || kid.name });
+}
+
+async function handleVerifyAccessCode(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
+  if (!loginCode) return jsonError("Missing access code", 400);
+
+  const { data: kid, error: kidErr } = await admin
+    .from("kids")
+    .select("id, name, comfort_name, username, hashed_pin, login_code")
+    .eq("login_code", loginCode)
+    .maybeSingle();
+  if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
+  if (!kid) return jsonError("Invalid access code. Please check and try again.", 400);
+
+  if (kid.hashed_pin) {
+    return jsonError("This access code has already been used. Please log in with your username and 6-digit PIN.", 400);
+  }
+
+  console.log(`[kid-finance][${requestId}] handleVerifyAccessCode success kidId=${kid.id}`);
+  return jsonOk({ ok: true, kidId: kid.id, username: kid.username, name: kid.comfort_name || kid.name });
+}
+
+async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
+  const pin = typeof params.pin === "string" ? params.pin.trim() : "";
+  const comfortNameRaw = typeof params.comfortName === "string" ? params.comfortName.trim() : undefined;
+
+  if (!loginCode || !pin) return jsonError("Missing access code or PIN", 400);
+  if (pin.length < 6 || !/^\d{6}$/.test(pin)) {
+    return jsonError("PIN must be exactly 6 digits", 400);
+  }
+
+  let comfortName: string | null = null;
+  if (comfortNameRaw !== undefined && comfortNameRaw !== "") {
+    if (comfortNameRaw.length < 1 || comfortNameRaw.length > 30 || !/^[A-Za-z0-9 '\-]+$/.test(comfortNameRaw)) {
+      return jsonError("Comfort name must be 1-30 characters (letters, digits, spaces, ' and - only)", 400);
+    }
+    comfortName = comfortNameRaw;
+  }
+
+  const { data: kid, error: kidErr } = await admin
+    .from("kids")
+    .select("id, name, username, hashed_pin, login_code")
+    .eq("login_code", loginCode)
+    .maybeSingle();
+  if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
+  if (!kid) return jsonError("Invalid access code.", 400);
+
+  if (kid.hashed_pin) {
+    return jsonError("This code was just used. Sign in with your PIN.", 409);
+  }
+
+  let hashedPin: string;
   try {
-    sessionToken = randomHex(32);
-    const { error } = await admin.from("kids").update({ session_token: sessionToken }).eq("id", kid.id);
-    if (error) { sessionToken = kid.login_code; }
-  } catch { sessionToken = kid.login_code; }
+    hashedPin = await bcrypt.hash(pin, 10);
+  } catch (e) {
+    return jsonError("Failed to hash PIN", 500, e);
+  }
 
-  console.log(`[kid-finance][${requestId}] handleLoginByCode success kid id=${kid.id}`);
-  return jsonOk({ kidId: kid.id, name: kid.name, code: sessionToken });
+  const sessionToken = randomHex(32);
+  const updateData: Record<string, unknown> = {
+    hashed_pin: hashedPin,
+    login_code: null,
+    session_token: sessionToken,
+    failed_login_attempts: 0,
+    locked_until: null,
+  };
+  if (comfortName) {
+    updateData.comfort_name = comfortName;
+  }
+
+  const { data: updatedRows, error: updateErr } = await admin
+    .from("kids")
+    .update(updateData)
+    .eq("id", kid.id)
+    .is("hashed_pin", null)
+    .select("id, name, comfort_name");
+
+  if (updateErr) return jsonError(`DB error: ${updateErr.message}`, 500);
+  if (!updatedRows || updatedRows.length === 0) {
+    return jsonError("This code was just used. Sign in with your PIN.", 409);
+  }
+
+  const updatedKid = updatedRows[0];
+  console.log(`[kid-finance][${requestId}] handleSetInitialPin success kidId=${kid.id}`);
+  return jsonOk({ ok: true, kidId: kid.id, name: updatedKid.comfort_name || updatedKid.name, code: sessionToken });
 }
 
 async function handleRegister(admin: Admin, params: Record<string, unknown>, requestId: string) {
@@ -354,6 +433,7 @@ async function handleRegister(admin: Admin, params: Record<string, unknown>, req
   const username = typeof params.username === "string" ? params.username.trim() : "";
   const pin = typeof params.pin === "string" ? params.pin : "";
   if (!setupCode || !name || !username || !pin) return jsonError("Missing required fields: setupCode, name, username, pin", 400);
+  if (!/^\d{6}$/.test(pin)) return jsonError("PIN must be exactly 6 digits", 400);
   console.log(`[kid-finance][${requestId}] handleRegister username="${username}"`);
 
   const parts = setupCode.split("_");
@@ -784,16 +864,84 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const allowPro = Deno.env.get("DEEPSEEK_ALLOW_PRO") === "true";
 
-  // Fetch kid goals for context (if any)
-  const { data: goals } = await admin
-    .from("goals")
-    .select("name")
-    .eq("kid_id", kid.id)
-    .limit(5);
+  // Fetch non-private financial data for DeepSeek context
+  // keep in sync with tests/sql/penny-context-columns.test.mjs
+  const [goalsRes, loansRes, rewardsRes, txsRes] = await Promise.all([
+    admin.from("goals").select("name, target, saved").eq("kid_id", kid.id).limit(10),
+    admin.from("loans").select("amount, repaid, status, due_date").eq("kid_id", kid.id).limit(5),
+    admin.from("rewards").select("name, cost, status").eq("kid_id", kid.id).limit(5),
+    admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(20),
+  ]);
+
+  if (goalsRes.error) console.warn(`[kid-finance][${requestId}] Penny context goals query failed: ${goalsRes.error.message}`);
+  if (loansRes.error) console.warn(`[kid-finance][${requestId}] Penny context loans query failed: ${loansRes.error.message}`);
+  if (rewardsRes.error) console.warn(`[kid-finance][${requestId}] Penny context rewards query failed: ${rewardsRes.error.message}`);
+  if (txsRes.error) console.warn(`[kid-finance][${requestId}] Penny context transactions query failed: ${txsRes.error.message}`);
+
+  const goals = (goalsRes.data ?? []).map((g: any) => ({
+    name: String(g.name),
+    target: Number(g.target) || 0,
+    saved: Number(g.saved) || 0,
+  }));
+
+  const loans = (loansRes.data ?? []).map((l: any) => ({
+    amount: Number(l.amount) || 0,
+    repaid: Number(l.repaid) || 0,
+    status: String(l.status || "active"),
+  }));
+
+  const rewards = (rewardsRes.data ?? []).map((r: any) => ({
+    name: String(r.name),
+    cost: Number(r.cost) || 0,
+    status: String(r.status || "pending"),
+  }));
+
+  const txs = (txsRes.data ?? []).map((t: any) => {
+    const cKey = categoryKey(String(t.type || ""), String(t.label || ""));
+    const cLabel = categoryLabel(cKey);
+    return {
+      label: String(t.label || "Transaction"),
+      amount: Number(t.amount) || 0,
+      type: String(t.type),
+      category: cLabel,
+      date: String(t.created_at),
+    };
+  });
+
+  // Spending categories aggregation (wallet debits only, using isSpendingTransaction)
+  const catTotals: Record<string, number> = {};
+  for (const t of (txsRes.data ?? [])) {
+    const typeStr = String(t.type || "");
+    const labelStr = String(t.label || "");
+    if (isSpendingTransaction(typeStr, labelStr)) {
+      const cKey = categoryKey(typeStr, labelStr);
+      const cLabel = categoryLabel(cKey);
+      const amt = Number(t.amount) || 0;
+      catTotals[cLabel] = (catTotals[cLabel] || 0) + amt;
+    }
+  }
+  const topSpendingCategories = Object.entries(catTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([category, amount]) => ({ category, amount }));
+
+  // Privacy: send comfort_name only when set, otherwise undefined (never the child's real name)
+  const pennyName = typeof kid.comfort_name === "string" && kid.comfort_name.trim() !== ""
+    ? kid.comfort_name.trim()
+    : undefined;
 
   const kidContext = {
+    name: pennyName,
     balance: typeof kid.balance === "number" ? kid.balance : Number(kid.balance) || 0,
-    goalNames: goals?.map((g: { name: string }) => g.name) ?? [],
+    investBalance: Number(kid.invest_balance) || 0,
+    coins: Number(kid.coins) || 0,
+    streakDays: Number(kid.streak_days || kid.streak || 0),
+    goals,
+    loans,
+    rewards,
+    recentTransactions: txs,
+    topSpendingCategories,
+    goalNames: goals.map((g: any) => g.name),
   };
 
   const isThinking = params.thinking !== false;

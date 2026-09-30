@@ -6,7 +6,7 @@ export function LandingFeatures() {
   const items = [
     {
       icon: "vault",
-      title: "Hyperdrive Savings",
+      title: "Smart Goal Savings",
       text: "Fund goals with visual progress bars and earn voluntary parental Hibah to boost your savings rate.",
     },
     {
@@ -16,17 +16,17 @@ export function LandingFeatures() {
     },
     {
       icon: "heart",
-      title: "Cosmic Sadaqah & Zakat",
+      title: "Meaningful Sadaqah & Zakat",
       text: "Automated 2.5% Zakat calculator above Nisab and meaningful charity contributions to verified causes.",
     },
     {
       icon: "game",
       title: "Daily Financial Quests",
-      text: "Turn Islamic finance lessons into Stardust reward points with gamified daily learning quizzes.",
+      text: "Turn Islamic finance lessons into Reward Points with gamified daily learning quizzes.",
     },
     {
       icon: "users",
-      title: "Parent Commander Center",
+      title: "Parent Guardian Dashboard",
       text: "Approve loans and money requests, monitor transactions, and set custom Hibah rates per child.",
     },
     {

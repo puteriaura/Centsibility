@@ -27,7 +27,7 @@ export function LandingCTA() {
           Raise a generation that thrives — halal-y.
         </h2>
         <p style={{ fontSize: "1.05rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 2rem" }}>
-          Join the mission and give your children an authentic financial head-start that is deeply faithful, mathematically sound, and fun.
+          Get started and give your children an authentic financial head-start that is deeply faithful, mathematically sound, and fun.
         </p>
 
         {submitted ? (
@@ -73,7 +73,7 @@ export function LandingCTA() {
               style={{ maxWidth: "340px", height: "48px" }}
             />
             <Button type="submit" variant="primary" style={{ height: "48px", padding: "0 1.5rem" }}>
-              Join the Crew
+              Join Centsibility
             </Button>
           </form>
         )}

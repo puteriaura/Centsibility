@@ -24,7 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatRM } from "@/lib/format";
 
 export const Route = createFileRoute("/kid/goals")({
-  head: () => ({ meta: [{ title: "My Missions — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "My Goals — Centsibility" }] }),
   component: KidGoals,
 });
 
@@ -32,7 +32,7 @@ const ICON_KEYS = [
   "Target",
   "Trophy",
   "GameController",
-  "Rocket",
+  "Sparkles",
   "Star",
   "Gift",
   "House",
@@ -244,7 +244,7 @@ function KidGoals() {
                 className="mx-auto"
               >
                 <AppIcon name="plus" size={16} />
-                Create First Mission
+                Create your first goal
               </Button>
             )}
           </Card>
@@ -270,7 +270,7 @@ function KidGoals() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
-                      Edit Mission
+                      Edit Goal
                     </span>
                     <Button
                       type="button"
@@ -283,7 +283,7 @@ function KidGoals() {
                   </div>
                   <IconPicker value={editEmoji} onChange={setEditEmoji} />
                   <Input
-                    label="Mission Name"
+                    label="Goal Name"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="E.g. New Bicycle"
@@ -305,7 +305,7 @@ function KidGoals() {
                       disabled={editBusy}
                       className="flex-1 justify-center"
                     >
-                      {editBusy ? "Saving…" : "Save Mission"}
+                      {editBusy ? "Saving…" : "Save goal"}
                     </Button>
                     <Button
                       type="button"
@@ -388,7 +388,7 @@ function KidGoals() {
                           setEditEmoji(g.emoji ?? "Target");
                           setActiveGoal(null);
                         }}
-                        title="Edit Mission"
+                        title="Edit Goal"
                         aria-label={`Edit ${g.name}`}
                         className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--text-secondary)] hover:text-[var(--ink)]"
                       >
@@ -399,7 +399,7 @@ function KidGoals() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setDeletingId(g.id)}
-                        title="Delete Mission"
+                        title="Delete Goal"
                         aria-label={`Delete ${g.name}`}
                         className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--error-text)] hover:text-[var(--error-text)] hover:bg-[var(--error-soft)]"
                       >
@@ -437,8 +437,8 @@ function KidGoals() {
         <Card variant="default" className="p-5 space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-[var(--ink)] flex items-center gap-2">
-              <AppIcon name="rocket" size={20} color="var(--primary)" />
-              New Savings Mission
+              <AppIcon name="target" size={20} color="var(--primary)" />
+              New Savings Goal
             </h3>
             <Button
               type="button"
@@ -457,13 +457,13 @@ function KidGoals() {
 
           <div>
             <label className="block text-xs font-semibold text-[var(--ink)] mb-2">
-              Pick Mission Icon
+              Pick Goal Icon
             </label>
             <IconPicker value={newEmoji} onChange={setNewEmoji} />
           </div>
 
           <Input
-            label="Mission Objective"
+            label="Goal Name"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="E.g. Gaming Headset, Birthday Gift"
@@ -487,7 +487,7 @@ function KidGoals() {
               disabled={addBusy}
               className="flex-1 justify-center"
             >
-              {addBusy ? "Launching…" : "Launch Mission"}
+              {addBusy ? "Saving…" : "Save goal"}
             </Button>
             <Button
               type="button"
@@ -517,7 +517,7 @@ function KidGoals() {
           className="w-full justify-center"
         >
           <AppIcon name="plus" size={16} />
-          Add New Mission Goal
+          Add New Goal
         </Button>
       )}
 
@@ -525,12 +525,12 @@ function KidGoals() {
       <Modal
         isOpen={Boolean(deletingId)}
         onClose={() => setDeletingId(null)}
-        title="Abort Mission?"
-        description="Your collected funds will stay in your core wallet balance. This mission goal will be permanently removed."
+        title="Delete this goal?"
+        description="Your collected funds will stay in your core wallet balance. This goal will be permanently removed."
         footer={
           <div className="flex items-center justify-end gap-2.5">
             <Button variant="secondary" onClick={() => setDeletingId(null)}>
-              Keep Mission
+              Keep goal
             </Button>
             <Button
               variant="danger"
@@ -544,13 +544,13 @@ function KidGoals() {
         }
       >
         <div className="py-2 text-xs text-[var(--text-secondary)]">
-          Are you sure you want to discontinue this mission? All previous deposit logs remain in your activity log.
+          Are you sure you want to delete this goal? All previous deposit logs remain in your activity log.
         </div>
       </Modal>
 
       {/* Saving Advice & Tips */}
       <div className="space-y-2">
-        <SectionTitle>Mission Intel</SectionTitle>
+        <SectionTitle>Goal tips</SectionTitle>
         <Card variant="soft" className="p-4 sm:p-5">
           <ul className="space-y-2 text-xs sm:text-sm text-[var(--text-secondary)]">
             <li className="flex items-start gap-2">
@@ -559,11 +559,11 @@ function KidGoals() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[var(--primary-text)] font-bold">·</span>
-              Reach 100% to complete the mission and claim your reward milestone.
+              Reach 100% to complete the goal and claim your reward milestone.
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[var(--primary-text)] font-bold">·</span>
-              You can adjust your target or mission name at any point without losing saved money.
+              You can adjust your target or goal name at any point without losing saved money.
             </li>
           </ul>
         </Card>
@@ -577,7 +577,7 @@ function IconPicker({ value, onChange }: { value: string; onChange: (v: string) 
     <div
       className="grid grid-cols-6 gap-2 p-2 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]"
       role="listbox"
-      aria-label="Mission icon"
+      aria-label="Goal icon"
     >
       {ICON_KEYS.map((e) => {
         const selected = value === e;

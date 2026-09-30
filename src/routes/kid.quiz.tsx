@@ -146,7 +146,7 @@ function KidQuiz() {
             {state ? `${state.correct + state.wrong}/${MAX}` : "…"}
           </p>
           <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
-            {totalPoints} stardust · {MAX_WRONG - (state?.wrong ?? 0)} lives left
+            {totalPoints} points · {MAX_WRONG - (state?.wrong ?? 0)} lives left
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">

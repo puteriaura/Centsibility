@@ -83,6 +83,8 @@ serve(async (req: Request) => {
         return await handleMarkNotificationsRead(adminClient, parentId);
       case "set-avatar":
         return await handleSetAvatar(adminClient, parentId, params);
+      case "reset-kid-pin":
+        return await handleResetKidPin(adminClient, parentId, params);
       case "set-self-avatar":
         return await handleSetSelfAvatar(adminClient, parentId, params);
       case "get-self-avatar":
@@ -140,6 +142,7 @@ const PIN_GATED_ACTIONS = new Set([
   "create-scheduled-hibah",
   "deactivate-scheduled-hibah",
   "set-kid-card-controls",
+  "reset-kid-pin",
 ]);
 
 async function issuePinSession(admin: Admin, parentId: string): Promise<{ pinSession: string; pinSessionExpiresAt: string }> {
@@ -276,6 +279,39 @@ async function handleUpdateKid(admin: Admin, parentId: string, params: { kidId: 
   return jsonOk({ ok: true });
 }
 
+async function handleResetKidPin(admin: Admin, parentId: string, params: { kidId?: string }) {
+  if (!params.kidId) return jsonError("kidId is required", 400);
+  const { data: kid, error: kidErr } = await admin
+    .from("kids")
+    .select("id, name, username")
+    .eq("id", params.kidId)
+    .eq("parent_id", parentId)
+    .maybeSingle();
+  if (kidErr) return jsonError(kidErr.message, 500);
+  if (!kid) return jsonError("Child account not found", 404);
+
+  let code = genCode();
+  for (let i = 0; i < 5; i++) {
+    const { data: existing } = await admin.from("kids").select("id").eq("login_code", code).maybeSingle();
+    if (!existing) break;
+    code = genCode();
+  }
+
+  const { error: updateErr } = await admin
+    .from("kids")
+    .update({
+      login_code: code,
+      hashed_pin: null,
+      session_token: null,
+      failed_login_attempts: 0,
+      locked_until: null,
+    })
+    .eq("id", kid.id);
+  if (updateErr) return jsonError(updateErr.message, 500);
+
+  return jsonOk({ ok: true, kidId: kid.id, name: kid.name, loginCode: code });
+}
+
 // Approvals and rewards resolve inside one database transaction (see
 // migrations/20260927000000_atomic_approvals.sql). The SQL functions lock the
 // request row, refuse anything already resolved, and roll back on any error.
@@ -346,6 +382,9 @@ async function handleVerifyPin(admin: Admin, parentId: string, params: { pin?: s
   const pin = params.pin;
   if (!pin || typeof pin !== "string") {
     return jsonError("PIN is required", 400);
+  }
+  if (!isValidPinFormat(pin)) {
+    return jsonError("PIN must be 6 digits", 400);
   }
   const { data: attemptData, error: attemptErr } = await admin.rpc("parent_pin_begin_attempt", {
     p_parent_id: parentId,

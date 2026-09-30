@@ -90,7 +90,7 @@ function KidSadaqah() {
       <div className="promo-banner promo-banner--aqua">
         <div className="max-w-[70%]">
           <h2 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug m-0">
-            Give sadaqah and earn stardust — start with RM1
+            Give sadaqah and earn reward points - start with RM1
           </h2>
           <p className="text-xs text-[var(--ink)]/80 mt-1 mb-0">
             Your kindness reaches local masjids, orphans, and clean water projects.

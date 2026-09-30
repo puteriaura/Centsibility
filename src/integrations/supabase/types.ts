@@ -167,6 +167,7 @@ export type Database = {
           bridge_key_hash: string | null;
           coins: number;
           coins_decimal: number;
+          comfort_name: string | null;
           created_at: string;
           failed_login_attempts: number | null;
           hashed_pin: string | null;
@@ -207,6 +208,7 @@ export type Database = {
           bridge_key_hash?: string | null;
           coins?: number;
           coins_decimal?: number;
+          comfort_name?: string | null;
           created_at?: string;
           failed_login_attempts?: number | null;
           hashed_pin?: string | null;
@@ -247,6 +249,7 @@ export type Database = {
           bridge_key_hash?: string | null;
           coins?: number;
           coins_decimal?: number;
+          comfort_name?: string | null;
           created_at?: string;
           failed_login_attempts?: number | null;
           hashed_pin?: string | null;

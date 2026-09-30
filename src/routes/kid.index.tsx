@@ -195,12 +195,12 @@ function KidHome() {
         >
           <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={48} ring />
           <div>
-            <h1 className="kid-greeting__name">Cmdr. {k.name}!</h1>
+            <h1 className="kid-greeting__name">{k.comfort_name ?? k.name}!</h1>
           </div>
         </button>
         <div className="kid-streak" role="status" aria-label={`${k.streak} day streak`}>
           <AppIcon name="trend" size={16} color="var(--indigo-velvet)" />
-          {k.streak}d Orbit
+          {k.streak}-day streak
         </div>
       </div>
 
@@ -249,9 +249,9 @@ function KidHome() {
             sfx.tap();
           }}
           className="balance-carousel__slide points-card"
-          aria-label={`${Math.round(Number(k.coins))} stardust points, open rewards`}
+          aria-label={`${Math.round(Number(k.coins))} reward points, open rewards`}
         >
-          <span className="points-card__label">Stardust points</span>
+          <span className="points-card__label">Reward points</span>
           <strong className="points-card__value tabular-nums">
             {hideBalance ? "******" : Math.round(Number(k.coins)).toLocaleString("en-MY")}
           </strong>
@@ -329,19 +329,17 @@ function KidHome() {
           <span className="quick-label">Loans</span>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => {
-            sfx.tap();
-            setShowReward(true);
-          }}
+        <Link
+          to="/kid/rewards"
+          onClick={() => sfx.tap()}
           className="quick-btn"
         >
           <span className="quick-circle quick-circle--amber">
             <AppIcon name="trophy" size={22} />
           </span>
           <span className="quick-label">Rewards</span>
-        </button>
+        </Link>
+
 
         <Link
           to="/kid/sadaqah"
@@ -371,7 +369,7 @@ function KidHome() {
       <div className="promo-banner promo-banner--aqua">
         <div className="max-w-[70%]">
           <h3 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
-            Give sadaqah and earn stardust. Start with RM1.
+            Give sadaqah and earn points. Start with RM1.
           </h3>
           <button
             type="button"
@@ -406,7 +404,7 @@ function KidHome() {
         </span>
         <span className="insights-recap__text">
           Big week! You made {walletTxs.length} transactions and earned{" "}
-          {Math.round(Number(k.coins))} stardust.
+          {Math.round(Number(k.coins))} points.
         </span>
       </button>
 

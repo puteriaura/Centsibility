@@ -147,57 +147,61 @@ export function pennyReply(userText: string, summary: SpendingSummary, kidName: 
       : "no major spending categories yet";
 
   if (/spend|spending|expense|out/.test(q)) {
-    return `Hi ${kidName}! Over the past months you spent ${formatRM(summary.moneyOut)} across ${summary.txCount} transactions, averaging ${formatRM(summary.avgTx)} each. Your daily average outflow is ${formatRM(summary.dailyAvg)}, with most going to ${topLine}.\n\nHere's a thought: Tracking by category helps you spot where to save. Want tips on cutting one category?`;
+    return `Hi ${kidName}! Over the past period you spent ${formatRM(summary.moneyOut)} across ${summary.txCount} transactions, averaging ${formatRM(summary.avgTx)} each. Your daily average outflow is ${formatRM(summary.dailyAvg)}, with most going to ${topLine}.\n\nTracking categories is lowkey a superpower because it shows where the cash leaks are. Want tips on cutting back on ${summary.topCategories[0]?.label || "spending"}?`;
   }
   if (/save|saving|goal|pot/.test(q)) {
-    return `Saving tip from Penny: move a little from your wallet into a savings goal right after you get money in. You've taken in ${formatRM(summary.moneyIn)} recently — even RM5 toward a goal builds the habit. Open Goals to start a pot!`;
+    return `Pro saver move from Penny: move a little from your wallet into a savings goal right when money comes in. You received ${formatRM(summary.moneyIn)} recently. Even putting ${formatRM(Math.max(2, summary.moneyIn * 0.1))} into a goal builds massive discipline! Open Goals to tuck it away.`;
   }
   if (/sadaqah|charity|give|zakat/.test(q)) {
-    return `Sadaqah extinguishes sin as water extinguishes fire. Even RM1 counts. Your recent outflow is ${formatRM(summary.moneyOut)}. If you can spare a little, visit Sadaqah and give with intention.`;
+    return `Sadaqah cleanses wealth like water extinguishes fire. Even RM1 makes a huge difference. Your recent outflow is ${formatRM(summary.moneyOut)}. Giving with pure intention brings barakah into everything you save!`;
   }
   if (/invest|growth|halal/.test(q)) {
-    return `Halal growth means risk you understand. Check Invest to set a low risk appetite first, then move small amounts from your wallet. Ask your parent if you're unsure — that's wise, not weak.`;
+    return `Halal growth means risk you truly understand. Check the Growth pot to start with conservative risk, then allocate small amounts from your wallet. Always check in with your parent first. That is wise, not weak.`;
   }
   if (/hello|hi |salam|hey/.test(q)) {
-    return `Hi there! I'm Penny, your money buddy. Ask me about spending, savings, sadaqah, or investments — I'll ground answers in your own activity.`;
+    return `Salam and hi there ${kidName}! I'm Penny, your money buddy. Ask me about spending breakdowns, saving pots, sadaqah, or rewards. I'll ground everything in your real transactions.`;
   }
 
-  return `Got it! Here's your snapshot: money in ${formatRM(summary.moneyIn)}, money out ${formatRM(summary.moneyOut)}, ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending, saving, sadaqah, or investments for a deeper dive. (This is educational guidance — not formal financial advice.)`;
+  return `Here is your current money breakdown: money in ${formatRM(summary.moneyIn)}, money out ${formatRM(summary.moneyOut)}, across ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending habits, savings goals, or sadaqah for a deeper dive. (Educational guidance only, not formal financial advice.)`;
 }
 
 export function buildStorySlides(summary: SpendingSummary, coins: number) {
+  const netSavings = summary.moneyIn - summary.moneyOut;
+  const topCat = summary.topCategories[0];
+
   const slides = [
     {
       title: "Daily wrap",
-      body: summary.highlight,
+      body: summary.highlight || `You made ${summary.txCount} transactions totaling ${formatRM(summary.moneyOut)} during this period.`,
       tone: "primary" as const,
     },
     {
       title: "Money in",
-      body: `You received RM${summary.moneyIn.toFixed(2)} in this period. Celebrate the inflow — then protect some of it in a Savings Pot.`,
+      body: `You received ${formatRM(summary.moneyIn)} in total inflows this period. Tucking away just 20% (${formatRM(summary.moneyIn * 0.2)}) into a Goal pot locks in solid progress.`,
       tone: "lilac" as const,
     },
     {
       title: "Money out",
-      body: `You spent RM${summary.moneyOut.toFixed(2)}. Daily average: RM${summary.dailyAvg.toFixed(2)}. Awareness is the first step to control.`,
+      body: `Total spend was ${formatRM(summary.moneyOut)} across ${summary.txCount} transactions. That is an average of ${formatRM(summary.avgTx)} per purchase (${formatRM(summary.dailyAvg)} per day).`,
       tone: "navy" as const,
     },
     {
       title: "Top category",
-      body:
-        summary.topCategories[0]
-          ? `${summary.topCategories[0].label} led the way at ${summary.topCategories[0].pct.toFixed(0)}% of outflows (RM${summary.topCategories[0].amount.toFixed(2)}).`
-          : "No outflow categories yet — your wrap will fill in as you transact.",
+      body: topCat
+        ? `${topCat.label} took the largest share at ${topCat.pct.toFixed(0)}% of your expenses (${formatRM(topCat.amount)}). Keeping an eye on this category is key.`
+        : "No expense categories recorded yet. Your breakdown will automatically populate as you spend.",
       tone: "primary" as const,
     },
     {
-      title: "Stardust",
-      body: `You’ve earned ${Math.round(coins)} stardust. Keep questing with Penny to unlock rewards — and ask me in chat anytime.`,
+      title: "Reward Points",
+      body: `You have earned ${Math.round(coins)} reward points from daily quizzes and smart habits! Use them to claim treats in the Rewards shop.`,
       tone: "lilac" as const,
     },
     {
-      title: "Next step",
-      body: "Chat with Penny for personalised tips, or open Goals to lock in progress. You’ve got this!",
+      title: "Key Takeaway",
+      body: netSavings >= 0
+        ? `You kept ${formatRM(netSavings)} in net savings this period! W saving discipline. Chat with Penny to allocate it toward your goals.`
+        : `Outflows were ${formatRM(Math.abs(netSavings))} higher than inflows this period. Chat with Penny to spot easy cuts and rebalance.`,
       tone: "navy" as const,
     },
   ];

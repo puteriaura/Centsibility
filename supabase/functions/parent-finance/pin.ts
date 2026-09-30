@@ -1,8 +1,9 @@
 import bcrypt from "npm:bcryptjs";
 
 export function isValidPinFormat(pin: string): boolean {
-  return /^\d{4,6}$/.test(pin);
+  return /^\d{6}$/.test(pin);
 }
+
 
 export async function hashPin(pin: string): Promise<string> {
   return await bcrypt.hash(pin, 10);

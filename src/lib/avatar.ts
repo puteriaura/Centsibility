@@ -9,7 +9,7 @@ const isUrl = (v: string) =>
 const LEGACY_EMOJI: Record<string, string> = {
   "🧒": DEFAULT_KID_AVATAR,
   "👨‍👩‍👧": DEFAULT_PARENT_AVATAR,
-  "🚀": "phosphor:Rocket",
+  "🚀": "phosphor:Sparkles",
   "🙂": DEFAULT_KID_AVATAR,
   "😊": DEFAULT_KID_AVATAR,
   "😺": "phosphor:Cat",

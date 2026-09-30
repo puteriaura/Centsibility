@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NumericKeypad, PIN_KEYPAD_KEYS } from "@/components/ui/numeric-keypad";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { isParentBypassed, setParentBypassed } from "@/lib/admin-bypass";
 
 export const Route = createFileRoute("/parent")({
@@ -52,6 +53,11 @@ function ParentLayout() {
   const [isSettingPin, setIsSettingPin] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinProcessing, setPinProcessing] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState<1 | 2 | 3>(1);
+  const [comfortNameInput, setComfortNameInput] = useState(() => {
+    const meta = (user?.user_metadata as any);
+    return meta?.comfort_name || meta?.name || "";
+  });
 
   // -----------------------------------------------------------------------
   // Listen for server-side 403 PIN required events
@@ -155,13 +161,13 @@ function ParentLayout() {
   }, []);
 
   // -----------------------------------------------------------------------
-  // 3️⃣  Submit — SET or VERIFY
-  // -----------------------------------------------------------------------
   const submitPin = async () => {
-    if (pinInput.length < 4) {
-      toast.error("PIN must be 4–6 digits");
+    if (pinInput.length !== 6) {
+      toast.error("PIN must be exactly 6 digits");
       return;
     }
+
+
 
     setPinProcessing(true);
 
@@ -170,14 +176,22 @@ function ParentLayout() {
         // ---- SET new PIN ----
         const res = await edgeParentSetPin({ pin: pinInput });
 
-        setPinVerified(true);
-        setIsSettingPin(false);
+        if (comfortNameInput.trim()) {
+          try {
+            await supabase.auth.updateUser({
+              data: { comfort_name: comfortNameInput.trim() },
+            });
+          } catch {
+            // Non-critical if user metadata fails
+          }
+        }
+
         const expiry = res.pinSessionExpiresAt
           ? new Date(res.pinSessionExpiresAt).getTime()
           : Date.now() + SESSION_DURATION_MS;
         sessionStorage.setItem("parentSessionValidUntil", String(expiry));
         sfx.success();
-        toast.success("Commander PIN set!");
+        setOnboardingStep(3);
       } else {
         // ---- VERIFY existing PIN ----
         const res = await edgeParentVerifyPin({ pin: pinInput });
@@ -215,16 +229,233 @@ function ParentLayout() {
   if (authLoading || initialising) {
     return (
       <AppShell mode="parent">
-        <div>[loading commander status...]</div>
+        <div>[Loading parent status...]</div>
       </AppShell>
+
     );
   }
 
   // No user — let child routes render their own auth guards
   if (!user) return <Outlet />;
 
-  // PIN not yet verified — show the PIN screen
+  // PIN not yet verified — show Onboarding (if setting PIN) or PIN unlock screen
   if (!pinVerified) {
+    if (isSettingPin) {
+      return (
+        <div
+          className="min-h-[100dvh] flex flex-col justify-between p-6 sm:p-8"
+          style={{
+            background: "linear-gradient(180deg, #fdf0f3 0%, #ffffff 60%)",
+            maxWidth: "440px",
+            margin: "0 auto",
+          }}
+        >
+          {/* Top Progress Header */}
+          <div>
+            <div className="flex items-center justify-between text-xs font-bold text-[var(--text-muted)] mb-2">
+              <span>STEP {onboardingStep} OF 3</span>
+              <span>
+                {onboardingStep === 1
+                  ? "Comfort Name"
+                  : onboardingStep === 2
+                  ? "6-Digit PIN"
+                  : "All Set!"}
+              </span>
+            </div>
+            <div className="w-full bg-[var(--border)] h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-[var(--primary)] h-full transition-all duration-300"
+                style={{
+                  width: onboardingStep === 1 ? "33%" : onboardingStep === 2 ? "66%" : "100%",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Step 1: Comfort Name */}
+          {onboardingStep === 1 && (
+            <div className="my-auto py-6 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-[var(--surface-pink)] border border-[var(--primary-soft)] flex items-center justify-center mx-auto shadow-sm">
+                <AppIcon name="penny" size={32} color="var(--primary)" />
+              </div>
+              <div className="text-center">
+                <h1 className="text-2xl font-extrabold text-[var(--ink)] tracking-tight">
+                  Salam! Welcome to Centsibility
+                </h1>
+                <p className="text-xs text-[var(--text-secondary)] mt-1.5">
+                  What should your children and Penny call you?
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[var(--ink)] block">
+                  Choose a suggested name or type your own:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Mama", "Papa", "Ummi", "Baba", "Abi", "Coach Dan"].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        setComfortNameInput(suggestion);
+                        sfx.pop();
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                        comfortNameInput === suggestion
+                          ? "bg-[var(--primary)] text-white shadow-sm"
+                          : "bg-white border border-[var(--border)] text-[var(--ink)] hover:border-[var(--primary)]"
+                      }`}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Input
+                label="Your Comfort Name"
+                value={comfortNameInput}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComfortNameInput(e.target.value)}
+                placeholder="e.g. Mama, Papa, Ummi"
+                maxLength={30}
+              />
+
+              <div className="p-3 bg-[var(--surface-pink)] border border-[var(--primary-soft)] rounded-xl text-xs text-[var(--ink)] text-center font-medium">
+                ✨ The app and Penny will greet you as:{" "}
+                <strong>{comfortNameInput.trim() || "Parent"}</strong>
+              </div>
+
+              <Button
+                variant="primary"
+                disabled={!comfortNameInput.trim()}
+                onClick={() => {
+                  sfx.tap();
+                  setOnboardingStep(2);
+                }}
+                className="w-full justify-center py-3 text-sm font-bold shadow-md mt-4"
+              >
+                Next: Protect Your Vault →
+              </Button>
+            </div>
+          )}
+
+          {/* Step 2: 6-Digit PIN */}
+          {onboardingStep === 2 && (
+            <div className="my-auto py-6 text-center">
+              <h1 className="text-2xl font-extrabold text-[var(--ink)] tracking-tight">
+                Create Your 6-Digit PIN
+              </h1>
+              <p className="text-xs text-[var(--text-secondary)] mt-1.5">
+                Set a secret 6-digit PIN to protect parent settings and loan approvals.
+              </p>
+
+              {/* 6 Rounded Square Boxes */}
+              <div className="flex items-center justify-center gap-2.5 sm:gap-3 my-6">
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const filled = i < pinInput.length;
+                  return (
+                    <div
+                      key={i}
+                      className={`pin-box ${filled ? "is-filled" : ""}`}
+                      style={{
+                        width: "48px",
+                        height: "56px",
+                        borderRadius: "14px",
+                        fontSize: "24px",
+                      }}
+                      aria-hidden="true"
+                    >
+                      {filled ? "●" : ""}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <NumericKeypad
+                keys={PIN_KEYPAD_KEYS}
+                onKeyPress={handleKeyPress}
+                disabled={pinProcessing}
+                variant="pin"
+              />
+
+              {pinInput.length === 6 && (
+                <div className="mt-4">
+                  <Button
+                    variant="primary"
+                    onClick={submitPin}
+                    disabled={pinProcessing}
+                    className="w-full justify-center py-3 text-sm font-bold shadow-md"
+                  >
+                    {pinProcessing ? "Saving..." : "Save 6-Digit PIN →"}
+                  </Button>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setOnboardingStep(1)}
+                className="text-xs text-[var(--text-secondary)] hover:underline mt-4 inline-block"
+              >
+                ← Back to Comfort Name
+              </button>
+            </div>
+          )}
+
+          {/* Step 3: All Set Celebration */}
+          {onboardingStep === 3 && (
+            <div className="my-auto py-6 space-y-5 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center mx-auto shadow-sm">
+                <AppIcon name="sparkles" size={32} color="#059669" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-extrabold text-[var(--ink)] tracking-tight">
+                  You're all set, {comfortNameInput.trim() || "Parent"}! 🎉
+                </h1>
+                <p className="text-xs text-[var(--text-secondary)] mt-1.5">
+                  Your halal family banking command center is ready.
+                </p>
+              </div>
+
+              <div className="p-4 bg-white border border-[var(--border)] rounded-2xl text-left space-y-3 shadow-sm">
+                <div className="flex items-center gap-2.5 text-xs text-[var(--ink)]">
+                  <span className="w-6 h-6 rounded-full bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary)] font-bold text-xs shrink-0">
+                    ✓
+                  </span>
+                  <span><strong>6-Digit Security PIN</strong> active & safe</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs text-[var(--ink)]">
+                  <span className="w-6 h-6 rounded-full bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary)] font-bold text-xs shrink-0">
+                    ✓
+                  </span>
+                  <span><strong>Real RM Savings & Hibah</strong> rewards enabled</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs text-[var(--ink)]">
+                  <span className="w-6 h-6 rounded-full bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary)] font-bold text-xs shrink-0">
+                    ✓
+                  </span>
+                  <span><strong>Penny AI Companion</strong> ready to guide your family</span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                onClick={() => {
+                  sfx.coin();
+                  setPinVerified(true);
+                  setIsSettingPin(false);
+                  toast.success("Welcome to your dashboard!");
+                }}
+                className="w-full justify-center py-3.5 text-sm font-bold shadow-md mt-4"
+              >
+                Open my family dashboard
+              </Button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Returning parent PIN unlock screen
     return (
       <div
         className="min-h-[100dvh] flex flex-col justify-between p-6 sm:p-8"
@@ -265,12 +496,10 @@ function ParentLayout() {
         {/* PIN Title & Digit Boxes */}
         <div className="text-center my-auto py-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
-            {isSettingPin ? "Create 6-digit PIN" : "Enter your 6-digit PIN"}
+            Enter your 6-digit PIN
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-2">
-            {isSettingPin
-              ? "Create a secure PIN to protect the parent dashboard"
-              : "Enter your PIN to manage your family banking"}
+            Enter your PIN to manage your family banking
           </p>
 
           {/* 6 Rounded Square Boxes */}
@@ -319,7 +548,7 @@ function ParentLayout() {
             variant="pin"
           />
 
-          {pinInput.length >= 4 && (
+          {pinInput.length === 6 && (
             <div className="mt-4">
               <Button
                 variant="primary"
@@ -327,7 +556,7 @@ function ParentLayout() {
                 disabled={pinProcessing}
                 className="w-full justify-center py-3 text-sm font-bold shadow-md"
               >
-                {pinProcessing ? "Verifying..." : isSettingPin ? "Set PIN" : "Unlock Dashboard"}
+                {pinProcessing ? "Verifying..." : "Unlock Dashboard"}
               </Button>
             </div>
           )}

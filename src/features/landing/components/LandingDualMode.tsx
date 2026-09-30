@@ -24,10 +24,10 @@ export function LandingDualMode() {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
               <Badge variant="brand">Young Saver Mode</Badge>
-              <AppIcon name="rocket" size={24} color="var(--primary)" />
+              <AppIcon name="sparkles" size={24} color="var(--primary)" />
             </div>
             <h3 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--ink)", margin: "0 0 0.75rem", letterSpacing: "-0.01em" }}>
-              Missions, Stardust, and Real Discovery.
+              Goals, Rewards, and Real Discovery.
             </h3>
             <p style={{ fontSize: "0.9375rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 1.5rem" }}>
               An interactive interface where kids learn real financial discipline through fun quests, savings goals, and daily trivia.
@@ -75,7 +75,7 @@ export function LandingDualMode() {
           </div>
         </Card>
 
-        {/* PARENT COMMAND CENTER */}
+        {/* PARENT DASHBOARD */}
         <Card
           variant="default"
           style={{
@@ -88,7 +88,7 @@ export function LandingDualMode() {
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <Badge variant="soft">Parent Command Center</Badge>
+              <Badge variant="soft">Parent Guardian Dashboard</Badge>
               <AppIcon name="users" size={24} color="var(--ink)" />
             </div>
             <h3 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--ink)", margin: "0 0 0.75rem", letterSpacing: "-0.01em" }}>

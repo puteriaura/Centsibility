@@ -13,7 +13,7 @@ export function FlightLogSection({ kidTxs }: FlightLogSectionProps) {
   return (
     <Card variant="default" className="mt-4 p-4 space-y-3 border border-[var(--border)]">
       <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-        <strong className="text-sm font-bold text-[var(--ink)]">Transaction Flight Log</strong>
+        <strong className="text-sm font-bold text-[var(--ink)]">Activity Log</strong>
         <span className="text-xs text-[var(--text-muted)]">{walletTxs.length} records</span>
       </div>
       {walletTxs.length === 0 ? (

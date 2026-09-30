@@ -112,7 +112,7 @@ export function LandingNav() {
           </Link>
           <Link to="/login" style={{ textDecoration: "none" }} className="hidden sm:inline-flex">
             <Button size="sm" variant="primary">
-              Launch App →
+              Open app →
             </Button>
           </Link>
           <Button
@@ -171,7 +171,7 @@ export function LandingNav() {
           </Link>
           <Link to="/login" onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
             <Button size="sm" variant="primary" style={{ width: "100%", justifyContent: "center" }}>
-              Launch App →
+              Open app →
             </Button>
           </Link>
         </nav>

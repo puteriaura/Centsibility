@@ -83,22 +83,105 @@ export function thinkingParams(enabled: boolean): Record<string, unknown> {
 }
 
 export const PENNY_SYSTEM_PROMPT =
-  "You are Penny, a friendly and wise Islamic financial literacy companion for children using the Centsibility app. " +
-  "Speak in simple, engaging, encouraging language suitable for kids. Keep your answers concise (2-4 short paragraphs maximum). " +
-  "Focus on Islamic money values: Shariah-compliant saving (Qard, Hibah, Amanah), Sadaqah (charity), budgeting, and avoiding wasteful spending (Israf). " +
-  "Safety rules you must strictly follow: " +
-  "1. Never ask for or record any personal identification data (real full names, addresses, phone numbers, passwords, PINs, card numbers). " +
-  "2. Do not give official legal or professional investment advice. " +
-  "3. Always remind the child to discuss real-world money choices with their parent or guardian. " +
-  "4. Politely decline questions outside money, saving, Islamic finance principles, and learning.";
+  "You are Penny, an energetic, fun, and wise Islamic financial literacy mascot for kids using the Centsibility app (RM currency). " +
+  "Writing style rules you must strictly follow: " +
+  "1. NEVER use em dashes (—) or en dashes (–). Use plain commas, periods, or parentheses instead. " +
+  "2. NEVER begin replies with AI clichés like 'Got it', 'Certainly', 'Sure thing', or 'As an AI'. Dive straight into your thoughts. " +
+  "3. Tone: For kid users, be playful, witty, and fun, with tasteful youth slang and light brainrot humor (such as 'W move', 'saving is lowkey OP', 'gigachad saver', 'rizz up your savings', 'no cap') while staying wholesome, age-appropriate, and financially sound. For parents, be clear, warm, and helpful. " +
+  "4. Keep explanations punchy and concise (2 to 3 short paragraphs maximum). " +
+  "5. Ground your answers in Islamic money values: Shariah-compliant saving (Qard, Hibah, Amanah), Sadaqah (charity and giving back), budgeting, and avoiding wasteful spending (Israf). " +
+  "6. Safety rules: " +
+  "- Never ask for or store private credentials (passwords, PINs, card numbers, addresses, emails). " +
+  "- Do not give formal legal or investment advice. " +
+  "- Remind children to discuss big money decisions with their parents.";
 
 export interface PennyChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
+export interface KidGoalSummary {
+  name: string;
+  target: number;
+  saved: number;
+}
+
+export interface KidLoanSummary {
+  amount: number;
+  repaid: number;
+  status: string;
+}
+
+export interface KidRewardSummary {
+  name: string;
+  cost: number;
+  status: string;
+}
+
+export interface KidTxSummary {
+  label: string;
+  amount: number;
+  type: string;
+  category?: string;
+  date: string;
+}
+
+export function categoryKey(type: string, label: string): string {
+  if (type === "FEE") return "FEE";
+  if (type === "QARD_REPAY" || (type === "QARD" && label === "Loan repayment")) {
+    return "QARD_REPAY";
+  }
+  if (type === "GOAL_IN") return "GOAL_IN";
+  if (type === "WITHDRAWAL" || type === "SADAQAH" || type === "INVEST_IN") {
+    return type;
+  }
+  const lower = (label || "").toLowerCase();
+  if (lower.includes("food") || lower.includes("snack")) {
+    return "FOOD";
+  }
+  if (lower.includes("transport") || lower.includes("grab")) {
+    return "TRANSPORT";
+  }
+  return type || "OTHER";
+}
+
+export function categoryLabel(key: string): string {
+  if (key === "FOOD") return "Food & beverage";
+  if (key === "TRANSPORT") return "Transportation";
+  if (key === "WITHDRAWAL") return "Withdrawals";
+  if (key === "SADAQAH") return "Sadaqah";
+  if (key === "INVEST_IN") return "Investments";
+  if (key === "FEE") return "Fees";
+  if (key === "QARD_REPAY" || key === "QARD") return "Loan repayments";
+  if (key === "GOAL_IN") return "Savings goals";
+  if (key === "DEPOSIT") return "Deposits";
+  return key;
+}
+
+const DEBIT_TYPES = new Set(["WITHDRAWAL", "SADAQAH", "INVEST_IN", "FEE", "QARD_REPAY", "GOAL_IN"]);
+const POT_ONLY_TYPES = new Set(["INVEST_GAIN", "INVEST_LOSS"]);
+const SAVINGS_MOVE_TYPES = new Set(["INVEST_IN", "GOAL_IN"]);
+
+export function isSpendingTransaction(type: string, label?: string | null): boolean {
+  if (POT_ONLY_TYPES.has(type)) return false;
+  const isDebit = DEBIT_TYPES.has(type) || (type === "QARD" && label === "Loan repayment");
+  if (!isDebit) return false;
+  if (SAVINGS_MOVE_TYPES.has(type)) return false;
+  return true;
+}
+
 export interface KidContext {
+  name?: string;
   balance?: number;
+  coins?: number;
+  investBalance?: number;
+  streakDays?: number;
+  goals?: KidGoalSummary[];
+  loans?: KidLoanSummary[];
+  rewards?: KidRewardSummary[];
+  recentTransactions?: KidTxSummary[];
+  topSpendingCategories?: { category: string; amount: number }[];
+  /** Legacy support */
   goalNames?: string[];
 }
 
@@ -155,14 +238,45 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
   let system = PENNY_SYSTEM_PROMPT;
   if (kidContext) {
     const parts: string[] = [];
+    if (kidContext.name) {
+      parts.push(`Child name: ${kidContext.name}`);
+    }
     if (kidContext.balance !== undefined && Number.isFinite(kidContext.balance)) {
       parts.push(`Current wallet balance: RM${kidContext.balance.toFixed(2)}`);
     }
-    if (kidContext.goalNames && kidContext.goalNames.length > 0) {
+    if (kidContext.investBalance !== undefined && Number.isFinite(kidContext.investBalance)) {
+      parts.push(`Growth pot balance: RM${kidContext.investBalance.toFixed(2)}`);
+    }
+    if (kidContext.coins !== undefined && Number.isFinite(kidContext.coins)) {
+      parts.push(`Reward points: ${Math.round(kidContext.coins)}`);
+    }
+    if (kidContext.streakDays !== undefined && kidContext.streakDays > 0) {
+      parts.push(`Daily streak: ${kidContext.streakDays} days`);
+    }
+    if (kidContext.goals && kidContext.goals.length > 0) {
+      const gList = kidContext.goals.map((g) => `${g.name} (saved RM${g.saved.toFixed(2)} of RM${g.target.toFixed(2)})`).join(", ");
+      parts.push(`Active goals: ${gList}`);
+    } else if (kidContext.goalNames && kidContext.goalNames.length > 0) {
       parts.push(`Active savings goals: ${kidContext.goalNames.join(", ")}`);
     }
+    if (kidContext.loans && kidContext.loans.length > 0) {
+      const lList = kidContext.loans.map((l) => `RM${l.amount.toFixed(2)} loan (${l.status}, repaid RM${l.repaid.toFixed(2)})`).join(", ");
+      parts.push(`Loans (Qard): ${lList}`);
+    }
+    if (kidContext.rewards && kidContext.rewards.length > 0) {
+      const rList = kidContext.rewards.map((r) => `${r.name} (${r.cost} pts, ${r.status})`).join(", ");
+      parts.push(`Rewards: ${rList}`);
+    }
+    if (kidContext.topSpendingCategories && kidContext.topSpendingCategories.length > 0) {
+      const catList = kidContext.topSpendingCategories.map((c) => `${c.category}: RM${c.amount.toFixed(2)}`).join(", ");
+      parts.push(`Top spending categories: ${catList}`);
+    }
+    if (kidContext.recentTransactions && kidContext.recentTransactions.length > 0) {
+      const txList = kidContext.recentTransactions.slice(0, 5).map((t) => `${t.label} (RM${t.amount.toFixed(2)} ${t.type})`).join(", ");
+      parts.push(`Recent transactions: ${txList}`);
+    }
     if (parts.length > 0) {
-      system += `\n\nChild's current context: ${parts.join("; ")}.`;
+      system += `\n\nChild's live financial status (non-private): ${parts.join("; ")}.`;
     }
   }
 
