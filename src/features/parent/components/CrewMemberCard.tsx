@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +15,12 @@ import { TransferFundsSection } from "./TransferFundsSection";
 import { ScheduleHibahSection } from "./ScheduleHibahSection";
 import { FlightLogSection } from "./FlightLogSection";
 import { formatRM } from "@/lib/format";
+import { getBalanceSummary } from "@/lib/finance";
 
 export interface CrewMemberCardProps {
   kid: Kid;
+  kidGoals?: Array<{ saved: number | string }>;
+  kidLoans?: Array<{ amount: number | string; repaid: number | string; status: string }>;
   kidTxs: Transaction[];
   scheduledHibahs: ScheduledHibah[];
   onDeleteInitiate: (kidId: string) => void;
@@ -27,14 +31,21 @@ export interface CrewMemberCardProps {
 
 export function CrewMemberCard({
   kid,
+  kidGoals = [],
+  kidLoans = [],
   kidTxs,
   scheduledHibahs,
   onDeleteInitiate,
   onRefresh,
   defaultOpen = false,
 }: CrewMemberCardProps) {
+  const navigate = useNavigate();
   const [hideBalance, setHideBalance] = useState(false);
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
   const [logOpen, setLogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isActing, setIsActing] = useState(false);
@@ -166,7 +177,8 @@ export function CrewMemberCard({
     }
   };
 
-  const total = Number(kid.balance) + Number(kid.invest_balance ?? 0);
+  const summary = getBalanceSummary(kid, kidGoals, kidLoans);
+  const total = summary.total;
   const avatar = resolveAvatar(kid.avatar, "kid");
   const activeCode = resetCode || (!kid.hashed_pin ? kid.login_code : null);
 
@@ -197,6 +209,8 @@ export function CrewMemberCard({
             {kid.username ? `@${kid.username}` : "Child account"}
             {" · "}
             Trust {kid.trust_score}
+            {" · "}
+            {kid.coins ?? 0} pts
           </span>
           <span className="crew-card__sub block truncate text-[11px]">
             {activeCode ? (
@@ -311,22 +325,28 @@ export function CrewMemberCard({
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
+          <div className="grid grid-cols-4 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
             <div className="text-center">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `${formatRM(Number(kid.balance))}`}
+                {hideBalance ? "•••" : `${formatRM(summary.spending)}`}
               </div>
-              <small className="text-[11px] text-[var(--text-secondary)]">Core</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">Spending</small>
             </div>
-            <div className="text-center border-x border-[var(--border)]">
+            <div className="text-center border-l border-[var(--border)]">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `${formatRM(Number(kid.invest_balance ?? 0))}`}
+                {hideBalance ? "•••" : `${formatRM(summary.tabung)}`}
               </div>
-              <small className="text-[11px] text-[var(--text-secondary)]">Growth</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">Tabung</small>
             </div>
-            <div className="text-center">
-              <div className="text-sm font-bold text-[var(--primary-text)] tabular-nums">
-                {hideBalance ? "•••" : Math.round(Number(kid.coins)).toLocaleString()}
+            <div className="text-center border-l border-[var(--border)]">
+              <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
+                {hideBalance ? "•••" : `${formatRM(summary.growth)}`}
+              </div>
+              <small className="text-[11px] text-[var(--text-secondary)]">Growth Tabung</small>
+            </div>
+            <div className="text-center border-l border-[var(--border)]">
+              <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
+                {kid.coins ?? 0}
               </div>
               <small className="text-[11px] text-[var(--text-secondary)]">Points</small>
             </div>
@@ -478,16 +498,15 @@ export function CrewMemberCard({
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
-              variant={isActing && actType === "DEPOSIT" ? "primary" : "outline"}
+              variant="outline"
               size="sm"
               className="justify-center text-xs font-semibold"
               onClick={() => {
-                sfx.pop();
-                setIsActing(isActing && actType === "DEPOSIT" ? false : true);
-                setActType("DEPOSIT");
+                sfx.tap();
+                navigate({ to: "/parent/transfer", search: { kid: kid.id } });
               }}
             >
-              <AppIcon name="plus" size={14} /> Transfer
+              <AppIcon name="transfer" size={14} /> Transfer
             </Button>
             <Button
               type="button"

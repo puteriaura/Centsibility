@@ -108,16 +108,23 @@ function pageTitle(pathname: string, mode: Mode) {
     if (pathname.startsWith("/kid/insights")) return "Insights";
     if (pathname.startsWith("/kid/chat")) return "Penny";
     if (pathname.startsWith("/kid/wallet")) return "Deposit";
+    if (pathname.startsWith("/kid/transfer")) return "Transfer";
+    if (pathname.startsWith("/kid/missions")) return "Missions";
+    if (pathname.startsWith("/kid/quest")) return "Quest";
     if (pathname.startsWith("/kid/loans")) return "Loans";
     if (pathname.startsWith("/kid/card")) return "Debit Card-i";
-    if (pathname.startsWith("/kid/goals")) return "Goals";
+    if (pathname.startsWith("/kid/notifications")) return "Notifications";
+    if (pathname.startsWith("/kid/history")) return "Transaction history";
+    if (pathname.startsWith("/kid/goals")) return "Tabung";
     if (pathname.startsWith("/kid/rewards")) return "Rewards";
     if (pathname.startsWith("/kid/sadaqah")) return "Sadaqah";
     if (pathname.startsWith("/kid/zakat")) return "Zakat";
     if (pathname.startsWith("/kid/quiz")) return "Quest";
-    if (pathname.startsWith("/kid/invest")) return "Invest";
+    if (pathname.startsWith("/kid/invest")) return "Growth Tabung";
     return "Home";
   }
+  if (pathname.startsWith("/parent/transfer")) return "Transfer";
+  if (pathname.startsWith("/parent/penny")) return "Penny";
   if (pathname.startsWith("/parent/insights")) return "Insights";
   if (pathname.startsWith("/parent/reports")) return "Reports";
   if (pathname.startsWith("/parent/approvals")) return "Notifications";
@@ -247,7 +254,7 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
           { to: "/kid", label: "Home", icon: "home" },
           { to: "/kid/wallet", label: "Deposit", icon: "wallet" },
           // The dock's single wide pill: saving is the app's core daily action.
-          { to: "/kid/goals", label: "Save", icon: "save", center: true },
+          { to: "/kid/goals", label: "Tabung", icon: "save", center: true },
           { to: "/kid/loans", label: "Loans", icon: "loan" },
           { to: "/kid/card", label: "Card", icon: "card" },
         ]

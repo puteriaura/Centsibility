@@ -32,7 +32,14 @@ import {
 import { AppIcon } from "@/components/ui/app-icon";
 import { startOfMonth } from "date-fns";
 import { formatDate, formatRM } from "@/lib/format";
-import { isDebitTransaction, isSpendingTransaction, isWalletTransaction } from "@/lib/finance";
+import {
+  getBalanceSummary,
+  isDebitTransaction,
+  isSpendingTransaction,
+  isWalletTransaction,
+} from "@/lib/finance";
+import { transactionTitle, transactionTypeLabel, approvalKindLabel } from "@/lib/labels";
+import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/")({
   head: () => ({ meta: [{ title: "Kid Home — Centsibility" }] }),
@@ -42,6 +49,7 @@ export const Route = createFileRoute("/kid/")({
 function KidHome() {
   const nav = useNavigate();
   const { data, loading, error, refresh } = useKidData();
+  const { busy, run } = useMoneyAction();
   const [showReward, setShowReward] = useState(false);
   const [rName, setRName] = useState("");
   const [moneyReq, setMoneyReq] = useState<null | "DEPOSIT" | "WITHDRAWAL">(null);
@@ -60,6 +68,7 @@ function KidHome() {
 
   const onCarouselPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "touch") return;
+    if ((e.target as HTMLElement).closest("button")) return;
     const el = carouselRef.current;
     if (!el) return;
     drag.current = { down: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false };
@@ -107,33 +116,41 @@ function KidHome() {
       toast.error("Give the reward a name first!");
       return;
     }
-    try {
-      await edgeKidRequestReward({ code, name: rName.trim(), cost });
-      sfx.success();
-      toast.success("Reward request sent!");
-      setShowReward(false);
-      setRName("");
-      refresh();
-    } catch (e: unknown) {
-      sfx.error();
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    const rewardName = rName.trim();
+    await run(
+      () => edgeKidRequestReward({ code, name: rewardName, cost }),
+      {
+        success: `Reward request sent: ${rewardName}`,
+        failure: "Reward request didn't go through",
+        onSuccess: () => {
+          setShowReward(false);
+          setRName("");
+        },
+        refresh,
+      }
+    );
   };
 
   const submitMoneyReq = async (amount: number, reference?: string) => {
     if (!code || !moneyReq) return;
-    try {
-      await edgeKidRequestApproval({
-        code, kind: moneyReq, amount, reason: reference ?? moneyReq,
-      });
-      sfx.success();
-      toast.success("Sent to parent for approval");
-      setMoneyReq(null);
-      refresh();
-    } catch (e: unknown) {
-      sfx.error();
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    const actionWord = moneyReq === "DEPOSIT" ? "Deposit" : "Withdrawal";
+    await run(
+      () =>
+        edgeKidRequestApproval({
+          code,
+          kind: moneyReq,
+          amount,
+          reason: reference || (moneyReq === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
+        }),
+      {
+        success: `${actionWord} request for ${formatRM(amount)} sent for approval`,
+        failure: `${actionWord} request didn't go through`,
+        onSuccess: () => {
+          setMoneyReq(null);
+        },
+        refresh,
+      }
+    );
   };
 
   const pendingApprovals = data.approvals.filter(
@@ -151,11 +168,13 @@ function KidHome() {
     if (!code) return;
     setSavingProfile(true);
     try {
+      // Only send birthday when it has not been persisted yet to avoid server guard errors.
+      const birthdayAlreadySet = !!(k.birth_date || k.birth_year);
       await edgeKidUpdateProfile({
         code,
         bio: pBio.trim() || undefined,
-        birth_date: pBirthDate || undefined,
-        birth_year: pBirthYear ? parseInt(pBirthYear) : undefined,
+        birth_date: birthdayAlreadySet ? undefined : (pBirthDate || undefined),
+        birth_year: birthdayAlreadySet ? undefined : (pBirthYear ? parseInt(pBirthYear) : undefined),
       });
       toast.success("Profile saved!");
       refresh();
@@ -198,9 +217,24 @@ function KidHome() {
             <h1 className="kid-greeting__name">{k.comfort_name ?? k.name}!</h1>
           </div>
         </button>
-        <div className="kid-streak" role="status" aria-label={`${k.streak} day streak`}>
-          <AppIcon name="trend" size={16} color="var(--indigo-velvet)" />
-          {k.streak}-day streak
+        <div className="flex items-center gap-2">
+          <div className="kid-streak" role="status" aria-label={`${k.streak} day streak`}>
+            <AppIcon name="trend" size={16} color="var(--indigo-velvet)" />
+            {k.streak}-day streak
+          </div>
+          <Link
+            to="/kid/notifications"
+            className="relative p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+            aria-label={`Notifications${(data.unreadNotifications ?? 0) > 0 ? `, ${data.unreadNotifications} unread` : ""}`}
+            onClick={() => sfx.tap()}
+          >
+            <AppIcon name="bell" size={20} />
+            {(data.unreadNotifications ?? 0) > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--primary)] text-white text-[10px] font-extrabold flex items-center justify-center leading-none">
+                {(data.unreadNotifications ?? 0) > 9 ? "9+" : data.unreadNotifications}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
 
@@ -223,24 +257,39 @@ function KidHome() {
         onPointerCancel={onCarouselPointerUp}
       >
         <div className="balance-carousel__slide">
-      <BalanceCard
-        title="Spending balance"
-        balance={Number(k.balance)}
-        secondaryBalance={{
-          label: "Total balance",
-          amount: Number(k.balance) + Number(k.invest_balance ?? 0),
-        }}
-        hideBalance={hideBalance}
-        onToggleHide={() => setHideBalance(!hideBalance)}
-        onArrowClick={() => nav({ to: "/kid/wallet" })}
-        metadata={[
-          { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
-          { label: "100% Halal" },
-        ]}
-      />
+          {(() => {
+            const summary = getBalanceSummary(k, data.goals, data.loans);
+            return (
+              <BalanceCard
+                title="Spending balance"
+                balance={summary.spending}
+                secondaryBalance={{
+                  label: "Total balance",
+                  amount: summary.total,
+                }}
+                breakdown={[
+                  { label: "Spending", amount: summary.spending },
+                  { label: "Tabung", amount: summary.tabung },
+                  { label: "Growth Tabung", amount: summary.growth },
+                ]}
+                footnote={
+                  summary.owed > 0
+                    ? `Owed on loans: ${formatRM(summary.owed)} (not taken off your total)`
+                    : undefined
+                }
+                hideBalance={hideBalance}
+                onToggleHide={() => setHideBalance(!hideBalance)}
+                onArrowClick={() => nav({ to: "/kid/wallet" })}
+                metadata={[
+                  { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
+                  { label: "100% Halal" },
+                ]}
+              />
+            );
+          })()}
         </div>
         <Link
-          to="/kid/rewards"
+          to="/kid/missions"
           onClick={(e) => {
             if (drag.current.moved) {
               e.preventDefault();
@@ -249,7 +298,7 @@ function KidHome() {
             sfx.tap();
           }}
           className="balance-carousel__slide points-card"
-          aria-label={`${Math.round(Number(k.coins))} reward points, open rewards`}
+          aria-label={`${Math.round(Number(k.coins))} reward points, open missions`}
         >
           <span className="points-card__label">Reward points</span>
           <strong className="points-card__value tabular-nums">
@@ -269,29 +318,26 @@ function KidHome() {
       {/* 4 x 2 quick actions: white circles on the canvas */}
       <div className="quick-grid">
         {/* Row 1 */}
-        <button
-          type="button"
-          onClick={() => {
-            sfx.tap();
-            setMoneyReq("DEPOSIT");
-          }}
-          className="quick-btn"
-        >
-          <span className="quick-circle">
-            <AppIcon name="deposit" size={24} />
-          </span>
-          <span className="quick-label">Transfer</span>
-        </button>
-
         <Link
-          to="/kid/wallet"
+          to="/kid/transfer"
           onClick={() => sfx.tap()}
           className="quick-btn"
         >
           <span className="quick-circle">
-            <AppIcon name="lock" size={22} />
+            <AppIcon name="transfer" size={24} />
           </span>
-          <span className="quick-label">Secure</span>
+          <span className="quick-label">Transfer</span>
+        </Link>
+
+        <Link
+          to="/kid/history"
+          onClick={() => sfx.tap()}
+          className="quick-btn"
+        >
+          <span className="quick-circle">
+            <AppIcon name="history" size={22} />
+          </span>
+          <span className="quick-label">History</span>
         </Link>
 
         <Link
@@ -300,9 +346,9 @@ function KidHome() {
           className="quick-btn"
         >
           <span className="quick-circle quick-circle--aqua">
-            <AppIcon name="money" size={24} />
+            <AppIcon name="save" size={24} />
           </span>
-          <span className="quick-label">Goals</span>
+          <span className="quick-label">Tabung</span>
         </Link>
 
         <Link
@@ -330,14 +376,14 @@ function KidHome() {
         </Link>
 
         <Link
-          to="/kid/rewards"
+          to="/kid/missions"
           onClick={() => sfx.tap()}
           className="quick-btn"
         >
           <span className="quick-circle quick-circle--amber">
-            <AppIcon name="trophy" size={22} />
+            <AppIcon name="missions" size={22} />
           </span>
-          <span className="quick-label">Rewards</span>
+          <span className="quick-label">Missions</span>
         </Link>
 
 
@@ -409,7 +455,7 @@ function KidHome() {
       </button>
 
       <div className="section-tag">
-        <span>Penny missions</span>
+        <span>Missions</span>
       </div>
 
       <div className="bg-white rounded-2xl p-5 flex items-center gap-4">
@@ -417,16 +463,16 @@ function KidHome() {
           <AppIcon name="quest" size={24} />
         </div>
         <div className="min-w-0">
-          <h4 className="text-base font-bold text-[var(--ink)] m-0">Daily money quest</h4>
+          <h4 className="text-base font-bold text-[var(--ink)] m-0">Missions</h4>
           <p className="text-sm text-[var(--text-muted)] mt-0.5 mb-0">
-            Answer 3 questions to unlock rewards
+            Learn money skills and earn points
           </p>
           <Link
-            to="/kid/quiz"
+            to="/kid/missions"
             onClick={() => sfx.tap()}
             className="text-sm font-bold text-[var(--ink)] hover:text-[var(--primary-text)] inline-flex items-center gap-1 mt-2"
           >
-            <span>Start quest</span>
+            <span>Open Missions</span>
             <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -536,6 +582,7 @@ function KidHome() {
           <MoneyKeypad
             min={0.5}
             max={moneyReq === "WITHDRAWAL" ? Number(k.balance) : 10000}
+            busy={busy}
             showReference
             confirmLabel={
               moneyReq === "DEPOSIT" ? "Send Deposit Request" : "Send Withdrawal Request"
@@ -585,7 +632,7 @@ function KidHome() {
               <Card key={a.id} variant="default" className="p-4 border border-[var(--border)] flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>{a.kind}</Badge>
+                    <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>{approvalKindLabel(a.kind)}</Badge>
                     <span className="text-xs font-semibold text-[var(--ink)]">{cleanApprovalReason(a.reason)}</span>
                   </div>
                   <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Sent to parent for review</small>
@@ -635,19 +682,35 @@ function KidHome() {
       )}
 
 
-      <SectionTitle>Transaction History</SectionTitle>
+      <div className="flex items-center justify-between">
+        <SectionTitle>Transaction History</SectionTitle>
+        {walletTxs.length > 0 && (
+          <Link
+            to="/kid/history"
+            onClick={() => sfx.tap()}
+            className="text-xs font-semibold text-[var(--primary-text)] hover:underline min-h-[44px] inline-flex items-center"
+          >
+            See all →
+          </Link>
+        )}
+      </div>
       <Card variant="default" className="p-2 divide-y divide-[var(--border)] overflow-hidden">
-        {walletTxs.map((t: (typeof walletTxs)[number]) => (
-          <TransactionRow
-            key={t.id}
-            title={t.label}
-            subtitle={t.type}
-            date={formatDate(t.created_at)}
-            amount={Number(t.amount)}
-            isIncome={!isDebitTransaction(t.type, t.label)}
-            icon={TX_ICON_MAP[t.type] || "transaction"}
-          />
-        ))}
+        {walletTxs.slice(0, 5).map((t: (typeof walletTxs)[number]) => {
+          const title = transactionTitle(t);
+          const typeLabel = transactionTypeLabel(t.type, t.label);
+          const subtitle = title.trim().toLowerCase() === typeLabel.trim().toLowerCase() ? undefined : typeLabel;
+          return (
+            <TransactionRow
+              key={t.id}
+              title={title}
+              subtitle={subtitle}
+              date={formatDate(t.created_at)}
+              amount={Number(t.amount)}
+              isIncome={!isDebitTransaction(t.type, t.label)}
+              icon={TX_ICON_MAP[t.type] || "transaction"}
+            />
+          );
+        })}
         {walletTxs.length === 0 && (
           <div className="p-6 text-center text-xs text-[var(--text-muted)]">No activity yet.</div>
         )}
@@ -706,20 +769,29 @@ function KidHome() {
                     </small>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      label="Birth Date"
-                      type="date"
-                      value={pBirthDate}
-                      onChange={(e) => setPBirthDate(e.target.value)}
-                    />
-                    <Input
-                      label="Birth Year"
-                      type="number"
-                      placeholder="YYYY"
-                      value={pBirthYear}
-                      onChange={(e) => setPBirthYear(e.target.value)}
-                    />
+                  <div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        label="Birth Date"
+                        type="date"
+                        value={pBirthDate}
+                        disabled={Boolean(k.birth_date || k.birth_year)}
+                        onChange={(e) => setPBirthDate(e.target.value)}
+                      />
+                      <Input
+                        label="Birth Year"
+                        type="number"
+                        placeholder="YYYY"
+                        value={pBirthYear}
+                        disabled={Boolean(k.birth_date || k.birth_year)}
+                        onChange={(e) => setPBirthYear(e.target.value)}
+                      />
+                    </div>
+                    {Boolean(k.birth_date || k.birth_year) && (
+                      <p className="-mt-1 mb-2 text-xs text-[var(--text-muted)]">
+                        Ask your parent to change it
+                      </p>
+                    )}
                   </div>
 
                   {data.parent && (

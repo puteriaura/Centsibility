@@ -9,44 +9,31 @@ import { KidLoadError } from "@/features/kid/components";
 import {
   edgeKidSadaqah,
   edgeKidInvestSettle,
-  edgeKidInvestDeposit,
-  edgeKidInvestWithdraw,
   edgeKidRequestApproval,
-  edgeKidSetInvestRisk,
 } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
-import { isDebitTransaction, isWalletTransaction } from "@/lib/finance";
+import { getBalanceSummary, isDebitTransaction, isWalletTransaction } from "@/lib/finance";
 import { AppIcon } from "@/components/ui/app-icon";
 import { formatDate, formatRM } from "@/lib/format";
+import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
+import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
   component: KidWallet,
 });
 
-type Tab = "deposit" | "withdraw" | "invest" | "sadaqah" | "loan";
-
-function riskLabel(risk: string | undefined) {
-  return risk === "very_low"
-    ? "Very Low Risk"
-    : risk === "low"
-      ? "Low Risk"
-      : risk === "medium"
-        ? "Medium Risk"
-        : risk === "high"
-          ? "High Risk"
-          : risk === "very_high"
-            ? "Very High Risk"
-            : "Growth";
-}
+type Tab = "deposit" | "withdraw" | "loan";
 
 function KidWallet() {
   const { data, loading, error, refresh } = useKidData();
+  const { busy, run } = useMoneyAction();
   const [tab, setTab] = useState<Tab>("deposit");
+  const [showHeroBreakdown, setShowHeroBreakdown] = useState(false);
 
   useEffect(() => {
     const code = getKidSession()?.code;
@@ -81,71 +68,31 @@ function KidWallet() {
 
   const ask = async (kind: "DEPOSIT" | "WITHDRAWAL", amount: number, reference?: string) => {
     if (!code) return;
-    try {
-      await edgeKidRequestApproval({ code, kind, amount, reason: reference ?? kind });
-      sfx.success();
-      toast.success("Sent to parent for approval");
-      refresh();
-    } catch (e: unknown) {
-      sfx.error();
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
-  };
-
-  const sadaqah = async (amount: number) => {
-    if (!code) return;
-    if (amount > balance) {
-      sfx.error();
-      toast.error("Not enough balance");
-      return;
-    }
-    try {
-      await edgeKidSadaqah({ code, amount });
-      sfx.success();
-      toast.success("Jazakallah khair!");
-      refresh();
-    } catch (e: unknown) {
-      sfx.error();
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
-  };
-
-  const invest = async (dir: "in" | "out", amount: number) => {
-    if (!code) return;
-    try {
-      if (dir === "in") await edgeKidInvestDeposit({ code, amount });
-      else await edgeKidInvestWithdraw({ code, amount });
-      sfx.success();
-      toast.success(dir === "in" ? "Invested!" : "Moved back to wallet");
-      refresh();
-    } catch (e: unknown) {
-      sfx.error();
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
-  };
-
-  const changeRisk = async (riskKey: string) => {
-    if (!code) return;
-    try {
-      await edgeKidSetInvestRisk({ code, riskAppetite: riskKey });
-      toast.success("Risk level updated!");
-      refresh();
-    } catch (e: unknown) {
-      sfx.error();
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    const actionWord = kind === "DEPOSIT" ? "Deposit" : "Withdrawal";
+    await run(
+      () =>
+        edgeKidRequestApproval({
+          code,
+          kind,
+          amount,
+          reason: reference || (kind === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
+        }),
+      {
+        success: `${actionWord} request for ${formatRM(amount)} sent for approval`,
+        failure: `${actionWord} request didn't go through`,
+        refresh,
+      }
+    );
   };
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "deposit", label: "Deposit", icon: "deposit" },
     { key: "withdraw", label: "Withdraw", icon: "withdraw" },
-    { key: "invest", label: "Invest", icon: "invest" },
-    { key: "sadaqah", label: "Sadaqah", icon: "sadaqah" },
     { key: "loan", label: "Loan", icon: "loan" },
   ];
 
-  const currentRisk = (k.risk_appetite as string) || "low";
-  const totalBalance = balance + invested;
+  const balanceSummary = getBalanceSummary(k, data.goals, data.loans);
+
   const activeLoans = data.loans.filter(
     (l: (typeof data.loans)[number]) => l.status === "active",
   );
@@ -155,10 +102,6 @@ function KidWallet() {
     0,
   );
 
-  const scrollToHistory = () => {
-    sfx.tap();
-    document.getElementById("wallet-history")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   return (
     <div className="space-y-5 pb-8">
@@ -166,32 +109,62 @@ function KidWallet() {
       <section className="deposit-hero" aria-label="Total balance">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Total balance</p>
-          <p className="deposit-hero__amount tabular-nums">{formatRM(totalBalance)}</p>
+          <p className="deposit-hero__amount tabular-nums">{formatRM(balanceSummary.total)}</p>
           <button
             type="button"
             className="deposit-hero__link"
+            aria-expanded={showHeroBreakdown}
+            aria-controls="deposit-hero-breakdown"
             onClick={() => {
               sfx.tap();
-              setTab("deposit");
+              setShowHeroBreakdown((prev) => !prev);
             }}
           >
-            View balance info →
+            {showHeroBreakdown ? "Hide balance info ↑" : "View balance info →"}
           </button>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
           <AppIcon name="penny" size={40} color="#fff" />
         </div>
+        {showHeroBreakdown && (
+          <div
+            id="deposit-hero-breakdown"
+            className="w-full mt-3 pt-3 border-t border-white/20 text-xs text-white space-y-2 basis-full"
+          >
+            <div className="flex justify-between">
+              <span className="text-white">Spending</span>
+              <strong className="tabular-nums font-bold">{formatRM(balanceSummary.spending)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-white">Tabung</span>
+              <strong className="tabular-nums font-bold">{formatRM(balanceSummary.tabung)}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-white">Growth Tabung</span>
+              <strong className="tabular-nums font-bold">{formatRM(balanceSummary.growth)}</strong>
+            </div>
+            {balanceSummary.owed > 0 && (
+              <p className="text-[11px] pt-1.5 border-t border-white/10 text-white">
+                Owed on loans: {formatRM(balanceSummary.owed)} (not taken off your total)
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
-      {/* History / Goals / Insights quick tiles */}
+      {/* History / Tabung / Insights quick tiles */}
       <div className="deposit-quick-row" role="navigation" aria-label="Deposit shortcuts">
-        <button type="button" className="deposit-quick-tile" onClick={scrollToHistory}>
+        <Link
+          to="/kid/history"
+          className="deposit-quick-tile"
+          onClick={() => sfx.tap()}
+        >
           <AppIcon name="history" size={22} />
           <span>History</span>
-        </button>
+        </Link>
         <Link to="/kid/goals" className="deposit-quick-tile" onClick={() => sfx.tap()}>
-          <AppIcon name="goal" size={22} />
-          <span>Goals</span>
+          <AppIcon name="save" size={22} />
+          <span>Tabung</span>
         </Link>
         <Link
           to="/kid/insights"
@@ -226,26 +199,23 @@ function KidWallet() {
           </div>
         </button>
 
-        <button
-          type="button"
+        <Link
+          to="/kid/goals"
           className="deposit-account-card deposit-account-card--growth"
-          onClick={() => {
-            sfx.tap();
-            setTab("invest");
-          }}
+          onClick={() => sfx.tap()}
         >
           <div className="deposit-account-card__top">
             <div>
-              <strong>Growth Pot</strong>
-              <p>{riskLabel(k.risk_appetite as string)} · Halal</p>
+              <strong>Tabung</strong>
+              <p>{data.goals.length} Tabung, Growth included</p>
             </div>
-            <span className="deposit-account-card__badge">Invest</span>
+            <span className="deposit-account-card__badge">Savings</span>
           </div>
           <div className="deposit-account-card__bottom">
             <span>Account balance</span>
-            <strong className="tabular-nums">{formatRM(invested)}</strong>
+            <strong className="tabular-nums">{formatRM(balanceSummary.tabung + balanceSummary.growth)}</strong>
           </div>
-        </button>
+        </Link>
 
         <Link
           to="/kid/loans"
@@ -310,6 +280,7 @@ function KidWallet() {
           <MoneyKeypad
             min={0.5}
             max={10000}
+            busy={busy}
             showReference
             confirmLabel="Transmit Request"
             onConfirm={(amt, ref) => ask("DEPOSIT", amt, ref)}
@@ -333,92 +304,10 @@ function KidWallet() {
           <MoneyKeypad
             min={0.5}
             max={balance}
+            busy={busy}
             showReference
             confirmLabel="Transmit Request"
             onConfirm={(amt, ref) => ask("WITHDRAWAL", amt, ref)}
-          />
-        </Card>
-      )}
-
-      {tab === "invest" && (
-        <Card variant="default" className="p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-              <AppIcon name="invest" size={20} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">Halal Investment</h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Put your money to work with Shariah-compliant growth funds.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block mb-2">
-              Risk Appetite
-            </label>
-            <div className="grid grid-cols-5 gap-1.5">
-              {[
-                { key: "very_low", label: "V.Low" },
-                { key: "low", label: "Low" },
-                { key: "medium", label: "Med" },
-                { key: "high", label: "High" },
-                { key: "very_high", label: "Max" },
-              ].map((r) => {
-                const isSelected = currentRisk === r.key;
-                return (
-                  <Button
-                    key={r.key}
-                    type="button"
-                    variant={isSelected ? "primary" : "secondary"}
-                    size="sm"
-                    className="w-full text-xs font-bold px-1"
-                    onClick={() => changeRisk(r.key)}
-                  >
-                    {r.label}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <StatCard
-              label="Wallet Balance"
-              value={`${formatRM(balance)}`}
-              icon="wallet"
-            />
-            <StatCard
-              label="Currently Invested"
-              value={`${formatRM(invested)}`}
-              icon="invest"
-              subtitle={k.invest_balance && Number(k.invest_balance) > 0 ? "Growing" : undefined}
-            />
-          </div>
-
-          <InvestKeypad balance={balance} invested={invested} onInvest={invest} />
-        </Card>
-      )}
-
-      {tab === "sadaqah" && (
-        <Card variant="default" className="p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-              <AppIcon name="sadaqah" size={20} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">Give Sadaqah</h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                &ldquo;Sadaqah extinguishes sin as water extinguishes fire.&rdquo;
-              </p>
-            </div>
-          </div>
-          <MoneyKeypad
-            min={0.5}
-            max={balance}
-            confirmLabel="Give Sadaqah"
-            onConfirm={(amt) => sadaqah(amt)}
           />
         </Card>
       )}
@@ -460,7 +349,18 @@ function KidWallet() {
 
       {/* Transaction History Section */}
       <div id="wallet-history" className="space-y-3 scroll-mt-4">
-        <SectionTitle>Recent Activity</SectionTitle>
+        <div className="flex items-center justify-between">
+          <SectionTitle>Recent Activity</SectionTitle>
+          {data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type)).length > 0 && (
+            <Link
+              to="/kid/history"
+              onClick={() => sfx.tap()}
+              className="text-xs font-semibold text-[var(--primary-text)] hover:underline min-h-[44px] inline-flex items-center"
+            >
+              See all →
+            </Link>
+          )}
+        </div>
         <Card variant="default" className="p-2 sm:p-3 divide-y divide-[var(--border)]">
           {(() => {
             const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type));
@@ -471,7 +371,7 @@ function KidWallet() {
                 </div>
               );
             }
-            return walletTxs.map((t: (typeof data.txs)[number]) => {
+            return walletTxs.slice(0, 5).map((t: (typeof data.txs)[number]) => {
               const isDebit = isDebitTransaction(t.type, t.label);
 
               const iconName = t.type.toLowerCase().includes("deposit")
@@ -484,11 +384,16 @@ function KidWallet() {
                       ? "loan"
                       : "wallet";
 
+              const title = transactionTitle(t);
+              const typeLabel = transactionTypeLabel(t.type, t.label);
+              const subtitle = title.trim().toLowerCase() === typeLabel.trim().toLowerCase() ? undefined : typeLabel;
+
               return (
                 <TransactionRow
                   key={t.id}
-                  title={t.label}
-                  subtitle={formatDate(t.created_at)}
+                  title={title}
+                  subtitle={subtitle}
+                  date={formatDate(t.created_at)}
                   amount={Number(t.amount)}
                   isIncome={!isDebit}
                   icon={iconName}
@@ -498,50 +403,6 @@ function KidWallet() {
           })()}
         </Card>
       </div>
-    </div>
-  );
-}
-
-function InvestKeypad({
-  balance,
-  invested,
-  onInvest,
-}: {
-  balance: number;
-  invested: number;
-  onInvest: (dir: "in" | "out", amount: number) => Promise<void>;
-}) {
-  const [dir, setDir] = useState<"in" | "out">("in");
-
-  return (
-    <div className="space-y-3 pt-3 border-t border-[var(--border)]">
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          type="button"
-          variant={dir === "in" ? "primary" : "secondary"}
-          onClick={() => setDir("in")}
-          className="w-full justify-center"
-        >
-          <AppIcon name="plus" size={14} />
-          Invest Funds
-        </Button>
-        <Button
-          type="button"
-          variant={dir === "out" ? "primary" : "secondary"}
-          onClick={() => setDir("out")}
-          className="w-full justify-center"
-        >
-          <AppIcon name="recall" size={14} />
-          Recall Funds
-        </Button>
-      </div>
-      <MoneyKeypad
-        key={dir}
-        min={0.5}
-        max={dir === "in" ? balance : invested}
-        confirmLabel={dir === "in" ? "Confirm Investment" : "Recall Investment"}
-        onConfirm={(amt) => onInvest(dir, amt)}
-      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   formatTransactionSign,
   isWalletTransaction,
   isSpendingTransaction,
+  getBalanceSummary,
 } from "@/lib/finance";
 import { buildSpendingSummary } from "@/lib/penny-insights";
 
@@ -164,3 +165,51 @@ describe("isSpendingTransaction", () => {
     expect(isSpendingTransaction("QARD", "Qard approved: bike")).toBe(false);
   });
 });
+
+describe("getBalanceSummary", () => {
+  it("calculates spending, tabung, growth, total, and owed correctly", () => {
+    const summary = getBalanceSummary(
+      { balance: 57, invest_balance: 0 },
+      [{ saved: 27 }, { saved: 3 }],
+      [{ amount: 100, repaid: 34, status: "active" }],
+    );
+    expect(summary.spending).toBe(57);
+    expect(summary.tabung).toBe(30);
+    expect(summary.growth).toBe(0);
+    expect(summary.total).toBe(87);
+    expect(summary.owed).toBe(66);
+  });
+
+  it("avoids floating-point drift: 0.1 + 0.2 sums to 0.3", () => {
+    const summary = getBalanceSummary(
+      { balance: 0.1, invest_balance: 0 },
+      [{ saved: 0.2 }],
+      [],
+    );
+    expect(summary.total).toBe(0.3);
+  });
+
+  it("treats repaid or non-active loans as owing nothing", () => {
+    const summary = getBalanceSummary(
+      { balance: 50, invest_balance: 10 },
+      [{ saved: 20 }],
+      [
+        { amount: 100, repaid: 100, status: "active" },
+        { amount: 100, repaid: 0, status: "repaid" },
+      ],
+    );
+    expect(summary.owed).toBe(0);
+    expect(summary.total).toBe(80);
+  });
+
+  it("handles missing or null invest_balance as 0", () => {
+    const summary = getBalanceSummary(
+      { balance: 40, invest_balance: null },
+      [{ saved: 15 }],
+      [],
+    );
+    expect(summary.growth).toBe(0);
+    expect(summary.total).toBe(55);
+  });
+});
+

@@ -15,6 +15,10 @@ export interface BalanceCardProps {
   actions?: React.ReactNode;
   variant?: "brand" | "navy" | "default";
   className?: string;
+  breakdown?: Array<{ label: string; amount: number }>;
+  footnote?: string;
+  isExpanded?: boolean;
+  onToggleExpanded?: (expanded: boolean) => void;
 }
 
 const HIDDEN = "RM******";
@@ -31,7 +35,23 @@ export function BalanceCard({
   actions,
   variant = "brand",
   className = "",
+  breakdown,
+  footnote,
+  isExpanded,
+  onToggleExpanded,
 }: BalanceCardProps) {
+  const [internalExpanded, setInternalExpanded] = React.useState(false);
+  const isExpandedControlled = typeof isExpanded === "boolean";
+  const expanded = isExpandedControlled ? isExpanded : internalExpanded;
+
+  const handleToggleExpanded = () => {
+    const next = !expanded;
+    if (!isExpandedControlled) {
+      setInternalExpanded(next);
+    }
+    onToggleExpanded?.(next);
+  };
+
   const isDark = variant === "brand" || variant === "navy";
   // White text on raspberry is 4.62:1; tinted white (white/85) dropped it to 3.7:1.
   const soft = isDark ? "text-white" : "text-[var(--text-secondary)]";
@@ -65,12 +85,33 @@ export function BalanceCard({
             </div>
 
             {secondaryBalance ? (
-              <div className={`text-sm mt-1.5 flex items-center gap-1 font-medium ${soft}`}>
-                <span>{secondaryBalance.label}</span>
-                <strong className={`tabular-nums ${strong}`}>
-                  {hideBalance ? HIDDEN : formatRM(secondaryBalance.amount)}
-                </strong>
-              </div>
+              breakdown && breakdown.length > 0 ? (
+                <button
+                  type="button"
+                  id="balance-breakdown-trigger"
+                  aria-expanded={expanded}
+                  aria-controls="balance-breakdown-details"
+                  onClick={handleToggleExpanded}
+                  className={`text-sm mt-1.5 flex items-center gap-1.5 font-medium text-left transition-opacity hover:opacity-90 ${soft}`}
+                >
+                  <span>{secondaryBalance.label}</span>
+                  <strong className={`tabular-nums ${strong}`}>
+                    {hideBalance ? HIDDEN : formatRM(secondaryBalance.amount)}
+                  </strong>
+                  <AppIcon
+                    name={expanded ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    className="ml-0.5"
+                  />
+                </button>
+              ) : (
+                <div className={`text-sm mt-1.5 flex items-center gap-1 font-medium ${soft}`}>
+                  <span>{secondaryBalance.label}</span>
+                  <strong className={`tabular-nums ${strong}`}>
+                    {hideBalance ? HIDDEN : formatRM(secondaryBalance.amount)}
+                  </strong>
+                </div>
+              )
             ) : subtitle ? (
               <p className={`text-sm mt-1 ${soft}`}>{subtitle}</p>
             ) : null}
@@ -87,6 +128,35 @@ export function BalanceCard({
             </button>
           )}
         </div>
+
+        {expanded && breakdown && breakdown.length > 0 && (
+          <div
+            id="balance-breakdown-details"
+            role="region"
+            aria-labelledby="balance-breakdown-trigger"
+            className={`mt-3 pt-3 border-t space-y-2 text-xs relative z-10 ${
+              isDark ? "border-white/20 text-white" : "border-[var(--border)] text-[var(--ink)]"
+            }`}
+          >
+            {breakdown.map((row, idx) => (
+              <div key={idx} className="flex items-center justify-between">
+                <span className={soft}>{row.label}</span>
+                <strong className={`tabular-nums font-bold ${strong}`}>
+                  {hideBalance ? HIDDEN : formatRM(row.amount)}
+                </strong>
+              </div>
+            ))}
+            {footnote && (
+              <p
+                className={`text-[11px] pt-1.5 mt-1 border-t ${
+                  isDark ? "border-white/10 text-white" : "border-[var(--border)] text-[var(--text-muted)]"
+                }`}
+              >
+                {footnote}
+              </p>
+            )}
+          </div>
+        )}
 
         {(metadata || actions) && (
           <div

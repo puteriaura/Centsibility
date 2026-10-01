@@ -88,6 +88,7 @@ export type Database = {
           reason: string;
           resolved_at: string | null;
           status: string;
+          to_kid_id: string | null;
         };
         Insert: {
           amount?: number;
@@ -98,6 +99,7 @@ export type Database = {
           reason: string;
           resolved_at?: string | null;
           status?: string;
+          to_kid_id?: string | null;
         };
         Update: {
           amount?: number;
@@ -108,11 +110,19 @@ export type Database = {
           reason?: string;
           resolved_at?: string | null;
           status?: string;
+          to_kid_id?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: "approvals_kid_id_fkey";
             columns: ["kid_id"];
+            isOneToOne: false;
+            referencedRelation: "kids";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "approvals_to_kid_id_fkey";
+            columns: ["to_kid_id"];
             isOneToOne: false;
             referencedRelation: "kids";
             referencedColumns: ["id"];
@@ -198,6 +208,7 @@ export type Database = {
           card_controls_locked?: boolean;
           penny_ai_date?: string | null;
           penny_ai_count?: number;
+          age_group_override?: "6-9" | "10-12" | "13-17" | null;
         };
         Insert: {
           avatar?: string;
@@ -239,6 +250,7 @@ export type Database = {
           card_controls_locked?: boolean;
           penny_ai_date?: string | null;
           penny_ai_count?: number;
+          age_group_override?: "6-9" | "10-12" | "13-17" | null;
         };
         Update: {
           avatar?: string;
@@ -280,6 +292,7 @@ export type Database = {
           card_controls_locked?: boolean;
           penny_ai_date?: string | null;
           penny_ai_count?: number;
+          age_group_override?: "6-9" | "10-12" | "13-17" | null;
         };
         Relationships: [];
       };

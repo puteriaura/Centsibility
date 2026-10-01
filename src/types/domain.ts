@@ -1,7 +1,10 @@
 import type { Tables, Database } from "@/integrations/supabase/types";
 
 export type Kid = Tables<"kids">;
-export type Approval = Tables<"approvals"> & { kids: { name: string } | null };
+export type Approval = Tables<"approvals"> & {
+  kids: { name: string } | null;
+  to_kid?: { name: string; comfort_name?: string | null } | null;
+};
 export type Reward = Tables<"rewards"> & { kids: { name: string } | null };
 export type Loan = Tables<"loans"> & { kids: { name: string } | null };
 export type Transaction = Tables<"transactions"> & { kids: { name: string } | null };

@@ -3,6 +3,7 @@ import { formatTransactionSign, isDebitTransaction, isWalletTransaction } from "
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatRM } from "@/lib/format";
+import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
 
 interface FlightLogSectionProps {
   kidTxs: Transaction[];
@@ -26,8 +27,8 @@ export function FlightLogSection({ kidTxs }: FlightLogSectionProps) {
               <li key={t.id} className="py-2.5 flex items-center justify-between gap-2 text-xs">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <Badge variant={debit ? "default" : "success"}>{t.type}</Badge>
-                    <span className="font-semibold text-[var(--ink)] truncate">{t.label}</span>
+                    <Badge variant={debit ? "default" : "success"}>{transactionTypeLabel(t.type, t.label)}</Badge>
+                    <span className="font-semibold text-[var(--ink)] truncate">{transactionTitle(t)}</span>
                   </div>
                   <small className="text-[10px] text-[var(--text-muted)] mt-0.5 block">
                     {formatDate(t.created_at)}

@@ -6,7 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
-import { isDebitTransaction, isWalletTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
+import { isDebitTransaction, isWalletTransaction } from "@/lib/finance";
+import { transactionTypeLabel, transactionTitle } from "@/lib/labels";
 import type { StatementResult, StatementTx as Tx } from "@/types/domain";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,6 @@ export const Route = createFileRoute("/parent/reports")({
 });
 
 const isDebit = isDebitTransaction;
-const TYPE_LABELS = TRANSACTION_TYPE_LABELS;
 
 function fmtRM(n: number) {
   return `${formatRM(Math.abs(n))}`;
@@ -294,7 +294,7 @@ function Reports() {
                           .filter((t) => isDebit(t.type, t.label))
                           .reduce(
                             (acc, t) => {
-                              const name = TYPE_LABELS[t.type] || t.type;
+                              const name = transactionTypeLabel(t.type, t.label);
                               acc[name] = (acc[name] || 0) + t.amount;
                               return acc;
                             },
@@ -313,7 +313,7 @@ function Reports() {
                           .filter((t) => isDebit(t.type, t.label))
                           .reduce(
                             (acc, t) => {
-                              const name = TYPE_LABELS[t.type] || t.type;
+                              const name = transactionTypeLabel(t.type, t.label);
                               acc[name] = (acc[name] || 0) + t.amount;
                               return acc;
                             },
@@ -383,7 +383,7 @@ function Reports() {
                           : "bg-[var(--surface-soft)] text-[var(--text-secondary)] hover:text-[var(--ink)] hover:bg-[var(--white)] border border-[var(--border)]"
                       }`}
                     >
-                      {t === "ALL" ? "All Entries" : (TYPE_LABELS[t] ?? t)}
+                      {t === "ALL" ? "All Entries" : transactionTypeLabel(t)}
                     </button>
                   );
                 })}
@@ -410,10 +410,10 @@ function Reports() {
                               <div>
                                 <div className="flex items-center gap-2">
                                   <Badge variant={debit ? "default" : "success"}>
-                                    {TYPE_LABELS[tx.type] ?? tx.type}
+                                    {transactionTypeLabel(tx.type, tx.label)}
                                   </Badge>
                                   <strong className="text-sm font-semibold text-[var(--ink)]">
-                                    {tx.label}
+                                    {transactionTitle(tx)}
                                   </strong>
                                 </div>
                                 <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">

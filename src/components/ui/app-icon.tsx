@@ -6,10 +6,13 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  Calculator,
   Camera,
   Cat,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Coffee,
   Compass,
   Crown,
@@ -29,6 +32,8 @@ import {
   KeyRound,
   Leaf,
   LogOut,
+  Mail,
+  MessageSquare,
   type LucideIcon,
   type LucideProps,
   Minus,
@@ -38,6 +43,7 @@ import {
   Plus,
   Rocket,
   Settings,
+  Shield,
   ShieldCheck,
   Smile,
   Sparkles,
@@ -87,6 +93,16 @@ import {
   Delete as BackspaceIcon,
   ThumbsUp,
   ThumbsDown,
+  ArrowLeftRight,
+  Timer,
+  Flag,
+  ShoppingBag,
+  ShieldAlert,
+  Award,
+  Flame,
+  ShoppingCart,
+  Search,
+  Scale,
 } from "lucide-react";
 
 /** Temporary icon map — swap assets later without chasing string placeholders. */
@@ -94,6 +110,7 @@ const ICONS: Record<string, LucideIcon> = {
   home: Home,
   wallet: Wallet,
   back: ArrowLeft,
+  arrowleft: ArrowLeft,
   book: BookOpen,
   bookopen: BookOpen,
   camera: Camera,
@@ -126,6 +143,11 @@ const ICONS: Record<string, LucideIcon> = {
   identificationcard: IdCard,
   info: Info,
   shieldcheck: ShieldCheck,
+  shield: Shield,
+  calculator: Calculator,
+  whatsapp: MessageSquare,
+  email: Mail,
+  compass: Compass,
   briefcase: Briefcase,
   coffee: Coffee,
   house: House,
@@ -139,7 +161,15 @@ const ICONS: Record<string, LucideIcon> = {
   approve: CheckCircle2,
   check: CheckCircle2,
   chevron: ChevronRight,
+  chevrondown: ChevronDown,
+  chevronup: ChevronUp,
+  "chevron-down": ChevronDown,
+  "chevron-up": ChevronUp,
   forward: ChevronRight,
+  transfer: ArrowLeftRight,
+  timer: Timer,
+  missions: Flag,
+  sadaqahcause: HandHeart,
   reports: BarChart3,
   chart: BarChart3,
   settings: Settings,
@@ -209,6 +239,15 @@ const ICONS: Record<string, LucideIcon> = {
   messagecircle: MessageCircle,
   thumbsup: ThumbsUp,
   thumbsdown: ThumbsDown,
+  shoppingbag: ShoppingBag,
+  shieldalert: ShieldAlert,
+  award: Award,
+  flame: Flame,
+  coins: Coins,
+  piggy: PiggyBank,
+  cart: ShoppingCart,
+  search: Search,
+  scale: Scale,
 };
 
 function normalize(name: string) {
@@ -219,6 +258,12 @@ function normalize(name: string) {
     .replace(/^icon:\s*/i, "")
     .replace(/[\s_-]+/g, "")
     .toLowerCase();
+}
+
+export function hasIcon(name: string): boolean {
+  if (!name || typeof name !== "string") return false;
+  const key = normalize(name);
+  return Boolean(ICONS[key]);
 }
 
 export function AppIcon({

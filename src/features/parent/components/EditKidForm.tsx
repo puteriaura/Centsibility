@@ -17,6 +17,9 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
     username: kid.username || "",
     birthDate: kid.birth_date || "",
     birthYear: kid.birth_year ? String(kid.birth_year) : "",
+    ageGroupOverride: (kid as Record<string, unknown>).age_group_override
+      ? String((kid as Record<string, unknown>).age_group_override)
+      : "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -30,6 +33,7 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
         username: editData.username.trim() || undefined,
         birth_date: editData.birthDate || undefined,
         birth_year: editData.birthYear ? parseInt(editData.birthYear) : undefined,
+        age_group_override: editData.ageGroupOverride || null,
       });
       toast.success("Child profile updated");
       onSuccess();
@@ -68,6 +72,22 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
           onChange={(e) => setEditData({ ...editData, birthYear: e.target.value })}
           placeholder="YYYY"
         />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="edit-quest-level" className="text-xs font-semibold text-[var(--text-secondary)]">
+          Quest Level
+        </label>
+        <select
+          id="edit-quest-level"
+          value={editData.ageGroupOverride}
+          onChange={(e) => setEditData({ ...editData, ageGroupOverride: e.target.value })}
+          className="h-10 px-3 rounded-xl border border-[var(--border)] bg-white text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+        >
+          <option value="">Auto by age</option>
+          <option value="6-9">Ages 6-9 (Junior)</option>
+          <option value="10-12">Ages 10-12 (Middle)</option>
+          <option value="13-17">Ages 13-17 (Senior)</option>
+        </select>
       </div>
       <div className="flex items-center justify-end gap-2 pt-1">
         <Button type="button" variant="secondary" size="sm" onClick={onCancel}>

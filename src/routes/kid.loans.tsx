@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { formatDate, formatRM } from "@/lib/format";
 import { computeQardPayout } from "@/lib/qard";
+import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/loans")({
   head: () => ({ meta: [{ title: "My Loans — Centsibility" }] }),
@@ -34,6 +35,8 @@ function KidLoans() {
   const [dueDays, setDueDays] = useState(14);
   const [signature, setSignature] = useState<string | null>(null);
   const [signStep, setSignStep] = useState(false);
+
+  const { busy, run } = useMoneyAction();
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -56,20 +59,24 @@ function KidLoans() {
 
   const repay = async (loanId: string, amount: number) => {
     if (!code) return;
-    try {
-      const res = await edgeKidRepayLoan({ code, loanId, amount });
-      if (res.fullyRepaid)
-        toast.success(
-          res.trustDelta > 0
-            ? `Alhamdulillah! Repaid ${formatRM(res.paid)} · Trust +${res.trustDelta}`
-            : `Repaid ${formatRM(res.paid)} late · Trust ${res.trustDelta}`,
-        );
-      else toast.success(`Repaid ${formatRM(res.paid)}`);
-      setActive(null);
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    const currentLoan = data.loans.find((l: (typeof data.loans)[number]) => l.id === loanId);
+    const prevRemaining = currentLoan ? Math.max(0, Number(currentLoan.amount) - Number(currentLoan.repaid)) : amount;
+    await run(
+      () => edgeKidRepayLoan({ code, loanId, amount }),
+      {
+        success: (res) => {
+          const remaining = Math.max(0, prevRemaining - Number(res.paid));
+          return res.fullyRepaid
+            ? "Loan fully repaid!"
+            : `${formatRM(res.paid)} paid back. ${formatRM(remaining)} left`;
+        },
+        failure: "Repayment didn't go through",
+        onSuccess: () => {
+          setActive(null);
+        },
+        refresh,
+      }
+    );
   };
 
   const submitRequest = async () => {
@@ -82,24 +89,28 @@ function KidLoans() {
       toast.error("Please sign the agreement");
       return;
     }
-    try {
-      await edgeKidRequestLoan({
-        code,
-        amount: reqAmt,
-        reason: reqReason.trim(),
-        signature,
-        dueDays,
-      });
-      toast.success("Loan request signed & sent to parent");
-      setRequesting(false);
-      setSignStep(false);
-      setReqReason("");
-      setSignature(null);
-      setReqAmt(null);
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    await run(
+      () =>
+        edgeKidRequestLoan({
+          code,
+          amount: reqAmt,
+          reason: reqReason.trim(),
+          signature,
+          dueDays,
+        }),
+      {
+        success: "Loan request sent for approval",
+        failure: "Loan request didn't go through",
+        onSuccess: () => {
+          setRequesting(false);
+          setSignStep(false);
+          setReqReason("");
+          setSignature(null);
+          setReqAmt(null);
+        },
+        refresh,
+      }
+    );
   };
 
   return (
@@ -298,9 +309,10 @@ function KidLoans() {
                 type="button"
                 variant="primary"
                 onClick={submitRequest}
+                disabled={busy}
                 className="w-full justify-center text-sm font-bold"
               >
-                Sign Agreement & Submit to Parent
+                {busy ? "Submitting..." : "Sign Agreement & Submit to Parent"}
               </Button>
             </div>
           )}
@@ -404,6 +416,7 @@ function KidLoans() {
                         min={0.5}
                         max={Math.min(remaining, kidBalance)}
                         confirmLabel="Confirm Repayment"
+                        busy={busy}
                         onConfirm={(amt) => repay(l.id, amt)}
                         onCancel={() => setActive(null)}
                       />

@@ -1,4 +1,5 @@
-import { isDebitTransaction, isWalletTransaction, TRANSACTION_TYPE_LABELS } from "@/lib/finance";
+import { isDebitTransaction, isWalletTransaction } from "@/lib/finance";
+import { TRANSACTION_TYPE_LABELS, humanizeCode } from "@/lib/labels";
 import { formatDate, formatRM } from "@/lib/format";
 
 export type InsightTx = {
@@ -49,9 +50,9 @@ function categoryLabel(key: string) {
   if (key === "INVEST_IN") return "Investments";
   if (key === "FEE") return "Fees";
   if (key === "QARD_REPAY" || key === "QARD") return "Loan repayments";
-  if (key === "GOAL_IN") return "Savings goals";
+  if (key === "GOAL_IN") return "Tabung";
   if (key === "DEPOSIT") return "Deposits";
-  return TRANSACTION_TYPE_LABELS[key] ?? key;
+  return TRANSACTION_TYPE_LABELS[key] ?? humanizeCode(key);
 }
 
 /** Summarise kid transactions for Insights + Penny chat (local, no LLM). */
@@ -149,20 +150,20 @@ export function pennyReply(userText: string, summary: SpendingSummary, kidName: 
   if (/spend|spending|expense|out/.test(q)) {
     return `Hi ${kidName}! Over the past period you spent ${formatRM(summary.moneyOut)} across ${summary.txCount} transactions, averaging ${formatRM(summary.avgTx)} each. Your daily average outflow is ${formatRM(summary.dailyAvg)}, with most going to ${topLine}.\n\nTracking categories is lowkey a superpower because it shows where the cash leaks are. Want tips on cutting back on ${summary.topCategories[0]?.label || "spending"}?`;
   }
-  if (/save|saving|goal|pot/.test(q)) {
-    return `Pro saver move from Penny: move a little from your wallet into a savings goal right when money comes in. You received ${formatRM(summary.moneyIn)} recently. Even putting ${formatRM(Math.max(2, summary.moneyIn * 0.1))} into a goal builds massive discipline! Open Goals to tuck it away.`;
+  if (/save|saving|goal|pot|tabung/.test(q)) {
+    return `Pro saver move from Penny: move a little from your wallet into a Tabung right when money comes in. You received ${formatRM(summary.moneyIn)} recently. Even putting ${formatRM(Math.max(2, summary.moneyIn * 0.1))} into a Tabung builds massive discipline! Open Tabung to tuck it away.`;
   }
   if (/sadaqah|charity|give|zakat/.test(q)) {
     return `Sadaqah cleanses wealth like water extinguishes fire. Even RM1 makes a huge difference. Your recent outflow is ${formatRM(summary.moneyOut)}. Giving with pure intention brings barakah into everything you save!`;
   }
   if (/invest|growth|halal/.test(q)) {
-    return `Halal growth means risk you truly understand. Check the Growth pot to start with conservative risk, then allocate small amounts from your wallet. Always check in with your parent first. That is wise, not weak.`;
+    return `Halal growth means risk you truly understand. Check Growth Tabung to start with conservative risk, then allocate small amounts from your wallet. Always check in with your parent first. That is wise, not weak.`;
   }
   if (/hello|hi |salam|hey/.test(q)) {
-    return `Salam and hi there ${kidName}! I'm Penny, your money buddy. Ask me about spending breakdowns, saving pots, sadaqah, or rewards. I'll ground everything in your real transactions.`;
+    return `Salam and hi there ${kidName}! I'm Penny, your money buddy. Ask me about spending breakdowns, Tabung, sadaqah, or rewards. I'll ground everything in your real transactions.`;
   }
 
-  return `Here is your current money breakdown: money in ${formatRM(summary.moneyIn)}, money out ${formatRM(summary.moneyOut)}, across ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending habits, savings goals, or sadaqah for a deeper dive. (Educational guidance only, not formal financial advice.)`;
+  return `Here is your current money breakdown: money in ${formatRM(summary.moneyIn)}, money out ${formatRM(summary.moneyOut)}, across ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending habits, Tabung, or sadaqah for a deeper dive. (Educational guidance only, not formal financial advice.)`;
 }
 
 export function buildStorySlides(summary: SpendingSummary, coins: number) {
@@ -177,7 +178,7 @@ export function buildStorySlides(summary: SpendingSummary, coins: number) {
     },
     {
       title: "Money in",
-      body: `You received ${formatRM(summary.moneyIn)} in total inflows this period. Tucking away just 20% (${formatRM(summary.moneyIn * 0.2)}) into a Goal pot locks in solid progress.`,
+      body: `You received ${formatRM(summary.moneyIn)} in total inflows this period. Tucking away just 20% (${formatRM(summary.moneyIn * 0.2)}) into a Tabung locks in solid progress.`,
       tone: "lilac" as const,
     },
     {
@@ -200,7 +201,7 @@ export function buildStorySlides(summary: SpendingSummary, coins: number) {
     {
       title: "Key Takeaway",
       body: netSavings >= 0
-        ? `You kept ${formatRM(netSavings)} in net savings this period! W saving discipline. Chat with Penny to allocate it toward your goals.`
+        ? `You kept ${formatRM(netSavings)} in net savings this period! W saving discipline. Chat with Penny to allocate it toward your Tabung.`
         : `Outflows were ${formatRM(Math.abs(netSavings))} higher than inflows this period. Chat with Penny to spot easy cuts and rebalance.`,
       tone: "navy" as const,
     },

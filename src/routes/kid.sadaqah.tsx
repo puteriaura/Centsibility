@@ -9,25 +9,41 @@ import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { SuccessState } from "@/components/SuccessState";
+import { useMoneyAction } from "@/hooks/use-money-action";
 import { useState } from "react";
 import { formatRM } from "@/lib/format";
+import { sanitizeDisplayText } from "@/lib/labels";
 
 export const Route = createFileRoute("/kid/sadaqah")({
   head: () => ({ meta: [{ title: "Sadaqah — Centsibility" }] }),
   component: KidSadaqah,
 });
 
+interface Cause {
+  name: string;
+  icon: string;
+  impact: string;
+}
+
+const CAUSES: Cause[] = [
+  { name: "Local Masjid", icon: "mosque", impact: "Helps community electricity & care" },
+  { name: "Orphan Relief", icon: "baby", impact: "Provides wholesome hot meals" },
+  { name: "Clean Water Wells", icon: "water", impact: "Brings fresh clean water to families" },
+];
+
 function KidSadaqah() {
   const { data, loading, error, refresh } = useKidData();
-  const [given, setGiven] = useState(false);
-  const [pendingAmount, setPendingAmount] = useState<number | null>(null);
+  const { busy, run } = useMoneyAction();
 
-  const causes = [
-    { name: "Local Masjid", icon: "mosque", impact: "Helps community electricity & care" },
-    { name: "Orphan Relief", icon: "baby", impact: "Provides wholesome hot meals" },
-    { name: "Clean Water Wells", icon: "water", impact: "Brings fresh clean water to families" },
-  ];
+  const [selectedCause, setSelectedCause] = useState<string | null>(null);
+  const [pendingAmount, setPendingAmount] = useState<number | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [successInfo, setSuccessInfo] = useState<{
+    amount: number;
+    cause: string;
+    points: number;
+  } | null>(null);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -50,19 +66,46 @@ function KidSadaqah() {
     0,
   );
 
-  const give = async (amount: number) => {
-    if (amount > balance) return;
+  const handleConfirmGive = async () => {
+    if (!pendingAmount || !selectedCause) return;
     const code = getKidSession()?.code;
     if (!code) return;
-    try {
-      await edgeKidSadaqah({ code, amount });
-      setGiven(true);
-      setPendingAmount(null);
-      setTimeout(() => setGiven(false), 3000);
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+
+    setModalError(null);
+
+    await run(
+      () =>
+        edgeKidSadaqah({
+          code,
+          amount: pendingAmount,
+          cause: selectedCause,
+        }),
+      {
+        success: (res) =>
+          `${formatRM(pendingAmount)} given to ${selectedCause}. +${res.coins_awarded ?? Math.floor(pendingAmount * 2)} points`,
+        failure: "Sadaqah didn't go through",
+        onSuccess: (res) => {
+          setSuccessInfo({
+            amount: pendingAmount,
+            cause: selectedCause,
+            points: res.coins_awarded ?? Math.floor(pendingAmount * 2),
+          });
+          setPendingAmount(null);
+          setModalError(null);
+        },
+        onError: (err) => {
+          setModalError(sanitizeDisplayText(err.message));
+        },
+        refresh,
+      }
+    );
+  };
+
+  const handleGiveAgain = () => {
+    setSuccessInfo(null);
+    setSelectedCause(null);
+    setPendingAmount(null);
+    setModalError(null);
   };
 
   return (
@@ -101,71 +144,123 @@ function KidSadaqah() {
         </div>
       </div>
 
-      {/* Donation Form Card */}
-      <Card variant="default" className="p-5 sm:p-6 space-y-4 border border-[var(--border)]">
-        <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pb-2 border-b border-[var(--border)]">
-          <span>Available Wallet Balance</span>
-          <strong className="text-sm text-[var(--ink)] tabular-nums">{formatRM(balance)}</strong>
-        </div>
-
-        {/* Causes Grid — Common Region / Similarity */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="list" aria-label="Sadaqah causes">
-          {causes.map((c) => (
-            <div
-              key={c.name}
-              role="listitem"
-              className="p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center space-y-1"
-            >
-              <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center mx-auto">
-                <AppIcon name={c.icon} size={16} />
-              </div>
-              <strong className="text-xs font-bold text-[var(--ink)] block">{c.name}</strong>
-              <small className="text-[10px] text-[var(--text-muted)] block leading-tight">{c.impact}</small>
-            </div>
-          ))}
-        </div>
-
-        <MoneyKeypad
-          min={0.5}
-          max={balance}
-          confirmLabel="Donate Sadaqah"
-          onConfirm={(amt) => setPendingAmount(amt)}
+      {/* Donation Form Card OR Success State */}
+      {successInfo ? (
+        <SuccessState
+          title={`${formatRM(successInfo.amount)} given to ${successInfo.cause}`}
+          detail={`+${successInfo.points} points · Jazakallah khair!`}
+          buttonText="Give again"
+          onAction={handleGiveAgain}
         />
-
-        {given && (
-          <div
-            className="p-4 rounded-xl bg-[var(--success-soft)] text-[var(--success-text)] text-xs font-bold flex items-center gap-2 border border-[var(--success)]/20"
-            role="status"
-          >
-            <AppIcon name="approve" size={18} />
-            <span>Jazakallah khair! May Allah bless your kindness and generosity.</span>
+      ) : (
+        <Card variant="default" className="p-5 sm:p-6 space-y-4 border border-[var(--border)]">
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pb-2 border-b border-[var(--border)]">
+            <span>Available Wallet Balance</span>
+            <strong className="text-sm text-[var(--ink)] tabular-nums">{formatRM(balance)}</strong>
           </div>
-        )}
-      </Card>
+
+          <div>
+            <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block mb-2">
+              Choose a Cause
+            </label>
+            <div
+              className="grid grid-cols-1 sm:grid-cols-3 gap-2.5"
+              role="radiogroup"
+              aria-label="Sadaqah causes"
+            >
+              {CAUSES.map((c) => {
+                const isSelected = selectedCause === c.name;
+                return (
+                  <label
+                    key={c.name}
+                    className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border text-center cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-[var(--primary)] bg-[var(--surface-pink)] ring-2 ring-[var(--primary)]/20 shadow-xs"
+                        : "border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--primary-soft)]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="sadaqah-cause"
+                      value={c.name}
+                      checked={isSelected}
+                      onChange={() => {
+                        setSelectedCause(c.name);
+                        setModalError(null);
+                      }}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center mx-auto mb-1.5 transition-colors ${
+                        isSelected
+                          ? "bg-[var(--primary)] text-white"
+                          : "bg-[var(--surface)] text-[var(--primary-text)] border border-[var(--border)]"
+                      }`}
+                    >
+                      <AppIcon name={c.icon} size={18} />
+                    </div>
+                    <strong className="text-xs font-bold text-[var(--ink)] block">
+                      {c.name}
+                    </strong>
+                    <small className="text-[11px] text-[var(--text-muted)] block leading-tight mt-0.5">
+                      {c.impact}
+                    </small>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <MoneyKeypad
+            min={0.5}
+            max={balance}
+            busy={busy}
+            confirmDisabled={!selectedCause}
+            disabledHint="Pick a cause first"
+            confirmLabel="Donate Sadaqah"
+            onConfirm={(amt) => {
+              setPendingAmount(amt);
+              setModalError(null);
+            }}
+          />
+        </Card>
+      )}
 
       {/* Confirmation Modal */}
       <Modal
         isOpen={pendingAmount !== null}
-        onClose={() => setPendingAmount(null)}
+        onClose={() => {
+          if (!busy) {
+            setPendingAmount(null);
+            setModalError(null);
+          }
+        }}
         title="Confirm Sadaqah Donation"
         description="Share blessings from your digital savings with those in need."
         footer={
           <div className="flex items-center justify-end gap-2.5">
-            <Button variant="secondary" onClick={() => setPendingAmount(null)}>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                setPendingAmount(null);
+                setModalError(null);
+              }}
+            >
               Cancel
             </Button>
             <Button
               variant="primary"
-              onClick={() => {
-                if (pendingAmount !== null) give(pendingAmount);
-              }}
+              disabled={busy}
+              loading={busy}
+              onClick={handleConfirmGive}
             >
-              Confirm & Donate {formatRM(pendingAmount ?? 0)}
+              {busy ? "Giving…" : `Confirm & Donate ${formatRM(pendingAmount ?? 0)}`}
             </Button>
           </div>
         }
       >
-        <div className="text-center py-4 space-y-2">
+        <div className="text-center py-3 space-y-2.5">
           <div className="w-14 h-14 rounded-2xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center mx-auto shadow-xs">
             <AppIcon name="heart" size={28} />
           </div>
@@ -174,11 +269,16 @@ function KidSadaqah() {
             <strong className="text-base text-[var(--primary-text)] font-extrabold tabular-nums">
               {formatRM(pendingAmount ?? 0)}
             </strong>{" "}
-            as Sadaqah?
+            to <strong className="font-bold text-[var(--ink)]">{selectedCause}</strong> as Sadaqah?
           </p>
           <p className="text-xs text-[var(--text-secondary)]">
             This amount will be deducted from your active wallet balance.
           </p>
+          {modalError && (
+            <div className="p-2.5 rounded-lg bg-white text-[var(--error-text)] text-xs font-semibold text-center border border-[var(--error)]">
+              {modalError}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

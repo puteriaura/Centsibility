@@ -26,6 +26,8 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { cleanApprovalReason } from "@/lib/qard";
 import { formatRM } from "@/lib/format";
 import { parentDisplayName } from "@/lib/display-name";
+import { approvalKindLabel, sanitizeDisplayText } from "@/lib/labels";
+import { getBalanceSummary } from "@/lib/finance";
 
 export const Route = createFileRoute("/parent/")({
   head: () => ({ meta: [{ title: "Parent Dashboard — Centsibility" }] }),
@@ -36,8 +38,10 @@ function ParentHome() {
   const { user } = useAuth();
   const {
     kids,
+    goals,
     approvals,
     rewards,
+    loans,
     txs,
     notifications,
     scheduledHibahs,
@@ -54,6 +58,7 @@ function ParentHome() {
   const [showRecruit, setShowRecruit] = useState(false);
   const [newKidName, setNewKidName] = useState("");
   const [newKidUsername, setNewKidUsername] = useState("");
+  const [newKidBirthDate, setNewKidBirthDate] = useState("");
   const [generating, setGenerating] = useState(false);
   const [setupCode, setSetupCode] = useState<string | null>(null);
 
@@ -78,6 +83,7 @@ function ParentHome() {
   const openRecruit = () => {
     setNewKidName("");
     setNewKidUsername("");
+    setNewKidBirthDate("");
     setSetupCode(null);
     setShowRecruit(true);
   };
@@ -87,6 +93,7 @@ function ParentHome() {
     setSetupCode(null);
     setNewKidName("");
     setNewKidUsername("");
+    setNewKidBirthDate("");
   };
 
   const createKid = async () => {
@@ -104,10 +111,12 @@ function ParentHome() {
       const res = await edgeParentCreateKid({
         name: newKidName.trim(),
         username: newKidUsername.trim(),
+        birth_date: newKidBirthDate.trim() || undefined,
       });
       setSetupCode(res.kid.login_code);
       setNewKidName("");
       setNewKidUsername("");
+      setNewKidBirthDate("");
       sfx.success();
       toast.success("Child account created!");
       refresh();
@@ -166,10 +175,12 @@ function ParentHome() {
   }
 
   const pendingCount = approvals.length + rewards.length;
-  const familyTotal = kids.reduce(
-    (sum, k) => sum + Number(k.balance) + Number(k.invest_balance ?? 0),
-    0,
-  );
+  const familyTotal = kids.reduce((sum, k) => {
+    const kGoals = goals.filter((g) => g.kid_id === k.id);
+    const kLoans = loans.filter((l) => l.kid_id === k.id);
+    const summary = getBalanceSummary(k, kGoals, kLoans);
+    return sum + summary.total;
+  }, 0);
 
   return (
     <div className="parent-page mobile-stack pb-4">
@@ -193,6 +204,14 @@ function ParentHome() {
         <Link to="/parent/approvals" className="deposit-quick-tile" onClick={() => sfx.tap()}>
           <AppIcon name="approve" size={22} />
           <span>Approvals{pendingCount > 0 ? ` (${pendingCount})` : ""}</span>
+        </Link>
+        <Link to="/parent/transfer" className="deposit-quick-tile" onClick={() => sfx.tap()}>
+          <AppIcon name="transfer" size={22} />
+          <span>Transfer</span>
+        </Link>
+        <Link to="/parent/penny" className="deposit-quick-tile" onClick={() => sfx.tap()}>
+          <AppIcon name="penny" size={22} />
+          <span>Ask Penny</span>
         </Link>
         <Link to="/parent/insights" className="deposit-quick-tile" onClick={() => sfx.tap()}>
           <AppIcon name="reports" size={22} />
@@ -266,7 +285,7 @@ function ParentHome() {
             {unread.slice(0, 4).map((n) => (
               <li key={n.id} className="truncate">
                 <Link to={n.link ?? "/parent/approvals"} className="hover:underline">
-                  {n.message}
+                  {sanitizeDisplayText(n.message)}
                 </Link>
               </li>
             ))}
@@ -324,6 +343,8 @@ function ParentHome() {
                   <CrewMemberCard
                     key={c.id}
                     kid={c}
+                    kidGoals={goals.filter((g) => g.kid_id === c.id)}
+                    kidLoans={loans.filter((l) => l.kid_id === c.id)}
                     kidTxs={txs.filter((t) => t.kid_id === c.id)}
                     scheduledHibahs={scheduledHibahs?.filter((h) => h.kid_id === c.id) || []}
                     onDeleteInitiate={setDeletingKidId}
@@ -367,7 +388,7 @@ function ParentHome() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>
-                      {a.kind === "QARD" ? "Loan" : a.kind}
+                      {a.kind === "QARD" ? "Loan" : approvalKindLabel(a.kind)}
                     </Badge>
                     <strong className="text-sm font-bold text-[var(--ink)]">{a.kids?.name}</strong>
                   </div>
@@ -495,6 +516,16 @@ function ParentHome() {
               placeholder="e.g. aiman123"
               maxLength={20}
               helperText="Lowercase letters, numbers, and underscores only."
+            />
+
+            <Input
+              label="Birth Date (Optional)"
+              id="recruit-birthdate"
+              type="date"
+              value={newKidBirthDate}
+              onChange={(e) => setNewKidBirthDate(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              helperText="Used to recommend age-appropriate missions and quests."
             />
 
             <div className="flex items-center justify-end gap-2.5 pt-2">

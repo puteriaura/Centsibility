@@ -36,18 +36,39 @@ export function isSpendingTransaction(type: string, label?: string | null): bool
   return isWalletTransaction(type) && isDebitTransaction(type, label) && !SAVINGS_MOVE_TYPES.has(type);
 }
 
-export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
-  DEPOSIT: "Deposit",
-  WITHDRAWAL: "Withdrawal",
-  HIBAH: "Hibah",
-  QARD: "Loan",
-  SADAQAH: "Sadaqah",
-  INVEST_IN: "Investment",
-  INVEST_OUT: "Return",
-  FEE: "Fee",
-  QARD_REPAY: "Loan repayment",
-  GOAL_IN: "Saved to goal",
-  INVEST_GAIN: "Investment growth",
-  INVEST_LOSS: "Investment loss",
-  GOAL_OUT: "Moved back from goal",
-};
+export { TRANSACTION_TYPE_LABELS } from "./labels";
+
+export interface BalanceSummary {
+  spending: number; // kids.balance: cash they can spend now
+  tabung: number;   // sum of goals.saved
+  growth: number;   // kids.invest_balance (Growth Tabung)
+  total: number;    // spending + tabung + growth
+  owed: number;     // what active loans still owe; never subtracted from total
+}
+
+export function getBalanceSummary(
+  kid: { balance: number | string; invest_balance?: number | string | null },
+  goals: { saved: number | string }[] = [],
+  loans: { amount: number | string; repaid: number | string; status: string }[] = [],
+): BalanceSummary {
+  const spendingCents = Math.round((Number(kid.balance) || 0) * 100);
+  const growthCents = Math.round((Number(kid.invest_balance) || 0) * 100);
+  const tabungCents = goals.reduce((acc, g) => acc + Math.round((Number(g.saved) || 0) * 100), 0);
+  const totalCents = spendingCents + tabungCents + growthCents;
+
+  const owedCents = loans
+    .filter((l) => l.status === "active")
+    .reduce((acc, l) => {
+      const amt = Math.round((Number(l.amount) || 0) * 100);
+      const rep = Math.round((Number(l.repaid) || 0) * 100);
+      return acc + Math.max(0, amt - rep);
+    }, 0);
+
+  return {
+    spending: spendingCents / 100,
+    tabung: tabungCents / 100,
+    growth: growthCents / 100,
+    total: totalCents / 100,
+    owed: owedCents / 100,
+  };
+}

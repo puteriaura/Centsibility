@@ -25,7 +25,7 @@ export function TransferFundsSection({
       await edgeParentDeposit({
         kidId: kid.id,
         amount,
-        label: reference || actionType,
+        label: reference || (actionType === "DEPOSIT" ? "From parent" : "Taken back by parent"),
         type: actionType,
       });
       sfx.success();

@@ -6,16 +6,14 @@ import bcrypt from "npm:bcryptjs";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import {
   buildPennyRequest,
-  createClient as createDeepSeekClient,
-  extractReplyText,
+  callPenny,
+  PennyError,
+  kidSystemPrompt,
+  buildKidCoachContext,
   DEFAULT_PENNY_DAILY_LIMIT,
-  DEFAULT_PENNY_MAX_TOKENS,
   MAX_MESSAGE_CHARS,
   PennyChatMessage,
-  KidContext,
-  categoryKey,
-  categoryLabel,
-  isSpendingTransaction,
+  validateBirthdayUpdate,
 } from "../_shared/deepseek.ts";
 
 const corsHeaders = {
@@ -66,20 +64,30 @@ const RESOLVE_ERRORS: Record<string, [string, number]> = {
   insufficient_coins: ["Kid doesn't have enough coins", 400],
   insufficient_invested: ["Insufficient invested balance", 400],
   invalid_amount: ["Invalid amount", 400],
+  invalid_cause: ["Pick a cause from the list.", 400],
   invalid_type: ["Invalid type", 400],
   invalid_limit: ["Invalid limit", 400],
   missing_loan_terms: ["Loan terms missing", 400],
   unknown_kind: ["Unknown request type", 400],
   loan_closed: ["This loan is already repaid", 400],
-  goal_complete: ["This goal is already complete", 400],
+  goal_complete: ["This Tabung is already full.", 400],
   invalid_goal: [
-    "Check the goal name (1–40 characters) and target (RM1–RM100,000). Up to 10 goals.",
+    "Check the Tabung name (1 to 40 characters) and target (RM1 to RM100,000). Up to 10 Tabung.",
     400,
   ],
   card_frozen: ["Your card is frozen. Unfreeze it on the Card page to continue.", 403],
   card_limit_exceeded: ["That is over your daily card limit.", 403],
   card_locked: ["Your parent manages these card settings. You can still make them stricter.", 403],
   quota_exceeded: ["Penny needs a rest. Try again tomorrow.", 429],
+  self_transfer: ["You can't send money to yourself.", 400],
+  not_family: ["You can only send money to your family.", 400],
+  transfer_limit_exceeded: ["That's over today's transfer limit.", 403],
+  invalid_note: ["Keep the note under 40 characters.", 400],
+  quest_locked: ["Finish the quest before this one first.", 403],
+  attempt_finished: ["This quest round is over. Start it again.", 409],
+  already_answered: ["You already answered that one.", 409],
+  invalid_choice: ["Pick one of the answers.", 400],
+  wrong_kid: ["Forbidden.", 403],
 };
 
 function handleRpcError(error: { message: string }) {
@@ -190,6 +198,8 @@ serve(async (req: Request) => {
       case "set-initial-pin":  return await handleSetInitialPin(admin, params, requestId);
       case "register":         return await handleRegister(admin, params, requestId);
       case "get-state":        return await handleGetState(admin, params, requestId);
+      case "get-history":      return await handleGetHistory(admin, params, requestId);
+      case "mark-notifications-read": return await handleMarkNotificationsRead(admin, params, requestId);
       case "sadaqah":          return await handleSadaqah(admin, params, requestId);
       case "loan-repay":       return await handleLoanRepay(admin, params, requestId);
       case "invest-settle":    return await handleInvestSettle(admin, params, requestId);
@@ -198,8 +208,9 @@ serve(async (req: Request) => {
       case "delete-goal":      return await handleDeleteGoal(admin, params, requestId);
       case "contribute-goal":  return await handleContributeGoal(admin, params, requestId);
       case "claim-coins":      return await handleClaimCoins(admin, params, requestId);
-      case "quiz-state":       return await handleQuizState(admin, params, requestId);
-      case "quiz-answer":      return await handleQuizAnswer(admin, params, requestId);
+      case "quest-board":      return await handleQuestBoard(admin, params, requestId);
+      case "quest-start":      return await handleQuestStart(admin, params, requestId);
+      case "quest-answer":     return await handleQuestAnswer(admin, params, requestId);
       case "invest-deposit":   return await handleInvestDeposit(admin, params, requestId);
       case "invest-withdraw":  return await handleInvestWithdraw(admin, params, requestId);
       case "set-invest-risk":  return await handleSetInvestRisk(admin, params, requestId);
@@ -211,6 +222,8 @@ serve(async (req: Request) => {
       case "update-profile":   return await handleUpdateProfile(admin, params, requestId);
       case "upload-avatar":    return await handleUploadAvatar(admin, params, requestId);
       case "penny-chat":       return await handlePennyChat(admin, params, requestId);
+      case "transfer-recipients": return await handleTransferRecipients(admin, params, requestId);
+      case "transfer":         return await handleTransfer(admin, params, requestId);
       default:
         return jsonError(`Unknown action: "${action}"`, 400);
     }
@@ -262,18 +275,6 @@ async function notifyParent(
   const { error } = await admin.from("notifications").insert({ parent_id: parentId, kid_id: kidId, kind, message, link: resolvedLink });
   if (error) console.warn(`[kid-finance] notifyParent failed (non-fatal): ${error.message}`);
 }
-
-async function normalizeQuizState(admin: Admin, kid: Record<string, unknown>, requestId: string) {
-  const today = new Date().toISOString().slice(0, 10);
-  if (kid.quiz_date !== today) {
-    const { error } = await admin.from("kids").update({ quiz_date: today, quiz_correct: 0, quiz_wrong: 0 }).eq("id", kid.id);
-    if (error) console.warn(`[kid-finance][${requestId}] normalizeQuizState failed: ${error.message}`);
-    return { ...kid, quiz_date: today, quiz_correct: 0, quiz_wrong: 0 };
-  }
-  return kid;
-}
-
-const QUIZ_QUESTION_COUNT = 200;
 
 // ---------------------------------------------------------------------------
 // Auth handlers (pre-auth)
@@ -347,7 +348,7 @@ async function handleVerifyAccessCode(admin: Admin, params: Record<string, unkno
 
   const { data: kid, error: kidErr } = await admin
     .from("kids")
-    .select("id, name, comfort_name, username, hashed_pin, login_code")
+    .select("id, name, comfort_name, username, hashed_pin, login_code, birth_date, birth_year")
     .eq("login_code", loginCode)
     .maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
@@ -358,13 +359,20 @@ async function handleVerifyAccessCode(admin: Admin, params: Record<string, unkno
   }
 
   console.log(`[kid-finance][${requestId}] handleVerifyAccessCode success kidId=${kid.id}`);
-  return jsonOk({ ok: true, kidId: kid.id, username: kid.username, name: kid.comfort_name || kid.name });
+  return jsonOk({
+    ok: true,
+    kidId: kid.id,
+    username: kid.username,
+    name: kid.comfort_name || kid.name,
+    needsBirthday: !kid.birth_date && !kid.birth_year,
+  });
 }
 
 async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
   const pin = typeof params.pin === "string" ? params.pin.trim() : "";
   const comfortNameRaw = typeof params.comfortName === "string" ? params.comfortName.trim() : undefined;
+  const birthDateRaw = typeof params.birthDate === "string" ? params.birthDate.trim() : undefined;
 
   if (!loginCode || !pin) return jsonError("Missing access code or PIN", 400);
   if (pin.length < 6 || !/^\d{6}$/.test(pin)) {
@@ -379,9 +387,32 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
     comfortName = comfortNameRaw;
   }
 
+  let birthDate: string | null = null;
+  let birthYear: number | null = null;
+  if (birthDateRaw) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDateRaw)) {
+      return jsonError("Birth date must be in YYYY-MM-DD format.", 400);
+    }
+    const parsedDate = new Date(birthDateRaw + "T00:00:00Z");
+    if (isNaN(parsedDate.getTime())) {
+      return jsonError("Invalid birth date.", 400);
+    }
+    const today = new Date();
+    let age = today.getUTCFullYear() - parsedDate.getUTCFullYear();
+    const m = today.getUTCMonth() - parsedDate.getUTCMonth();
+    if (m < 0 || (m === 0 && today.getUTCDate() < parsedDate.getUTCDate())) {
+      age--;
+    }
+    if (age < 4 || age > 18) {
+      return jsonError("Age must be between 4 and 18.", 400);
+    }
+    birthDate = birthDateRaw;
+    birthYear = parsedDate.getUTCFullYear();
+  }
+
   const { data: kid, error: kidErr } = await admin
     .from("kids")
-    .select("id, name, username, hashed_pin, login_code")
+    .select("id, name, username, hashed_pin, login_code, birth_date, birth_year")
     .eq("login_code", loginCode)
     .maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
@@ -408,6 +439,10 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
   };
   if (comfortName) {
     updateData.comfort_name = comfortName;
+  }
+  if (birthDate && !kid.birth_date && !kid.birth_year) {
+    updateData.birth_date = birthDate;
+    updateData.birth_year = birthYear;
   }
 
   const { data: updatedRows, error: updateErr } = await admin
@@ -467,7 +502,7 @@ async function handleRegister(admin: Admin, params: Record<string, unknown>, req
   if (insertErr) return jsonError(`Failed to create account: ${insertErr.message}`, 500);
 
   await admin.from("child_creation_keys").update({ used: true }).eq("id", id);
-  await admin.from("goals").insert({ kid_id: kid.id, name: "First Goal", emoji: "🎯", target: 100 });
+  await admin.from("goals").insert({ kid_id: kid.id, name: "My first Tabung", emoji: "🎯", target: 100 });
 
   console.log(`[kid-finance][${requestId}] handleRegister created kid id=${kid.id}`);
   return jsonOk({ ok: true, kidId: kid.id, code: sessionToken });
@@ -492,26 +527,67 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     kid = { ...kid, streak: newStreak, last_login_date: today };
   }
 
-  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, attemptsRes, parentRes] = await Promise.all([
+  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes] = await Promise.all([
     admin.from("goals").select("*").eq("kid_id", kid.id).order("created_at"),
     admin.from("transactions").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(100),
     admin.from("rewards").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }),
     admin.from("loans").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }),
     admin.from("approvals").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(20),
-    admin.from("quiz_attempts").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(50),
     admin.from("profiles").select("display_name, email").eq("id", kid.parent_id as string).maybeSingle(),
+    admin.from("kid_notifications").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(20),
+    admin.from("kid_notifications").select("id", { count: "exact", head: true }).eq("kid_id", kid.id).eq("read", false),
+    admin.from("quest_completions").select("id", { count: "exact", head: true }).eq("kid_id", kid.id),
+    admin.rpc("kid_age_group", { p_kid_id: kid.id }),
   ]);
 
+  const safeKid = { ...kid };
+  delete safeKid.hashed_pin;
+  delete safeKid.session_token;
+  delete safeKid.login_code;
+  delete safeKid.bridge_key_hash;
+
   return jsonOk({
-    kid,
+    kid: safeKid,
+    ageGroup: ageGroupRes.data ?? "10-12",
+    questsCompleted: completionsRes.count ?? 0,
     goals: goalsRes.data ?? [],
     txs: txsRes.data ?? [],
     rewards: rewardsRes.data ?? [],
     loans: loansRes.data ?? [],
     approvals: approvalsRes.data ?? [],
-    attempts: attemptsRes.data ?? [],
+    attempts: [],
     parent: parentRes.data ?? null,
+    notifications: notificationsRes.data ?? [],
+    unreadNotifications: unreadRes.count ?? 0,
   });
+}
+
+async function handleGetHistory(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const days = Number(params.days);
+  if (![7, 30, 90].includes(days)) {
+    return jsonError("Invalid period", 400);
+  }
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+
+  const { data, error } = await admin
+    .from("transactions")
+    .select("id, type, amount, label, created_at")
+    .eq("kid_id", kid.id)
+    .gte("created_at", cutoff.toISOString())
+    .neq("type", "INVEST_GAIN")
+    .neq("type", "INVEST_LOSS")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) {
+    console.error(`[kid-finance][${requestId}] handleGetHistory failed: ${error.message}`);
+    return jsonError(`Failed to fetch history: ${error.message}`, 500);
+  }
+
+  return jsonOk({ txs: data ?? [] });
 }
 
 async function handleClaimCoins(admin: Admin, params: Record<string, unknown>, requestId: string) {
@@ -523,58 +599,44 @@ async function handleClaimCoins(admin: Admin, params: Record<string, unknown>, r
   return jsonOk({ claimed: Number(data ?? 0) });
 }
 
-async function handleQuizState(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  let kid = await getKid(admin, params.code, requestId);
-  kid = await normalizeQuizState(admin, kid, requestId);
-  return jsonOk({
-    date: kid.quiz_date,
-    correct: Number(kid.quiz_correct) || 0,
-    wrong: Number(kid.quiz_wrong) || 0,
-    index: Number(kid.quiz_index) || 0,
-    maxPerDay: 5,
-    maxWrong: 2,
+async function handleQuestBoard(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const { data, error } = await admin.rpc("kid_quest_board", {
+    p_kid_id: kid.id,
   });
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
 }
 
-async function handleQuizAnswer(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  if (typeof params.correct !== "boolean") return jsonError("Field 'correct' must be boolean", 400);
-  let kid = await getKid(admin, params.code, requestId);
-  kid = await normalizeQuizState(admin, kid, requestId);
-
-  const qd = kid.quiz_date as string;
-  let qc = Number(kid.quiz_correct) || 0;
-  let qw = Number(kid.quiz_wrong) || 0;
-  let qi = Number(kid.quiz_index) || 0;
-
-  const { error: attemptErr } = await admin.from("quiz_attempts").insert({
-    kid_id: kid.id, question_index: qi,
-    question_text: `Question #${qi + 1}`,
-    correct: params.correct,
+async function handleQuestStart(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const questId = typeof params.questId === "string" ? params.questId.trim() : "";
+  if (!questId) return jsonError("Missing questId", 400);
+  const kid = await getKid(admin, params.code, requestId);
+  const { data, error } = await admin.rpc("kid_quest_start", {
+    p_kid_id: kid.id,
+    p_quest_id: questId,
   });
-  if (attemptErr) console.warn(`[kid-finance][${requestId}] quiz_attempts insert failed: ${attemptErr.message}`);
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
+}
 
-  if (params.correct) qc += 1; else qw += 1;
-  qi = (qi + 1) % QUIZ_QUESTION_COUNT;
+async function handleQuestAnswer(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const attemptId = typeof params.attemptId === "string" ? params.attemptId.trim() : "";
+  const questionId = typeof params.questionId === "string" ? params.questionId.trim() : "";
+  const selectedIndex = typeof params.selectedIndex === "number" ? params.selectedIndex : (params.selectedIndex !== undefined ? Number(params.selectedIndex) : NaN);
 
-  let coins = Number(kid.coins) || 0;
-  let xp = Number(kid.xp) || 0;
-  let level = Number(kid.level) || 1;
-  if (params.correct) {
-    coins += 100; xp += 5;
-    while (xp >= 100) { xp -= 100; level += 1; }
-  }
+  if (!attemptId || !questionId) return jsonError("Missing attemptId or questionId", 400);
+  if (isNaN(selectedIndex) || selectedIndex < 0) return jsonError("Pick one of the answers.", 400);
 
-  let cycled = false;
-  if (qw >= 2) { qc = 0; qw = 0; cycled = true; }
-
-  const { error } = await admin.from("kids").update({
-    quiz_date: qd, quiz_correct: qc, quiz_wrong: qw, quiz_index: qi, coins, xp, level,
-    // Increment lifetime total — also handled by DB trigger, this is a safety net
-    ...(params.correct ? { quiz_total_correct: (Number(kid.quiz_total_correct) || 0) + 1 } : {}),
-  }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to save quiz result: ${error.message}`, 500);
-
-  return jsonOk({ correct: qc, wrong: qw, index: qi, cycled, doneForToday: false });
+  const kid = await getKid(admin, params.code, requestId);
+  const { data, error } = await admin.rpc("kid_quest_answer", {
+    p_kid_id: kid.id,
+    p_attempt_id: attemptId,
+    p_question_id: questionId,
+    p_choice: selectedIndex,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
 }
 
 async function handleInvestDeposit(admin: Admin, params: Record<string, unknown>, requestId: string) {
@@ -651,8 +713,14 @@ async function handleRequestApproval(admin: Admin, params: Record<string, unknow
     if (error) return jsonError(`Failed to create approval: ${error.message}`, 500);
   }
 
-  await notifyParent(admin, kid.parent_id as string, kid.id as string, kind,
-    `${kid.name} requested ${kind.toLowerCase()} of RM${amount} (${reason})`);
+  const actionWord = kind === "DEPOSIT" ? "deposit" : "withdrawal";
+  await notifyParent(
+    admin,
+    kid.parent_id as string,
+    kid.id as string,
+    kind,
+    `${kid.name} asked for a ${actionWord} of RM${amount.toFixed(2)}: ${reason}`,
+  );
   return jsonOk({ ok: true });
 }
 
@@ -711,13 +779,31 @@ async function handleLoanRepay(admin: Admin, params: Record<string, unknown>, re
 
 async function handleSadaqah(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const amount = Number(params.amount);
+  const cause = typeof params.cause === "string" ? params.cause.trim() : null;
   const kid = await getKid(admin, params.code, requestId);
   const { data, error } = await admin.rpc("kid_give_sadaqah", {
     p_kid_id: kid.id,
     p_amount: amount,
+    p_cause: cause || null,
   });
   if (error) return handleRpcError(error);
   return jsonOk({ ok: true, ...(data ?? {}) });
+}
+
+async function handleMarkNotificationsRead(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const { error } = await admin
+    .from("kid_notifications")
+    .update({ read: true })
+    .eq("kid_id", kid.id)
+    .eq("read", false);
+
+  if (error) {
+    console.error(`[kid-finance][${requestId}] mark-notifications-read failed: ${error.message}`);
+    return jsonError(`Failed to mark notifications read: ${error.message}`, 500);
+  }
+
+  return jsonOk({ ok: true });
 }
 
 async function handleContributeGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
@@ -805,11 +891,20 @@ async function handleSetCardControls(admin: Admin, params: Record<string, unknow
 async function handleUpdateProfile(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const kid = await getKid(admin, params.code, requestId);
   const updates: Record<string, unknown> = {};
-  if (params.birth_date !== undefined) updates.birth_date = params.birth_date ?? null;
-  if (params.birth_year !== undefined) updates.birth_year = params.birth_year ? Number(params.birth_year) : null;
+
+  const check = validateBirthdayUpdate(kid as any, params);
+  if (!check.allowed) {
+    return jsonError(check.error || "Invalid birthday", 400);
+  }
+  if (check.updates && Object.keys(check.updates).length > 0) {
+    Object.assign(updates, check.updates);
+  }
+
   if (params.bio !== undefined) updates.bio = typeof params.bio === "string" ? params.bio.slice(0, 150) : null;
-  const { error } = await admin.from("kids").update(updates).eq("id", kid.id);
-  if (error) return jsonError(`Failed to update profile: ${error.message}`, 500);
+  if (Object.keys(updates).length > 0) {
+    const { error } = await admin.from("kids").update(updates).eq("id", kid.id);
+    if (error) return jsonError(`Failed to update profile: ${error.message}`, 500);
+  }
   return jsonOk({ ok: true });
 }
 
@@ -864,22 +959,28 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const allowPro = Deno.env.get("DEEPSEEK_ALLOW_PRO") === "true";
 
-  // Fetch non-private financial data for DeepSeek context
+  // 1. Check API key (503 if not set up; do not burn quota)
+  const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
+  if (!apiKey || apiKey.trim() === "") {
+    return jsonError("Penny AI is not set up yet", 503);
+  }
+
+  // 2. Fetch context data
   // keep in sync with tests/sql/penny-context-columns.test.mjs
-  const [goalsRes, loansRes, rewardsRes, txsRes] = await Promise.all([
+  const cutoff = new Date(Date.now() - 35 * 86400 * 1000).toISOString();
+  const [ageGroupRes, goalsRes, loansRes, txsRes, completionsRes, questBoardRes] = await Promise.all([
+    admin.rpc("kid_age_group", { p_kid_id: kid.id }),
     admin.from("goals").select("name, target, saved").eq("kid_id", kid.id).limit(10),
     admin.from("loans").select("amount, repaid, status, due_date").eq("kid_id", kid.id).limit(5),
-    admin.from("rewards").select("name, cost, status").eq("kid_id", kid.id).limit(5),
-    admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(20),
+    admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).gte("created_at", cutoff).order("created_at", { ascending: false }).limit(300),
+    admin.from("quest_completions").select("completed_at, quests(title)").eq("kid_id", kid.id).order("completed_at", { ascending: false }).limit(5),
+    admin.rpc("kid_quest_board", { p_kid_id: kid.id }),
   ]);
 
-  if (goalsRes.error) console.warn(`[kid-finance][${requestId}] Penny context goals query failed: ${goalsRes.error.message}`);
-  if (loansRes.error) console.warn(`[kid-finance][${requestId}] Penny context loans query failed: ${loansRes.error.message}`);
-  if (rewardsRes.error) console.warn(`[kid-finance][${requestId}] Penny context rewards query failed: ${rewardsRes.error.message}`);
-  if (txsRes.error) console.warn(`[kid-finance][${requestId}] Penny context transactions query failed: ${txsRes.error.message}`);
+  const ageGroup = (ageGroupRes.data as string) || "10-12";
 
   const goals = (goalsRes.data ?? []).map((g: any) => ({
-    name: String(g.name),
+    name: String(g.name || "Goal"),
     target: Number(g.target) || 0,
     saved: Number(g.saved) || 0,
   }));
@@ -890,63 +991,53 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     status: String(l.status || "active"),
   }));
 
-  const rewards = (rewardsRes.data ?? []).map((r: any) => ({
-    name: String(r.name),
-    cost: Number(r.cost) || 0,
-    status: String(r.status || "pending"),
+  const txs = (txsRes.data ?? []).map((t: any) => ({
+    type: String(t.type || ""),
+    amount: Number(t.amount) || 0,
+    label: String(t.label || ""),
+    created_at: String(t.created_at || ""),
   }));
 
-  const txs = (txsRes.data ?? []).map((t: any) => {
-    const cKey = categoryKey(String(t.type || ""), String(t.label || ""));
-    const cLabel = categoryLabel(cKey);
-    return {
-      label: String(t.label || "Transaction"),
-      amount: Number(t.amount) || 0,
-      type: String(t.type),
-      category: cLabel,
-      date: String(t.created_at),
-    };
-  });
+  const questCompletions = (completionsRes.data ?? []).map((c: any) => ({
+    title: String(c.quests?.title || "Quest"),
+    completedAt: String(c.completed_at || "").slice(0, 10),
+  }));
 
-  // Spending categories aggregation (wallet debits only, using isSpendingTransaction)
-  const catTotals: Record<string, number> = {};
-  for (const t of (txsRes.data ?? [])) {
-    const typeStr = String(t.type || "");
-    const labelStr = String(t.label || "");
-    if (isSpendingTransaction(typeStr, labelStr)) {
-      const cKey = categoryKey(typeStr, labelStr);
-      const cLabel = categoryLabel(cKey);
-      const amt = Number(t.amount) || 0;
-      catTotals[cLabel] = (catTotals[cLabel] || 0) + amt;
-    }
+  const { count: questsCompletedCount } = await admin
+    .from("quest_completions")
+    .select("quest_id", { count: "exact", head: true })
+    .eq("kid_id", kid.id);
+
+  let nextQuestTitle: string | null = null;
+  if (Array.isArray(questBoardRes.data)) {
+    const nextOpen = questBoardRes.data.find((q: any) => q.status === "open");
+    if (nextOpen?.title) nextQuestTitle = String(nextOpen.title);
   }
-  const topSpendingCategories = Object.entries(catTotals)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([category, amount]) => ({ category, amount }));
 
-  // Privacy: send comfort_name only when set, otherwise undefined (never the child's real name)
+  // Privacy: comfort_name only
   const pennyName = typeof kid.comfort_name === "string" && kid.comfort_name.trim() !== ""
     ? kid.comfort_name.trim()
     : undefined;
 
-  const kidContext = {
+  const kidCoachInput = {
+    ageGroup,
     name: pennyName,
-    balance: typeof kid.balance === "number" ? kid.balance : Number(kid.balance) || 0,
+    balance: Number(kid.balance) || 0,
     investBalance: Number(kid.invest_balance) || 0,
     coins: Number(kid.coins) || 0,
-    streakDays: Number(kid.streak_days || kid.streak || 0),
+    streakDays: Number(kid.streak) || 0,
     goals,
     loans,
-    rewards,
-    recentTransactions: txs,
-    topSpendingCategories,
-    goalNames: goals.map((g: any) => g.name),
+    transactions: txs,
+    questCompletions,
+    questsCompletedCount: questsCompletedCount ?? 0,
+    nextQuestTitle,
   };
 
   const isThinking = params.thinking !== false;
+  const contextLines = buildKidCoachContext(kidCoachInput);
+  const system = `${kidSystemPrompt(ageGroup)}\n\nChild's data:\n${contextLines.join("\n")}`;
 
-  // 1. Validate and build the request first (do not burn quota if invalid)
   let requestParams;
   try {
     requestParams = buildPennyRequest({
@@ -954,19 +1045,13 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
       thinking: isThinking,
       history: rawHistory,
       message,
-      kidContext,
+      systemPrompt: system,
       maxTokens: configuredMaxTokens,
       allowPro,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return jsonError(msg, 400);
-  }
-
-  // 2. Check API key (503 if not set up; do not burn quota)
-  const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
-  if (!apiKey || apiKey.trim() === "") {
-    return jsonError("Penny AI is not set up yet", 503);
   }
 
   // 3. Consume quota atomically in DB
@@ -978,49 +1063,174 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     return handleRpcError(quotaErr);
   }
 
-  console.log(`[kid-finance][${requestId}] handlePennyChat kidId=${kid.id} model=${requestParams.model} thinking=${isThinking}`);
+  console.log(`[kid-finance][${requestId}] handlePennyChat kidId=${kid.id} ageGroup=${ageGroup} model=${requestParams.model} thinking=${isThinking}`);
 
-  // 4. Call DeepSeek
-  let response;
+  // 4. Call DeepSeek via shared callPenny
   try {
-    const client = createDeepSeekClient(apiKey);
-    response = await client.messages.create(
-      requestParams as unknown as Parameters<typeof client.messages.create>[0],
-      { timeout: 30000 }
-    );
+    const result = await callPenny(apiKey, requestParams);
+    return jsonOk({
+      reply: result.reply,
+      model: result.model,
+      thinking: result.thinking,
+      remaining: typeof remaining === "number" ? remaining : 0,
+    });
   } catch (err: unknown) {
-    const errObj = err as { status?: number; name?: string; message?: string };
-    if (errObj?.status === 401) {
-      console.error(`[kid-finance][${requestId}] Penny AI is misconfigured (401 from provider)`);
-      return jsonError("Penny AI is misconfigured", 502);
-    }
-    if (errObj?.status === 429) {
-      console.warn(`[kid-finance][${requestId}] Penny AI rate limited (429 from provider)`);
-      return jsonError("Penny is busy, try again soon", 503);
-    }
-    if (
-      errObj?.name === "AbortError" ||
-      errObj?.name === "APIConnectionTimeoutError" ||
-      errObj?.message?.toLowerCase().includes("timeout")
-    ) {
-      console.warn(`[kid-finance][${requestId}] Penny AI request timed out`);
-      return jsonError("Penny timed out, try again soon", 504);
+    if (err instanceof PennyError) {
+      return jsonError(err.message, err.status);
     }
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[kid-finance][${requestId}] DeepSeek call failed:`, msg);
-    return jsonError("Penny AI service error", 500);
+    return jsonError(msg || "Penny AI service error", 500);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Family Transfer Handlers
+// ---------------------------------------------------------------------------
+
+
+async function resolveParentInfo(admin: Admin, parentId: string): Promise<{ id: string; name: string; avatar: string }> {
+  let comfortName: string | null = null;
+  try {
+    const { data: authUser } = await admin.auth.admin.getUserById(parentId);
+    if (authUser?.user?.user_metadata?.comfort_name) {
+      comfortName = String(authUser.user.user_metadata.comfort_name).trim();
+    }
+  } catch (_e) {}
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id, display_name, avatar")
+    .eq("id", parentId)
+    .maybeSingle();
+
+  const name = comfortName || profile?.display_name || "Parent";
+  const avatar = profile?.avatar || "👨‍👩‍👧";
+  return { id: parentId, name, avatar };
+}
+
+async function checkKidPin(
+  admin: Admin,
+  kid: Record<string, unknown>,
+  pin: unknown
+): Promise<{ ok: boolean; error?: string; status?: number }> {
+  if (typeof pin !== "string" || !/^\d{6}$/.test(pin.trim())) {
+    return { ok: false, error: "PIN must be 6 digits", status: 400 };
+  }
+  if (!kid.hashed_pin) {
+    return { ok: false, error: "PIN setup required", status: 400 };
   }
 
-  // 5. Extract reply and ensure non-empty
-  const reply = extractReplyText(response as { content?: Array<{ type: string; text?: string }> });
-  if (!reply || reply.trim() === "") {
-    return jsonError("Penny couldn't finish that answer", 502);
+  if (kid.locked_until && new Date() < new Date(kid.locked_until as string)) {
+    const mins = Math.max(1, Math.ceil((new Date(kid.locked_until as string).getTime() - Date.now()) / 60000));
+    return {
+      ok: false,
+      error: `Too many wrong PINs. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
+      status: 403,
+    };
   }
+
+  let isValid = false;
+  try {
+    isValid = await bcrypt.compare(pin.trim(), kid.hashed_pin as string);
+  } catch (_e) {
+    return { ok: false, error: "PIN verification failed", status: 500 };
+  }
+
+  if (!isValid) {
+    const attempts = (Number(kid.failed_login_attempts) || 0) + 1;
+    const lockedUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
+    await admin.from("kids").update({ failed_login_attempts: attempts, locked_until: lockedUntil }).eq("id", kid.id);
+    const triesLeft = Math.max(0, 5 - attempts);
+    return {
+      ok: false,
+      error: attempts >= 5
+        ? "Too many wrong PINs. Try again in 15 minutes."
+        : `That PIN isn't right. ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left.`,
+      status: attempts >= 5 ? 403 : 400,
+    };
+  }
+
+  if ((kid.failed_login_attempts && Number(kid.failed_login_attempts) > 0) || kid.locked_until) {
+    await admin.from("kids").update({ failed_login_attempts: 0, locked_until: null }).eq("id", kid.id);
+  }
+
+  return { ok: true };
+}
+
+async function handleTransferRecipients(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+
+  const { data: siblings, error: sibErr } = await admin
+    .from("kids")
+    .select("id, name, comfort_name, avatar")
+    .eq("parent_id", kid.parent_id)
+    .neq("id", kid.id)
+    .order("name");
+
+  if (sibErr) return jsonError(`DB error: ${sibErr.message}`, 500);
+
+  const parent = kid.parent_id ? await resolveParentInfo(admin, kid.parent_id as string) : null;
+
+  const { data: usedToday, error: usedErr } = await admin.rpc("kid_transfer_out_today", {
+    p_kid_id: kid.id,
+  });
+
+  if (usedErr) return jsonError(`DB error: ${usedErr.message}`, 500);
+
+  console.log(`[kid-finance][${requestId}] handleTransferRecipients kid=${kid.id} siblings=${siblings?.length ?? 0}`);
 
   return jsonOk({
-    reply,
-    model: requestParams.model,
-    thinking: isThinking,
-    remaining: typeof remaining === "number" ? remaining : 0,
+    siblings: siblings ?? [],
+    parent,
+    balance: Number(kid.balance || 0),
+    dailyLimit: 50,
+    usedToday: Number(usedToday || 0),
   });
+}
+
+async function handleTransfer(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+
+  const pinCheck = await checkKidPin(admin, kid, params.pin);
+  if (!pinCheck.ok) {
+    return jsonError(pinCheck.error || "PIN verification failed", pinCheck.status || 403);
+  }
+
+  const recipientKind = typeof params.recipientKind === "string" ? params.recipientKind : "";
+  const recipientId = typeof params.recipientId === "string" ? params.recipientId : "";
+  const amount = Number(params.amount);
+  const note = typeof params.note === "string" ? params.note.trim() : null;
+
+  if (isNaN(amount) || amount < 1.00) {
+    return jsonError("Invalid amount", 400);
+  }
+
+  console.log(`[kid-finance][${requestId}] handleTransfer kid=${kid.id} kind=${recipientKind} recipient=${recipientId} amount=${amount}`);
+
+  if (recipientKind === "kid") {
+    if (!recipientId) return jsonError("Missing recipient ID", 400);
+    const { data, error } = await admin.rpc("kid_request_transfer", {
+      p_kid_id: kid.id,
+      p_to_kid_id: recipientId,
+      p_amount: amount,
+      p_note: note,
+    });
+    if (error) return handleRpcError(error);
+    return jsonOk({ ok: true, approvalId: data, status: "pending" });
+  } else if (recipientKind === "parent") {
+    if (recipientId && recipientId !== kid.parent_id) {
+      return jsonError("You can only send money to your family.", 400);
+    }
+    const parentInfo = await resolveParentInfo(admin, kid.parent_id as string);
+    const { data, error } = await admin.rpc("kid_send_to_parent", {
+      p_kid_id: kid.id,
+      p_amount: amount,
+      p_note: note,
+      p_parent_label: parentInfo.name,
+    });
+    if (error) return handleRpcError(error);
+    return jsonOk({ ok: true, balance: data?.balance, status: "completed" });
+  } else {
+    return jsonError("Invalid recipient type", 400);
+  }
 }

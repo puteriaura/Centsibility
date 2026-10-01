@@ -15,6 +15,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatRM } from "@/lib/format";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
+import { approvalKindLabel } from "@/lib/labels";
 
 export const Route = createFileRoute("/parent/approvals")({
   head: () => ({ meta: [{ title: "Approvals — Centsibility" }] }),
@@ -145,8 +146,11 @@ function Approvals() {
           ) : (
             approvals.map((a) => {
               const isQard = a.kind === "QARD";
+              const isTransfer = a.kind === "TRANSFER";
               const parsed = isQard ? parseQard(a.reason) : null;
               const isBusy = busyId === a.id;
+              const senderName = a.kids?.name || "Child";
+              const recipientName = a.to_kid?.comfort_name || a.to_kid?.name || "Sibling";
 
               return (
                 <Card
@@ -163,12 +167,18 @@ function Approvals() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={isQard ? "warning" : "brand"}>
-                          {isQard ? "Qard Loan" : a.kind}
+                        <Badge variant={isQard ? "warning" : isTransfer ? "soft" : "brand"}>
+                          {isQard ? "Qard Loan" : isTransfer ? "Transfer Request" : approvalKindLabel(a.kind)}
                         </Badge>
-                        <h3 className="notif-item__title">{a.kids?.name}</h3>
+                        <h3 className="notif-item__title">
+                          {isTransfer ? `${senderName} → ${recipientName}` : a.kids?.name}
+                        </h3>
                       </div>
-                      <p className="notif-item__body mt-1">{parsed?.reason ?? a.reason}</p>
+                      <p className="notif-item__body mt-1">
+                        {isTransfer
+                          ? (a.reason ? `“${a.reason}” · ${senderName} wants to transfer ${formatRM(Number(a.amount))} to ${recipientName}` : `${senderName} wants to transfer ${formatRM(Number(a.amount))} to ${recipientName}`)
+                          : (parsed?.reason ?? a.reason)}
+                      </p>
                       {isQard && parsed?.dueDays && (
                         <p className="text-xs font-semibold text-[var(--primary-text)] mt-1">
                           Promise to repay in {parsed.dueDays} days

@@ -5,8 +5,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { isParentBypassed, isKidBypassed } from "@/lib/admin-bypass";
-import { DEMO_IDENTITY, DEMO_KID_STATE } from "@/lib/demo-data";
+import { isParentBypassed, isKidBypassed, ADMIN_BYPASS } from "@/lib/admin-bypass";
+import { DEMO_IDENTITY, DEMO_KID_STATE, DEMO_TRANSACTIONS } from "@/lib/demo-data";
+import { sanitizeDisplayText } from "@/lib/labels";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -27,6 +28,8 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
       return { kidId: DEMO_IDENTITY.kidId, name: "Aiman", code: DEMO_IDENTITY.kidCode } as T;
     case "get-state":
       return DEMO_KID_STATE as T;
+    case "get-history":
+      return { txs: DEMO_TRANSACTIONS } as T;
     case "claim-coins":
       return { claimed: 10 } as T;
     case "deposit":
@@ -41,23 +44,160 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
       } as T;
     case "get-scheduled-hibahs":
       return { scheduledHibahs: [] } as T;
-    case "quiz-state":
+    case "quest-board":
       return {
-        date: new Date().toISOString().slice(0, 10),
-        correct: 3,
-        wrong: 0,
-        index: 1,
-        maxPerDay: 5,
-        maxWrong: 2,
+        ageGroup: "10-12",
+        quests: [
+          {
+            id: "demo-quest-1",
+            slug: "duit-poket-master",
+            title: "Duit Poket Master",
+            summary: "Learn how to split your daily pocket money wisely.",
+            icon: "Coins",
+            points: 400,
+            position: 1,
+            questionCount: 3,
+            status: "done",
+            completedAt: new Date().toISOString(),
+            bestCorrect: 3,
+          },
+          {
+            id: "demo-quest-2",
+            slug: "smart-shopper",
+            title: "Smart Shopper",
+            summary: "Compare prices and spot real discounts at the kedai runcit.",
+            icon: "ShoppingBag",
+            points: 400,
+            position: 2,
+            questionCount: 3,
+            status: "open",
+            completedAt: null,
+            bestCorrect: null,
+          },
+          {
+            id: "demo-quest-3",
+            slug: "savings-streak",
+            title: "Savings Streak",
+            summary: "Discover how tiny daily savings add up to big rewards.",
+            icon: "TrendingUp",
+            points: 400,
+            position: 3,
+            questionCount: 4,
+            status: "locked",
+            completedAt: null,
+            bestCorrect: null,
+          },
+          {
+            id: "demo-quest-4",
+            slug: "scam-spotter",
+            title: "Online Safety & Scams",
+            summary: "Identify fake prize messages and suspicious links.",
+            icon: "ShieldAlert",
+            points: 400,
+            position: 4,
+            questionCount: 4,
+            status: "locked",
+            completedAt: null,
+            bestCorrect: null,
+          },
+          {
+            id: "demo-quest-5",
+            slug: "budget-boss",
+            title: "Budget Boss",
+            summary: "Make a weekly plan for canteen lunches and stationery.",
+            icon: "Receipt",
+            points: 400,
+            position: 5,
+            questionCount: 3,
+            status: "locked",
+            completedAt: null,
+            bestCorrect: null,
+          },
+          {
+            id: "demo-quest-6",
+            slug: "sadaqah-champion",
+            title: "Sadaqah Champion",
+            summary: "Understand the barakah and joy of giving to those in need.",
+            icon: "Heart",
+            points: 400,
+            position: 6,
+            questionCount: 4,
+            status: "locked",
+            completedAt: null,
+            bestCorrect: null,
+          },
+          {
+            id: "demo-quest-7",
+            slug: "bank-basics",
+            title: "Bank & Digital Money",
+            summary: "How DuitNow, cards, and bank accounts work.",
+            icon: "CreditCard",
+            points: 400,
+            position: 7,
+            questionCount: 3,
+            status: "locked",
+            completedAt: null,
+            bestCorrect: null,
+          },
+          {
+            id: "demo-quest-8",
+            slug: "halal-wealth",
+            title: "Halal Wealth Builder",
+            summary: "Earning honestly and growing money the Shariah way.",
+            icon: "Award",
+            points: 400,
+            position: 8,
+            questionCount: 4,
+            status: "locked",
+            completedAt: null,
+            bestCorrect: null,
+          },
+        ],
       } as T;
-    case "quiz-answer":
+    case "quest-start":
       return {
-        correct: 4,
-        wrong: 0,
-        index: 2,
-        cycled: false,
-        doneForToday: false,
+        attemptId: "demo-attempt-" + Date.now(),
+        quest: {
+          title: "Smart Shopper",
+          points: 400,
+        },
+        questions: [
+          {
+            id: "demo-q1",
+            position: 1,
+            prompt: "You have RM10 and want a drink (RM3) and a notebook (RM5). How much change will you get?",
+            choices: ["RM1", "RM2", "RM3", "RM4"],
+          },
+          {
+            id: "demo-q2",
+            position: 2,
+            prompt: "A shop offers 'Buy 2 Free 1' for pencils costing RM2 each. How much for 3 pencils?",
+            choices: ["RM2", "RM4", "RM6", "RM5"],
+          },
+          {
+            id: "demo-q3",
+            position: 3,
+            prompt: "What is the best way to avoid impulse buying at the school bookshop?",
+            choices: ["Bring all your savings", "Make a shopping list first", "Buy whatever your friend buys", "Buy items on the front display"],
+          },
+        ],
       } as T;
+    case "quest-answer": {
+      const isCorrect = body.selectedIndex === 1;
+      return {
+        correct: isCorrect,
+        correctIndex: 1,
+        explanation: isCorrect
+          ? "Great job! Calculating before buying keeps your money safe."
+          : "Not quite. Remember to add the costs first (RM3 + RM5 = RM8), then subtract from RM10.",
+        done: body.questionId === "demo-q3",
+        correctCount: isCorrect ? 3 : 2,
+        total: 3,
+        passed: isCorrect,
+        pointsAwarded: isCorrect ? 400 : 0,
+        firstCompletion: isCorrect,
+      } as T;
+    }
     case "invest-settle":
       return { paid: 1.0 } as T;
     case "loan-repay":
@@ -83,12 +223,50 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
         card_online_enabled: body.onlineEnabled ?? true,
         card_controls_locked: body.locked ?? false,
       } as T;
+    case "sadaqah":
+      return {
+        ok: true,
+        balance: 137.5,
+        coins_awarded: Math.floor((Number(body.amount) || 5) * 2),
+        cause: (body.cause as string) || null,
+      } as T;
+    case "mark-notifications-read":
+      return { ok: true } as T;
     case "penny-chat":
+      if (functionName === "parent-finance") {
+        return {
+          reply: "Salam! As your family financial coach, I can help you guide your children on budgeting, savings, and Shariah values. What would you like to discuss today?",
+          model: (body.model as string) || "deepseek-flash",
+          thinking: body.thinking !== false,
+          remaining: 49,
+        } as T;
+      }
       return {
         reply: "Salam! I am Penny, your Islamic finance companion. Always remember to save first, spend wisely, and give Sadaqah!",
         model: (body.model as string) || "deepseek-flash",
         thinking: body.thinking !== false,
         remaining: 29,
+      } as T;
+    case "transfer-recipients":
+      return {
+        siblings: [
+          { id: "demo-kid-aisyah", name: "Aisyah", comfort_name: "Aisyah", avatar: null },
+          { id: "demo-kid-siddiq", name: "Siddiq", comfort_name: "Siddiq", avatar: null },
+        ],
+        parent: { id: "demo-parent-id", name: "Ummi", avatar: null },
+        balance: 142.5,
+        dailyLimit: 50,
+        usedToday: 0,
+      } as T;
+    case "transfer":
+      if (body.pin && ADMIN_BYPASS.kid.pin && body.pin !== ADMIN_BYPASS.kid.pin) {
+        throw new Error("That PIN isn't right. 4 tries left.");
+      }
+      return {
+        ok: true,
+        approvalId: "demo-approval-" + Date.now(),
+        balance: 137.5,
+        status: (body.recipientKind === "parent" ? "completed" : "pending") as any,
       } as T;
     default:
       return { ok: true } as T;
@@ -130,7 +308,7 @@ export async function extractEdgeErrorMessage(error: unknown): Promise<string> {
         if (errorMsg.startsWith("Unknown action:")) {
           return friendlyUnknownAction;
         }
-        return errorMsg;
+        return sanitizeDisplayText(errorMsg);
       }
     } catch {
       // JSON parse failure must never throw out of the helper
@@ -140,13 +318,13 @@ export async function extractEdgeErrorMessage(error: unknown): Promise<string> {
     if (error.message.startsWith("Unknown action:")) {
       return friendlyUnknownAction;
     }
-    return error.message;
+    return sanitizeDisplayText(error.message);
   }
   if (typeof error === "string" && error.length > 0) {
     if (error.startsWith("Unknown action:")) {
       return friendlyUnknownAction;
     }
-    return error;
+    return sanitizeDisplayText(error);
   }
   return "Edge function call failed";
 }
@@ -262,7 +440,7 @@ export async function edgeParentGetProfile() {
   return invoke<{ id: string; email: string } | null>("parent-finance", { action: "get-profile" });
 }
 
-export async function edgeParentCreateKid(params: { name: string; username: string }) {
+export async function edgeParentCreateKid(params: { name: string; username: string; birth_date?: string }) {
   return invoke<{ kid: any }>("parent-finance", { action: "create-kid", ...params });
 }
 
@@ -271,7 +449,14 @@ export async function edgeParentDeleteKid(params: { kidId: string }) {
   return invoke<{ ok: boolean }>("parent-finance", { action: "delete-kid", ...params });
 }
 
-export async function edgeParentUpdateKid(params: { kidId: string; name: string; username?: string; birth_date?: string; birth_year?: number }) {
+export async function edgeParentUpdateKid(params: {
+  kidId: string;
+  name: string;
+  username?: string;
+  birth_date?: string;
+  birth_year?: number;
+  age_group_override?: string | null;
+}) {
   return invoke<{ ok: boolean }>("parent-finance", { action: "update-kid", ...params });
 }
 
@@ -378,8 +563,15 @@ export async function edgeExecuteScheduledHibahs() {
 // Kid Finance Edge Functions — verify_jwt=false, anon key only
 // ---------------------------------------------------------------------------
 
-export async function edgeKidSadaqah(params: { code: string; amount: number }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "sadaqah", ...params });
+export async function edgeKidSadaqah(params: { code: string; amount: number; cause?: string }) {
+  return invoke<{ ok: boolean; balance?: number; coins_awarded?: number; cause?: string | null }>(
+    "kid-finance",
+    { action: "sadaqah", ...params }
+  );
+}
+
+export async function edgeKidMarkNotificationsRead(params: { code: string }) {
+  return invoke<{ ok: boolean }>("kid-finance", { action: "mark-notifications-read", ...params });
 }
 
 export async function edgeKidRepayLoan(params: { code: string; loanId: string; amount: number }) {
@@ -442,10 +634,10 @@ export async function edgeKidLoginByCode(params: { loginCode: string }) {
 }
 
 export async function edgeKidVerifyAccessCode(params: { loginCode: string }) {
-  return invoke<{ ok: boolean; kidId: string; username: string; name: string }>("kid-finance", { action: "verify-access-code", ...params });
+  return invoke<{ ok: boolean; kidId: string; username: string; name: string; needsBirthday?: boolean }>("kid-finance", { action: "verify-access-code", ...params });
 }
 
-export async function edgeKidSetInitialPin(params: { loginCode: string; pin: string; comfortName?: string }) {
+export async function edgeKidSetInitialPin(params: { loginCode: string; pin: string; comfortName?: string; birthDate?: string }) {
   return invoke<{ ok: boolean; kidId: string; name: string; code: string }>("kid-finance", { action: "set-initial-pin", ...params });
 }
 
@@ -454,19 +646,95 @@ export async function edgeKidRegister(params: { setupCode: string; name: string;
 }
 
 export async function edgeKidGetState(params: { code: string }) {
-  return invoke<{ kid: any; goals: any[]; txs: any[]; rewards: any[]; loans: any[]; approvals: any[]; attempts: any[]; parent: any }>("kid-finance", { action: "get-state", ...params });
+  return invoke<{
+    kid: any;
+    ageGroup?: "6-9" | "10-12" | "13-17";
+    questsCompleted?: number;
+    goals: any[];
+    txs: any[];
+    rewards: any[];
+    loans: any[];
+    approvals: any[];
+    attempts: any[];
+    parent: any;
+    notifications: {
+      id: string;
+      kid_id: string;
+      kind: string;
+      message: string;
+      link?: string | null;
+      read: boolean;
+      created_at: string;
+    }[];
+    unreadNotifications: number;
+  }>("kid-finance", { action: "get-state", ...params });
+}
+
+export async function edgeKidGetHistory(params: { code: string; days: number }) {
+  return invoke<{ txs: { id: string; type: string; amount: number; label: string | null; created_at: string }[] }>(
+    "kid-finance",
+    { action: "get-history", ...params },
+  );
 }
 
 export async function edgeKidClaimCoins(params: { code: string }) {
   return invoke<{ claimed: number }>("kid-finance", { action: "claim-coins", ...params });
 }
 
-export async function edgeKidQuizState(params: { code: string }) {
-  return invoke<{ date: string; correct: number; wrong: number; index: number; maxPerDay: number; maxWrong: number }>("kid-finance", { action: "quiz-state", ...params });
+export interface QuestNode {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  icon: string;
+  points: number;
+  position: number;
+  questionCount: number;
+  status: "done" | "open" | "locked";
+  completedAt: string | null;
+  bestCorrect: number | null;
 }
 
-export async function edgeKidQuizAnswer(params: { code: string; correct: boolean }) {
-  return invoke<{ correct: number; wrong: number; index: number; cycled: boolean; doneForToday: boolean }>("kid-finance", { action: "quiz-answer", ...params });
+export async function edgeKidQuestBoard(params: { code: string }) {
+  return invoke<{
+    ageGroup: "6-9" | "10-12" | "13-17";
+    quests: QuestNode[];
+  }>("kid-finance", { action: "quest-board", ...params });
+}
+
+export async function edgeKidQuestStart(params: { code: string; questId: string }) {
+  return invoke<{
+    attemptId: string;
+    quest: {
+      title: string;
+      points: number;
+    };
+    questions: {
+      id: string;
+      position: number;
+      prompt: string;
+      choices: string[];
+    }[];
+  }>("kid-finance", { action: "quest-start", ...params });
+}
+
+export async function edgeKidQuestAnswer(params: {
+  code: string;
+  attemptId: string;
+  questionId: string;
+  selectedIndex: number;
+}) {
+  return invoke<{
+    correct: boolean;
+    correctIndex: number;
+    explanation: string;
+    done: boolean;
+    correctCount: number;
+    total: number;
+    passed?: boolean;
+    pointsAwarded?: number;
+    firstCompletion?: boolean;
+  }>("kid-finance", { action: "quest-answer", ...params });
 }
 
 export async function edgeKidInvestDeposit(params: { code: string; amount: number }) {
@@ -523,5 +791,81 @@ export async function edgeKidPennyChat(params: {
     thinking: boolean;
     remaining: number;
   }>("kid-finance", { action: "penny-chat", ...params });
+}
+
+export async function edgeParentPennyChat(params: {
+  message: string;
+  history?: PennyChatMessage[];
+  thinking?: boolean;
+  model?: string;
+  pinSession?: string;
+}) {
+  return invoke<{
+    reply: string;
+    model: string;
+    thinking: boolean;
+    remaining: number;
+  }>("parent-finance", { action: "penny-chat", ...params });
+}
+
+export interface TransferRecipientSibling {
+  id: string;
+  name: string;
+  comfort_name: string | null;
+  avatar: string | null;
+}
+
+export interface TransferRecipientParent {
+  id: string;
+  name: string | null;
+  avatar: string | null;
+}
+
+export interface KidTransferRecipientsResponse {
+  siblings: TransferRecipientSibling[];
+  parent: TransferRecipientParent | null;
+  balance: number;
+  dailyLimit: number;
+  usedToday: number;
+}
+
+export async function edgeKidTransferRecipients(params: { code: string }) {
+  return invoke<KidTransferRecipientsResponse>("kid-finance", {
+    action: "transfer-recipients",
+    ...params,
+  });
+}
+
+export async function edgeKidTransfer(params: {
+  code: string;
+  pin: string;
+  recipientKind: "kid" | "parent";
+  recipientId: string;
+  amount: number;
+  note?: string;
+  parentLabel?: string;
+}) {
+  return invoke<{
+    ok: boolean;
+    approvalId?: string;
+    balance?: number;
+    status: "pending" | "completed";
+  }>("kid-finance", {
+    action: "transfer",
+    ...params,
+  });
+}
+
+export async function edgeParentTransfer(params: {
+  kidId: string;
+  amount: number;
+  note?: string;
+  parentLabel?: string;
+  pin: string;
+}) {
+  return invoke<{ ok: boolean; balance?: number }>("parent-finance", {
+    action: "transfer",
+    ...params,
+  });
 }
 

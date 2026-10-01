@@ -6,6 +6,7 @@ import { sfx } from "@/lib/sounds";
 import { cleanApprovalReason } from "@/lib/qard";
 import { isKidBypassed } from "@/lib/admin-bypass";
 import { DEMO_KID_STATE } from "@/lib/demo-data";
+import { approvalKindLabel } from "@/lib/labels";
 import equal from "fast-deep-equal";
 
 export type KidState = Awaited<ReturnType<typeof edgeKidGetState>>;
@@ -66,7 +67,7 @@ export function useKidData() {
               ? "Deposit"
               : a.kind === "WITHDRAWAL"
                 ? "Withdraw"
-                : a.kind;
+                : approvalKindLabel(a.kind);
         if (a.status === "approved") {
           sfx.success();
           toast.success(`✅ ${label} approved: ${reasonClean || "RM " + a.amount}`);

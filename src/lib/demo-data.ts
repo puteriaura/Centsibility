@@ -60,10 +60,49 @@ export const DEMO_KID: Kid = {
   last_login_date: new Date().toISOString().slice(0, 10),
 };
 
+export const DEMO_KID_2: Kid = {
+  id: "demo-kid-aisyah",
+  parent_id: "demo-parent-id",
+  name: "Aisyah",
+  comfort_name: "Aisyah",
+  username: "aisyah",
+  login_code: "AISYAH",
+  balance: 85.0,
+  coins: 300,
+  coins_decimal: 300,
+  avatar: "🌸",
+  bio: "Curious explorer",
+  birth_date: "2017-09-20",
+  birth_year: 2017,
+  bridge_key_hash: null,
+  failed_login_attempts: 0,
+  hashed_pin: null,
+  hibah_rate: 0.05,
+  invest_balance: 20.0,
+  invest_last_paid: new Date().toISOString(),
+  invest_rate: 0.02,
+  level: 2,
+  locked_until: null,
+  quiz_correct: 2,
+  quiz_date: new Date().toISOString().slice(0, 10),
+  quiz_index: 0,
+  quiz_wrong: 0,
+  streak: 3,
+  trust_score: 90,
+  unclaimed_coins: 5,
+  xp: 220,
+  session_token: "demo-token-aisyah",
+  created_at: "2026-01-01T00:00:00.000Z",
+  last_login_date: new Date().toISOString().slice(0, 10),
+};
+
+export const DEMO_KIDS: Kid[] = [DEMO_KID, DEMO_KID_2];
+
 export const DEMO_APPROVALS: Approval[] = [
   {
     id: "demo-approval-1",
     kid_id: DEMO_KID.id,
+    to_kid_id: null,
     kind: "DEPOSIT",
     amount: 15.0,
     reason: "Saved weekend allowance",
@@ -71,6 +110,19 @@ export const DEMO_APPROVALS: Approval[] = [
     created_at: new Date(Date.now() - 3600000).toISOString(),
     resolved_at: null,
     kids: { name: DEMO_KID.name },
+  },
+  {
+    id: "demo-approval-2",
+    kid_id: DEMO_KID.id,
+    to_kid_id: "demo-kid-aisyah",
+    kind: "TRANSFER",
+    amount: 5.0,
+    reason: "Lunch treat",
+    status: "pending",
+    created_at: new Date(Date.now() - 1800000).toISOString(),
+    resolved_at: null,
+    kids: { name: DEMO_KID.name },
+    to_kid: { name: "Aisyah", comfort_name: "Aisyah" },
   },
 ];
 
@@ -169,19 +221,44 @@ export const DEMO_SCHEDULED_HIBAHS: ScheduledHibah[] = [
   },
 ];
 
+export const DEMO_GOALS = [
+  {
+    id: "demo-goal-1",
+    kid_id: DEMO_KID.id,
+    name: "New Bicycle",
+    target: 200.0,
+    saved: 174.0,
+    emoji: "🚲",
+    created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
+  },
+];
+
+export const DEMO_KID_NOTIFICATIONS = [
+  {
+    id: "demo-kid-note-1",
+    kid_id: DEMO_KID.id,
+    kind: "SADAQAH",
+    message: "You gave RM5.00 to Orphan Relief. +10 points",
+    link: "/kid/sadaqah",
+    read: false,
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: "demo-kid-note-2",
+    kid_id: DEMO_KID.id,
+    kind: "TRANSFER",
+    message: "Test Parent sent you RM10.00 pocket money",
+    link: "/kid/history",
+    read: false,
+    created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+];
+
 export const DEMO_KID_STATE = {
   kid: DEMO_KID,
-  goals: [
-    {
-      id: "demo-goal-1",
-      kid_id: DEMO_KID.id,
-      name: "New Bicycle",
-      target: 200.0,
-      saved: 174.0,
-      emoji: "🚲",
-      created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
-    },
-  ],
+  ageGroup: "10-12" as "6-9" | "10-12" | "13-17",
+  questsCompleted: 1,
+  goals: DEMO_GOALS,
   txs: DEMO_TRANSACTIONS,
   rewards: DEMO_REWARDS,
   loans: DEMO_LOANS,
@@ -192,4 +269,6 @@ export const DEMO_KID_STATE = {
     email: DEMO_IDENTITY.parentEmail,
     name: "Test Parent",
   },
+  notifications: DEMO_KID_NOTIFICATIONS,
+  unreadNotifications: 2,
 };

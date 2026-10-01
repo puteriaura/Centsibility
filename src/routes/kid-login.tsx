@@ -32,8 +32,10 @@ function KidLogin() {
     kidId: string;
     username: string;
     name: string;
+    needsBirthday?: boolean;
   } | null>(null);
   const [comfortName, setComfortName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
 
@@ -81,6 +83,10 @@ function KidLogin() {
   const handleCreatePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!codeVerifiedKid) return;
+    if (codeVerifiedKid.needsBirthday && !birthDate) {
+      toast.error("Please enter your birthday so we can find your quests!");
+      return;
+    }
     if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
       toast.error("Your secret PIN must be exactly 6 numbers");
       return;
@@ -96,6 +102,7 @@ function KidLogin() {
         loginCode: cleanCode,
         pin: newPin,
         comfortName: comfortName.trim() || undefined,
+        birthDate: birthDate || undefined,
       });
       setKidSession({ kidId: res.kidId, code: res.code || "", name: res.name });
       toast.success(`All set, ${res.name}! Your 6-digit PIN is active.`);
@@ -300,6 +307,25 @@ function KidLogin() {
                     maxLength={30}
                   />
                 </div>
+
+                {codeVerifiedKid.needsBirthday && (
+                  <div>
+                    <label htmlFor="kid-birthdate" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                      When is your birthday?
+                    </label>
+                    <Input
+                      id="kid-birthdate"
+                      required
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      max={new Date().toISOString().slice(0, 10)}
+                    />
+                    <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                      We use this to pick the right quests for your age!
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label htmlFor="new-kid-pin" style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.35rem" }}>

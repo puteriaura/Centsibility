@@ -20,9 +20,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
 import { formatRM } from "@/lib/format";
+import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/invest")({
-  head: () => ({ meta: [{ title: "Invest — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Growth Tabung — Centsibility" }] }),
   component: KidInvest,
 });
 
@@ -49,6 +50,7 @@ function KidInvest() {
   const [dir, setDir] = useState<"in" | "out">("in");
   const [savingRisk, setSavingRisk] = useState(false);
   const [savingFreq, setSavingFreq] = useState(false);
+  const { busy, run } = useMoneyAction();
 
   useEffect(() => {
     const code = getKidSession()?.code;
@@ -112,24 +114,26 @@ function KidInvest() {
 
   const deposit = async (amount: number) => {
     if (!code) return;
-    try {
-      await edgeKidInvestDeposit({ code, amount });
-      toast.success("Funds added to investment!");
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    await run(
+      () => edgeKidInvestDeposit({ code, amount }),
+      {
+        success: `${formatRM(amount)} added to Growth Tabung`,
+        failure: "Deposit didn't go through",
+        refresh,
+      }
+    );
   };
 
   const withdraw = async (amount: number) => {
     if (!code) return;
-    try {
-      await edgeKidInvestWithdraw({ code, amount });
-      toast.success("Funds recalled to main wallet");
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
+    await run(
+      () => edgeKidInvestWithdraw({ code, amount }),
+      {
+        success: `${formatRM(amount)} back in your wallet`,
+        failure: "Recall didn't go through",
+        refresh,
+      }
+    );
   };
 
   // 7-day chart
@@ -167,9 +171,9 @@ function KidInvest() {
 
   return (
     <div className="space-y-6 pb-12">
-      <section className="deposit-hero" aria-label="Invested portfolio">
+      <section className="deposit-hero" aria-label="Growth Tabung">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Invested portfolio</p>
+          <p className="deposit-hero__label">In Growth Tabung</p>
           <p className="deposit-hero__amount tabular-nums">{formatRM(invested)}</p>
           <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
             {status === "PROFIT" ? "+" : status === "LOSS" ? "−" : ""}
@@ -182,7 +186,7 @@ function KidInvest() {
       </section>
 
       <div>
-        <h1 className="text-lg font-bold text-[var(--ink)] m-0">Halal Growth</h1>
+        <h1 className="text-lg font-bold text-[var(--ink)] m-0">Growth Tabung</h1>
         <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 mb-0">
           Shariah-compliant fund simulation with risk controls.
         </p>
@@ -340,7 +344,7 @@ function KidInvest() {
 
       {/* ── Transfer Energy / Invest & Recall ── */}
       <div className="space-y-3">
-        <SectionTitle>Manage Investment Funds</SectionTitle>
+        <SectionTitle>Manage Growth Tabung</SectionTitle>
         <Card variant="default" className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-2">
             <Button
@@ -349,7 +353,7 @@ function KidInvest() {
               onClick={() => setDir("in")}
               className="w-full justify-center"
             >
-              <AppIcon name="plus" size={14} /> Add to Invest
+              <AppIcon name="plus" size={14} /> Add to Growth Tabung
             </Button>
             <Button
               type="button"
@@ -357,20 +361,21 @@ function KidInvest() {
               onClick={() => setDir("out")}
               className="w-full justify-center"
             >
-              <AppIcon name="recall" size={14} /> Recall to Wallet
+              <AppIcon name="recall" size={14} /> Back to wallet
             </Button>
           </div>
 
           <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] py-1 border-b border-[var(--border)]">
-            <span>Core Wallet: <strong>{formatRM(balance)}</strong></span>
-            <span>Invested Pool: <strong>{formatRM(invested)}</strong></span>
+            <span>Spending wallet: <strong>{formatRM(balance)}</strong></span>
+            <span>Growth Tabung: <strong>{formatRM(invested)}</strong></span>
           </div>
 
           <MoneyKeypad
             key={dir}
             min={0.5}
             max={dir === "in" ? balance : invested}
-            confirmLabel={dir === "in" ? "Deposit to Investment" : "Recall to Main Wallet"}
+            confirmLabel={dir === "in" ? "Deposit to Growth Tabung" : "Back to spending wallet"}
+            busy={busy}
             onConfirm={dir === "in" ? deposit : withdraw}
           />
         </Card>

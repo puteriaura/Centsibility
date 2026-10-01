@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
 import { formatRM } from "@/lib/format";
+import { transactionTitle, transactionTypeLabel, humanizeCode } from "@/lib/labels";
 
 export const Route = createFileRoute("/kid/insights")({
   head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
@@ -335,8 +336,8 @@ function KidInsights() {
             </span>
             <p className="text-sm text-[var(--ink)] m-0 leading-relaxed">
               {goals.length === 0
-                ? "You haven't created a budget plan. Let's create one together!"
-                : `You have ${goals.length} savings pot${goals.length === 1 ? "" : "s"} tracking progress. Keep allocating!`}
+                ? "You haven't created a Tabung yet. Let's create one together!"
+                : `You have ${goals.length} Tabung tracking progress. Keep allocating!`}
             </p>
           </div>
           <Link
@@ -345,7 +346,7 @@ function KidInsights() {
             className="block w-full min-h-[44px]"
           >
             <Button variant="outline" size="sm" className="w-full justify-center font-bold">
-              {goals.length === 0 ? "Create budget" : "Ask Penny"}
+              {goals.length === 0 ? "Create Tabung" : "Ask Penny"}
             </Button>
           </Link>
         </Card>
@@ -806,10 +807,10 @@ function KidInsights() {
                               >
                                 <div>
                                   <strong style={{ display: "block", fontSize: "0.9375rem", color: "var(--ink)", fontWeight: 700 }}>
-                                    {t.description || t.type}
+                                    {transactionTitle({ type: t.type, label: (t as { label?: string }).label || t.description })}
                                   </strong>
                                   <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                                    {t.category || (t.type === "GOAL_IN" ? "Transfer to Pot" : t.type)}
+                                    {t.category ? humanizeCode(t.category) : transactionTypeLabel(t.type, (t as { label?: string }).label || t.description)}
                                   </span>
                                 </div>
                                 <span

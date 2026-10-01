@@ -42,6 +42,10 @@ interface MoneyKeypadProps {
   confirmBg?: string;
   /** Whether the keypad is busy (disable confirm) */
   busy?: boolean;
+  /** Disable the confirm button externally (e.g. required selection not made) */
+  confirmDisabled?: boolean;
+  /** Hint shown when confirm is disabled externally */
+  disabledHint?: string;
   /** Override initial raw digits (for reopening) */
   initialRaw?: string;
 }
@@ -78,6 +82,8 @@ export function MoneyKeypad({
   extraContent,
   confirmBg: _confirmBg,
   busy = false,
+  confirmDisabled = false,
+  disabledHint,
   initialRaw = "",
 }: MoneyKeypadProps) {
   const [step, setStep] = useState<"amount" | "reference">("amount");
@@ -159,7 +165,12 @@ export function MoneyKeypad({
               Maximum is RM{max.toLocaleString("en-MY")}
             </p>
           )}
-          {!tooLow && !tooHigh && amount > 0 && (
+          {!tooLow && !tooHigh && confirmDisabled && disabledHint && (
+            <p className="text-xs text-[var(--text-muted)] mt-1 font-medium">
+              {disabledHint}
+            </p>
+          )}
+          {!tooLow && !tooHigh && !confirmDisabled && amount > 0 && (
             <p className="text-xs text-[var(--text-secondary)] mt-1">
               Tap Next when ready
             </p>
@@ -180,7 +191,7 @@ export function MoneyKeypad({
             type="button"
             variant="primary"
             onClick={handleNext}
-            disabled={!valid}
+            disabled={!valid || busy || confirmDisabled}
             className="flex-1 justify-center font-bold"
           >
             {showReference ? "Next →" : confirmLabel}

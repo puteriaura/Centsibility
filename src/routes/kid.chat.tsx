@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { getKidSession } from "@/lib/kid-session";
 import { isKidBypassed } from "@/lib/admin-bypass";
 import { edgeKidPennyChat } from "@/lib/edge";
+import { PennyMarkdown } from "@/components/PennyMarkdown";
 
 export type ChatMessage = {
   id: string;
@@ -38,6 +39,21 @@ const STARTERS = [
   { label: "Savings", prompt: "How can I save better?" },
   { label: "Sadaqah", prompt: "Tell me about sadaqah." },
   { label: "Invest", prompt: "Is investing halal for me?" },
+];
+
+const COACH_CHIPS = [
+  {
+    label: "Teach me something",
+    prompt: "Teach me one money idea for my age, with a tiny example.",
+  },
+  {
+    label: "How can I improve?",
+    prompt: "Look at my spending and Tabung. Give me one tip to do better this week.",
+  },
+  {
+    label: "Summarise my week",
+    prompt: "Summarise my week: spending, saving and progress, with one takeaway and one next step.",
+  },
 ];
 
 function KidChat() {
@@ -66,7 +82,7 @@ function KidChat() {
     const opener: ChatMessage = {
       id: "welcome",
       role: "assistant",
-      text: `Salam and hi there! I'm Penny, your money buddy.\n\nAsk me about spending breakdowns, saving pots, sadaqah, or rewards. I'll use your real activity to guide you.`,
+      text: `Salam and hi there! I'm Penny, your money buddy.\n\nAsk me about spending breakdowns, Tabung, sadaqah, or rewards. I'll use your real activity to guide you.`,
     };
     setMessages([opener]);
 
@@ -285,6 +301,20 @@ function KidChat() {
         </div>
       )}
 
+      <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar" aria-label="Coach suggestions">
+        {COACH_CHIPS.map((chip) => (
+          <button
+            key={chip.label}
+            type="button"
+            className="insights-ask-chip whitespace-nowrap shrink-0"
+            disabled={busy}
+            onClick={() => send(chip.prompt)}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
       <form
         className="penny-chat__composer"
         onSubmit={(e) => {
@@ -323,65 +353,4 @@ function KidChat() {
       </Link>
     </div>
   );
-}
-
-function PennyMarkdown({ text }: { text: string }) {
-  // Strip em/en dashes
-  const clean = text.replace(/—/g, ", ").replace(/–/g, "-");
-  const paragraphs = clean.split(/\n\s*\n/);
-
-  return (
-    <div className="penny-assistant__text space-y-2">
-      {paragraphs.map((para, pIdx) => {
-        const lines = para.split("\n");
-        const isList = lines.every((l) => /^\s*[-*•]\s+/.test(l) || /^\s*\d+\.\s+/.test(l));
-        if (isList) {
-          return (
-            <ul key={pIdx} className="list-disc pl-5 space-y-1 my-1">
-              {lines.map((l, lIdx) => {
-                const itemText = l.replace(/^\s*[-*•]\s+/, "").replace(/^\s*\d+\.\s+/, "");
-                return <li key={lIdx}>{renderInlineMarkdown(itemText)}</li>;
-              })}
-            </ul>
-          );
-        }
-        return (
-          <p key={pIdx} className="m-0 leading-relaxed">
-            {lines.map((line, lIdx) => (
-              <span key={lIdx}>
-                {lIdx > 0 && <br />}
-                {renderInlineMarkdown(line)}
-              </span>
-            ))}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
-function renderInlineMarkdown(text: string): React.ReactNode {
-  const tokens: React.ReactNode[] = [];
-  const regex = /(\*\*.*?\*\*|\*.*?\*|_.*?_)/g;
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      tokens.push(text.slice(lastIndex, match.index));
-    }
-    const matchText = match[0];
-    if (matchText.startsWith("**") && matchText.endsWith("**")) {
-      tokens.push(<strong key={match.index} className="font-bold text-[var(--ink)]">{matchText.slice(2, -2)}</strong>);
-    } else if ((matchText.startsWith("*") && matchText.endsWith("*")) || (matchText.startsWith("_") && matchText.endsWith("_"))) {
-      tokens.push(<em key={match.index} className="italic">{matchText.slice(1, -1)}</em>);
-    } else {
-      tokens.push(matchText);
-    }
-    lastIndex = match.index + matchText.length;
-  }
-  if (lastIndex < text.length) {
-    tokens.push(text.slice(lastIndex));
-  }
-  return tokens.length > 0 ? tokens : text;
 }

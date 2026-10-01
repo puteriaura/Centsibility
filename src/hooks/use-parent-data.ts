@@ -5,12 +5,14 @@ import equal from "fast-deep-equal";
 import { isParentBypassed } from "@/lib/admin-bypass";
 import {
   DEMO_KID,
+  DEMO_KIDS,
   DEMO_APPROVALS,
   DEMO_REWARDS,
   DEMO_LOANS,
   DEMO_TRANSACTIONS,
   DEMO_NOTIFICATIONS,
   DEMO_SCHEDULED_HIBAHS,
+  DEMO_GOALS,
 } from "@/lib/demo-data";
 import type {
   Kid,
@@ -21,6 +23,11 @@ import type {
   Notification,
   ScheduledHibah,
 } from "@/types/domain";
+
+export interface ParentGoal {
+  kid_id: string;
+  saved: number;
+}
 
 export type {
   Kid,
@@ -34,7 +41,10 @@ export type {
 
 export function useParentData() {
   const { user } = useAuth();
-  const [kids, setKids] = useState<Kid[]>(() => (isParentBypassed() ? [DEMO_KID] : []));
+  const [kids, setKids] = useState<Kid[]>(() => (isParentBypassed() ? DEMO_KIDS : []));
+  const [goals, setGoals] = useState<ParentGoal[]>(() =>
+    isParentBypassed() ? DEMO_GOALS.map((g) => ({ kid_id: g.kid_id, saved: Number(g.saved) })) : [],
+  );
   const [approvals, setApprovals] = useState<Approval[]>(() =>
     isParentBypassed() ? DEMO_APPROVALS : [],
   );
@@ -61,11 +71,11 @@ export function useParentData() {
   const refresh = useCallback(async () => {
     if (!user) return;
     try {
-      const [k, a, r, l, t, n] = await Promise.all([
+      const [k, a, r, l, t, n, g] = await Promise.all([
         supabase.from("kids").select("*").order("created_at"),
         supabase
           .from("approvals")
-          .select("*, kids(name)")
+          .select("*, kids!approvals_kid_id_fkey(name), to_kid:kids!approvals_to_kid_id_fkey(name, comfort_name)")
           .eq("status", "pending")
           .order("created_at", { ascending: false }),
         supabase
@@ -84,6 +94,7 @@ export function useParentData() {
           .select("*")
           .order("created_at", { ascending: false })
           .limit(30),
+        supabase.from("goals").select("kid_id, saved"),
       ]);
 
       // Collect .error from the core queries
@@ -94,6 +105,7 @@ export function useParentData() {
         { name: "loans", res: l },
         { name: "transactions", res: t },
         { name: "notifications", res: n },
+        { name: "goals", res: g },
       ];
       const failed = queryResults.find((item) => item.res.error);
 
@@ -101,6 +113,7 @@ export function useParentData() {
         console.warn(`Failed to fetch ${failed.name} from Supabase:`, failed.res.error);
         if (isParentBypassed()) {
           setKids([DEMO_KID]);
+          setGoals(DEMO_GOALS.map((item) => ({ kid_id: item.kid_id, saved: Number(item.saved) })));
           setApprovals(DEMO_APPROVALS);
           setRewards(DEMO_REWARDS);
           setLoans(DEMO_LOANS);
@@ -141,6 +154,7 @@ export function useParentData() {
       if (!hasKids && isParentBypassed()) {
         // Use demo dataset in bypass mode when no kids are in database
         setKids([DEMO_KID]);
+        setGoals(DEMO_GOALS.map((item) => ({ kid_id: item.kid_id, saved: Number(item.saved) })));
         setApprovals(DEMO_APPROVALS);
         setRewards(DEMO_REWARDS);
         setLoans(DEMO_LOANS);
@@ -149,6 +163,7 @@ export function useParentData() {
         setScheduledHibahs(DEMO_SCHEDULED_HIBAHS);
       } else {
         setKids((prev) => (equal(prev, k.data || []) ? prev : ((k.data || []) as Kid[])));
+        setGoals((prev) => (equal(prev, g.data || []) ? prev : (((g.data || []) as unknown) as ParentGoal[])));
         setApprovals((prev) => (equal(prev, a.data || []) ? prev : ((a.data || []) as Approval[])));
         setRewards((prev) => (equal(prev, r.data || []) ? prev : ((r.data || []) as Reward[])));
         setLoans((prev) => (equal(prev, l.data || []) ? prev : ((l.data || []) as Loan[])));
@@ -164,6 +179,7 @@ export function useParentData() {
       console.warn("Failed to fetch parent data from Supabase:", err);
       if (isParentBypassed()) {
         setKids([DEMO_KID]);
+        setGoals(DEMO_GOALS.map((item) => ({ kid_id: item.kid_id, saved: Number(item.saved) })));
         setApprovals(DEMO_APPROVALS);
         setRewards(DEMO_REWARDS);
         setLoans(DEMO_LOANS);
@@ -203,6 +219,7 @@ export function useParentData() {
 
   return {
     kids,
+    goals,
     approvals,
     rewards,
     loans,
