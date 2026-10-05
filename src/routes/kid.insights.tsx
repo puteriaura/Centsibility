@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useKidData } from "@/hooks/use-kid-data";
 import { KidLoadError } from "@/features/kid/components";
@@ -9,7 +9,18 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
 import { formatRM } from "@/lib/format";
-import { transactionTitle, transactionTypeLabel, humanizeCode } from "@/lib/labels";
+import {
+  isDebitTransaction,
+  isWalletTransaction,
+  transactionAmount,
+} from "@/lib/finance";
+import {
+  transactionTitle,
+  transactionTypeLabel,
+  humanizeCode,
+} from "@/lib/labels";
+import { usePrivacy, Money, LogInToView } from "@/features/privacy";
+import { usePenny } from "@/features/penny";
 
 export const Route = createFileRoute("/kid/insights")({
   head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
@@ -33,8 +44,9 @@ function formatDateHeader(dateStr: string) {
 }
 
 function KidInsights() {
-  const nav = useNavigate();
   const { data, loading, error, refresh } = useKidData();
+  const { locked, openUnlockSheet } = usePrivacy();
+  const { openPenny } = usePenny();
 
   // Pull-down hero touch state
   const touchStartY = useRef<number | null>(null);
@@ -87,7 +99,11 @@ function KidInsights() {
 
   // Global 90-day summary for general metrics and stories
   const summary = useMemo(
-    () => buildSpendingSummary((data?.txs ?? []) as Parameters<typeof buildSpendingSummary>[0], 90),
+    () =>
+      buildSpendingSummary(
+        (data?.txs ?? []) as Parameters<typeof buildSpendingSummary>[0],
+        90,
+      ),
     [data?.txs],
   );
 
@@ -105,15 +121,30 @@ function KidInsights() {
 
     const outflowTxs = txsInMonth.filter(
       (t) =>
-        ["WITHDRAWAL", "FEE", "SADAQAH", "GOAL_IN", "INVEST_IN"].includes(t.type) ||
-        Number(t.amount) < 0,
+        isWalletTransaction(t.type) &&
+        isDebitTransaction(
+          t.type,
+          (t as { label?: string }).label || t.description,
+        ),
     );
 
-    const totalOut = outflowTxs.reduce((sum, t) => sum + Math.abs(Number(t.amount) || 0), 0);
+    const totalOut = outflowTxs.reduce(
+      (sum, t) => sum + Math.abs(Number(t.amount) || 0),
+      0,
+    );
 
-    const catMap: Record<string, { label: string; count: number; amount: number }> = {};
+    const catMap: Record<
+      string,
+      { label: string; count: number; amount: number }
+    > = {};
     for (const t of outflowTxs) {
-      const cat = t.category || (t.type === "FEE" ? "Fees" : t.type === "SADAQAH" ? "Sadaqah" : "General");
+      const cat =
+        t.category ||
+        (t.type === "FEE"
+          ? "Fees"
+          : t.type === "SADAQAH"
+            ? "Sadaqah"
+            : "General");
       if (!catMap[cat]) catMap[cat] = { label: cat, count: 0, amount: 0 };
       catMap[cat].count += 1;
       catMap[cat].amount += Math.abs(Number(t.amount) || 0);
@@ -228,7 +259,7 @@ function KidInsights() {
   const handleTouchEnd = () => {
     if (pullOffset > 40) {
       sfx.pop();
-      nav({ to: "/kid/chat" });
+      openPenny({ context: { page: "Insights" } });
     }
     touchStartY.current = null;
     setPullOffset(0);
@@ -245,19 +276,30 @@ function KidInsights() {
         onTouchEnd={handleTouchEnd}
         style={{
           transform: `translateY(${pullOffset}px)`,
-          transition: pullOffset === 0 ? "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)" : "none",
+          transition:
+            pullOffset === 0
+              ? "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)"
+              : "none",
         }}
       >
-        <h1 className="insights-ask-hero__title">
-          Hi {k.name}! Ask me about:
-        </h1>
+        <h1 className="insights-ask-hero__title">Hi {k.name}! Ask me about:</h1>
         <div className="insights-ask-actions">
           <button
             type="button"
             className="insights-ask-chip"
             onClick={() => {
               sfx.tap();
-              nav({ to: "/kid/chat", search: { q: "spending" } });
+              openPenny({
+                prompt: "I would like to know more about spending.",
+                context: {
+                  page: "Insights",
+                  detail:
+                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
+                      0,
+                      600,
+                    ),
+                },
+              });
             }}
           >
             <AppIcon name="trend" size={16} /> Spending
@@ -267,7 +309,17 @@ function KidInsights() {
             className="insights-ask-chip"
             onClick={() => {
               sfx.tap();
-              nav({ to: "/kid/chat", search: { q: "savings" } });
+              openPenny({
+                prompt: "How can I save better?",
+                context: {
+                  page: "Insights",
+                  detail:
+                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
+                      0,
+                      600,
+                    ),
+                },
+              });
             }}
           >
             <AppIcon name="wallet" size={16} /> Savings
@@ -277,7 +329,17 @@ function KidInsights() {
             className="insights-ask-chip insights-ask-chip--wide"
             onClick={() => {
               sfx.tap();
-              nav({ to: "/kid/chat", search: { q: "surprise" } });
+              openPenny({
+                prompt: "Surprise me with a tip.",
+                context: {
+                  page: "Insights",
+                  detail:
+                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
+                      0,
+                      600,
+                    ),
+                },
+              });
             }}
           >
             <AppIcon name="sparkles" size={16} /> Surprise me
@@ -288,7 +350,7 @@ function KidInsights() {
           className="insights-ask-hint"
           onClick={() => {
             sfx.tap();
-            nav({ to: "/kid/chat" });
+            openPenny({ context: { page: "Insights" } });
           }}
         >
           {pullOffset > 30 ? "Release to open chat ✨" : "Pull down to chat"}
@@ -302,17 +364,35 @@ function KidInsights() {
           <span>MONTHLY CASHFLOW</span>
         </div>
         <div className="insights-cashflow">
-          <Card variant="default" className="insights-cashflow__card p-4 m-0">
+          <Card
+            variant="default"
+            className="insights-cashflow__card p-4 m-0"
+            onClick={locked ? openUnlockSheet : undefined}
+            style={locked ? { cursor: "pointer" } : undefined}
+          >
             <span className="text-xs text-[var(--text-muted)]">Money in</span>
-            <strong className="insights-cashflow__in tabular-nums">
-              {formatRM(summary.moneyIn)}
-            </strong>
+            {locked ? (
+              <LogInToView className="mt-1" />
+            ) : (
+              <strong className="insights-cashflow__in tabular-nums">
+                <Money amount={summary.moneyIn} />
+              </strong>
+            )}
           </Card>
-          <Card variant="default" className="insights-cashflow__card p-4 m-0">
+          <Card
+            variant="default"
+            className="insights-cashflow__card p-4 m-0"
+            onClick={locked ? openUnlockSheet : undefined}
+            style={locked ? { cursor: "pointer" } : undefined}
+          >
             <span className="text-xs text-[var(--text-muted)]">Money out</span>
-            <strong className="insights-cashflow__out tabular-nums">
-              {formatRM(summary.moneyOut)}
-            </strong>
+            {locked ? (
+              <LogInToView className="mt-1" />
+            ) : (
+              <strong className="insights-cashflow__out tabular-nums">
+                <Money amount={summary.moneyOut} />
+              </strong>
+            )}
           </Card>
         </div>
 
@@ -331,7 +411,10 @@ function KidInsights() {
         </div>
         <Card variant="default" className="p-4 space-y-3">
           <div className="flex items-start gap-3">
-            <span className="insights-recap__avatar shrink-0" aria-hidden="true">
+            <span
+              className="insights-recap__avatar shrink-0"
+              aria-hidden="true"
+            >
               <AppIcon name="penny" size={18} color="#fff" />
             </span>
             <p className="text-sm text-[var(--ink)] m-0 leading-relaxed">
@@ -340,15 +423,39 @@ function KidInsights() {
                 : `You have ${goals.length} Tabung tracking progress. Keep allocating!`}
             </p>
           </div>
-          <Link
-            to={goals.length === 0 ? "/kid/goals" : "/kid/chat"}
-            onClick={() => sfx.tap()}
-            className="block w-full min-h-[44px]"
-          >
-            <Button variant="outline" size="sm" className="w-full justify-center font-bold">
-              {goals.length === 0 ? "Create Tabung" : "Ask Penny"}
+          {goals.length === 0 ? (
+            <Link
+              to="/kid/goals"
+              onClick={() => sfx.tap()}
+              className="block w-full min-h-[44px]"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-center font-bold"
+              >
+                Create Tabung
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-center font-bold min-h-[44px]"
+              onClick={() => {
+                sfx.tap();
+                openPenny({
+                  context: {
+                    page: "Insights",
+                    detail: `Tabung; ${goals.length} goal${goals.length === 1 ? "" : "s"} active`,
+                  },
+                });
+              }}
+            >
+              Ask Penny
             </Button>
-          </Link>
+          )}
         </Card>
 
         <div className="section-tag">
@@ -374,8 +481,20 @@ function KidInsights() {
 
         <Card variant="default" className="p-5 space-y-4">
           <div className="insights-donut-wrap" aria-hidden="true">
-            <svg viewBox="0 0 120 120" className="insights-donut-svg" width="160" height="160">
-              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" strokeWidth="4" />
+            <svg
+              viewBox="0 0 120 120"
+              className="insights-donut-svg"
+              width="160"
+              height="160"
+            >
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                stroke="var(--border)"
+                strokeWidth="4"
+              />
               {monthData.topCategories.length > 0 &&
                 (() => {
                   const r = 50;
@@ -402,11 +521,21 @@ function KidInsights() {
                   });
                 })()}
             </svg>
-            <div className="insights-donut__hole insights-donut__hole--overlay">
-              <span className="text-sm text-[var(--text-secondary)]">Monthly spending</span>
-              <strong className="tabular-nums text-[var(--ink)] text-2xl font-bold">
-                {formatRM(monthData.totalOut)}
-              </strong>
+            <div
+              className="insights-donut__hole insights-donut__hole--overlay"
+              onClick={locked ? openUnlockSheet : undefined}
+              style={locked ? { cursor: "pointer" } : undefined}
+            >
+              <span className="text-sm text-[var(--text-secondary)]">
+                Monthly spending
+              </span>
+              {locked ? (
+                <LogInToView className="mt-2 text-base" />
+              ) : (
+                <strong className="tabular-nums text-[var(--ink)] text-2xl font-bold">
+                  <Money amount={monthData.totalOut} />
+                </strong>
+              )}
             </div>
           </div>
 
@@ -422,16 +551,21 @@ function KidInsights() {
                     className="insights-cat-row__icon"
                     style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}
                   >
-                    <AppIcon name={i === 0 ? "trend" : i === 1 ? "meal" : "wallet"} size={20} />
+                    <AppIcon
+                      name={i === 0 ? "trend" : i === 1 ? "meal" : "wallet"}
+                      size={20}
+                    />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <strong className="text-sm text-[var(--ink)] block">{c.label}</strong>
+                    <strong className="text-sm text-[var(--ink)] block">
+                      {c.label}
+                    </strong>
                     <span className="text-xs text-[var(--text-muted)]">
                       {c.count} transaction{c.count === 1 ? "" : "s"}
                     </span>
                   </div>
                   <span className="text-sm font-bold text-[var(--error-text)] tabular-nums">
-                    {formatRM(-(c.amount))}
+                    <Money amount={-c.amount} sign />
                   </span>
                 </li>
               ))
@@ -448,11 +582,26 @@ function KidInsights() {
           >
             Open Daily Wrap
           </Button>
-          <Link to="/kid/chat" className="flex-1" onClick={() => sfx.tap()}>
-            <Button type="button" variant="secondary" className="w-full justify-center font-bold">
-              Chat Penny
-            </Button>
-          </Link>
+          <Button
+            type="button"
+            variant="secondary"
+            className="flex-1 justify-center font-bold"
+            onClick={() => {
+              sfx.tap();
+              openPenny({
+                context: {
+                  page: "Insights",
+                  detail:
+                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
+                      0,
+                      600,
+                    ),
+                },
+              });
+            }}
+          >
+            Chat Penny
+          </Button>
         </div>
       </div>
 
@@ -501,7 +650,10 @@ function KidInsights() {
                         : i === storyIdx
                           ? `${slideProgress}%`
                           : "0%",
-                    transition: i === storyIdx && !isPaused ? "width 0.05s linear" : "none",
+                    transition:
+                      i === storyIdx && !isPaused
+                        ? "width 0.05s linear"
+                        : "none",
                   }}
                 />
               </div>
@@ -614,7 +766,8 @@ function KidInsights() {
                   width: 80,
                   height: 80,
                   borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)",
+                  background:
+                    "radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -622,7 +775,9 @@ function KidInsights() {
               >
                 <AppIcon name="penny" size={54} color="#ffffff" />
               </div>
-              <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", gap: "4px", alignItems: "center" }}
+              >
                 <AppIcon name="sparkles" size={24} color="#ffd43b" />
                 <span style={{ fontSize: "1.4rem" }}>🪙🪙</span>
               </div>
@@ -639,7 +794,9 @@ function KidInsights() {
               gap: "12px",
             }}
           >
-            <span style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.7)" }}>
+            <span
+              style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.7)" }}
+            >
               Based on your transactions from {summary.rangeLabel}
             </span>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -678,7 +835,10 @@ function KidInsights() {
                   sfx.tap();
                   setStoryOpen(false);
                   const divePrompt = `Take a deeper dive into this insight: ${slides[storyIdx].body} (${summary.rangeLabel})`;
-                  nav({ to: "/kid/chat", search: { q: divePrompt } });
+                  openPenny({
+                    prompt: divePrompt,
+                    context: { page: "Insights" },
+                  });
                 }}
                 style={{
                   width: 44,
@@ -740,9 +900,24 @@ function KidInsights() {
                 />
 
                 {/* Sheet Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "4px",
+                  }}
+                >
                   <div style={{ width: 28 }} />
-                  <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--ink)", margin: 0, textAlign: "center" }}>
+                  <h2
+                    style={{
+                      fontSize: "1.25rem",
+                      fontWeight: 800,
+                      color: "var(--ink)",
+                      margin: 0,
+                      textAlign: "center",
+                    }}
+                  >
                     Transaction history
                   </h2>
                   <button
@@ -763,72 +938,130 @@ function KidInsights() {
                     <AppIcon name="close" size={22} />
                   </button>
                 </div>
-                <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", textAlign: "center", margin: "0 0 16px" }}>
+                <p
+                  style={{
+                    fontSize: "0.8125rem",
+                    color: "var(--text-secondary)",
+                    textAlign: "center",
+                    margin: "0 0 16px",
+                  }}
+                >
                   {summary.rangeLabel}
                 </p>
 
                 {/* Grouped Transactions List */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
                   {Object.keys(groupedPeriodTxs).length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "2rem",
+                        color: "var(--text-muted)",
+                        fontSize: "0.875rem",
+                      }}
+                    >
                       No transactions recorded in this period.
                     </div>
                   ) : (
-                    Object.entries(groupedPeriodTxs).map(([dateHeader, txs]) => (
-                      <div key={dateHeader}>
-                        <div
-                          style={{
-                            background: "var(--surface-soft)",
-                            padding: "6px 12px",
-                            borderRadius: "8px",
-                            fontSize: "0.8125rem",
-                            fontWeight: 700,
-                            color: "var(--ink)",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          {dateHeader}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "0 4px" }}>
-                          {txs.map((t) => {
-                            const isOutflow =
-                              ["WITHDRAWAL", "FEE", "SADAQAH", "GOAL_IN", "INVEST_IN"].includes(t.type) ||
-                              Number(t.amount) < 0;
-                            return (
-                              <div
-                                key={t.id}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  borderBottom: "1px solid var(--border)",
-                                  paddingBottom: "10px",
-                                }}
-                              >
-                                <div>
-                                  <strong style={{ display: "block", fontSize: "0.9375rem", color: "var(--ink)", fontWeight: 700 }}>
-                                    {transactionTitle({ type: t.type, label: (t as { label?: string }).label || t.description })}
-                                  </strong>
-                                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                                    {t.category ? humanizeCode(t.category) : transactionTypeLabel(t.type, (t as { label?: string }).label || t.description)}
-                                  </span>
-                                </div>
-                                <span
+                    Object.entries(groupedPeriodTxs).map(
+                      ([dateHeader, txs]) => (
+                        <div key={dateHeader}>
+                          <div
+                            style={{
+                              background: "var(--surface-soft)",
+                              padding: "6px 12px",
+                              borderRadius: "8px",
+                              fontSize: "0.8125rem",
+                              fontWeight: 700,
+                              color: "var(--ink)",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            {dateHeader}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "12px",
+                              padding: "0 4px",
+                            }}
+                          >
+                            {txs.map((t) => {
+                              const amt = transactionAmount(
+                                t.type,
+                                (t as { label?: string }).label ||
+                                  t.description,
+                                t.amount,
+                              );
+                              return (
+                                <div
+                                  key={t.id}
                                   style={{
-                                    fontSize: "0.9375rem",
-                                    fontWeight: 800,
-                                    fontFamily: "monospace",
-                                    color: isOutflow ? "var(--error-text)" : "var(--success-text)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    borderBottom: "1px solid var(--border)",
+                                    paddingBottom: "10px",
                                   }}
                                 >
-                                  {isOutflow ? `- ${formatRM(Math.abs(Number(t.amount)))}` : `+ ${formatRM(Number(t.amount))}`}
-                                </span>
-                              </div>
-                            );
-                          })}
+                                  <div>
+                                    <strong
+                                      style={{
+                                        display: "block",
+                                        fontSize: "0.9375rem",
+                                        color: "var(--ink)",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {transactionTitle({
+                                        type: t.type,
+                                        label:
+                                          (t as { label?: string }).label ||
+                                          t.description,
+                                      })}
+                                    </strong>
+                                    <span
+                                      style={{
+                                        fontSize: "0.75rem",
+                                        color: "var(--text-secondary)",
+                                      }}
+                                    >
+                                      {t.category
+                                        ? humanizeCode(t.category)
+                                        : transactionTypeLabel(
+                                            t.type,
+                                            (t as { label?: string }).label ||
+                                              t.description,
+                                          )}
+                                    </span>
+                                  </div>
+                                  <span
+                                    style={{
+                                      fontSize: "0.9375rem",
+                                      fontWeight: 800,
+                                      fontFamily: "monospace",
+                                      color:
+                                        amt.tone === "out"
+                                          ? "var(--ink)"
+                                          : "var(--success-text)",
+                                    }}
+                                  >
+                                    {amt.text}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ),
+                    )
                   )}
                 </div>
               </div>

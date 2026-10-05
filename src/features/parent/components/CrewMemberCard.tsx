@@ -9,18 +9,26 @@ import { resolveAvatar } from "@/lib/avatar";
 import type { Kid, Transaction, ScheduledHibah } from "@/hooks/use-parent-data";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
-import { edgeParentSetKidCardControls, edgeParentResetKidPin } from "@/lib/edge";
+import {
+  edgeParentSetKidCardControls,
+  edgeParentResetKidPin,
+} from "@/lib/edge";
 import { EditKidForm } from "./EditKidForm";
 import { TransferFundsSection } from "./TransferFundsSection";
 import { ScheduleHibahSection } from "./ScheduleHibahSection";
 import { FlightLogSection } from "./FlightLogSection";
 import { formatRM } from "@/lib/format";
 import { getBalanceSummary } from "@/lib/finance";
+import { usePrivacy, Money } from "@/features/privacy";
 
 export interface CrewMemberCardProps {
   kid: Kid;
   kidGoals?: Array<{ saved: number | string }>;
-  kidLoans?: Array<{ amount: number | string; repaid: number | string; status: string }>;
+  kidLoans?: Array<{
+    amount: number | string;
+    repaid: number | string;
+    status: string;
+  }>;
   kidTxs: Transaction[];
   scheduledHibahs: ScheduledHibah[];
   onDeleteInitiate: (kidId: string) => void;
@@ -41,6 +49,7 @@ export function CrewMemberCard({
 }: CrewMemberCardProps) {
   const navigate = useNavigate();
   const [hideBalance, setHideBalance] = useState(false);
+  const { isMasked, locked, openUnlockSheet } = usePrivacy();
   const [open, setOpen] = useState(defaultOpen);
 
   useEffect(() => {
@@ -55,12 +64,20 @@ export function CrewMemberCard({
   // Card controls state
   const [cardOpen, setCardOpen] = useState(false);
   const [cardFrozen, setCardFrozen] = useState(() => Boolean(kid.card_frozen));
-  const [dailyLimit, setDailyLimit] = useState(() => Number(kid.card_daily_limit ?? 50));
-  const [sliderLimit, setSliderLimit] = useState(() => Number(kid.card_daily_limit ?? 50));
-  const [onlineEnabled, setOnlineEnabled] = useState(() =>
-    kid.card_online_enabled !== undefined ? Boolean(kid.card_online_enabled) : true,
+  const [dailyLimit, setDailyLimit] = useState(() =>
+    Number(kid.card_daily_limit ?? 50),
   );
-  const [controlsLocked, setControlsLocked] = useState(() => Boolean(kid.card_controls_locked));
+  const [sliderLimit, setSliderLimit] = useState(() =>
+    Number(kid.card_daily_limit ?? 50),
+  );
+  const [onlineEnabled, setOnlineEnabled] = useState(() =>
+    kid.card_online_enabled !== undefined
+      ? Boolean(kid.card_online_enabled)
+      : true,
+  );
+  const [controlsLocked, setControlsLocked] = useState(() =>
+    Boolean(kid.card_controls_locked),
+  );
   const [savingLimit, setSavingLimit] = useState(false);
   const [savingFrozen, setSavingFrozen] = useState(false);
   const [savingOnline, setSavingOnline] = useState(false);
@@ -69,7 +86,11 @@ export function CrewMemberCard({
   const [resettingPin, setResettingPin] = useState(false);
 
   const handleResetPin = async () => {
-    if (!confirm(`Reset PIN for ${kid.name}? This will create a fresh one-time access code so they can set a new 6-digit PIN.`)) {
+    if (
+      !confirm(
+        `Reset PIN for ${kid.name}? This will create a fresh one-time access code so they can set a new 6-digit PIN.`,
+      )
+    ) {
       return;
     }
     setResettingPin(true);
@@ -77,7 +98,9 @@ export function CrewMemberCard({
       const res = await edgeParentResetKidPin({ kidId: kid.id });
       setResetCode(res.loginCode);
       sfx.coin();
-      toast.success(`New access code for ${kid.name}: ${res.loginCode}. Their old PIN no longer works.`);
+      toast.success(
+        `New access code for ${kid.name}: ${res.loginCode}. Their old PIN no longer works.`,
+      );
       onRefresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to reset child PIN");
@@ -91,7 +114,9 @@ export function CrewMemberCard({
     setDailyLimit(Number(kid.card_daily_limit ?? 50));
     setSliderLimit(Number(kid.card_daily_limit ?? 50));
     setOnlineEnabled(
-      kid.card_online_enabled !== undefined ? Boolean(kid.card_online_enabled) : true,
+      kid.card_online_enabled !== undefined
+        ? Boolean(kid.card_online_enabled)
+        : true,
     );
     setControlsLocked(Boolean(kid.card_controls_locked));
   }, [
@@ -113,7 +138,8 @@ export function CrewMemberCard({
       onRefresh();
     } catch (e: unknown) {
       setCardFrozen(prev);
-      const msg = e instanceof Error ? e.message : "Failed to update card status";
+      const msg =
+        e instanceof Error ? e.message : "Failed to update card status";
       toast.error(msg);
     } finally {
       setSavingFrozen(false);
@@ -126,7 +152,10 @@ export function CrewMemberCard({
     setDailyLimit(sliderLimit);
     setSavingLimit(true);
     try {
-      await edgeParentSetKidCardControls({ kidId: kid.id, dailyLimit: sliderLimit });
+      await edgeParentSetKidCardControls({
+        kidId: kid.id,
+        dailyLimit: sliderLimit,
+      });
       toast.success(`Daily limit saved: ${formatRM(sliderLimit)}`);
       onRefresh();
     } catch (e: unknown) {
@@ -146,12 +175,18 @@ export function CrewMemberCard({
     setOnlineEnabled(next);
     setSavingOnline(true);
     try {
-      await edgeParentSetKidCardControls({ kidId: kid.id, onlineEnabled: next });
-      toast.success(next ? "Online purchases enabled" : "Online purchases disabled");
+      await edgeParentSetKidCardControls({
+        kidId: kid.id,
+        onlineEnabled: next,
+      });
+      toast.success(
+        next ? "Online purchases enabled" : "Online purchases disabled",
+      );
       onRefresh();
     } catch (e: unknown) {
       setOnlineEnabled(prev);
-      const msg = e instanceof Error ? e.message : "Failed to update online purchases";
+      const msg =
+        e instanceof Error ? e.message : "Failed to update online purchases";
       toast.error(msg);
     } finally {
       setSavingOnline(false);
@@ -170,7 +205,8 @@ export function CrewMemberCard({
       onRefresh();
     } catch (e: unknown) {
       setControlsLocked(prev);
-      const msg = e instanceof Error ? e.message : "Failed to update lock status";
+      const msg =
+        e instanceof Error ? e.message : "Failed to update lock status";
       toast.error(msg);
     } finally {
       setSavingLock(false);
@@ -183,7 +219,10 @@ export function CrewMemberCard({
   const activeCode = resetCode || (!kid.hashed_pin ? kid.login_code : null);
 
   return (
-    <Card variant="default" className="crew-card border border-[var(--border)] shadow-xs m-0">
+    <Card
+      variant="default"
+      className="crew-card border border-[var(--border)] shadow-xs m-0"
+    >
       <button
         type="button"
         className="crew-card__summary"
@@ -215,18 +254,39 @@ export function CrewMemberCard({
           <span className="crew-card__sub block truncate text-[11px]">
             {activeCode ? (
               <span>
-                Access code: <strong className="font-mono text-[var(--primary-text)] font-semibold">{activeCode}</strong> · give this to your child once
+                Access code:{" "}
+                <strong
+                  className="font-mono text-[var(--primary-text)] font-semibold"
+                  aria-label={isMasked ? "Code hidden" : undefined}
+                  onClick={
+                    locked
+                      ? (e) => {
+                          e.stopPropagation();
+                          openUnlockSheet();
+                        }
+                      : undefined
+                  }
+                  style={locked ? { cursor: "pointer" } : undefined}
+                >
+                  {isMasked ? "••••••" : activeCode}
+                </strong>{" "}
+                · give this to your child once
               </span>
             ) : (
-              <span className="text-[var(--success-text)] font-medium">PIN set</span>
+              <span className="text-[var(--success-text)] font-medium">
+                PIN set
+              </span>
             )}
           </span>
         </div>
         <div className="crew-card__balance text-right shrink-0">
           <span className="tabular-nums font-extrabold text-[var(--ink)]">
-            {hideBalance ? "RM •••" : `${formatRM(total)}`}
+            <Money amount={total} />
           </span>
-          <span className={`crew-card__chevron${open ? " is-open" : ""}`} aria-hidden="true">
+          <span
+            className={`crew-card__chevron${open ? " is-open" : ""}`}
+            aria-hidden="true"
+          >
             <AppIcon name="chevron" size={18} />
           </span>
         </div>
@@ -283,10 +343,21 @@ export function CrewMemberCard({
                   variant="ghost"
                   size="sm"
                   className="p-1 min-h-[40px]"
-                  onClick={() => setHideBalance((h) => !h)}
-                  aria-label={hideBalance ? "Show balance" : "Hide balance"}
+                  onClick={() => {
+                    if (locked) {
+                      openUnlockSheet();
+                    } else {
+                      setHideBalance((h) => !h);
+                    }
+                  }}
+                  aria-label={
+                    hideBalance || isMasked ? "Show balance" : "Hide balance"
+                  }
                 >
-                  <AppIcon name={hideBalance ? "show" : "hide"} size={16} />
+                  <AppIcon
+                    name={hideBalance || isMasked ? "show" : "hide"}
+                    size={16}
+                  />
                 </Button>
               </div>
             )}
@@ -297,11 +368,17 @@ export function CrewMemberCard({
               <div className="text-xs font-semibold text-[var(--ink)]">
                 New One-Time Access Code for {kid.name}:
               </div>
-              <div className="text-2xl font-black tracking-widest text-[var(--primary)] font-mono">
-                {resetCode}
+              <div
+                className="text-2xl font-black tracking-widest text-[var(--primary)] font-mono"
+                aria-label={isMasked ? "Code hidden" : undefined}
+                onClick={locked ? openUnlockSheet : undefined}
+                style={locked ? { cursor: "pointer" } : undefined}
+              >
+                {isMasked ? "••••••" : resetCode}
               </div>
               <p className="text-[11px] text-[var(--text-secondary)] m-0">
-                Give this code to {kid.name}. They will enter it on the login screen to set their new 6-digit PIN.
+                Give this code to {kid.name}. They will enter it on the login
+                screen to set their new 6-digit PIN.
               </p>
               <div className="flex gap-2 justify-center pt-1">
                 <Button
@@ -328,27 +405,35 @@ export function CrewMemberCard({
           <div className="grid grid-cols-4 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
             <div className="text-center">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `${formatRM(summary.spending)}`}
+                <Money amount={summary.spending} />
               </div>
-              <small className="text-[11px] text-[var(--text-secondary)]">Spending</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">
+                Spending
+              </small>
             </div>
             <div className="text-center border-l border-[var(--border)]">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `${formatRM(summary.tabung)}`}
+                <Money amount={summary.tabung} />
               </div>
-              <small className="text-[11px] text-[var(--text-secondary)]">Tabung</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">
+                Tabung
+              </small>
             </div>
             <div className="text-center border-l border-[var(--border)]">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                {hideBalance ? "•••" : `${formatRM(summary.growth)}`}
+                <Money amount={summary.growth} />
               </div>
-              <small className="text-[11px] text-[var(--text-secondary)]">Growth Tabung</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">
+                Growth Tabung
+              </small>
             </div>
             <div className="text-center border-l border-[var(--border)]">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
                 {kid.coins ?? 0}
               </div>
-              <small className="text-[11px] text-[var(--text-secondary)]">Points</small>
+              <small className="text-[11px] text-[var(--text-secondary)]">
+                Points
+              </small>
             </div>
           </div>
 
@@ -391,7 +476,10 @@ export function CrewMemberCard({
               {/* Freeze Toggle */}
               <div className="flex items-center justify-between gap-3 pt-1 border-t border-[var(--border)]">
                 <div>
-                  <label htmlFor={`freeze-toggle-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                  <label
+                    htmlFor={`freeze-toggle-${kid.id}`}
+                    className="font-semibold text-[var(--ink)] block"
+                  >
                     Freeze card
                   </label>
                   <span className="text-[11px] text-[var(--text-secondary)] block">
@@ -413,7 +501,10 @@ export function CrewMemberCard({
               <div className="pt-2 border-t border-[var(--border)] space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label htmlFor={`daily-limit-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                    <label
+                      htmlFor={`daily-limit-${kid.id}`}
+                      className="font-semibold text-[var(--ink)] block"
+                    >
                       Daily spending limit
                     </label>
                     <span className="text-[11px] text-[var(--text-secondary)] block">
@@ -454,7 +545,10 @@ export function CrewMemberCard({
               {/* Online Purchases Toggle */}
               <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--border)]">
                 <div>
-                  <label htmlFor={`online-toggle-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                  <label
+                    htmlFor={`online-toggle-${kid.id}`}
+                    className="font-semibold text-[var(--ink)] block"
+                  >
                     Online purchases
                   </label>
                   <span className="text-[11px] text-[var(--text-secondary)] block">
@@ -475,7 +569,10 @@ export function CrewMemberCard({
               {/* Lock Controls Toggle */}
               <div className="flex items-center justify-between gap-3 pt-2 border-t border-[var(--border)]">
                 <div>
-                  <label htmlFor={`lock-controls-${kid.id}`} className="font-semibold text-[var(--ink)] block">
+                  <label
+                    htmlFor={`lock-controls-${kid.id}`}
+                    className="font-semibold text-[var(--ink)] block"
+                  >
                     Lock these settings
                   </label>
                   <span className="text-[11px] text-[var(--text-secondary)] block">
@@ -510,12 +607,16 @@ export function CrewMemberCard({
             </Button>
             <Button
               type="button"
-              variant={isActing && actType === "WITHDRAWAL" ? "primary" : "outline"}
+              variant={
+                isActing && actType === "WITHDRAWAL" ? "primary" : "outline"
+              }
               size="sm"
               className="justify-center text-xs font-semibold"
               onClick={() => {
                 sfx.pop();
-                setIsActing(isActing && actType === "WITHDRAWAL" ? false : true);
+                setIsActing(
+                  isActing && actType === "WITHDRAWAL" ? false : true,
+                );
                 setActType("WITHDRAWAL");
               }}
             >

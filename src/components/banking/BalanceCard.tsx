@@ -21,7 +21,7 @@ export interface BalanceCardProps {
   onToggleExpanded?: (expanded: boolean) => void;
 }
 
-const HIDDEN = "RM******";
+const HIDDEN = "RM*****";
 
 export function BalanceCard({
   title = "Spending balance",
@@ -80,7 +80,10 @@ export function BalanceCard({
 
         <div className="flex items-center justify-between gap-3 my-1 relative z-10">
           <div>
-            <div className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${strong}`}>
+            <div
+              className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${strong}`}
+              aria-label={hideBalance ? "Amount hidden" : undefined}
+            >
               {hideBalance ? HIDDEN : formatRM(balance)}
             </div>
 
@@ -95,7 +98,10 @@ export function BalanceCard({
                   className={`text-sm mt-1.5 flex items-center gap-1.5 font-medium text-left transition-opacity hover:opacity-90 ${soft}`}
                 >
                   <span>{secondaryBalance.label}</span>
-                  <strong className={`tabular-nums ${strong}`}>
+                  <strong
+                    className={`tabular-nums ${strong}`}
+                    aria-label={hideBalance ? "Amount hidden" : undefined}
+                  >
                     {hideBalance ? HIDDEN : formatRM(secondaryBalance.amount)}
                   </strong>
                   <AppIcon
@@ -141,7 +147,10 @@ export function BalanceCard({
             {breakdown.map((row, idx) => (
               <div key={idx} className="flex items-center justify-between">
                 <span className={soft}>{row.label}</span>
-                <strong className={`tabular-nums font-bold ${strong}`}>
+                <strong
+                  className={`tabular-nums font-bold ${strong}`}
+                  aria-label={hideBalance ? "Amount hidden" : undefined}
+                >
                   {hideBalance ? HIDDEN : formatRM(row.amount)}
                 </strong>
               </div>

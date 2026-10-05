@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { edgeParentGetPin, edgeParentSetPin, edgeParentVerifyPin, edgeParentGetProfile, clearParentPinSession } from "@/lib/edge";
 import { useAuth } from "@/providers/auth";
 import { AppShell } from "@/components/AppShell";
+import { PrivacyProvider, markJustUnlocked } from "@/features/privacy";
+import { PennyProvider } from "@/features/penny";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
@@ -190,6 +192,7 @@ function ParentLayout() {
           ? new Date(res.pinSessionExpiresAt).getTime()
           : Date.now() + SESSION_DURATION_MS;
         sessionStorage.setItem("parentSessionValidUntil", String(expiry));
+        markJustUnlocked();
         sfx.success();
         setOnboardingStep(3);
       } else {
@@ -202,6 +205,7 @@ function ParentLayout() {
             ? new Date(res.pinSessionExpiresAt).getTime()
             : Date.now() + SESSION_DURATION_MS;
           sessionStorage.setItem("parentSessionValidUntil", String(expiry));
+          markJustUnlocked();
           sfx.success();
         } else {
           const attemptsMsg = res.attemptsLeft !== undefined
@@ -567,8 +571,12 @@ function ParentLayout() {
 
   // PIN verified — render the actual parent child routes
   return (
-    <AppShell mode="parent">
-      <Outlet />
-    </AppShell>
+    <PrivacyProvider mode="parent">
+      <PennyProvider mode="parent">
+        <AppShell mode="parent">
+          <Outlet />
+        </AppShell>
+      </PennyProvider>
+    </PrivacyProvider>
   );
 }

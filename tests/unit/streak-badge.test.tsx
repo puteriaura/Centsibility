@@ -1,0 +1,22 @@
+import { describe, it, expect } from "vitest";
+import React from "react";
+import { renderToString } from "react-dom/server";
+import { StreakBadge } from "@/components/StreakBadge";
+
+describe("StreakBadge", () => {
+  it("renders {n}🔥 with correct aria-label when count > 0", () => {
+    const html = renderToString(<StreakBadge count={2} />);
+    expect(html).toContain("2🔥");
+    expect(html).toContain('aria-label="2 day streak"');
+  });
+
+  it("renders nothing when count is 0", () => {
+    const html = renderToString(<StreakBadge count={0} />);
+    expect(html).toBe("");
+  });
+
+  it("renders nothing when count is negative", () => {
+    const html = renderToString(<StreakBadge count={-1} />);
+    expect(html).toBe("");
+  });
+});

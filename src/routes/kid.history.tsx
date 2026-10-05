@@ -9,10 +9,11 @@ import { isKidBypassed } from "@/lib/admin-bypass";
 import { DEMO_TRANSACTIONS } from "@/lib/demo-data";
 import { edgeKidGetHistory, extractEdgeErrorMessage } from "@/lib/edge";
 import { formatRM } from "@/lib/format";
-import { isDebitTransaction } from "@/lib/finance";
+import { transactionAmount } from "@/lib/finance";
 import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
 import { groupByDay, type HistoryTx } from "@/lib/history";
 import { sfx } from "@/lib/sounds";
+import { useMoney, MASKED_AMOUNT } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/history")({
   head: () => ({ meta: [{ title: "Transaction history — Centsibility" }] }),
@@ -23,6 +24,7 @@ type PeriodDays = 7 | 30 | 90;
 
 function KidHistoryPage() {
   const { data: kidState } = useKidData();
+  const { isMasked, locked, openUnlockSheet } = useMoney();
   const [days, setDays] = useState<PeriodDays>(30);
   const [txs, setTxs] = useState<HistoryTx[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,9 @@ function KidHistoryPage() {
       // DEV Demo mode: filter local demo transactions
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - days);
-      const filtered = DEMO_TRANSACTIONS.filter((t) => new Date(t.created_at) >= cutoff);
+      const filtered = DEMO_TRANSACTIONS.filter(
+        (t) => new Date(t.created_at) >= cutoff,
+      );
       setTxs(filtered);
       setLoading(false);
       return;
@@ -152,13 +156,17 @@ function KidHistoryPage() {
               </div>
 
               {/* Day's Rows */}
-              <Card variant="default" className="p-2 divide-y divide-[var(--border)] overflow-hidden">
+              <Card
+                variant="default"
+                className="p-2 divide-y divide-[var(--border)] overflow-hidden"
+              >
                 {group.rows.map((tx) => {
-                  const isDebit = isDebitTransaction(tx.type, tx.label);
+                  const amt = transactionAmount(tx.type, tx.label, tx.amount);
                   const title = transactionTitle(tx);
                   const typeLabel = transactionTypeLabel(tx.type, tx.label);
                   const subtitle =
-                    title.trim().toLowerCase() === typeLabel.trim().toLowerCase()
+                    title.trim().toLowerCase() ===
+                    typeLabel.trim().toLowerCase()
                       ? undefined
                       : typeLabel;
 
@@ -180,11 +188,22 @@ function KidHistoryPage() {
                       <div className="text-right shrink-0">
                         <span
                           className={`text-sm font-bold tabular-nums block ${
-                            isDebit ? "text-[var(--error-text)]" : "text-[var(--success-text)]"
+                            amt.tone === "out"
+                              ? "text-[var(--ink)]"
+                              : "text-[var(--success-text)]"
                           }`}
+                          aria-label={isMasked ? "Amount hidden" : undefined}
+                          onClick={
+                            locked
+                              ? (e) => {
+                                  e.stopPropagation();
+                                  openUnlockSheet();
+                                }
+                              : undefined
+                          }
+                          style={locked ? { cursor: "pointer" } : undefined}
                         >
-                          {isDebit ? "−" : "+"}
-                          {formatRM(Number(tx.amount))}
+                          {isMasked ? MASKED_AMOUNT : amt.text}
                         </span>
                       </div>
                     </div>

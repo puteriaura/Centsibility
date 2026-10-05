@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { isParentBypassed, isKidBypassed, ADMIN_BYPASS } from "@/lib/admin-bypass";
-import { DEMO_IDENTITY, DEMO_KID_STATE, DEMO_TRANSACTIONS } from "@/lib/demo-data";
+import { DEMO_IDENTITY, DEMO_KID_STATE, DEMO_TRANSACTIONS, DEMO_KIDS } from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
@@ -22,6 +22,7 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
       return { valid: true } as T;
     case "set-pin":
     case "clear-pin":
+    case "unlock":
       return { ok: true } as T;
     case "login":
     case "login-by-code":
@@ -36,12 +37,29 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
       return { newBalance: 150 } as T;
     case "create-kid":
       return { kid: { id: "demo-kid-" + Date.now(), name: body.name } } as T;
-    case "get-statement":
+    case "get-statement": {
+      const kidId = String(body.kidId || "");
+      const kid = DEMO_KIDS.find((k) => k.id === kidId);
+      if (!kid) {
+        throw new Error("Not found or not your child");
+      }
+      const from = String(body.from || "");
+      const to = String(body.to || "");
+      const startDate = new Date(`${from}T00:00:00+08:00`);
+      const endDate = new Date(`${to}T23:59:59.999+08:00`);
+      const startMs = startDate.getTime();
+      const endMs = endDate.getTime();
+      const txs = DEMO_TRANSACTIONS.filter((t) => {
+        if (t.kid_id !== kid.id) return false;
+        const txTime = new Date(t.created_at).getTime();
+        return txTime >= startMs && txTime <= endMs;
+      });
       return {
-        kid: { id: DEMO_IDENTITY.kidId, name: "Aiman", balance: 142.5 },
-        transactions: [],
-        period: { from: body.from, to: body.to },
+        kid: { id: kid.id, name: kid.name, balance: kid.balance },
+        transactions: txs,
+        period: { from, to },
       } as T;
+    }
     case "get-scheduled-hibahs":
       return { scheduledHibahs: [] } as T;
     case "quest-board":
@@ -645,6 +663,10 @@ export async function edgeKidRegister(params: { setupCode: string; name: string;
   return invoke<{ ok: boolean; kidId: string; code: string }>("kid-finance", { action: "register", ...params });
 }
 
+export async function edgeKidUnlock(params: { code: string; pin: string }) {
+  return invoke<{ ok: boolean }>("kid-finance", { action: "unlock", ...params });
+}
+
 export async function edgeKidGetState(params: { code: string }) {
   return invoke<{
     kid: any;
@@ -784,6 +806,7 @@ export async function edgeKidPennyChat(params: {
   history?: PennyChatMessage[];
   thinking?: boolean;
   model?: string;
+  context?: { page: string; detail?: string };
 }) {
   return invoke<{
     reply: string;
@@ -799,6 +822,7 @@ export async function edgeParentPennyChat(params: {
   thinking?: boolean;
   model?: string;
   pinSession?: string;
+  context?: { page: string; detail?: string };
 }) {
   return invoke<{
     reply: string;

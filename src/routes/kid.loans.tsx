@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { formatDate, formatRM } from "@/lib/format";
 import { computeQardPayout } from "@/lib/qard";
 import { useMoneyAction } from "@/hooks/use-money-action";
+import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/loans")({
   head: () => ({ meta: [{ title: "My Loans — Centsibility" }] }),
@@ -50,33 +51,39 @@ function KidLoans() {
   const code = getKidSession()?.code;
   const kidBalance = Number(data.kid.balance);
 
-  const activeLoans = data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active");
-  const closedLoans = data.loans.filter((l: (typeof data.loans)[number]) => l.status === "repaid");
+  const activeLoans = data.loans.filter(
+    (l: (typeof data.loans)[number]) => l.status === "active",
+  );
+  const closedLoans = data.loans.filter(
+    (l: (typeof data.loans)[number]) => l.status === "repaid",
+  );
   const totalOutstanding = activeLoans.reduce(
-    (acc: number, l: (typeof data.loans)[number]) => acc + (Number(l.amount) - Number(l.repaid)),
+    (acc: number, l: (typeof data.loans)[number]) =>
+      acc + (Number(l.amount) - Number(l.repaid)),
     0,
   );
 
   const repay = async (loanId: string, amount: number) => {
     if (!code) return;
-    const currentLoan = data.loans.find((l: (typeof data.loans)[number]) => l.id === loanId);
-    const prevRemaining = currentLoan ? Math.max(0, Number(currentLoan.amount) - Number(currentLoan.repaid)) : amount;
-    await run(
-      () => edgeKidRepayLoan({ code, loanId, amount }),
-      {
-        success: (res) => {
-          const remaining = Math.max(0, prevRemaining - Number(res.paid));
-          return res.fullyRepaid
-            ? "Loan fully repaid!"
-            : `${formatRM(res.paid)} paid back. ${formatRM(remaining)} left`;
-        },
-        failure: "Repayment didn't go through",
-        onSuccess: () => {
-          setActive(null);
-        },
-        refresh,
-      }
+    const currentLoan = data.loans.find(
+      (l: (typeof data.loans)[number]) => l.id === loanId,
     );
+    const prevRemaining = currentLoan
+      ? Math.max(0, Number(currentLoan.amount) - Number(currentLoan.repaid))
+      : amount;
+    await run(() => edgeKidRepayLoan({ code, loanId, amount }), {
+      success: (res) => {
+        const remaining = Math.max(0, prevRemaining - Number(res.paid));
+        return res.fullyRepaid
+          ? "Loan fully repaid!"
+          : `${formatRM(res.paid)} paid back. ${formatRM(remaining)} left`;
+      },
+      failure: "Repayment didn't go through",
+      onSuccess: () => {
+        setActive(null);
+      },
+      refresh,
+    });
   };
 
   const submitRequest = async () => {
@@ -109,7 +116,7 @@ function KidLoans() {
           setReqAmt(null);
         },
         refresh,
-      }
+      },
     );
   };
 
@@ -118,8 +125,13 @@ function KidLoans() {
       <section className="deposit-hero" aria-label="Loan balance">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Loan balance</p>
-          <p className="deposit-hero__amount tabular-nums">{formatRM(totalOutstanding)}</p>
-          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
+          <p className="deposit-hero__amount tabular-nums">
+            <Money amount={totalOutstanding} />
+          </p>
+          <p
+            className="deposit-hero__link"
+            style={{ cursor: "default", textDecoration: "none" }}
+          >
             Trust {data.kid.trust_score} · 0% interest (Halal)
           </p>
         </div>
@@ -128,11 +140,7 @@ function KidLoans() {
         </div>
       </section>
 
-      <div
-        className="segment-tabs"
-        role="tablist"
-        aria-label="Loan status"
-      >
+      <div className="segment-tabs" role="tablist" aria-label="Loan status">
         <button
           type="button"
           role="tab"
@@ -166,9 +174,12 @@ function KidLoans() {
             <AppIcon name="handshake" size={36} color="#fff" />
           </div>
           <div className="financing-promo__body">
-            <h2 className="text-base font-bold text-[var(--ink)] m-0">Qard Hasan loan</h2>
+            <h2 className="text-base font-bold text-[var(--ink)] m-0">
+              Qard Hasan loan
+            </h2>
             <p className="text-xs text-[var(--text-secondary)] mt-1 mb-4 leading-relaxed">
-              Interest-free support anytime. Repay on schedule to grow your trust score.
+              Interest-free support anytime. Repay on schedule to grow your
+              trust score.
             </p>
             <Button
               type="button"
@@ -188,15 +199,21 @@ function KidLoans() {
 
       {/* Loan Application Flow */}
       {requesting && (
-        <Card variant="default" className="p-5 sm:p-6 space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
+        <Card
+          variant="default"
+          className="p-5 sm:p-6 space-y-4 border-2 border-[var(--primary)]/20 shadow-md"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
               <AppIcon name="agreement" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">Qard Hasan Agreement</h3>
+              <h3 className="text-base font-bold text-[var(--ink)]">
+                Qard Hasan Agreement
+              </h3>
               <p className="text-xs text-[var(--text-secondary)]">
-                100% interest-free. By signing below, you promise to repay the borrowed amount.
+                100% interest-free. By signing below, you promise to repay the
+                borrowed amount.
               </p>
             </div>
           </div>
@@ -222,31 +239,46 @@ function KidLoans() {
               {(() => {
                 const qard = computeQardPayout(reqAmt!);
                 return (
-                  <Card variant="soft" className="p-4 space-y-2 border border-[var(--border)]">
+                  <Card
+                    variant="soft"
+                    className="p-4 space-y-2 border border-[var(--border)]"
+                  >
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[var(--text-secondary)]">Requested Amount</span>
+                      <span className="text-[var(--text-secondary)]">
+                        Requested Amount
+                      </span>
                       <strong className="text-sm font-bold text-[var(--ink)] tabular-nums">
                         {formatRM(reqAmt!)}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[var(--text-secondary)]">Interest</span>
-                      <strong className="text-sm font-bold text-[var(--success-text)]">RM0.00 (Halal)</strong>
+                      <span className="text-[var(--text-secondary)]">
+                        Interest
+                      </span>
+                      <strong className="text-sm font-bold text-[var(--success-text)]">
+                        RM0.00 (Halal)
+                      </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-[var(--text-secondary)]">Admin fee</span>
+                      <span className="text-[var(--text-secondary)]">
+                        Admin fee
+                      </span>
                       <strong className="text-sm font-semibold text-[var(--ink)] tabular-nums">
                         {formatRM(qard.adminFee)}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs pt-1 border-t border-[var(--border)]">
-                      <span className="font-semibold text-[var(--ink)]">You receive</span>
+                      <span className="font-semibold text-[var(--ink)]">
+                        You receive
+                      </span>
                       <strong className="text-base font-extrabold text-[var(--success-text)] tabular-nums">
                         {formatRM(qard.payout)}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-[var(--ink)]">You repay</span>
+                      <span className="font-semibold text-[var(--ink)]">
+                        You repay
+                      </span>
                       <strong className="text-sm font-bold text-[var(--primary-text)] tabular-nums">
                         {formatRM(reqAmt!)}
                       </strong>
@@ -323,108 +355,130 @@ function KidLoans() {
       <div
         className="space-y-3"
         role="tabpanel"
-        id={selectedTab === "active" ? "panel-loans-active" : "panel-loans-closed"}
-        aria-labelledby={selectedTab === "active" ? "tab-loans-active" : "tab-loans-closed"}
+        id={
+          selectedTab === "active" ? "panel-loans-active" : "panel-loans-closed"
+        }
+        aria-labelledby={
+          selectedTab === "active" ? "tab-loans-active" : "tab-loans-closed"
+        }
       >
         <SectionTitle>
           {selectedTab === "active" ? "Active loans" : "Settled loans"}
         </SectionTitle>
         {(selectedTab === "active" ? activeLoans : closedLoans).length === 0 ? (
-          <Card variant="soft" className="p-8 text-center text-sm text-[var(--text-muted)]">
+          <Card
+            variant="soft"
+            className="p-8 text-center text-sm text-[var(--text-muted)]"
+          >
             {selectedTab === "active"
               ? "No active loans. Tap 'Ask for a loan' above to request interest-free support."
               : "No closed loans yet. Fully repaid loans will be recorded here."}
           </Card>
         ) : (
           <div className="space-y-3">
-            {(selectedTab === "active" ? activeLoans : closedLoans).map((l: (typeof data.loans)[number]) => {
-              const remaining = Number(l.amount) - Number(l.repaid);
-              const overdue = l.status === "active" && new Date(l.due_date) < new Date();
-              return (
-                <Card
-                  key={l.id}
-                  variant="default"
-                  className={`p-5 rounded-2xl border transition-all duration-150 ${
-                    overdue
-                      ? "border-[var(--error)]/40 bg-[var(--error-soft)]/20"
-                      : "border-[var(--border)]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-base font-bold text-[var(--ink)]">
-                          {l.reason || "Qard Hasan Loan"}
-                        </h4>
-                        {l.status === "repaid" ? (
-                          <Badge variant="success">Repaid</Badge>
-                        ) : overdue ? (
-                          <Badge variant="error">Overdue</Badge>
-                        ) : (
-                          <Badge variant="warning">Active</Badge>
-                        )}
+            {(selectedTab === "active" ? activeLoans : closedLoans).map(
+              (l: (typeof data.loans)[number]) => {
+                const remaining = Number(l.amount) - Number(l.repaid);
+                const overdue =
+                  l.status === "active" && new Date(l.due_date) < new Date();
+                return (
+                  <Card
+                    key={l.id}
+                    variant="default"
+                    className={`p-5 rounded-2xl border transition-all duration-150 ${
+                      overdue
+                        ? "border-[var(--error)]/40 bg-[var(--error-soft)]/20"
+                        : "border-[var(--border)]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold text-[var(--ink)]">
+                            {l.reason || "Qard Hasan Loan"}
+                          </h4>
+                          {l.status === "repaid" ? (
+                            <Badge variant="success">Repaid</Badge>
+                          ) : overdue ? (
+                            <Badge variant="error">Overdue</Badge>
+                          ) : (
+                            <Badge variant="warning">Active</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">
+                          Due {formatDate(l.due_date)}
+                        </p>
                       </div>
-                      <p className="text-xs text-[var(--text-muted)] mt-1">
-                        Due {formatDate(l.due_date)}
-                      </p>
+
+                      <div className="text-right shrink-0 whitespace-nowrap">
+                        <span className="text-base font-bold tabular-nums text-[var(--ink)] block">
+                          <Money amount={remaining} />
+                        </span>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {" "}
+                          of <Money amount={Number(l.amount)} />
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="text-right shrink-0 whitespace-nowrap">
-                      <span className="text-base font-bold tabular-nums text-[var(--ink)] block">
-                        {formatRM(remaining)}
-                      </span>
-                      <span className="text-xs text-[var(--text-muted)]">
-                        of {formatRM(Number(l.amount))}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-3 mt-3 border-t border-[var(--border)]">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => exportLoanPdf({ ...l, kidName: data.kid.name })}
-                      className="flex-1 justify-center text-xs"
-                      aria-label={`Download loan ${l.status === "repaid" ? "receipt" : "agreement"} PDF for ${l.reason || "Qard loan"}`}
-                    >
-                      <AppIcon name="pdf" size={14} />
-                      {l.status === "repaid" ? "Receipt (PDF)" : "Agreement (PDF)"}
-                    </Button>
-
-                    {l.status === "active" && (
+                    <div className="flex items-center gap-2 pt-3 mt-3 border-t border-[var(--border)]">
                       <Button
                         type="button"
-                        variant={active === l.id ? "secondary" : "primary"}
+                        variant="outline"
                         size="sm"
-                        onClick={() => setActive(active === l.id ? null : l.id)}
+                        onClick={() =>
+                          exportLoanPdf({ ...l, kidName: data.kid.name })
+                        }
                         className="flex-1 justify-center text-xs"
+                        aria-label={`Download loan ${l.status === "repaid" ? "receipt" : "agreement"} PDF for ${l.reason || "Qard loan"}`}
                       >
-                        {active === l.id ? "Cancel" : "Repay Now"}
+                        <AppIcon name="pdf" size={14} />
+                        {l.status === "repaid"
+                          ? "Receipt (PDF)"
+                          : "Agreement (PDF)"}
                       </Button>
-                    )}
-                  </div>
 
-                  {l.status === "active" && active === l.id && (
-                    <div className="pt-3 mt-3 border-t border-dashed border-[var(--border)] space-y-3">
-                      <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
-                        <span>Wallet Balance: <strong>{formatRM(kidBalance)}</strong></span>
-                        <span>Outstanding: <strong>{formatRM(remaining)}</strong></span>
-                      </div>
-                      <MoneyKeypad
-                        key={l.id}
-                        min={0.5}
-                        max={Math.min(remaining, kidBalance)}
-                        confirmLabel="Confirm Repayment"
-                        busy={busy}
-                        onConfirm={(amt) => repay(l.id, amt)}
-                        onCancel={() => setActive(null)}
-                      />
+                      {l.status === "active" && (
+                        <Button
+                          type="button"
+                          variant={active === l.id ? "secondary" : "primary"}
+                          size="sm"
+                          onClick={() =>
+                            setActive(active === l.id ? null : l.id)
+                          }
+                          className="flex-1 justify-center text-xs"
+                        >
+                          {active === l.id ? "Cancel" : "Repay Now"}
+                        </Button>
+                      )}
                     </div>
-                  )}
-                </Card>
-              );
-            })}
+
+                    {l.status === "active" && active === l.id && (
+                      <div className="pt-3 mt-3 border-t border-dashed border-[var(--border)] space-y-3">
+                        <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                          <span>
+                            Wallet Balance:{" "}
+                            <strong>{formatRM(kidBalance)}</strong>
+                          </span>
+                          <span>
+                            Outstanding: <strong>{formatRM(remaining)}</strong>
+                          </span>
+                        </div>
+                        <MoneyKeypad
+                          key={l.id}
+                          min={0.5}
+                          max={Math.min(remaining, kidBalance)}
+                          confirmLabel="Confirm Repayment"
+                          busy={busy}
+                          onConfirm={(amt) => repay(l.id, amt)}
+                          onCancel={() => setActive(null)}
+                        />
+                      </div>
+                    )}
+                  </Card>
+                );
+              },
+            )}
           </div>
         )}
       </div>

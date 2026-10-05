@@ -45,68 +45,79 @@ export const tests = [
     },
   },
   {
-    name: '2. Kid -> sibling request: pending TRANSFER approval with to_kid_id, no money moves',
+    name: '2. Kid -> sibling: instant transfer, both balances update, ledger invariant, 3 notifications, no approval',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const sender = await seedKid(db, parentId, { balance: 40, comfort_name: 'Siddiq' });
       const recipient = await seedKid(db, parentId, { balance: 20, comfort_name: 'Aisyah' });
 
-      const approvalId = await asRole(db, 'service_role', async () =>
+      const res = await asRole(db, 'service_role', async () =>
         (await db.query(
-          `select kid_request_transfer($1, $2, 5.00, 'Lunch') as id`,
+          `select kid_send_to_sibling($1, $2, 5.00, 'Lunch') as data`,
           [sender.id, recipient.id]
-        )).rows[0].id
+        )).rows[0].data
       );
 
-      assert.ok(approvalId);
+      assert.equal(Number(res.balance), 35.00);
+      assert.equal(res.toKidId, recipient.id);
+      assert.equal(Number(res.amount), 5.00);
 
-      // Verify approval record
-      const ap = (await db.query(`select * from public.approvals where id = $1`, [approvalId])).rows[0];
-      assert.equal(ap.kind, 'TRANSFER');
-      assert.equal(ap.kid_id, sender.id);
-      assert.equal(ap.to_kid_id, recipient.id);
-      assert.equal(Number(ap.amount), 5.00);
-      assert.equal(ap.reason, 'Lunch');
-      assert.equal(ap.status, 'pending');
-
-      // Balances unchanged
+      // Balances update at once
       const sRow = (await db.query(`select balance from public.kids where id = $1`, [sender.id])).rows[0];
       const rRow = (await db.query(`select balance from public.kids where id = $1`, [recipient.id])).rows[0];
-      assert.equal(Number(sRow.balance), 40.00);
-      assert.equal(Number(rRow.balance), 20.00);
+      assert.equal(Number(sRow.balance), 35.00);
+      assert.equal(Number(rRow.balance), 25.00);
 
-      // No transactions written
-      const txs = (await db.query(`select * from public.transactions where kid_id in ($1, $2)`, [sender.id, recipient.id])).rows;
-      assert.equal(txs.length, 0);
+      // Verify transactions
+      const sTx = (await db.query(`select * from public.transactions where kid_id = $1`, [sender.id])).rows;
+      assert.equal(sTx.length, 1);
+      assert.equal(sTx[0].type, 'TRANSFER_OUT');
+      assert.equal(Number(sTx[0].amount), 5.00);
+      assert.equal(sTx[0].label, 'Sent to Aisyah: Lunch');
 
-      // Parent notification
+      const rTx = (await db.query(`select * from public.transactions where kid_id = $1`, [recipient.id])).rows;
+      assert.equal(rTx.length, 1);
+      assert.equal(rTx[0].type, 'TRANSFER_IN');
+      assert.equal(Number(rTx[0].amount), 5.00);
+      assert.equal(rTx[0].label, 'From Siddiq');
+
+      // Ledger invariant
+      assert.equal(40 - 5, Number(sRow.balance));
+      assert.equal(20 + 5, Number(rRow.balance));
+
+      // No approval row is created
+      const approvalsCount = (await db.query(`select count(*) as c from public.approvals where kid_id in ($1, $2)`, [sender.id, recipient.id])).rows[0].c;
+      assert.equal(Number(approvalsCount), 0);
+
+      // Three notifications: 2 for kids, 1 for parent
+      const sNotes = (await db.query(`select * from public.kid_notifications where kid_id = $1`, [sender.id])).rows;
+      assert.equal(sNotes.length, 1);
+      assert.equal(sNotes[0].message, 'You sent RM5.00 to Aisyah.');
+      assert.equal(sNotes[0].link, '/kid/history');
+
+      const rNotes = (await db.query(`select * from public.kid_notifications where kid_id = $1`, [recipient.id])).rows;
+      assert.equal(rNotes.length, 1);
+      assert.equal(rNotes[0].message, 'Siddiq sent you RM5.00.');
+      assert.equal(rNotes[0].link, '/kid/history');
+
       const pNotes = (await db.query(`select * from public.notifications where parent_id = $1`, [parentId])).rows;
       assert.equal(pNotes.length, 1);
-      assert.equal(pNotes[0].message, 'Siddiq wants to send RM5.00 to Aisyah');
-      assert.equal(pNotes[0].link, '/parent/approvals');
-
-      // Sender kid notification
-      const kNotes = (await db.query(`select * from public.kid_notifications where kid_id = $1`, [sender.id])).rows;
-      assert.equal(kNotes.length, 1);
-      assert.equal(kNotes[0].message, 'Your RM5.00 to Aisyah is waiting for approval.');
+      assert.equal(pNotes[0].message, 'Siddiq sent RM5.00 to Aisyah.');
+      assert.equal(pNotes[0].link, '/parent');
     },
   },
   {
-    name: '3. Approve transfer request: balances update, TRANSFER_OUT and TRANSFER_IN written, notifications, idempotent',
+    name: '3. Legacy pending TRANSFER approval: can still be approved through resolve_approval',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const sender = await seedKid(db, parentId, { balance: 40, comfort_name: 'Siddiq' });
       const recipient = await seedKid(db, parentId, { balance: 20, comfort_name: 'Aisyah' });
 
-      const approvalId = await asRole(db, 'service_role', async () =>
-        (await db.query(
-          `select kid_request_transfer($1, $2, 5.00, 'Lunch') as id`,
-          [sender.id, recipient.id]
-        )).rows[0].id
-      );
-
-      // Clear notifications from request phase to test approval notifications specifically
-      await db.query(`delete from public.kid_notifications`);
+      const approvalId = (await db.query(`
+        insert into public.approvals (kid_id, to_kid_id, kind, amount, reason, status)
+        values ($1, $2, 'TRANSFER', 5.00, 'Lunch', 'pending')
+        returning id
+      `, [sender.id, recipient.id])).rows[0].id;
 
       // Approve
       await asRole(db, 'service_role', async () =>
@@ -154,20 +165,17 @@ export const tests = [
     },
   },
   {
-    name: '4. Decline transfer request: nothing moves, sender receives not approved notification',
+    name: '4. Legacy pending TRANSFER approval: can still be declined through resolve_approval',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const sender = await seedKid(db, parentId, { balance: 40, comfort_name: 'Siddiq' });
       const recipient = await seedKid(db, parentId, { balance: 20, comfort_name: 'Aisyah' });
 
-      const approvalId = await asRole(db, 'service_role', async () =>
-        (await db.query(
-          `select kid_request_transfer($1, $2, 5.00, 'Toy') as id`,
-          [sender.id, recipient.id]
-        )).rows[0].id
-      );
-
-      await db.query(`delete from public.kid_notifications`);
+      const approvalId = (await db.query(`
+        insert into public.approvals (kid_id, to_kid_id, kind, amount, reason, status)
+        values ($1, $2, 'TRANSFER', 5.00, 'Toy', 'pending')
+        returning id
+      `, [sender.id, recipient.id])).rows[0].id;
 
       // Decline
       await asRole(db, 'service_role', async () =>
@@ -192,14 +200,14 @@ export const tests = [
     fn: async (db) => {
       const parentA = await seedParent(db);
       const parentB = await seedParent(db);
-      const kidA = await seedKid(db, parentA, { balance: 40, comfort_name: 'Kid A' });
+      const kidA = await seedKid(db, parentA, { balance: 100, comfort_name: 'Kid A' });
       const kidSibling = await seedKid(db, parentA, { balance: 30, comfort_name: 'Sibling' });
       const kidOther = await seedKid(db, parentB, { balance: 30, comfort_name: 'Kid B' });
 
       // Self transfer
       await asRole(db, 'service_role', () =>
         expectError(
-          db.query(`select kid_request_transfer($1, $1, 5.00, null)`, [kidA.id]),
+          db.query(`select kid_send_to_sibling($1, $1, 5.00, null)`, [kidA.id]),
           'self_transfer'
         )
       );
@@ -207,7 +215,7 @@ export const tests = [
       // Outside family
       await asRole(db, 'service_role', () =>
         expectError(
-          db.query(`select kid_request_transfer($1, $2, 5.00, null)`, [kidA.id, kidOther.id]),
+          db.query(`select kid_send_to_sibling($1, $2, 5.00, null)`, [kidA.id, kidOther.id]),
           'not_family'
         )
       );
@@ -216,7 +224,7 @@ export const tests = [
       for (const badAmt of [0, -1, 1.005]) {
         await asRole(db, 'service_role', () =>
           expectError(
-            db.query(`select kid_request_transfer($1, $2, $3, null)`, [kidA.id, kidSibling.id, badAmt]),
+            db.query(`select kid_send_to_sibling($1, $2, $3, null)`, [kidA.id, kidSibling.id, badAmt]),
             'invalid_amount'
           )
         );
@@ -225,7 +233,7 @@ export const tests = [
       // Insufficient balance
       await asRole(db, 'service_role', () =>
         expectError(
-          db.query(`select kid_request_transfer($1, $2, 45.00, null)`, [kidA.id, kidSibling.id]),
+          db.query(`select kid_send_to_sibling($1, $2, 105.00, null)`, [kidA.id, kidSibling.id]),
           'insufficient_balance'
         )
       );
@@ -233,7 +241,7 @@ export const tests = [
       // Invalid note (>40 chars)
       await asRole(db, 'service_role', () =>
         expectError(
-          db.query(`select kid_request_transfer($1, $2, 5.00, $3)`, [
+          db.query(`select kid_send_to_sibling($1, $2, 5.00, $3)`, [
             kidA.id,
             kidSibling.id,
             'a'.repeat(41),
@@ -244,12 +252,12 @@ export const tests = [
 
       // Daily limit: 30 succeeds, then 25 exceeds 50 cap
       await asRole(db, 'service_role', () =>
-        db.query(`select kid_request_transfer($1, $2, 30.00, 'Part 1')`, [kidA.id, kidSibling.id])
+        db.query(`select kid_send_to_sibling($1, $2, 30.00, 'Part 1')`, [kidA.id, kidSibling.id])
       );
 
       await asRole(db, 'service_role', () =>
         expectError(
-          db.query(`select kid_request_transfer($1, $2, 25.00, 'Part 2')`, [kidA.id, kidSibling.id]),
+          db.query(`select kid_send_to_sibling($1, $2, 25.00, 'Part 2')`, [kidA.id, kidSibling.id]),
           'transfer_limit_exceeded'
         )
       );
@@ -270,12 +278,11 @@ export const tests = [
       const sender = await seedKid(db, parentId, { balance: 20, comfort_name: 'Siddiq' });
       const recipient = await seedKid(db, parentId, { balance: 10, comfort_name: 'Aisyah' });
 
-      const approvalId = await asRole(db, 'service_role', async () =>
-        (await db.query(
-          `select kid_request_transfer($1, $2, 20.00, 'Project') as id`,
-          [sender.id, recipient.id]
-        )).rows[0].id
-      );
+      const approvalId = (await db.query(`
+        insert into public.approvals (kid_id, to_kid_id, kind, amount, reason, status)
+        values ($1, $2, 'TRANSFER', 20.00, 'Project', 'pending')
+        returning id
+      `, [sender.id, recipient.id])).rows[0].id;
 
       // Sender spends money out-of-band (e.g. withdrawal or donation)
       await db.query(`update public.kids set balance = 5.00 where id = $1`, [sender.id]);
@@ -358,7 +365,7 @@ export const tests = [
       for (const role of ['anon', 'authenticated']) {
         await asRole(db, role, () =>
           expectError(
-            db.query(`select kid_request_transfer($1, $1, 5.00, null)`, [kid.id]),
+            db.query(`select kid_send_to_sibling($1, $1, 5.00, null)`, [kid.id]),
             'permission denied'
           )
         );

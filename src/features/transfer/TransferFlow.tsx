@@ -216,10 +216,7 @@ export function TransferFlow({
         },
         {
           retry: false,
-          success:
-            recipientKind === "kid"
-              ? `Transfer request of RM${amountNum.toFixed(2)} sent for approval!`
-              : `RM${amountNum.toFixed(2)} sent to ${recipientName}!`,
+          success: `RM${amountNum.toFixed(2)} sent to ${recipientName}!`,
           failure: "Transfer failed",
           onSuccess: () => {
             setIsSuccess(true);
@@ -283,18 +280,13 @@ export function TransferFlow({
 
   // Success view
   if (isSuccess) {
-    const isPendingApproval = mode === "kid" && recipientKind === "kid";
     const amountNum = amountValidation.amount || Number(rawAmount) || 0;
 
     return (
       <div className="py-6 px-4 max-w-md mx-auto space-y-3">
         <SuccessState
-          title={isPendingApproval ? "Transfer Requested!" : "Transfer Sent!"}
-          detail={
-            isPendingApproval
-              ? `Your request to transfer RM${amountNum.toFixed(2)} to ${recipientName} is waiting for parent approval.`
-              : `RM${amountNum.toFixed(2)} has been successfully transferred to ${recipientName}.`
-          }
+          title="Transfer sent!"
+          detail={`RM${amountNum.toFixed(2)} is now in ${recipientName}'s account.`}
           buttonText="Done"
           onAction={handleFinish}
         />
@@ -397,7 +389,7 @@ export function TransferFlow({
                           <Badge variant="warning">Parent</Badge>
                         </div>
                         <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-                          Instant transfer · No approval needed
+                          Arrives instantly
                         </p>
                       </div>
                       <AppIcon
@@ -462,7 +454,7 @@ export function TransferFlow({
                                   <Badge variant="soft">Sibling</Badge>
                                 </div>
                                 <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-                                  Requires parent approval
+                                  Arrives instantly
                                 </p>
                               </div>
                               <AppIcon
@@ -712,13 +704,11 @@ export function TransferFlow({
             {/* Transfer Policy Explainer */}
             <div className="p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-xs text-[var(--text-secondary)] space-y-1">
               <strong className="text-[var(--ink)] block">
-                {mode === "kid" && recipientKind === "kid"
-                  ? "Requires Parent Approval"
-                  : "Instant Transfer"}
+                Instant Transfer
               </strong>
               <p className="m-0 leading-relaxed">
                 {mode === "kid" && recipientKind === "kid"
-                  ? "Money will remain in your account until your parent reviews and approves this sibling transfer."
+                  ? `Funds will be transferred directly to ${recipientName} immediately.`
                   : mode === "kid" && recipientKind === "parent"
                   ? "Funds will be transferred directly to your parent immediately."
                   : "Funds will be deposited into your child's spending account right away."}

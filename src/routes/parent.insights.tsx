@@ -10,7 +10,9 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
 import { formatRM } from "@/lib/format";
+import { transactionAmount } from "@/lib/finance";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
+import { usePrivacy, Money, LogInToView } from "@/features/privacy";
 
 export const Route = createFileRoute("/parent/insights")({
   head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
@@ -19,7 +21,9 @@ export const Route = createFileRoute("/parent/insights")({
 
 function ParentInsights() {
   const nav = useNavigate();
-  const { kids, txs, loading, error, hasLoaded, lastLoadedAt, refresh } = useParentData();
+  const { kids, txs, loading, error, hasLoaded, lastLoadedAt, refresh } =
+    useParentData();
+  const { locked, openUnlockSheet, isMasked } = usePrivacy();
   const [kidFilter, setKidFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
 
@@ -46,7 +50,10 @@ function ParentInsights() {
     }));
   }, [txs, kidFilter]);
 
-  const summary = useMemo(() => buildSpendingSummary(scopedTxs, 90), [scopedTxs]);
+  const summary = useMemo(
+    () => buildSpendingSummary(scopedTxs, 90),
+    [scopedTxs],
+  );
 
   if (loading && !hasLoaded && !error) {
     return (
@@ -70,16 +77,32 @@ function ParentInsights() {
   return (
     <div className="parent-page mobile-stack pb-4">
       {error && hasLoaded && (
-        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+        <ParentLoadError
+          variant="banner"
+          onRetry={refresh}
+          lastLoadedAt={lastLoadedAt}
+        />
       )}
       <section className="deposit-hero" aria-label="Family cashflow">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">
             {selectedKid ? `${selectedKid.name} · 90 days` : "Family · 90 days"}
           </p>
-          <p className="deposit-hero__amount tabular-nums">{formatRM(summary.moneyOut)}</p>
-          <p className="deposit-hero__link" style={{ opacity: 0.9, cursor: "default" }}>
-            Outflow · In {formatRM(summary.moneyIn)} · {summary.txCount} tx
+          {locked ? (
+            <div className="my-1">
+              <LogInToView className="text-white text-base py-1" />
+            </div>
+          ) : (
+            <p className="deposit-hero__amount tabular-nums">
+              <Money amount={summary.moneyOut} />
+            </p>
+          )}
+          <p
+            className="deposit-hero__link"
+            style={{ opacity: 0.9, cursor: "default" }}
+          >
+            Outflow · In {locked ? "•••" : <Money amount={summary.moneyIn} />} ·{" "}
+            {summary.txCount} tx
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
@@ -94,7 +117,9 @@ function ParentInsights() {
         <p className="text-sm text-[var(--ink)] m-0 leading-snug font-semibold">
           {summary.highlight}
         </p>
-        <p className="text-[11px] text-[var(--text-muted)] m-0">{summary.rangeLabel}</p>
+        <p className="text-[11px] text-[var(--text-muted)] m-0">
+          {summary.rangeLabel}
+        </p>
       </Card>
 
       <div className="space-y-2">
@@ -138,7 +163,11 @@ function ParentInsights() {
                 setKidFilter(k.id);
               }}
             >
-              <AvatarBubble emoji={resolveAvatar(k.avatar, "kid")} size={22} kind="kid" />
+              <AvatarBubble
+                emoji={resolveAvatar(k.avatar, "kid")}
+                size={22}
+                kind="kid"
+              />
               <span className="truncate">{k.name}</span>
             </button>
           ))}
@@ -155,22 +184,39 @@ function ParentInsights() {
           </p>
         ) : (
           <ul className="insights-cat-list">
-            {summary.topCategories.slice(0, 6).map((c, i) => (
-              <li key={c.key} className="insights-cat-row px-3.5">
-                <span className="insights-cat-row__icon" style={{ color: "var(--primary)" }}>
-                  <AppIcon name={i === 0 ? "trend" : "wallet"} size={18} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <strong className="text-sm text-[var(--ink)] block">{c.label}</strong>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {c.pct.toFixed(0)}% · {c.count} tx
+            {summary.topCategories.slice(0, 6).map((c, i) => {
+              const amt = transactionAmount("WITHDRAWAL", null, c.amount);
+              return (
+                <li key={c.key} className="insights-cat-row px-3.5">
+                  <span
+                    className="insights-cat-row__icon"
+                    style={{ color: "var(--primary)" }}
+                  >
+                    <AppIcon name={i === 0 ? "trend" : "wallet"} size={18} />
                   </span>
-                </div>
-                <span className="text-sm font-bold text-[var(--error-text)] tabular-nums">
-                  {formatRM(-(c.amount))}
-                </span>
-              </li>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <strong className="text-sm text-[var(--ink)] block">
+                      {c.label}
+                    </strong>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {c.pct.toFixed(0)}% · {c.count} tx
+                    </span>
+                  </div>
+                  <span
+                    className={`text-sm font-bold tabular-nums ${
+                      amt.tone === "out"
+                        ? "text-[var(--ink)]"
+                        : "text-[var(--success-text)]"
+                    }`}
+                    aria-label={isMasked ? "Amount hidden" : undefined}
+                    onClick={locked ? openUnlockSheet : undefined}
+                    style={locked ? { cursor: "pointer" } : undefined}
+                  >
+                    {isMasked ? "RM*****" : amt.text}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>

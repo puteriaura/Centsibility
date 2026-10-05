@@ -1,11 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StreakBadge } from "@/components/StreakBadge";
+import { useMoney } from "@/features/privacy";
+import { usePenny } from "@/features/penny";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
-import { BalanceCard, QuickAction, TransactionRow, StatCard } from "@/components/banking";
+import {
+  BalanceCard,
+  QuickAction,
+  TransactionRow,
+  StatCard,
+} from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
 import {
   edgeKidClaimCoins,
@@ -38,7 +46,11 @@ import {
   isSpendingTransaction,
   isWalletTransaction,
 } from "@/lib/finance";
-import { transactionTitle, transactionTypeLabel, approvalKindLabel } from "@/lib/labels";
+import {
+  transactionTitle,
+  transactionTypeLabel,
+  approvalKindLabel,
+} from "@/lib/labels";
 import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/")({
@@ -47,12 +59,15 @@ export const Route = createFileRoute("/kid/")({
 });
 
 function KidHome() {
+  const { openPenny } = usePenny();
   const nav = useNavigate();
   const { data, loading, error, refresh } = useKidData();
   const { busy, run } = useMoneyAction();
   const [showReward, setShowReward] = useState(false);
   const [rName, setRName] = useState("");
-  const [moneyReq, setMoneyReq] = useState<null | "DEPOSIT" | "WITHDRAWAL">(null);
+  const [moneyReq, setMoneyReq] = useState<null | "DEPOSIT" | "WITHDRAWAL">(
+    null,
+  );
 
   const [showProfile, setShowProfile] = useState(false);
   const [pBio, setPBio] = useState("");
@@ -60,7 +75,8 @@ function KidHome() {
   const [pBirthYear, setPBirthYear] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [hideBalance, setHideBalance] = useState(false);
+  const { isMasked, locked, toggleHidden, openUnlockSheet, format } =
+    useMoney();
   const [balanceSlide, setBalanceSlide] = useState(0);
   // Mouse drag-to-scroll for the balance carousel (touch already scrolls natively).
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -71,7 +87,12 @@ function KidHome() {
     if ((e.target as HTMLElement).closest("button")) return;
     const el = carouselRef.current;
     if (!el) return;
-    drag.current = { down: true, startX: e.clientX, startScroll: el.scrollLeft, moved: false };
+    drag.current = {
+      down: true,
+      startX: e.clientX,
+      startScroll: el.scrollLeft,
+      moved: false,
+    };
     el.setPointerCapture(e.pointerId);
   };
   const onCarouselPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -84,6 +105,43 @@ function KidHome() {
   const onCarouselPointerUp = () => {
     drag.current.down = false;
   };
+
+  const openProfile = useCallback(() => {
+    if (!data?.kid) return;
+    setPBio(data.kid.bio || "");
+    setPBirthDate(data.kid.birth_date || "");
+    setPBirthYear(data.kid.birth_year ? String(data.kid.birth_year) : "");
+    setShowProfile(true);
+  }, [data?.kid]);
+
+  useEffect(() => {
+    if (data?.unreadNotifications !== undefined) {
+      window.dispatchEvent(
+        new CustomEvent("centsibility:kid-unread", {
+          detail: { unread: data.unreadNotifications },
+        }),
+      );
+    }
+    if (data?.kid?.avatar) {
+      window.dispatchEvent(
+        new CustomEvent("centsibility:kid-avatar", {
+          detail: { avatar: data.kid.avatar },
+        }),
+      );
+    }
+  }, [data]);
+
+  useEffect(() => {
+    const handleOpenProfile = () => {
+      openProfile();
+    };
+    window.addEventListener("centsibility:open-profile", handleOpenProfile);
+    return () =>
+      window.removeEventListener(
+        "centsibility:open-profile",
+        handleOpenProfile,
+      );
+  }, [openProfile]);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data)
@@ -101,7 +159,9 @@ function KidHome() {
 
   const k = data.kid;
   const code = getKidSession()?.code;
-  const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type));
+  const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) =>
+    isWalletTransaction(t.type),
+  );
 
   const claim = async () => {
     if (!code) return;
@@ -117,18 +177,15 @@ function KidHome() {
       return;
     }
     const rewardName = rName.trim();
-    await run(
-      () => edgeKidRequestReward({ code, name: rewardName, cost }),
-      {
-        success: `Reward request sent: ${rewardName}`,
-        failure: "Reward request didn't go through",
-        onSuccess: () => {
-          setShowReward(false);
-          setRName("");
-        },
-        refresh,
-      }
-    );
+    await run(() => edgeKidRequestReward({ code, name: rewardName, cost }), {
+      success: `Reward request sent: ${rewardName}`,
+      failure: "Reward request didn't go through",
+      onSuccess: () => {
+        setShowReward(false);
+        setRName("");
+      },
+      refresh,
+    });
   };
 
   const submitMoneyReq = async (amount: number, reference?: string) => {
@@ -140,7 +197,9 @@ function KidHome() {
           code,
           kind: moneyReq,
           amount,
-          reason: reference || (moneyReq === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
+          reason:
+            reference ||
+            (moneyReq === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
         }),
       {
         success: `${actionWord} request for ${formatRM(amount)} sent for approval`,
@@ -149,20 +208,13 @@ function KidHome() {
           setMoneyReq(null);
         },
         refresh,
-      }
+      },
     );
   };
 
   const pendingApprovals = data.approvals.filter(
     (a: (typeof data.approvals)[number]) => a.status === "pending",
   );
-
-  const openProfile = () => {
-    setPBio(k.bio || "");
-    setPBirthDate(k.birth_date || "");
-    setPBirthYear(k.birth_year ? String(k.birth_year) : "");
-    setShowProfile(true);
-  };
 
   const handleSaveProfile = async () => {
     if (!code) return;
@@ -173,8 +225,12 @@ function KidHome() {
       await edgeKidUpdateProfile({
         code,
         bio: pBio.trim() || undefined,
-        birth_date: birthdayAlreadySet ? undefined : (pBirthDate || undefined),
-        birth_year: birthdayAlreadySet ? undefined : (pBirthYear ? parseInt(pBirthYear) : undefined),
+        birth_date: birthdayAlreadySet ? undefined : pBirthDate || undefined,
+        birth_year: birthdayAlreadySet
+          ? undefined
+          : pBirthYear
+            ? parseInt(pBirthYear)
+            : undefined,
       });
       toast.success("Profile saved!");
       refresh();
@@ -201,8 +257,6 @@ function KidHome() {
     }
   };
 
-
-
   return (
     <>
       <div className="kid-greeting">
@@ -218,23 +272,7 @@ function KidHome() {
           </div>
         </button>
         <div className="flex items-center gap-2">
-          <div className="kid-streak" role="status" aria-label={`${k.streak} day streak`}>
-            <AppIcon name="trend" size={16} color="var(--indigo-velvet)" />
-            {k.streak}-day streak
-          </div>
-          <Link
-            to="/kid/notifications"
-            className="relative p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-            aria-label={`Notifications${(data.unreadNotifications ?? 0) > 0 ? `, ${data.unreadNotifications} unread` : ""}`}
-            onClick={() => sfx.tap()}
-          >
-            <AppIcon name="bell" size={20} />
-            {(data.unreadNotifications ?? 0) > 0 && (
-              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--primary)] text-white text-[10px] font-extrabold flex items-center justify-center leading-none">
-                {(data.unreadNotifications ?? 0) > 9 ? "9+" : data.unreadNotifications}
-              </span>
-            )}
-          </Link>
+          <StreakBadge count={k.streak} />
         </div>
       </div>
 
@@ -274,14 +312,20 @@ function KidHome() {
                 ]}
                 footnote={
                   summary.owed > 0
-                    ? `Owed on loans: ${formatRM(summary.owed)} (not taken off your total)`
+                    ? `Owed on loans: ${format(summary.owed)} (not taken off your total)`
                     : undefined
                 }
-                hideBalance={hideBalance}
-                onToggleHide={() => setHideBalance(!hideBalance)}
+                hideBalance={isMasked}
+                onToggleHide={() => {
+                  if (locked) openUnlockSheet();
+                  else toggleHidden();
+                }}
                 onArrowClick={() => nav({ to: "/kid/wallet" })}
                 metadata={[
-                  { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
+                  {
+                    label: "Hibah",
+                    value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%`,
+                  },
                   { label: "100% Halal" },
                 ]}
               />
@@ -302,7 +346,7 @@ function KidHome() {
         >
           <span className="points-card__label">Reward points</span>
           <strong className="points-card__value tabular-nums">
-            {hideBalance ? "******" : Math.round(Number(k.coins)).toLocaleString("en-MY")}
+            {Math.round(Number(k.coins)).toLocaleString("en-MY")}
           </strong>
           <span className="points-card__meta">
             Level {k.level} · {k.xp} XP
@@ -311,7 +355,10 @@ function KidHome() {
       </div>
       <div className="pager-dots" aria-hidden="true">
         {[0, 1].map((i) => (
-          <span key={i} className={i === balanceSlide ? "pager-dot--active" : "pager-dot"} />
+          <span
+            key={i}
+            className={i === balanceSlide ? "pager-dot--active" : "pager-dot"}
+          />
         ))}
       </div>
 
@@ -329,33 +376,21 @@ function KidHome() {
           <span className="quick-label">Transfer</span>
         </Link>
 
-        <Link
-          to="/kid/history"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
+        <Link to="/kid/history" onClick={() => sfx.tap()} className="quick-btn">
           <span className="quick-circle">
             <AppIcon name="history" size={22} />
           </span>
           <span className="quick-label">History</span>
         </Link>
 
-        <Link
-          to="/kid/goals"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
+        <Link to="/kid/goals" onClick={() => sfx.tap()} className="quick-btn">
           <span className="quick-circle quick-circle--aqua">
             <AppIcon name="save" size={24} />
           </span>
           <span className="quick-label">Tabung</span>
         </Link>
 
-        <Link
-          to="/kid/zakat"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
+        <Link to="/kid/zakat" onClick={() => sfx.tap()} className="quick-btn">
           <span className="quick-circle quick-circle--amber">
             <span className="quick-circle__dot" aria-hidden="true" />
             <AppIcon name="mosque" size={22} />
@@ -364,11 +399,7 @@ function KidHome() {
         </Link>
 
         {/* Row 2 */}
-        <Link
-          to="/kid/loans"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
+        <Link to="/kid/loans" onClick={() => sfx.tap()} className="quick-btn">
           <span className="quick-circle">
             <AppIcon name="loan" size={22} />
           </span>
@@ -386,12 +417,7 @@ function KidHome() {
           <span className="quick-label">Missions</span>
         </Link>
 
-
-        <Link
-          to="/kid/sadaqah"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
+        <Link to="/kid/sadaqah" onClick={() => sfx.tap()} className="quick-btn">
           <span className="quick-circle quick-circle--aqua">
             <span className="quick-circle__dot" aria-hidden="true" />
             <AppIcon name="sadaqah" size={22} />
@@ -399,16 +425,19 @@ function KidHome() {
           <span className="quick-label">Sadaqah</span>
         </Link>
 
-        <Link
-          to="/kid/chat"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
+        <button
+          type="button"
+          onClick={() => {
+            sfx.tap();
+            openPenny({ context: { page: "Home" } });
+          }}
+          className="quick-btn bg-transparent border-none cursor-pointer"
         >
           <span className="quick-circle quick-circle--coral">
             <AppIcon name="penny" size={24} />
           </span>
           <span className="quick-label">Penny</span>
-        </Link>
+        </button>
       </div>
 
       {/* One promotion, text left and art right */}
@@ -463,7 +492,9 @@ function KidHome() {
           <AppIcon name="quest" size={24} />
         </div>
         <div className="min-w-0">
-          <h4 className="text-base font-bold text-[var(--ink)] m-0">Missions</h4>
+          <h4 className="text-base font-bold text-[var(--ink)] m-0">
+            Missions
+          </h4>
           <p className="text-sm text-[var(--text-muted)] mt-0.5 mb-0">
             Learn money skills and earn points
           </p>
@@ -484,7 +515,9 @@ function KidHome() {
 
       <div className="bg-white rounded-2xl p-5 flex items-center justify-between gap-4">
         <div>
-          <span className="text-sm text-[var(--text-secondary)] font-medium">This month's spending</span>
+          <span className="text-sm text-[var(--text-secondary)] font-medium">
+            This month's spending
+          </span>
           <div className="text-2xl font-extrabold text-[var(--ink)] mt-1 tabular-nums">
             {formatRM(
               walletTxs
@@ -526,7 +559,10 @@ function KidHome() {
           aria-label={`Claim ${Math.round(Number(k.unclaimed_coins))} unclaimed points`}
           className="block w-full text-left mt-4 transition-transform active:scale-[0.98] cursor-pointer"
         >
-          <Card variant="soft" className="p-4 border border-[var(--success)]/30 bg-[var(--success-soft)]/30 flex items-center justify-between gap-3">
+          <Card
+            variant="soft"
+            className="p-4 border border-[var(--success)]/30 bg-[var(--success-soft)]/30 flex items-center justify-between gap-3"
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[var(--success-soft)] text-[var(--success-text)] flex items-center justify-center shrink-0">
                 <AppIcon name="gift" size={20} />
@@ -535,7 +571,9 @@ function KidHome() {
                 <strong className="text-sm font-bold text-[var(--ink)] block">
                   Unclaimed Points Available!
                 </strong>
-                <small className="text-xs text-[var(--text-secondary)]">Tap here to add to your balance</small>
+                <small className="text-xs text-[var(--text-secondary)]">
+                  Tap here to add to your balance
+                </small>
               </div>
             </div>
             <div className="text-base font-extrabold text-[var(--success-text)] tabular-nums shrink-0">
@@ -554,28 +592,46 @@ function KidHome() {
 
       <SectionTitle>Money requests</SectionTitle>
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="primary" onClick={() => setMoneyReq("DEPOSIT")} className="justify-center">
+        <Button
+          variant="primary"
+          onClick={() => setMoneyReq("DEPOSIT")}
+          className="justify-center"
+        >
           <AppIcon name="plus" size={16} />
           Ask Deposit
         </Button>
-        <Button variant="secondary" onClick={() => setMoneyReq("WITHDRAWAL")} className="justify-center">
+        <Button
+          variant="secondary"
+          onClick={() => setMoneyReq("WITHDRAWAL")}
+          className="justify-center"
+        >
           <AppIcon name="minus" size={16} />
           Ask Withdraw
         </Button>
       </div>
 
       {moneyReq && (
-        <Card variant="default" className="mt-4 p-5 space-y-4 border border-[var(--border)]">
+        <Card
+          variant="default"
+          className="mt-4 p-5 space-y-4 border border-[var(--border)]"
+        >
           <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border)]">
             <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-              <AppIcon name={moneyReq === "DEPOSIT" ? "deposit" : "withdrawal"} size={18} />
+              <AppIcon
+                name={moneyReq === "DEPOSIT" ? "deposit" : "withdrawal"}
+                size={18}
+              />
             </div>
             <div>
               <h3 className="text-sm font-bold text-[var(--ink)]">
-                {moneyReq === "DEPOSIT" ? "Ask Parent to Deposit" : "Ask Parent to Withdraw"}
+                {moneyReq === "DEPOSIT"
+                  ? "Ask Parent to Deposit"
+                  : "Ask Parent to Withdraw"}
               </h3>
               <p className="text-xs text-[var(--text-secondary)]">
-                {moneyReq === "DEPOSIT" ? "Add savings to your digital wallet" : "Convert digital balance into cash"}
+                {moneyReq === "DEPOSIT"
+                  ? "Add savings to your digital wallet"
+                  : "Convert digital balance into cash"}
               </p>
             </div>
           </div>
@@ -585,7 +641,9 @@ function KidHome() {
             busy={busy}
             showReference
             confirmLabel={
-              moneyReq === "DEPOSIT" ? "Send Deposit Request" : "Send Withdrawal Request"
+              moneyReq === "DEPOSIT"
+                ? "Send Deposit Request"
+                : "Send Withdrawal Request"
             }
             onConfirm={submitMoneyReq}
             onCancel={() => setMoneyReq(null)}
@@ -594,16 +652,22 @@ function KidHome() {
       )}
 
       {showReward && (
-        <Card variant="default" className="mt-4 p-5 space-y-4 border border-[var(--border)]">
+        <Card
+          variant="default"
+          className="mt-4 p-5 space-y-4 border border-[var(--border)]"
+        >
           <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
                 <AppIcon name="gift" size={18} />
               </div>
-              <h3 className="text-sm font-bold text-[var(--ink)]">Custom Wishlist Request</h3>
+              <h3 className="text-sm font-bold text-[var(--ink)]">
+                Custom Wishlist Request
+              </h3>
             </div>
             <span className="text-xs font-bold text-[var(--primary-text)] flex items-center gap-1">
-              {Math.round(Number(k.coins)).toLocaleString()} <AppIcon name="star" size={12} />
+              {Math.round(Number(k.coins)).toLocaleString()}{" "}
+              <AppIcon name="star" size={12} />
             </span>
           </div>
           <Input
@@ -629,13 +693,23 @@ function KidHome() {
           <SectionTitle>Waiting for approval</SectionTitle>
           <div className="space-y-2.5">
             {pendingApprovals.map((a: (typeof pendingApprovals)[number]) => (
-              <Card key={a.id} variant="default" className="p-4 border border-[var(--border)] flex items-center justify-between gap-3">
+              <Card
+                key={a.id}
+                variant="default"
+                className="p-4 border border-[var(--border)] flex items-center justify-between gap-3"
+              >
                 <div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>{approvalKindLabel(a.kind)}</Badge>
-                    <span className="text-xs font-semibold text-[var(--ink)]">{cleanApprovalReason(a.reason)}</span>
+                    <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>
+                      {approvalKindLabel(a.kind)}
+                    </Badge>
+                    <span className="text-xs font-semibold text-[var(--ink)]">
+                      {cleanApprovalReason(a.reason)}
+                    </span>
                   </div>
-                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Sent to parent for review</small>
+                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">
+                    Sent to parent for review
+                  </small>
                 </div>
                 <div className="text-base font-bold text-[var(--ink)] tabular-nums shrink-0">
                   {formatRM(Number(a.amount))}
@@ -646,7 +720,9 @@ function KidHome() {
         </div>
       )}
 
-      {data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length > 0 && (
+      {data.loans.filter(
+        (l: (typeof data.loans)[number]) => l.status === "active",
+      ).length > 0 && (
         <div className="space-y-3">
           <SectionTitle>My Qard loans</SectionTitle>
           <div className="space-y-2.5">
@@ -656,11 +732,19 @@ function KidHome() {
                 const remaining = Number(l.amount) - Number(l.repaid);
                 const overdue = new Date(l.due_date) < new Date();
                 return (
-                  <Card key={l.id} variant="default" className="p-4 border border-[var(--border)] flex items-center justify-between gap-3">
+                  <Card
+                    key={l.id}
+                    variant="default"
+                    className="p-4 border border-[var(--border)] flex items-center justify-between gap-3"
+                  >
                     <div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={overdue ? "error" : "warning"}>{overdue ? "Overdue" : "Active"}</Badge>
-                        <strong className="text-sm font-bold text-[var(--ink)]">{l.reason || "Qard loan"}</strong>
+                        <Badge variant={overdue ? "error" : "warning"}>
+                          {overdue ? "Overdue" : "Active"}
+                        </Badge>
+                        <strong className="text-sm font-bold text-[var(--ink)]">
+                          {l.reason || "Qard loan"}
+                        </strong>
                       </div>
                       <small className="text-xs text-[var(--text-secondary)] mt-0.5 block">
                         Due {formatDate(l.due_date)}
@@ -670,7 +754,10 @@ function KidHome() {
                       <div className="text-base font-extrabold text-[var(--ink)] tabular-nums">
                         {formatRM(remaining)}
                       </div>
-                      <Link to="/kid/loans" className="text-xs font-bold text-[var(--primary-text)] hover:underline inline-block mt-0.5">
+                      <Link
+                        to="/kid/loans"
+                        className="text-xs font-bold text-[var(--primary-text)] hover:underline inline-block mt-0.5"
+                      >
                         Repay →
                       </Link>
                     </div>
@@ -680,7 +767,6 @@ function KidHome() {
           </div>
         </div>
       )}
-
 
       <div className="flex items-center justify-between">
         <SectionTitle>Transaction History</SectionTitle>
@@ -694,11 +780,17 @@ function KidHome() {
           </Link>
         )}
       </div>
-      <Card variant="default" className="p-2 divide-y divide-[var(--border)] overflow-hidden">
+      <Card
+        variant="default"
+        className="p-2 divide-y divide-[var(--border)] overflow-hidden"
+      >
         {walletTxs.slice(0, 5).map((t: (typeof walletTxs)[number]) => {
           const title = transactionTitle(t);
           const typeLabel = transactionTypeLabel(t.type, t.label);
-          const subtitle = title.trim().toLowerCase() === typeLabel.trim().toLowerCase() ? undefined : typeLabel;
+          const subtitle =
+            title.trim().toLowerCase() === typeLabel.trim().toLowerCase()
+              ? undefined
+              : typeLabel;
           return (
             <TransactionRow
               key={t.id}
@@ -706,13 +798,16 @@ function KidHome() {
               subtitle={subtitle}
               date={formatDate(t.created_at)}
               amount={Number(t.amount)}
-              isIncome={!isDebitTransaction(t.type, t.label)}
+              type={t.type}
+              label={t.label}
               icon={TX_ICON_MAP[t.type] || "transaction"}
             />
           );
         })}
         {walletTxs.length === 0 && (
-          <div className="p-6 text-center text-xs text-[var(--text-muted)]">No activity yet.</div>
+          <div className="p-6 text-center text-xs text-[var(--text-muted)]">
+            No activity yet.
+          </div>
         )}
       </Card>
 
@@ -720,12 +815,20 @@ function KidHome() {
         <div className="profile-sheet">
           <div className="profile-sheet__header">
             <h2 className="text-lg font-bold text-[var(--ink)]">My Profile</h2>
-            <Button type="button" variant="secondary" size="sm" onClick={() => setShowProfile(false)}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowProfile(false)}
+            >
               Close
             </Button>
           </div>
 
-          <div style={{ maxWidth: "500px", margin: "0 auto" }} className="p-4 space-y-4">
+          <div
+            style={{ maxWidth: "500px", margin: "0 auto" }}
+            className="p-4 space-y-4"
+          >
             {showUpload ? (
               <ImageUploadCrop
                 busy={savingProfile}
@@ -735,7 +838,11 @@ function KidHome() {
             ) : (
               <div className="space-y-4">
                 <div className="text-center">
-                  <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={96} ring />
+                  <AvatarBubble
+                    emoji={k.avatar ?? "phosphor:Smiley"}
+                    size={96}
+                    ring
+                  />
                   <div className="mt-2">
                     <Button
                       type="button"
@@ -750,7 +857,11 @@ function KidHome() {
 
                 <div className="space-y-3">
                   <Input label="Name" value={k.name} disabled />
-                  <Input label="Username (Parent only)" value={k.username || ""} disabled />
+                  <Input
+                    label="Username (Parent only)"
+                    value={k.username || ""}
+                    disabled
+                  />
 
                   <div>
                     <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
@@ -796,11 +907,15 @@ function KidHome() {
 
                   {data.parent && (
                     <Card variant="soft" className="p-3 space-y-1">
-                      <small className="text-xs text-[var(--text-secondary)] font-medium">Linked to Parent</small>
+                      <small className="text-xs text-[var(--text-secondary)] font-medium">
+                        Linked to Parent
+                      </small>
                       <div className="text-sm font-bold text-[var(--ink)]">
                         {data.parent.display_name || "Parent"}
                       </div>
-                      <small className="text-xs text-[var(--text-muted)]">{data.parent.email}</small>
+                      <small className="text-xs text-[var(--text-muted)]">
+                        {data.parent.email}
+                      </small>
                     </Card>
                   )}
 
@@ -820,7 +935,6 @@ function KidHome() {
           </div>
         </div>
       )}
-
     </>
   );
 }

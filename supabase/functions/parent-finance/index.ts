@@ -6,6 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import { isValidPinFormat, hashPin, verifyStoredPin } from "./pin.ts";
+import { verifyKidOwnership, OwnershipError } from "./ownership.ts";
+import { mytRange, StatementError } from "./statement.ts";
 import {
   buildPennyRequest,
   callPenny,
@@ -121,6 +123,9 @@ serve(async (req: Request) => {
     }
   } catch (err) {
     console.error("parent-finance error:", err);
+    if (err instanceof OwnershipError || err instanceof StatementError) {
+      return jsonError(err.message, err.status);
+    }
     return jsonError(err instanceof Error ? err.message : "Internal server error", 500);
   }
 });
@@ -132,14 +137,6 @@ serve(async (req: Request) => {
 // generic defaults do not collapse the schema to `never`.
 const makeAdmin = (url: string, key: string) => createClient(url, key);
 type Admin = ReturnType<typeof makeAdmin>;
-
-async function verifyKidOwnership(client: Admin, kidId: string, parentId: string, select = "*"): Promise<Record<string, any>> {
-  const { data: kid, error } = await client.from("kids").select(select).eq("id", kidId).maybeSingle();
-  if (error) throw new Error(error.message);
-  const row = kid as Record<string, any> | null;
-  if (!row || row.parent_id !== parentId) throw new Error("Not found or not your child");
-  return row;
-}
 
 function jsonOk(data: unknown) {
   return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
@@ -657,9 +654,14 @@ async function handleDeposit(admin: Admin, parentId: string, params: { kidId: st
 async function handleGetStatement(admin: Admin, parentId: string, params: { kidId: string; from: string; to: string }) {
   const { kidId, from, to } = params;
   const kid = await verifyKidOwnership(admin, kidId, parentId, "id, name, balance");
-  const fromDate = new Date(from); fromDate.setHours(0, 0, 0, 0);
-  const toDate = new Date(to); toDate.setHours(23, 59, 59, 999);
-  const { data: txs, error } = await admin.from("transactions").select("*").eq("kid_id", kidId).gte("created_at", fromDate.toISOString()).lte("created_at", toDate.toISOString()).order("created_at", { ascending: false });
+  const { startIso, endIso } = mytRange(from, to);
+  const { data: txs, error } = await admin
+    .from("transactions")
+    .select("*")
+    .eq("kid_id", kidId)
+    .gte("created_at", startIso)
+    .lte("created_at", endIso)
+    .order("created_at", { ascending: false });
   if (error) return jsonError(error.message, 500);
   return jsonOk({ kid: { id: kid.id, name: kid.name, balance: kid.balance }, transactions: txs ?? [], period: { from, to } });
 }
@@ -968,6 +970,7 @@ async function handlePennyChat(
       history: rawHistory,
       message,
       systemPrompt: system,
+      context: params.context as any,
       maxTokens: configuredMaxTokens,
       allowPro,
     });

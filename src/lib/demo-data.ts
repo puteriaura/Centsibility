@@ -165,6 +165,24 @@ export const DEMO_LOANS: Loan[] = [
 
 export const DEMO_TRANSACTIONS: Transaction[] = [
   {
+    id: "demo-tx-4",
+    kid_id: DEMO_KID.id,
+    type: "TRANSFER_OUT",
+    amount: 2.0,
+    label: "Transfer sent",
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+    kids: { name: DEMO_KID.name },
+  },
+  {
+    id: "demo-tx-5",
+    kid_id: DEMO_KID.id,
+    type: "TRANSFER_IN",
+    amount: 5.0,
+    label: "Transfer received",
+    created_at: new Date(Date.now() - 3600000 * 1).toISOString(),
+    kids: { name: DEMO_KID.name },
+  },
+  {
     id: "demo-tx-1",
     kid_id: DEMO_KID.id,
     type: "DEPOSIT",

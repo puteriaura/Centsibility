@@ -7,9 +7,14 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { useKidData } from "@/hooks/use-kid-data";
 import { getKidSession } from "@/lib/kid-session";
 import { isKidBypassed } from "@/lib/admin-bypass";
-import { edgeKidQuestBoard, extractEdgeErrorMessage, type QuestNode } from "@/lib/edge";
+import {
+  edgeKidQuestBoard,
+  extractEdgeErrorMessage,
+  type QuestNode,
+} from "@/lib/edge";
 import { sfx } from "@/lib/sounds";
 import { RewardsPanel } from "@/features/kid/RewardsPanel";
+import { StreakBadge } from "@/components/StreakBadge";
 
 interface MissionsSearch {
   tab?: "quests" | "rewards";
@@ -74,16 +79,22 @@ function KidMissionsPage() {
   const xp = Number(kid?.xp ?? 0);
   const level = Number(kid?.level ?? 1 + Math.floor(xp / 100));
   const streak = Number(kid?.streak ?? 1);
-  const ageGroup = String(boardAgeGroup || (kidState as Record<string, unknown>)?.ageGroup || "10-12");
+  const ageGroup = String(
+    boardAgeGroup || (kidState as Record<string, unknown>)?.ageGroup || "10-12",
+  );
 
   const completedCount = quests.filter((q) => q.status === "done").length;
   const totalQuests = quests.length || 8;
-  const progressPct = totalQuests > 0 ? Math.round((completedCount / totalQuests) * 100) : 0;
+  const progressPct =
+    totalQuests > 0 ? Math.round((completedCount / totalQuests) * 100) : 0;
 
   return (
     <div className="space-y-6 pb-12">
       {/* Header Stat Strip */}
-      <section className="deposit-hero" aria-label="Missions & Rewards overview">
+      <section
+        className="deposit-hero"
+        aria-label="Missions & Rewards overview"
+      >
         <div className="deposit-hero__copy">
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide bg-white/20 text-white">
@@ -93,15 +104,16 @@ function KidMissionsPage() {
                   ? "Money Pros · ages 13 to 17"
                   : "Smart Savers · ages 10 to 12"}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/20 text-white flex items-center gap-1">
-              <AppIcon name="flame" size={12} color="#ffedd5" />
-              {streak} day streak
-            </span>
+            <StreakBadge count={streak} />
           </div>
           <p className="deposit-hero__label">Total Points Balance</p>
           <div className="flex items-baseline gap-2">
-            <p className="deposit-hero__amount tabular-nums">{coins.toLocaleString()}</p>
-            <span className="text-sm font-bold text-white">pts · Lvl {level}</span>
+            <p className="deposit-hero__amount tabular-nums">
+              {coins.toLocaleString()}
+            </p>
+            <span className="text-sm font-bold text-white">
+              pts · Lvl {level}
+            </span>
           </div>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
@@ -154,9 +166,14 @@ function KidMissionsPage() {
       {tab === "quests" && (
         <div className="space-y-4">
           {/* Progress Card */}
-          <Card variant="soft" className="p-4 border border-[var(--border)] space-y-2">
+          <Card
+            variant="soft"
+            className="p-4 border border-[var(--border)] space-y-2"
+          >
             <div className="flex items-center justify-between text-xs sm:text-sm">
-              <strong className="text-[var(--ink)] font-bold">Quest Journey</strong>
+              <strong className="text-[var(--ink)] font-bold">
+                Quest Journey
+              </strong>
               <span className="text-xs font-semibold text-[var(--text-secondary)]">
                 {completedCount} of {totalQuests} quests completed
               </span>
@@ -178,7 +195,9 @@ function KidMissionsPage() {
             </div>
           ) : boardError ? (
             <Card variant="soft" className="p-6 text-center space-y-3">
-              <p className="text-sm text-[var(--error)] font-semibold">{boardError}</p>
+              <p className="text-sm text-[var(--error)] font-semibold">
+                {boardError}
+              </p>
               <button
                 type="button"
                 onClick={() => void fetchBoard()}
@@ -212,7 +231,10 @@ function KidMissionsPage() {
                               : "bg-[var(--surface-pink)] text-[var(--primary-text)]"
                         }`}
                       >
-                        <AppIcon name={isLocked ? "lock" : q.icon || "quest"} size={22} />
+                        <AppIcon
+                          name={isLocked ? "lock" : q.icon || "quest"}
+                          size={22}
+                        />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

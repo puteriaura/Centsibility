@@ -1,6 +1,8 @@
 import * as React from "react";
 import { AppIcon } from "@/components/ui/app-icon";
 import { formatRM } from "@/lib/format";
+import { transactionAmount } from "@/lib/finance";
+import { useMoney, MASKED_AMOUNT } from "@/features/privacy";
 
 export interface TransactionRowProps {
   id?: string;
@@ -9,6 +11,8 @@ export interface TransactionRowProps {
   date?: string;
   amount: number;
   isIncome?: boolean;
+  type?: string;
+  label?: string | null;
   icon?: string;
   onClick?: () => void;
   className?: string;
@@ -20,11 +24,16 @@ export function TransactionRow({
   date,
   amount,
   isIncome = false,
+  type,
+  label,
   icon,
   onClick,
   className = "",
 }: TransactionRowProps) {
-  const defaultIcon = isIncome ? "deposit" : "withdrawal";
+  const { isMasked, locked, openUnlockSheet } = useMoney();
+  const amt = type !== undefined ? transactionAmount(type, label, amount) : null;
+  const isPos = amt ? amt.tone === "in" : isIncome;
+  const defaultIcon = isPos ? "deposit" : "withdrawal";
   const iconName = icon || defaultIcon;
 
   return (
@@ -37,7 +46,7 @@ export function TransactionRow({
       <div className="flex items-center gap-3 min-w-0">
         <div
           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            isIncome
+            isPos
               ? "bg-[var(--success-soft)] text-[var(--success-text)]"
               : "bg-[var(--surface-soft)] text-[var(--primary-text)]"
           }`}
@@ -59,10 +68,17 @@ export function TransactionRow({
       <div className="text-right shrink-0 ml-3">
         <span
           className={`text-sm font-bold tabular-nums block leading-snug ${
-            isIncome ? "text-[var(--success-text)]" : "text-[var(--ink)]"
+            (amt ? amt.tone === "out" : !isIncome) ? "text-[var(--ink)]" : "text-[var(--success-text)]"
           }`}
+          aria-label={isMasked ? "Amount hidden" : undefined}
+          onClick={locked ? (e) => { e.stopPropagation(); openUnlockSheet(); } : undefined}
+          style={locked ? { cursor: "pointer" } : undefined}
         >
-          {formatRM(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
+          {isMasked
+            ? MASKED_AMOUNT
+            : amt
+              ? amt.text
+              : formatRM(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
         </span>
       </div>
     </div>

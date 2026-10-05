@@ -14,6 +14,7 @@ import {
 } from "@/lib/edge";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
+import { usePenny } from "@/features/penny";
 
 export const Route = createFileRoute("/kid/quest/$questId")({
   head: () => ({ meta: [{ title: "Quest — Centsibility" }] }),
@@ -42,6 +43,7 @@ interface AnswerResult {
 function KidQuestRunnerPage() {
   const { questId } = Route.useParams();
   const navigate = useNavigate();
+  const { openPenny, setPageContext } = usePenny();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +91,22 @@ function KidQuestRunnerPage() {
   useEffect(() => {
     void startQuest();
   }, [startQuest]);
+
+  useEffect(() => {
+    const currentQ = questions[currentIndex];
+    if (currentQ) {
+      if (answerResult) {
+        const picked = selectedChoice !== null ? currentQ.choices[selectedChoice] : "";
+        const correct = currentQ.choices[answerResult.correctIndex] ?? "";
+        const detail = `${questTitle} - Q: ${currentQ.prompt}. Picked: ${picked}. Correct: ${correct}. Choices: ${currentQ.choices.join(", ")}`.slice(0, 600);
+        setPageContext({ page: "Quest", detail });
+      } else {
+        const detail = `${questTitle} - Q: ${currentQ.prompt}. Choices: ${currentQ.choices.join(", ")}`.slice(0, 600);
+        setPageContext({ page: "Quest", detail });
+      }
+    }
+    return () => setPageContext(null);
+  }, [questions, currentIndex, answerResult, selectedChoice, questTitle, setPageContext]);
 
   const handleSelectChoice = async (choiceIndex: number) => {
     if (submitting || answerResult) return;
@@ -195,7 +213,16 @@ function KidQuestRunnerPage() {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => void navigate({ to: "/kid/chat", search: { q: `I just finished the quest "${questTitle}"!` } })}
+                    onClick={() => {
+                      sfx.tap();
+                      openPenny({
+                        prompt: `I just finished the quest "${questTitle}"!`,
+                        context: {
+                          page: "Quest",
+                          detail: `${questTitle} completed successfully`,
+                        },
+                      });
+                    }}
                     className="min-w-[140px] flex items-center justify-center gap-1.5"
                   >
                     <AppIcon name="penny" size={16} />
@@ -351,15 +378,21 @@ function KidQuestRunnerPage() {
               }
               return (
                 <div className="pt-1">
-                  <Link
-                    to="/kid/chat"
-                    search={{ q: query }}
-                    onClick={() => sfx.tap()}
-                    className="text-xs font-bold text-[var(--primary-hover)] hover:underline inline-flex items-center gap-1"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sfx.tap();
+                      const detail = `${questTitle} - Q: ${currentQ.prompt}. Picked: ${picked}. Correct: ${correct}. Choices: ${currentQ.choices.join(", ")}`.slice(0, 600);
+                      openPenny({
+                        prompt: query,
+                        context: { page: "Quest", detail },
+                      });
+                    }}
+                    className="text-xs font-bold text-[var(--primary-hover)] hover:underline inline-flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer"
                   >
                     <AppIcon name="chat" size={14} />
                     Ask Penny why →
-                  </Link>
+                  </button>
                 </div>
               );
             })()}

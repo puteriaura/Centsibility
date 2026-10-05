@@ -10,7 +10,7 @@ import { buildSpendingSummary } from "@/lib/penny-insights";
 
 describe("isDebitTransaction", () => {
   it("treats money leaving the account as a debit", () => {
-    const debitTypes = ["WITHDRAWAL", "SADAQAH", "INVEST_IN", "FEE", "QARD_REPAY", "GOAL_IN"];
+    const debitTypes = ["WITHDRAWAL", "SADAQAH", "INVEST_IN", "FEE", "QARD_REPAY", "GOAL_IN", "TRANSFER_OUT"];
     for (const type of debitTypes) {
       expect(isDebitTransaction(type)).toBe(true);
       expect(formatTransactionSign(type)).toBe("-");
@@ -18,7 +18,7 @@ describe("isDebitTransaction", () => {
   });
 
   it("treats credit types as not debit", () => {
-    const creditTypes = ["DEPOSIT", "HIBAH", "INVEST_OUT"];
+    const creditTypes = ["DEPOSIT", "HIBAH", "INVEST_OUT", "TRANSFER_IN"];
     for (const type of creditTypes) {
       expect(isDebitTransaction(type)).toBe(false);
       expect(formatTransactionSign(type)).toBe("+");
@@ -56,6 +56,8 @@ describe("isWalletTransaction", () => {
       "QARD_REPAY",
       "GOAL_IN",
       "GOAL_OUT",
+      "TRANSFER_IN",
+      "TRANSFER_OUT",
     ];
     for (const type of walletTypes) {
       expect(isWalletTransaction(type)).toBe(true);

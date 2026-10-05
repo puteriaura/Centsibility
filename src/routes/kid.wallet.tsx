@@ -16,11 +16,16 @@ import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
-import { getBalanceSummary, isDebitTransaction, isWalletTransaction } from "@/lib/finance";
+import {
+  getBalanceSummary,
+  isDebitTransaction,
+  isWalletTransaction,
+} from "@/lib/finance";
 import { AppIcon } from "@/components/ui/app-icon";
 import { formatDate, formatRM } from "@/lib/format";
 import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
 import { useMoneyAction } from "@/hooks/use-money-action";
+import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
@@ -66,7 +71,11 @@ function KidWallet() {
   const balance = Number(k.balance);
   const invested = Number(k.invest_balance ?? 0);
 
-  const ask = async (kind: "DEPOSIT" | "WITHDRAWAL", amount: number, reference?: string) => {
+  const ask = async (
+    kind: "DEPOSIT" | "WITHDRAWAL",
+    amount: number,
+    reference?: string,
+  ) => {
     if (!code) return;
     const actionWord = kind === "DEPOSIT" ? "Deposit" : "Withdrawal";
     await run(
@@ -75,13 +84,15 @@ function KidWallet() {
           code,
           kind,
           amount,
-          reason: reference || (kind === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
+          reason:
+            reference ||
+            (kind === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
         }),
       {
         success: `${actionWord} request for ${formatRM(amount)} sent for approval`,
         failure: `${actionWord} request didn't go through`,
         refresh,
-      }
+      },
     );
   };
 
@@ -102,14 +113,15 @@ function KidWallet() {
     0,
   );
 
-
   return (
     <div className="space-y-5 pb-8">
       {/* Total balance header; the canvas sheet rises over it */}
       <section className="deposit-hero" aria-label="Total balance">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Total balance</p>
-          <p className="deposit-hero__amount tabular-nums">{formatRM(balanceSummary.total)}</p>
+          <p className="deposit-hero__amount tabular-nums">
+            <Money amount={balanceSummary.total} />
+          </p>
           <button
             type="button"
             className="deposit-hero__link"
@@ -133,19 +145,26 @@ function KidWallet() {
           >
             <div className="flex justify-between">
               <span className="text-white">Spending</span>
-              <strong className="tabular-nums font-bold">{formatRM(balanceSummary.spending)}</strong>
+              <strong className="tabular-nums font-bold">
+                <Money amount={balanceSummary.spending} />
+              </strong>
             </div>
             <div className="flex justify-between">
               <span className="text-white">Tabung</span>
-              <strong className="tabular-nums font-bold">{formatRM(balanceSummary.tabung)}</strong>
+              <strong className="tabular-nums font-bold">
+                <Money amount={balanceSummary.tabung} />
+              </strong>
             </div>
             <div className="flex justify-between">
               <span className="text-white">Growth Tabung</span>
-              <strong className="tabular-nums font-bold">{formatRM(balanceSummary.growth)}</strong>
+              <strong className="tabular-nums font-bold">
+                <Money amount={balanceSummary.growth} />
+              </strong>
             </div>
             {balanceSummary.owed > 0 && (
               <p className="text-[11px] pt-1.5 border-t border-white/10 text-white">
-                Owed on loans: {formatRM(balanceSummary.owed)} (not taken off your total)
+                Owed on loans: <Money amount={balanceSummary.owed} /> (not taken
+                off your total)
               </p>
             )}
           </div>
@@ -153,7 +172,11 @@ function KidWallet() {
       </section>
 
       {/* History / Tabung / Insights quick tiles */}
-      <div className="deposit-quick-row" role="navigation" aria-label="Deposit shortcuts">
+      <div
+        className="deposit-quick-row"
+        role="navigation"
+        aria-label="Deposit shortcuts"
+      >
         <Link
           to="/kid/history"
           className="deposit-quick-tile"
@@ -162,7 +185,11 @@ function KidWallet() {
           <AppIcon name="history" size={22} />
           <span>History</span>
         </Link>
-        <Link to="/kid/goals" className="deposit-quick-tile" onClick={() => sfx.tap()}>
+        <Link
+          to="/kid/goals"
+          className="deposit-quick-tile"
+          onClick={() => sfx.tap()}
+        >
           <AppIcon name="save" size={22} />
           <span>Tabung</span>
         </Link>
@@ -195,7 +222,9 @@ function KidWallet() {
           </div>
           <div className="deposit-account-card__bottom">
             <span>Account balance</span>
-            <strong className="tabular-nums">{formatRM(balance)}</strong>
+            <strong className="tabular-nums">
+              <Money amount={balance} />
+            </strong>
           </div>
         </button>
 
@@ -213,7 +242,9 @@ function KidWallet() {
           </div>
           <div className="deposit-account-card__bottom">
             <span>Account balance</span>
-            <strong className="tabular-nums">{formatRM(balanceSummary.tabung + balanceSummary.growth)}</strong>
+            <strong className="tabular-nums">
+              <Money amount={balanceSummary.tabung + balanceSummary.growth} />
+            </strong>
           </div>
         </Link>
 
@@ -231,7 +262,9 @@ function KidWallet() {
           </div>
           <div className="deposit-account-card__bottom">
             <span>Outstanding</span>
-            <strong className="tabular-nums">{formatRM(outstanding)}</strong>
+            <strong className="tabular-nums">
+              <Money amount={outstanding} />
+            </strong>
           </div>
         </Link>
       </div>
@@ -271,7 +304,9 @@ function KidWallet() {
               <AppIcon name="deposit" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">Request Money</h3>
+              <h3 className="text-base font-bold text-[var(--ink)]">
+                Request Money
+              </h3>
               <p className="text-xs text-[var(--text-secondary)]">
                 Ask parent to deposit money into your digital savings.
               </p>
@@ -295,7 +330,9 @@ function KidWallet() {
               <AppIcon name="withdraw" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">Withdraw Cash</h3>
+              <h3 className="text-base font-bold text-[var(--ink)]">
+                Withdraw Cash
+              </h3>
               <p className="text-xs text-[var(--text-secondary)]">
                 Ask parent to convert your digital balance into physical cash.
               </p>
@@ -319,9 +356,12 @@ function KidWallet() {
               <AppIcon name="loan" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">Qard Hasan (Benevolent Loan)</h3>
+              <h3 className="text-base font-bold text-[var(--ink)]">
+                Qard Hasan (Benevolent Loan)
+              </h3>
               <p className="text-xs text-[var(--text-secondary)]">
-                Interest-free financial assistance with digital agreement and repayment scheduling.
+                Interest-free financial assistance with digital agreement and
+                repayment scheduling.
               </p>
             </div>
           </div>
@@ -334,7 +374,11 @@ function KidWallet() {
             />
             <StatCard
               label="Active Loans"
-              value={String(data.loans.filter((l: (typeof data.loans)[number]) => l.status === "active").length)}
+              value={String(
+                data.loans.filter(
+                  (l: (typeof data.loans)[number]) => l.status === "active",
+                ).length,
+              )}
               icon="loan"
             />
           </div>
@@ -351,7 +395,9 @@ function KidWallet() {
       <div id="wallet-history" className="space-y-3 scroll-mt-4">
         <div className="flex items-center justify-between">
           <SectionTitle>Recent Activity</SectionTitle>
-          {data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type)).length > 0 && (
+          {data.txs.filter((t: (typeof data.txs)[number]) =>
+            isWalletTransaction(t.type),
+          ).length > 0 && (
             <Link
               to="/kid/history"
               onClick={() => sfx.tap()}
@@ -361,9 +407,14 @@ function KidWallet() {
             </Link>
           )}
         </div>
-        <Card variant="default" className="p-2 sm:p-3 divide-y divide-[var(--border)]">
+        <Card
+          variant="default"
+          className="p-2 sm:p-3 divide-y divide-[var(--border)]"
+        >
           {(() => {
-            const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) => isWalletTransaction(t.type));
+            const walletTxs = data.txs.filter((t: (typeof data.txs)[number]) =>
+              isWalletTransaction(t.type),
+            );
             if (walletTxs.length === 0) {
               return (
                 <div className="py-8 text-center text-sm text-[var(--text-muted)]">
@@ -372,8 +423,6 @@ function KidWallet() {
               );
             }
             return walletTxs.slice(0, 5).map((t: (typeof data.txs)[number]) => {
-              const isDebit = isDebitTransaction(t.type, t.label);
-
               const iconName = t.type.toLowerCase().includes("deposit")
                 ? "deposit"
                 : t.type.toLowerCase().includes("invest")
@@ -386,7 +435,10 @@ function KidWallet() {
 
               const title = transactionTitle(t);
               const typeLabel = transactionTypeLabel(t.type, t.label);
-              const subtitle = title.trim().toLowerCase() === typeLabel.trim().toLowerCase() ? undefined : typeLabel;
+              const subtitle =
+                title.trim().toLowerCase() === typeLabel.trim().toLowerCase()
+                  ? undefined
+                  : typeLabel;
 
               return (
                 <TransactionRow
@@ -395,7 +447,8 @@ function KidWallet() {
                   subtitle={subtitle}
                   date={formatDate(t.created_at)}
                   amount={Number(t.amount)}
-                  isIncome={!isDebit}
+                  type={t.type}
+                  label={t.label}
                   icon={iconName}
                 />
               );

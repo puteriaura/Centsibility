@@ -11,6 +11,7 @@ import { sfx } from "@/lib/sounds";
 import { formatRM } from "@/lib/format";
 import { getKidSession } from "@/lib/kid-session";
 import { edgeKidSetCardControls } from "@/lib/edge";
+import { usePenny } from "@/features/penny";
 
 export const Route = createFileRoute("/kid/card")({
   head: () => ({ meta: [{ title: "Debit Card-i — Centsibility" }] }),
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/kid/card")({
 });
 
 function KidCard() {
+  const { openPenny } = usePenny();
   const { data, loading, error, refresh } = useKidData();
   const [showDetails, setShowDetails] = useState(false);
   const [isLocked, setIsLocked] = useState(() => Boolean(data?.kid?.card_frozen));
@@ -151,14 +153,17 @@ function KidCard() {
         <p className="text-xs font-semibold text-[var(--text-secondary)] m-0">
           Practice card for learning. It is not a real bank card.
         </p>
-        <Link
-          to="/kid/chat"
-          onClick={() => sfx.tap()}
-          className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors shrink-0"
+        <button
+          type="button"
+          onClick={() => {
+            sfx.tap();
+            openPenny({ context: { page: "Card", detail: "Kid practice card controls" } });
+          }}
+          className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors shrink-0 bg-transparent border-none cursor-pointer"
           aria-label="Ask Penny about cards"
         >
           <AppIcon name="messagecircle" size={22} />
-        </Link>
+        </button>
       </div>
 
       {isLocked && (

@@ -6,6 +6,7 @@ import {
   edgeKidSetInitialPin,
 } from "@/lib/edge";
 import { setKidSession } from "@/lib/kid-session";
+import { markJustUnlocked } from "@/features/privacy";
 import { adminBypassKid, ADMIN_BYPASS } from "@/lib/admin-bypass";
 import { AppIcon } from "@/components/ui/app-icon";
 import { toast } from "sonner";
@@ -50,6 +51,7 @@ function KidLogin() {
     try {
       const res = await edgeKidLogin({ username: username.trim(), pin: pin.trim() });
       setKidSession({ kidId: res.kidId, code: res.code || "", name: res.name });
+      markJustUnlocked();
       toast.success(`Welcome back, ${res.name}!`);
       nav({ to: "/kid" });
     } catch (err: unknown) {
@@ -105,6 +107,7 @@ function KidLogin() {
         birthDate: birthDate || undefined,
       });
       setKidSession({ kidId: res.kidId, code: res.code || "", name: res.name });
+      markJustUnlocked();
       toast.success(`All set, ${res.name}! Your 6-digit PIN is active.`);
       nav({ to: "/kid" });
     } catch (err: unknown) {

@@ -16,7 +16,13 @@ export type SpendingSummary = {
   txCount: number;
   avgTx: number;
   dailyAvg: number;
-  topCategories: Array<{ key: string; label: string; amount: number; pct: number; count: number }>;
+  topCategories: Array<{
+    key: string;
+    label: string;
+    amount: number;
+    pct: number;
+    count: number;
+  }>;
   highlight: string;
   rangeLabel: string;
   rangeStart: Date;
@@ -25,11 +31,19 @@ export type SpendingSummary = {
 
 function categoryKey(type: string, label: string) {
   if (type === "FEE") return "FEE";
-  if (type === "QARD_REPAY" || (type === "QARD" && label === "Loan repayment")) {
+  if (
+    type === "QARD_REPAY" ||
+    (type === "QARD" && label === "Loan repayment")
+  ) {
     return "QARD_REPAY";
   }
   if (type === "GOAL_IN") return "GOAL_IN";
-  if (type === "WITHDRAWAL" || type === "SADAQAH" || type === "INVEST_IN") {
+  if (
+    type === "WITHDRAWAL" ||
+    type === "SADAQAH" ||
+    type === "INVEST_IN" ||
+    type === "TRANSFER_OUT"
+  ) {
     return type;
   }
   const lower = (label || "").toLowerCase();
@@ -52,6 +66,7 @@ function categoryLabel(key: string) {
   if (key === "QARD_REPAY" || key === "QARD") return "Loan repayments";
   if (key === "GOAL_IN") return "Tabung";
   if (key === "DEPOSIT") return "Deposits";
+  if (key === "TRANSFER_OUT") return "Transfers";
   return TRANSACTION_TYPE_LABELS[key] ?? humanizeCode(key);
 }
 
@@ -103,7 +118,9 @@ export function buildSpendingSummary(
 
   const top = topCategories[0];
   const outflows = inRange.filter((t) => isDebitTransaction(t.type, t.label));
-  const biggest = [...outflows].sort((a, b) => Number(b.amount) - Number(a.amount))[0];
+  const biggest = [...outflows].sort(
+    (a, b) => Number(b.amount) - Number(a.amount),
+  )[0];
 
   let highlight =
     txCount === 0
@@ -113,12 +130,13 @@ export function buildSpendingSummary(
         : `You completed ${txCount} transactions recently. Keep tracking to level up your savings game.`;
 
   if (biggest) {
-    const day = new Date(biggest.created_at).toLocaleDateString("en-MY", { weekday: "long" });
+    const day = new Date(biggest.created_at).toLocaleDateString("en-MY", {
+      weekday: "long",
+    });
     highlight = `Big week for transfers! You made 1 outgoing move of ${formatRM(Number(biggest.amount))} on ${day}, showing standout engagement this week.`;
   }
 
-  const fmt = (d: Date) =>
-    formatDate(d);
+  const fmt = (d: Date) => formatDate(d);
 
   return {
     moneyIn,
@@ -134,27 +152,49 @@ export function buildSpendingSummary(
   };
 }
 
-export type ChatMessage = { id: string; role: "user" | "assistant"; text: string };
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+};
 
 /** Rule-based Penny replies grounded in the kid’s own numbers. */
-export function pennyReply(userText: string, summary: SpendingSummary, kidName: string): string {
+export function pennyReply(
+  userText: string,
+  summary: SpendingSummary | null,
+  kidName: string,
+): string {
+  // Build a zero-value fallback if no data is available yet
+  const _now = new Date();
+  const s: SpendingSummary = summary ?? {
+    moneyIn: 0,
+    moneyOut: 0,
+    txCount: 0,
+    avgTx: 0,
+    dailyAvg: 0,
+    topCategories: [],
+    highlight: "",
+    rangeLabel: "",
+    rangeStart: _now,
+    rangeEnd: _now,
+  };
   const q = userText.toLowerCase();
   const topLine =
-    summary.topCategories.length > 0
-      ? summary.topCategories
+    s.topCategories.length > 0
+      ? s.topCategories
           .slice(0, 2)
           .map((c) => `${c.label} (${c.pct.toFixed(1)}%)`)
           .join(" and ")
       : "no major spending categories yet";
 
   if (/spend|spending|expense|out/.test(q)) {
-    return `Hi ${kidName}! Over the past period you spent ${formatRM(summary.moneyOut)} across ${summary.txCount} transactions, averaging ${formatRM(summary.avgTx)} each. Your daily average outflow is ${formatRM(summary.dailyAvg)}, with most going to ${topLine}.\n\nTracking categories is lowkey a superpower because it shows where the cash leaks are. Want tips on cutting back on ${summary.topCategories[0]?.label || "spending"}?`;
+    return `Hi ${kidName}! Over the past period you spent ${formatRM(s.moneyOut)} across ${s.txCount} transactions, averaging ${formatRM(s.avgTx)} each. Your daily average outflow is ${formatRM(s.dailyAvg)}, with most going to ${topLine}.\n\nTracking categories is lowkey a superpower because it shows where the cash leaks are. Want tips on cutting back on ${s.topCategories[0]?.label || "spending"}?`;
   }
   if (/save|saving|goal|pot|tabung/.test(q)) {
-    return `Pro saver move from Penny: move a little from your wallet into a Tabung right when money comes in. You received ${formatRM(summary.moneyIn)} recently. Even putting ${formatRM(Math.max(2, summary.moneyIn * 0.1))} into a Tabung builds massive discipline! Open Tabung to tuck it away.`;
+    return `Pro saver move from Penny: move a little from your wallet into a Tabung right when money comes in. You received ${formatRM(s.moneyIn)} recently. Even putting ${formatRM(Math.max(2, s.moneyIn * 0.1))} into a Tabung builds massive discipline! Open Tabung to tuck it away.`;
   }
   if (/sadaqah|charity|give|zakat/.test(q)) {
-    return `Sadaqah cleanses wealth like water extinguishes fire. Even RM1 makes a huge difference. Your recent outflow is ${formatRM(summary.moneyOut)}. Giving with pure intention brings barakah into everything you save!`;
+    return `Sadaqah cleanses wealth like water extinguishes fire. Even RM1 makes a huge difference. Your recent outflow is ${formatRM(s.moneyOut)}. Giving with pure intention brings barakah into everything you save!`;
   }
   if (/invest|growth|halal/.test(q)) {
     return `Halal growth means risk you truly understand. Check Growth Tabung to start with conservative risk, then allocate small amounts from your wallet. Always check in with your parent first. That is wise, not weak.`;
@@ -163,7 +203,7 @@ export function pennyReply(userText: string, summary: SpendingSummary, kidName: 
     return `Salam and hi there ${kidName}! I'm Penny, your money buddy. Ask me about spending breakdowns, Tabung, sadaqah, or rewards. I'll ground everything in your real transactions.`;
   }
 
-  return `Here is your current money breakdown: money in ${formatRM(summary.moneyIn)}, money out ${formatRM(summary.moneyOut)}, across ${summary.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending habits, Tabung, or sadaqah for a deeper dive. (Educational guidance only, not formal financial advice.)`;
+  return `Here is your current money breakdown: money in ${formatRM(s.moneyIn)}, money out ${formatRM(s.moneyOut)}, across ${s.txCount} transactions. Top areas: ${topLine}.\n\nAsk me about spending habits, Tabung, or sadaqah for a deeper dive. (Educational guidance only, not formal financial advice.)`;
 }
 
 export function buildStorySlides(summary: SpendingSummary, coins: number) {
@@ -173,7 +213,9 @@ export function buildStorySlides(summary: SpendingSummary, coins: number) {
   const slides = [
     {
       title: "Daily wrap",
-      body: summary.highlight || `You made ${summary.txCount} transactions totaling ${formatRM(summary.moneyOut)} during this period.`,
+      body:
+        summary.highlight ||
+        `You made ${summary.txCount} transactions totaling ${formatRM(summary.moneyOut)} during this period.`,
       tone: "primary" as const,
     },
     {
@@ -200,9 +242,10 @@ export function buildStorySlides(summary: SpendingSummary, coins: number) {
     },
     {
       title: "Key Takeaway",
-      body: netSavings >= 0
-        ? `You kept ${formatRM(netSavings)} in net savings this period! W saving discipline. Chat with Penny to allocate it toward your Tabung.`
-        : `Outflows were ${formatRM(Math.abs(netSavings))} higher than inflows this period. Chat with Penny to spot easy cuts and rebalance.`,
+      body:
+        netSavings >= 0
+          ? `You kept ${formatRM(netSavings)} in net savings this period! W saving discipline. Chat with Penny to allocate it toward your Tabung.`
+          : `Outflows were ${formatRM(Math.abs(netSavings))} higher than inflows this period. Chat with Penny to spot easy cuts and rebalance.`,
       tone: "navy" as const,
     },
   ];

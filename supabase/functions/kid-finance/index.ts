@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import bcrypt from "npm:bcryptjs";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
+import { checkKidPin } from "./pin.ts";
 import {
   buildPennyRequest,
   callPenny,
@@ -224,6 +225,7 @@ serve(async (req: Request) => {
       case "penny-chat":       return await handlePennyChat(admin, params, requestId);
       case "transfer-recipients": return await handleTransferRecipients(admin, params, requestId);
       case "transfer":         return await handleTransfer(admin, params, requestId);
+      case "unlock":           return await handleUnlock(admin, params, requestId);
       default:
         return jsonError(`Unknown action: "${action}"`, 400);
     }
@@ -1046,6 +1048,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
       history: rawHistory,
       message,
       systemPrompt: system,
+      context: params.context as any,
       maxTokens: configuredMaxTokens,
       allowPro,
     });
@@ -1108,53 +1111,14 @@ async function resolveParentInfo(admin: Admin, parentId: string): Promise<{ id: 
   return { id: parentId, name, avatar };
 }
 
-async function checkKidPin(
-  admin: Admin,
-  kid: Record<string, unknown>,
-  pin: unknown
-): Promise<{ ok: boolean; error?: string; status?: number }> {
-  if (typeof pin !== "string" || !/^\d{6}$/.test(pin.trim())) {
-    return { ok: false, error: "PIN must be 6 digits", status: 400 };
+export async function handleUnlock(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const pinCheck = await checkKidPin(admin, kid, params.pin);
+  if (!pinCheck.ok) {
+    return jsonError(pinCheck.error || "PIN verification failed", pinCheck.status || 400);
   }
-  if (!kid.hashed_pin) {
-    return { ok: false, error: "PIN setup required", status: 400 };
-  }
-
-  if (kid.locked_until && new Date() < new Date(kid.locked_until as string)) {
-    const mins = Math.max(1, Math.ceil((new Date(kid.locked_until as string).getTime() - Date.now()) / 60000));
-    return {
-      ok: false,
-      error: `Too many wrong PINs. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
-      status: 403,
-    };
-  }
-
-  let isValid = false;
-  try {
-    isValid = await bcrypt.compare(pin.trim(), kid.hashed_pin as string);
-  } catch (_e) {
-    return { ok: false, error: "PIN verification failed", status: 500 };
-  }
-
-  if (!isValid) {
-    const attempts = (Number(kid.failed_login_attempts) || 0) + 1;
-    const lockedUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
-    await admin.from("kids").update({ failed_login_attempts: attempts, locked_until: lockedUntil }).eq("id", kid.id);
-    const triesLeft = Math.max(0, 5 - attempts);
-    return {
-      ok: false,
-      error: attempts >= 5
-        ? "Too many wrong PINs. Try again in 15 minutes."
-        : `That PIN isn't right. ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left.`,
-      status: attempts >= 5 ? 403 : 400,
-    };
-  }
-
-  if ((kid.failed_login_attempts && Number(kid.failed_login_attempts) > 0) || kid.locked_until) {
-    await admin.from("kids").update({ failed_login_attempts: 0, locked_until: null }).eq("id", kid.id);
-  }
-
-  return { ok: true };
+  console.log(`[kid-finance][${requestId}] handleUnlock kid=${kid.id}`);
+  return jsonOk({ ok: true });
 }
 
 async function handleTransferRecipients(admin: Admin, params: Record<string, unknown>, requestId: string) {
@@ -1209,14 +1173,14 @@ async function handleTransfer(admin: Admin, params: Record<string, unknown>, req
 
   if (recipientKind === "kid") {
     if (!recipientId) return jsonError("Missing recipient ID", 400);
-    const { data, error } = await admin.rpc("kid_request_transfer", {
+    const { data, error } = await admin.rpc("kid_send_to_sibling", {
       p_kid_id: kid.id,
       p_to_kid_id: recipientId,
       p_amount: amount,
       p_note: note,
     });
     if (error) return handleRpcError(error);
-    return jsonOk({ ok: true, approvalId: data, status: "pending" });
+    return jsonOk({ ok: true, balance: data?.balance, status: "completed" });
   } else if (recipientKind === "parent") {
     if (recipientId && recipientId !== kid.parent_id) {
       return jsonError("You can only send money to your family.", 400);

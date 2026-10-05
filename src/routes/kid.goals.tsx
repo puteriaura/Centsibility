@@ -23,6 +23,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRM } from "@/lib/format";
 import { getBalanceSummary } from "@/lib/finance";
+import { Money } from "@/features/privacy";
 
 import { useMoneyAction } from "@/hooks/use-money-action";
 
@@ -102,17 +103,14 @@ function KidGoals() {
 
   const save = async (goalId: string, goalName: string, amount: number) => {
     if (!code) return;
-    await run(
-      () => edgeKidContributeGoal({ code, goalId, amount }),
-      {
-        success: (res) => `${formatRM(res.added)} saved to ${goalName}`,
-        failure: "Could not save to Tabung",
-        onSuccess: () => {
-          setActiveGoal(null);
-        },
-        refresh,
-      }
-    );
+    await run(() => edgeKidContributeGoal({ code, goalId, amount }), {
+      success: (res) => `${formatRM(res.added)} saved to ${goalName}`,
+      failure: "Could not save to Tabung",
+      onSuccess: () => {
+        setActiveGoal(null);
+      },
+      refresh,
+    });
   };
 
   const addGoal = async () => {
@@ -141,7 +139,7 @@ function KidGoals() {
           setShowAdd(false);
         },
         refresh,
-      }
+      },
     );
   };
 
@@ -174,28 +172,25 @@ function KidGoals() {
           setEditingId(null);
         },
         refresh,
-      }
+      },
     );
   };
 
   const deleteGoal = async (goalId: string, goalName: string) => {
     if (!code) return;
-    await run(
-      () => edgeKidDeleteGoal({ code, goalId }),
-      {
-        success: (res) => {
-          const refunded = res.refunded || 0;
-          return refunded > 0
-            ? `${goalName} removed. ${formatRM(refunded)} back in your wallet`
-            : `${goalName} removed`;
-        },
-        failure: "Failed to delete Tabung",
-        onSuccess: () => {
-          setDeletingId(null);
-        },
-        refresh,
-      }
-    );
+    await run(() => edgeKidDeleteGoal({ code, goalId }), {
+      success: (res) => {
+        const refunded = res.refunded || 0;
+        return refunded > 0
+          ? `${goalName} removed. ${formatRM(refunded)} back in your wallet`
+          : `${goalName} removed`;
+      },
+      failure: "Failed to delete Tabung",
+      onSuccess: () => {
+        setDeletingId(null);
+      },
+      refresh,
+    });
   };
 
   return (
@@ -204,7 +199,9 @@ function KidGoals() {
       <section className="deposit-hero" aria-label="Tabung summary">
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Total in Tabung</p>
-          <p className="deposit-hero__amount tabular-nums">{formatRM(totalInTabung)}</p>
+          <p className="deposit-hero__amount tabular-nums">
+            <Money amount={totalInTabung} />
+          </p>
           <button
             type="button"
             className="deposit-hero__link"
@@ -238,7 +235,8 @@ function KidGoals() {
           id="tabung-hero-info"
           className="p-3.5 rounded-xl text-xs leading-relaxed text-[var(--ink)] bg-[var(--surface-soft)] border border-[var(--border)]"
         >
-          Money you've put aside, including Growth Tabung. Your spending balance is separate.
+          Money you've put aside, including Growth Tabung. Your spending balance
+          is separate.
         </div>
       )}
 
@@ -272,14 +270,18 @@ function KidGoals() {
                     Growth Tabung
                   </h3>
                   <span className="text-base font-bold tabular-nums text-[var(--ink)] shrink-0">
-                    {formatRM(growth)}
+                    <Money amount={growth} />
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-1">
                   <span className="text-xs text-[var(--text-secondary)]">
                     Halal growth · {riskLabel}
                   </span>
-                  <AppIcon name="chevron" size={18} className="text-[var(--text-muted)] shrink-0" />
+                  <AppIcon
+                    name="chevron"
+                    size={18}
+                    className="text-[var(--text-muted)] shrink-0"
+                  />
                 </div>
               </div>
             </div>
@@ -292,9 +294,12 @@ function KidGoals() {
             <div className="w-14 h-14 rounded-2xl bg-[var(--primary-soft)] text-[var(--primary-text)] flex items-center justify-center mx-auto">
               <AppIcon name="save" size={32} />
             </div>
-            <h3 className="text-base font-bold text-[var(--ink)] m-0">No Tabung yet</h3>
+            <h3 className="text-base font-bold text-[var(--ink)] m-0">
+              No Tabung yet
+            </h3>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-sm mx-auto">
-              Start putting money aside for games, books, or family gifts to reach your milestones.
+              Start putting money aside for games, books, or family gifts to
+              reach your milestones.
             </p>
             {!showAdd && (
               <Button
@@ -315,7 +320,10 @@ function KidGoals() {
 
         {/* 3. One card per Tabung */}
         {data.goals.map((g: (typeof data.goals)[number], index: number) => {
-          const pct = Math.min(100, Math.round((Number(g.saved) / Number(g.target)) * 100));
+          const pct = Math.min(
+            100,
+            Math.round((Number(g.saved) / Number(g.target)) * 100),
+          );
           const remaining = Math.max(0, Number(g.target) - Number(g.saved));
           const complete = pct >= 100;
           const isEditing = editingId === g.id;
@@ -361,16 +369,20 @@ function KidGoals() {
 
                   <div className="mt-1">
                     <span className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                      {formatRM(Number(g.saved))}
+                      <Money amount={Number(g.saved)} />
                     </span>
                     <span className="text-xs text-[var(--text-muted)] font-normal">
                       {" "}
-                      / {formatRM(Number(g.target))}
+                      / <Money amount={Number(g.target)} />
                     </span>
                   </div>
 
                   <div className="mt-2">
-                    <Progress value={Number(g.saved)} max={Number(g.target)} height={6} />
+                    <Progress
+                      value={Number(g.saved)}
+                      max={Number(g.target)}
+                      height={6}
+                    />
                   </div>
                 </div>
               </button>
@@ -437,7 +449,8 @@ function KidGoals() {
                       <div className="flex items-center justify-between gap-2">
                         {!complete ? (
                           <span className="text-xs text-[var(--text-secondary)]">
-                            Wallet {formatRM(balance)} · Remaining: {formatRM(remaining)}
+                            Wallet {formatRM(balance)} · Remaining:{" "}
+                            {formatRM(remaining)}
                           </span>
                         ) : (
                           <span className="text-xs font-medium text-[var(--success-text)] flex items-center gap-1">
@@ -471,7 +484,11 @@ function KidGoals() {
                             aria-label={`Delete ${g.name}`}
                             className="px-2.5 min-h-[44px] min-w-[44px] text-[var(--error-text)] hover:text-[var(--error-text)] hover:bg-[var(--error-soft)]"
                           >
-                            <AppIcon name="delete" size={16} color="var(--error)" />
+                            <AppIcon
+                              name="delete"
+                              size={16}
+                              color="var(--error)"
+                            />
                           </Button>
                         </div>
                       </div>
@@ -498,7 +515,10 @@ function KidGoals() {
 
       {/* Add New Tabung Form */}
       {showAdd && (
-        <Card variant="default" className="p-5 space-y-4 border-2 border-[var(--primary)]/20 shadow-md">
+        <Card
+          variant="default"
+          className="p-5 space-y-4 border-2 border-[var(--primary)]/20 shadow-md"
+        >
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-[var(--ink)] flex items-center gap-2 m-0">
               <AppIcon name="save" size={20} color="var(--primary)" />
@@ -595,7 +615,11 @@ function KidGoals() {
         description="Your collected funds will stay in your core wallet balance. This Tabung will be permanently removed."
         footer={
           <div className="flex items-center justify-end gap-2.5">
-            <Button variant="secondary" onClick={() => setDeletingId(null)} className="min-h-[44px]">
+            <Button
+              variant="secondary"
+              onClick={() => setDeletingId(null)}
+              className="min-h-[44px]"
+            >
               Keep Tabung
             </Button>
             <Button
@@ -603,7 +627,9 @@ function KidGoals() {
               disabled={busy}
               onClick={() => {
                 if (deletingId) {
-                  const targetGoal = data.goals.find((g: (typeof data.goals)[number]) => g.id === deletingId);
+                  const targetGoal = data.goals.find(
+                    (g: (typeof data.goals)[number]) => g.id === deletingId,
+                  );
                   void deleteGoal(deletingId, targetGoal?.name || "Tabung");
                 }
               }}
@@ -615,7 +641,8 @@ function KidGoals() {
         }
       >
         <div className="py-2 text-xs text-[var(--text-secondary)]">
-          Are you sure you want to delete this Tabung? All previous deposit logs remain in your activity log.
+          Are you sure you want to delete this Tabung? All previous deposit logs
+          remain in your activity log.
         </div>
       </Modal>
 
@@ -626,7 +653,8 @@ function KidGoals() {
           <ul className="space-y-2 text-xs sm:text-sm text-[var(--text-secondary)]">
             <li className="flex items-start gap-2">
               <span className="text-[var(--primary-text)] font-bold">·</span>
-              Transfer money from your spending balance anytime to speed up Tabung progress.
+              Transfer money from your spending balance anytime to speed up
+              Tabung progress.
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[var(--primary-text)] font-bold">·</span>
@@ -634,7 +662,8 @@ function KidGoals() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[var(--primary-text)] font-bold">·</span>
-              You can adjust your target or Tabung name at any point without losing saved money.
+              You can adjust your target or Tabung name at any point without
+              losing saved money.
             </li>
           </ul>
         </Card>
@@ -643,7 +672,13 @@ function KidGoals() {
   );
 }
 
-function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function IconPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div
       className="grid grid-cols-6 gap-2 p-2 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]"

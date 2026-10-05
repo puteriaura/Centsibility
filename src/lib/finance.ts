@@ -1,4 +1,14 @@
-const DEBIT_TYPES = new Set(["WITHDRAWAL", "SADAQAH", "INVEST_IN", "FEE", "QARD_REPAY", "GOAL_IN"]);
+import { formatRM } from "./format";
+
+export const DEBIT_TYPES = new Set([
+  "WITHDRAWAL",
+  "SADAQAH",
+  "INVEST_IN",
+  "FEE",
+  "QARD_REPAY",
+  "GOAL_IN",
+  "TRANSFER_OUT",
+]);
 
 export const POT_ONLY_TYPES = new Set(["INVEST_GAIN", "INVEST_LOSS"]);
 
@@ -26,6 +36,25 @@ export function isDebitTransaction(type: string, label?: string | null): boolean
  */
 export function formatTransactionSign(type: string, label?: string | null): "+" | "-" {
   return isDebitTransaction(type, label) ? "-" : "+";
+}
+
+/**
+ * Formats a transaction amount with proper sign and tone for display.
+ * Returns text like "+RM2.00" or "−RM2.00" (using Unicode minus \u2212)
+ * and tone: "out" (black ink) or "in" (success green).
+ */
+export function transactionAmount(
+  type?: string | null,
+  label?: string | null,
+  amount?: number | string | null,
+): { text: string; tone: "in" | "out" } {
+  const debit = isDebitTransaction(type ?? "", label);
+  const val = Math.abs(Number(amount) || 0);
+  const text = debit ? `−${formatRM(val)}` : `+${formatRM(val)}`;
+  return {
+    text,
+    tone: debit ? "out" : "in",
+  };
 }
 
 /**
