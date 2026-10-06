@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/kid-login")({
-  head: () => ({ meta: [{ title: "Kid Login — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Kid Login | Centsibility" }] }),
   component: KidLogin,
 });
 
@@ -435,7 +435,7 @@ function KidLogin() {
                     setBusy(true);
                     try {
                       const name = await adminBypassKid();
-                      toast.success(`Admin bypass — hi ${name}!`);
+                      toast.success(`Admin bypass: hi ${name}!`);
                       nav({ to: "/kid" });
                     } catch (err: unknown) {
                       toast.error(

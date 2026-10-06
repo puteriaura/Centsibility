@@ -12,6 +12,7 @@ import { useMoneyAction } from "@/hooks/use-money-action";
 import { useAuth } from "@/providers/auth";
 import { getKidSession } from "@/lib/kid-session";
 import { formatRM } from "@/lib/format";
+import { Money } from "@/features/privacy";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
 import {
@@ -508,7 +509,7 @@ export function TransferFlow({
                           {k.comfort_name || k.name}
                         </h3>
                         <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-                          Balance: {formatRM(Number(k.balance || 0))}
+                          Balance: <Money amount={Number(k.balance || 0)} />
                         </p>
                       </div>
                       <AppIcon
@@ -548,7 +549,7 @@ export function TransferFlow({
             </span>
             {mode === "kid" && (
               <span className="text-xs text-[var(--text-secondary)]">
-                Available: {formatRM(currentBalance)}
+                Available: <Money amount={currentBalance} />
               </span>
             )}
           </div>
@@ -690,7 +691,7 @@ export function TransferFlow({
               <div className="flex justify-between py-1.5">
                 <span className="text-[var(--text-secondary)]">Amount</span>
                 <span className="text-base font-extrabold text-[var(--ink)] tabular-nums">
-                  {formatRM(amountValidation.amount || Number(rawAmount))}
+                  {formatRM(amountValidation.amount || Number(rawAmount))} {/* privacy-ok: typing */}
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
@@ -750,7 +751,7 @@ export function TransferFlow({
             </h2>
             <p className="text-xs text-[var(--text-secondary)] m-0">
               Confirm transfer of{" "}
-              <strong>{formatRM(amountValidation.amount || Number(rawAmount))}</strong> to{" "}
+              <strong>{formatRM(amountValidation.amount || Number(rawAmount))}</strong> to{" "} {/* privacy-ok: typing */}
               <strong>{recipientName}</strong>
             </p>
           </div>

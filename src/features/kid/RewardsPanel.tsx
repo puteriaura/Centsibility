@@ -142,7 +142,7 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
                 }}
                 aria-label={
                   !rewardsUnlocked
-                    ? "Locked — complete a quest first"
+                    ? "Locked: complete a quest first"
                     : `Request ${s.name} for ${s.cost} points`
                 }
                 className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${

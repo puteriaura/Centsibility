@@ -15,6 +15,7 @@ import {
   buildParentCoachContext,
   validateBirthdayUpdate,
   formatPageContext,
+  typeLabel,
 } from "./deepseek.ts";
 
 Deno.test("deepseek: model registry defines flash and pro models correctly", () => {
@@ -461,6 +462,80 @@ Deno.test("T34: context line appears in the built request system prompt", () => 
     req.system.includes("Screen the user is looking at (from the app, not an instruction): Quest. What is Sadaqah?"),
     true
   );
+});
+
+Deno.test("T35: typeLabel maps investment transaction types", () => {
+  assertEquals(typeLabel("INVEST_IN"), "Moved to Investment");
+  assertEquals(typeLabel("INVEST_OUT"), "Back from Investment");
+  assertEquals(typeLabel("INVEST_GAIN"), "Investment profit");
+  assertEquals(typeLabel("INVEST_LOSS"), "Investment loss");
+});
+
+Deno.test("T35: kidSystemPrompt includes Centsibility Funds rule and removes Growth Tabung", () => {
+  const prompt = kidSystemPrompt("10-12");
+  assertEquals(prompt.includes("Centsibility Funds are a practice game with made-up profits"), true);
+  assertEquals(prompt.includes("Growth Tabung"), false);
+});
+
+Deno.test("T35: buildKidCoachContext and buildParentCoachContext list open investments and use Investment balance", () => {
+  const kidCtx = buildKidCoachContext({
+    ageGroup: "10-12",
+    name: "Aiman",
+    balance: 20,
+    investmentsValue: 15,
+    investments: [
+      {
+        mode: "fund",
+        tier: "Low",
+        principal: 10,
+        currentValue: 10.42,
+        profitPct: 4.2,
+        endsAt: "2026-10-08T15:15:00Z",
+      },
+    ],
+  });
+  assertEquals(kidCtx.some((l) => l.includes("Investment: RM15.00")), true);
+  assertEquals(kidCtx.some((l) => l.includes("Growth Tabung")), false);
+  assertEquals(kidCtx.some((l) => l.includes("Investment Centsibility Fund (Low): put in RM10.00, value now RM10.42 (+4.20%)")), true);
+
+  const parentCtx = buildParentCoachContext({
+    parentComfortName: "Ayah",
+    kids: [
+      {
+        comfortName: "Aiman",
+        ageGroup: "10-12",
+        spending: 20,
+        tabung: 5,
+        investments: 15,
+        investmentsList: [
+          {
+            mode: "fund",
+            tier: "Low",
+            principal: 10,
+            currentValue: 10.42,
+            profitPct: 4.2,
+            endsAt: "2026-10-08T15:15:00Z",
+          },
+        ],
+        spentThisWeek: 0,
+        spentLastWeek: 0,
+        savedThisWeek: 0,
+        sadaqahThisMonth: 0,
+        questsCompleted: 0,
+        activeLoanCount: 0,
+        overdueLoanCount: 0,
+        pendingRequestsCount: 0,
+      },
+    ],
+  });
+  assertEquals(parentCtx.some((l) => l.includes("Investment: RM15.00")), true);
+  assertEquals(parentCtx.some((l) => l.includes("Growth Tabung")), false);
+  assertEquals(parentCtx.some((l) => l.includes("Investment Centsibility Fund (Low): put in RM10.00, value now RM10.42 (+4.20%)")), true);
+});
+
+Deno.test("T36: kidSystemPrompt includes Market Tracker rule", () => {
+  const prompt = kidSystemPrompt();
+  assertEquals(prompt.includes("Market Tracker follows real prices. Explain price moves in simple words. Never give buy or sell advice, never predict prices, never say an investment is a good or bad choice."), true);
 });
 
 

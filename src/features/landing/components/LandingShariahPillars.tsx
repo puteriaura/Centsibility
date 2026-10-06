@@ -11,7 +11,7 @@ export function LandingShariahPillars() {
     {
       en: "Hibah",
       meaning: "Voluntary Gift",
-      text: "Parents reward saving habits with voluntary percentage gifts — never fixed or guaranteed riba.",
+      text: "Parents reward saving habits with voluntary percentage gifts, never fixed or guaranteed riba.",
     },
     {
       en: "Sadaqah",

@@ -186,9 +186,8 @@ function pageTitle(pathname: string, mode: Mode) {
     if (pathname.startsWith("/kid/goals")) return "Tabung";
     if (pathname.startsWith("/kid/rewards")) return "Rewards";
     if (pathname.startsWith("/kid/sadaqah")) return "Sadaqah";
-    if (pathname.startsWith("/kid/zakat")) return "Zakat";
     if (pathname.startsWith("/kid/quiz")) return "Quest";
-    if (pathname.startsWith("/kid/invest")) return "Growth Tabung";
+    if (pathname.startsWith("/kid/invest")) return "Investment";
     return "Home";
   }
   if (pathname.startsWith("/parent/transfer")) return "Transfer";

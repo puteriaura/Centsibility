@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppIcon } from "@/components/ui/app-icon";
-import { formatRM } from "@/lib/format";
+import { Money } from "@/features/privacy";
 import { humanizeCode } from "@/lib/labels";
 
 interface ScheduleHibahSectionProps {
@@ -181,7 +181,7 @@ export function ScheduleHibahSection({
               >
                 <div>
                   <strong className="text-xs font-bold text-[var(--ink)] block tabular-nums">
-                    {formatRM(Number(h.amount))} ({humanizeCode(h.frequency)})
+                    <Money amount={Number(h.amount)} /> ({humanizeCode(h.frequency)})
                   </strong>
                   <small className="text-[11px] text-[var(--text-muted)]">
                     Next: {format(new Date(h.next_run_at), "PP")}

@@ -31,6 +31,7 @@ export interface CrewMemberCardProps {
   }>;
   kidTxs: Transaction[];
   scheduledHibahs: ScheduledHibah[];
+  investmentsValue?: number;
   onDeleteInitiate: (kidId: string) => void;
   onRefresh: () => void;
   /** Start expanded (e.g. single-child households). */
@@ -43,6 +44,7 @@ export function CrewMemberCard({
   kidLoans = [],
   kidTxs,
   scheduledHibahs,
+  investmentsValue,
   onDeleteInitiate,
   onRefresh,
   defaultOpen = false,
@@ -156,7 +158,7 @@ export function CrewMemberCard({
         kidId: kid.id,
         dailyLimit: sliderLimit,
       });
-      toast.success(`Daily limit saved: ${formatRM(sliderLimit)}`);
+      toast.success(`Daily limit saved: ${formatRM(sliderLimit)}`); // privacy-ok: toast
       onRefresh();
     } catch (e: unknown) {
       setDailyLimit(prev);
@@ -213,7 +215,7 @@ export function CrewMemberCard({
     }
   };
 
-  const summary = getBalanceSummary(kid, kidGoals, kidLoans);
+  const summary = getBalanceSummary(kid, kidGoals, kidLoans, investmentsValue);
   const total = summary.total;
   const avatar = resolveAvatar(kid.avatar, "kid");
   const activeCode = resetCode || (!kid.hashed_pin ? kid.login_code : null);
@@ -421,10 +423,10 @@ export function CrewMemberCard({
             </div>
             <div className="text-center border-l border-[var(--border)]">
               <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                <Money amount={summary.growth} />
+                <Money amount={summary.investments} />
               </div>
               <small className="text-[11px] text-[var(--text-secondary)]">
-                Growth Tabung
+                Investment
               </small>
             </div>
             <div className="text-center border-l border-[var(--border)]">
@@ -508,11 +510,11 @@ export function CrewMemberCard({
                       Daily spending limit
                     </label>
                     <span className="text-[11px] text-[var(--text-secondary)] block">
-                      Max sadaqah or withdrawal per day (RM10–RM200).
+                      Max sadaqah or withdrawal per day (RM10 to RM200).
                     </span>
                   </div>
                   <strong className="text-xs text-[var(--primary-text)] tabular-nums font-bold">
-                    {formatRM(sliderLimit)}
+                    {formatRM(sliderLimit)} {/* privacy-ok: limit */}
                   </strong>
                 </div>
                 <input

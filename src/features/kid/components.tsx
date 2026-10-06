@@ -73,7 +73,7 @@ export function KidLoadError({ onRetry }: { onRetry: () => Promise<void> }) {
   );
 }
 
-/** Points keypad for reward requests — counts integer points */
+/** Points keypad for reward requests: counts integer points */
 export function RewardCoinPicker({
   maxPoints,
   onConfirm,

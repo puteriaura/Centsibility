@@ -9,13 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
-import { formatRM } from "@/lib/format";
 import { transactionAmount } from "@/lib/finance";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { usePrivacy, Money, LogInToView } from "@/features/privacy";
 
 export const Route = createFileRoute("/parent/insights")({
-  head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Insights | Centsibility" }] }),
   component: ParentInsights,
 });
 

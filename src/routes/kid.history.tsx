@@ -13,10 +13,10 @@ import { transactionAmount } from "@/lib/finance";
 import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
 import { groupByDay, type HistoryTx } from "@/lib/history";
 import { sfx } from "@/lib/sounds";
-import { useMoney, MASKED_AMOUNT } from "@/features/privacy";
+import { useMoney, Money, MASKED_AMOUNT } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/history")({
-  head: () => ({ meta: [{ title: "Transaction history — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Transaction history | Centsibility" }] }),
   component: KidHistoryPage,
 });
 
@@ -83,7 +83,7 @@ function KidHistoryPage() {
           Spending balance
         </span>
         <span className="text-2xl font-bold tabular-nums text-white block mt-1">
-          {formatRM(balance)}
+          <Money amount={balance} />
         </span>
       </Card>
 

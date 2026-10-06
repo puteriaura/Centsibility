@@ -5,13 +5,25 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { isParentBypassed, isKidBypassed, ADMIN_BYPASS } from "@/lib/admin-bypass";
-import { DEMO_IDENTITY, DEMO_KID_STATE, DEMO_TRANSACTIONS, DEMO_KIDS } from "@/lib/demo-data";
+import {
+  isParentBypassed,
+  isKidBypassed,
+  ADMIN_BYPASS,
+} from "@/lib/admin-bypass";
+import {
+  DEMO_IDENTITY,
+  DEMO_KID_STATE,
+  DEMO_TRANSACTIONS,
+  DEMO_KIDS,
+} from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
-function getMockEdgeResponse<T>(functionName: string, body: Record<string, unknown>): T {
+function getMockEdgeResponse<T>(
+  functionName: string,
+  body: Record<string, unknown>,
+): T {
   const action = String(body.action || "");
   switch (action) {
     case "get-profile":
@@ -26,9 +38,29 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
       return { ok: true } as T;
     case "login":
     case "login-by-code":
-      return { kidId: DEMO_IDENTITY.kidId, name: "Aiman", code: DEMO_IDENTITY.kidCode } as T;
-    case "get-state":
-      return DEMO_KID_STATE as T;
+      return {
+        kidId: DEMO_IDENTITY.kidId,
+        name: "Aiman",
+        code: DEMO_IDENTITY.kidCode,
+      } as T;
+    case "get-state": {
+      const investListRes = getMockEdgeResponse<{ investments: any[] }>(
+        "kid-finance",
+        { action: "invest-list" },
+      );
+      const activeSum = (investListRes.investments || [])
+        .filter((i) => i.status === "active")
+        .reduce((sum, i) => sum + (Number(i.currentValue) || 0), 0);
+      const invVal = Number(activeSum.toFixed(2));
+      return {
+        ...DEMO_KID_STATE,
+        kid: {
+          ...DEMO_KID_STATE.kid,
+          investmentsValue: invVal,
+        },
+        investmentsValue: invVal,
+      } as T;
+    }
     case "get-history":
       return { txs: DEMO_TRANSACTIONS } as T;
     case "claim-coins":
@@ -83,7 +115,8 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
             id: "demo-quest-2",
             slug: "smart-shopper",
             title: "Smart Shopper",
-            summary: "Compare prices and spot real discounts at the kedai runcit.",
+            summary:
+              "Compare prices and spot real discounts at the kedai runcit.",
             icon: "ShoppingBag",
             points: 400,
             position: 2,
@@ -135,7 +168,8 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
             id: "demo-quest-6",
             slug: "sadaqah-champion",
             title: "Sadaqah Champion",
-            summary: "Understand the barakah and joy of giving to those in need.",
+            summary:
+              "Understand the barakah and joy of giving to those in need.",
             icon: "Heart",
             points: 400,
             position: 6,
@@ -183,20 +217,28 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
           {
             id: "demo-q1",
             position: 1,
-            prompt: "You have RM10 and want a drink (RM3) and a notebook (RM5). How much change will you get?",
+            prompt:
+              "You have RM10 and want a drink (RM3) and a notebook (RM5). How much change will you get?",
             choices: ["RM1", "RM2", "RM3", "RM4"],
           },
           {
             id: "demo-q2",
             position: 2,
-            prompt: "A shop offers 'Buy 2 Free 1' for pencils costing RM2 each. How much for 3 pencils?",
+            prompt:
+              "A shop offers 'Buy 2 Free 1' for pencils costing RM2 each. How much for 3 pencils?",
             choices: ["RM2", "RM4", "RM6", "RM5"],
           },
           {
             id: "demo-q3",
             position: 3,
-            prompt: "What is the best way to avoid impulse buying at the school bookshop?",
-            choices: ["Bring all your savings", "Make a shopping list first", "Buy whatever your friend buys", "Buy items on the front display"],
+            prompt:
+              "What is the best way to avoid impulse buying at the school bookshop?",
+            choices: [
+              "Bring all your savings",
+              "Make a shopping list first",
+              "Buy whatever your friend buys",
+              "Buy items on the front display",
+            ],
           },
         ],
       } as T;
@@ -216,12 +258,19 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
         firstCompletion: isCorrect,
       } as T;
     }
-    case "invest-settle":
-      return { paid: 1.0 } as T;
     case "loan-repay":
-      return { ok: true, paid: Number(body.amount) || 0, fullyRepaid: false, trustDelta: 0 } as T;
+      return {
+        ok: true,
+        paid: Number(body.amount) || 0,
+        fullyRepaid: false,
+        trustDelta: 0,
+      } as T;
     case "contribute-goal":
-      return { ok: true, added: Number(body.amount) || 0, saved: Number(body.amount) || 0 } as T;
+      return {
+        ok: true,
+        added: Number(body.amount) || 0,
+        saved: Number(body.amount) || 0,
+      } as T;
     case "create-goal":
       return { ok: true, goalId: "demo-goal-" + Date.now() } as T;
     case "update-goal":
@@ -253,14 +302,16 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
     case "penny-chat":
       if (functionName === "parent-finance") {
         return {
-          reply: "Salam! As your family financial coach, I can help you guide your children on budgeting, savings, and Shariah values. What would you like to discuss today?",
+          reply:
+            "Salam! As your family financial coach, I can help you guide your children on budgeting, savings, and Shariah values. What would you like to discuss today?",
           model: (body.model as string) || "deepseek-flash",
           thinking: body.thinking !== false,
           remaining: 49,
         } as T;
       }
       return {
-        reply: "Salam! I am Penny, your Islamic finance companion. Always remember to save first, spend wisely, and give Sadaqah!",
+        reply:
+          "Salam! I am Penny, your Islamic finance companion. Always remember to save first, spend wisely, and give Sadaqah!",
         model: (body.model as string) || "deepseek-flash",
         thinking: body.thinking !== false,
         remaining: 29,
@@ -268,8 +319,18 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
     case "transfer-recipients":
       return {
         siblings: [
-          { id: "demo-kid-aisyah", name: "Aisyah", comfort_name: "Aisyah", avatar: null },
-          { id: "demo-kid-siddiq", name: "Siddiq", comfort_name: "Siddiq", avatar: null },
+          {
+            id: "demo-kid-aisyah",
+            name: "Aisyah",
+            comfort_name: "Aisyah",
+            avatar: null,
+          },
+          {
+            id: "demo-kid-siddiq",
+            name: "Siddiq",
+            comfort_name: "Siddiq",
+            avatar: null,
+          },
         ],
         parent: { id: "demo-parent-id", name: "Ummi", avatar: null },
         balance: 142.5,
@@ -277,15 +338,398 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
         usedToday: 0,
       } as T;
     case "transfer":
-      if (body.pin && ADMIN_BYPASS.kid.pin && body.pin !== ADMIN_BYPASS.kid.pin) {
+      if (
+        body.pin &&
+        ADMIN_BYPASS.kid.pin &&
+        body.pin !== ADMIN_BYPASS.kid.pin
+      ) {
         throw new Error("That PIN isn't right. 4 tries left.");
       }
       return {
         ok: true,
         approvalId: "demo-approval-" + Date.now(),
         balance: 137.5,
-        status: (body.recipientKind === "parent" ? "completed" : "pending") as any,
+        status: (body.recipientKind === "parent"
+          ? "completed"
+          : "pending") as any,
       } as T;
+    case "invest-options":
+      return {
+        tiers: {
+          low: {
+            name: "Low",
+            min_rate: 0.001,
+            max_rate: 0.01,
+            label: "0.10% to 1.00% per update (always grows)",
+          },
+          medium: {
+            name: "Medium",
+            min_rate: 0.001,
+            max_rate: 0.03,
+            label: "0.10% to 3.00% per update (always grows)",
+          },
+          high: {
+            name: "High",
+            min_rate: -0.02,
+            max_rate: 0.05,
+            label:
+              "-2.00% to 5.00% per update (never dips below what you put in)",
+          },
+        },
+        frequencies: {
+          minute: {
+            name: "Every minute",
+            interval_seconds: 60,
+            lengths: [5, 10, 15],
+            min_amount: 1.0,
+            max_amount: 10.0,
+            max_open: 1,
+            daily_limit: 3,
+          },
+          day: {
+            name: "Daily",
+            interval_seconds: 86400,
+            lengths: [3, 7, 14],
+            min_amount: 1.0,
+            max_amount: 50.0,
+            max_open: 5,
+          },
+          week: {
+            name: "Weekly",
+            interval_seconds: 604800,
+            lengths: [2, 4, 8],
+            min_amount: 1.0,
+            max_amount: 50.0,
+            max_open: 5,
+          },
+        },
+        max_open_funds: 5,
+      } as T;
+    case "invest-preview": {
+      const tier = String(body.tier || "low").toLowerCase();
+      const lockTicks = Number(body.lockTicks || 5);
+      const amount = Number(body.amount || 10);
+      const rates: Record<string, [number, number]> = {
+        low: [0.001, 0.01],
+        medium: [0.001, 0.03],
+        high: [-0.02, 0.05],
+      };
+      const [lo, hi] = rates[tier] || rates.low;
+      let minVal = amount * Math.pow(1 + lo, lockTicks);
+      const maxVal = amount * Math.pow(1 + hi, lockTicks);
+      if (tier === "high") minVal = Math.max(amount, minVal);
+      const freq = String(body.frequency || "minute");
+      const intervalMs =
+        freq === "minute" ? 60000 : freq === "day" ? 86400000 : 7 * 86400000;
+      return {
+        minValue: Number(minVal.toFixed(2)),
+        maxValue: Number(maxVal.toFixed(2)),
+        endsAt: new Date(Date.now() + lockTicks * intervalMs).toISOString(),
+      } as T;
+    }
+    case "invest-list": {
+      const now = Date.now();
+      const currentMinute = Math.floor(now / 60000);
+      const elapsed = (currentMinute % 7) + 2;
+      const createdAtMs = (currentMinute - elapsed) * 60000;
+      const principal = 10.0;
+
+      let val = principal;
+      const path = [
+        {
+          tick: 0,
+          tickAt: new Date(createdAtMs).toISOString(),
+          rate: 0,
+          value: principal,
+        },
+      ];
+      for (let k = 1; k <= elapsed; k++) {
+        const rate =
+          0.002 +
+          0.006 * (((k * 17 + Math.floor(currentMinute / 10)) % 10) / 10);
+        val = val * (1 + rate);
+        path.push({
+          tick: k,
+          tickAt: new Date(createdAtMs + k * 60000).toISOString(),
+          rate: Number(rate.toFixed(4)),
+          value: Number(val.toFixed(2)),
+        });
+      }
+
+      const curVal = path[path.length - 1].value;
+      const profit = Number((curVal - principal).toFixed(2));
+      const profitPct = Number(((profit / principal) * 100).toFixed(2));
+      const endsAt = new Date(createdAtMs + 10 * 60000).toISOString();
+      const nextUpdate = new Date(
+        createdAtMs + (elapsed + 1) * 60000,
+      ).toISOString();
+
+      const activeFund = {
+        id: "demo-fund-active-minute",
+        kid_id: DEMO_IDENTITY.kidId,
+        mode: "fund",
+        label: "Centsibility Fund (Low)",
+        principal,
+        status: "active",
+        tier: "low",
+        frequency: "minute",
+        lock_ticks: 10,
+        created_at: new Date(createdAtMs).toISOString(),
+        closed_at: null,
+        payout: null,
+        close_reason: null,
+        currentValue: curVal,
+        profitRm: profit,
+        profitPct,
+        endsAt,
+        nextUpdate,
+        path,
+      };
+
+      const pastFund = {
+        id: "demo-fund-closed-weekly",
+        kid_id: DEMO_IDENTITY.kidId,
+        mode: "fund",
+        label: "Moved from Growth Tabung",
+        principal: 20.0,
+        status: "closed",
+        tier: "low",
+        frequency: "week",
+        lock_ticks: 4,
+        created_at: new Date(now - 30 * 86400000).toISOString(),
+        closed_at: new Date(now - 2 * 86400000).toISOString(),
+        payout: 20.65,
+        close_reason: "matured",
+        currentValue: 20.65,
+        profitRm: 0.65,
+        profitPct: 3.25,
+        endsAt: new Date(now - 2 * 86400000).toISOString(),
+        nextUpdate: null,
+        path: [
+          {
+            tick: 0,
+            tickAt: new Date(now - 30 * 86400000).toISOString(),
+            rate: 0,
+            value: 20.0,
+          },
+          {
+            tick: 1,
+            tickAt: new Date(now - 23 * 86400000).toISOString(),
+            rate: 0.008,
+            value: 20.16,
+          },
+          {
+            tick: 2,
+            tickAt: new Date(now - 16 * 86400000).toISOString(),
+            rate: 0.007,
+            value: 20.3,
+          },
+          {
+            tick: 3,
+            tickAt: new Date(now - 9 * 86400000).toISOString(),
+            rate: 0.009,
+            value: 20.48,
+          },
+          {
+            tick: 4,
+            tickAt: new Date(now - 2 * 86400000).toISOString(),
+            rate: 0.008,
+            value: 20.65,
+          },
+        ],
+      };
+
+      const marketLoss = {
+        id: "demo-market-loss",
+        kid_id: DEMO_IDENTITY.kidId,
+        mode: "market" as const,
+        label: "Market: HLAL",
+        principal: 20.0,
+        status: "active" as const,
+        symbol: "HLAL",
+        entry_price: 45.0,
+        entryPrice: 45.0,
+        entryDate: new Date(now - 14 * 86400000).toISOString(),
+        currentPrice: 42.5,
+        currentValue: 18.89,
+        profitRm: -1.11,
+        profitPct: -5.56,
+        created_at: new Date(now - 14 * 86400000).toISOString(),
+        closed_at: null,
+        payout: null,
+        close_reason: null,
+        endsAt: null,
+        nextUpdate: null,
+        path: [],
+        lastUpdated: new Date().toISOString(),
+        isMarketOpen: true,
+        chartPoints: [
+          {
+            day: new Date(now - 14 * 86400000).toISOString().slice(0, 10),
+            price: 45.0,
+          },
+          {
+            day: new Date(now - 10 * 86400000).toISOString().slice(0, 10),
+            price: 44.2,
+          },
+          {
+            day: new Date(now - 7 * 86400000).toISOString().slice(0, 10),
+            price: 43.8,
+          },
+          {
+            day: new Date(now - 3 * 86400000).toISOString().slice(0, 10),
+            price: 43.1,
+          },
+          { day: new Date().toISOString().slice(0, 10), price: 42.5 },
+        ],
+      };
+
+      const marketClosed = {
+        id: "demo-market-closed",
+        kid_id: DEMO_IDENTITY.kidId,
+        mode: "market" as const,
+        label: "Market: SPUS",
+        principal: 10.0,
+        status: "active" as const,
+        symbol: "SPUS",
+        entry_price: 58.0,
+        entryPrice: 58.0,
+        entryDate: new Date(now - 21 * 86400000).toISOString(),
+        currentPrice: 60.5,
+        currentValue: 10.43,
+        profitRm: 0.43,
+        profitPct: 4.31,
+        created_at: new Date(now - 21 * 86400000).toISOString(),
+        closed_at: null,
+        payout: null,
+        close_reason: null,
+        endsAt: null,
+        nextUpdate: null,
+        path: [],
+        lastUpdated: new Date().toISOString(),
+        isMarketOpen: false,
+        chartPoints: [
+          {
+            day: new Date(now - 21 * 86400000).toISOString().slice(0, 10),
+            price: 58.0,
+          },
+          {
+            day: new Date(now - 14 * 86400000).toISOString().slice(0, 10),
+            price: 58.8,
+          },
+          {
+            day: new Date(now - 7 * 86400000).toISOString().slice(0, 10),
+            price: 59.9,
+          },
+          { day: new Date().toISOString().slice(0, 10), price: 60.5 },
+        ],
+      };
+
+      return {
+        investments: [activeFund, marketLoss, marketClosed, pastFund],
+      } as T;
+    }
+    case "invest-open":
+      return {
+        id: "demo-fund-new-" + Date.now(),
+        mode: "fund",
+        label: `Centsibility Fund (${String(body.tier || "low").toUpperCase()})`,
+        principal: Number(body.amount || 10),
+        status: "active",
+        tier: body.tier,
+        frequency: body.frequency,
+        lock_ticks: Number(body.lockTicks || 5),
+        created_at: new Date().toISOString(),
+      } as T;
+    case "invest-close":
+      return { success: true, payout: 10.0 } as T;
+    case "market-symbols": {
+      const isEnabled = getDemoMarketEnabled();
+      // Default for 10-12 in demo is off unless enabled
+      const effective = isEnabled !== null ? isEnabled : false;
+      return {
+        symbols: CURATED_MARKET_SYMBOLS,
+        enabled: effective,
+        ageGroup: "10-12",
+      } as T;
+    }
+    case "market-symbol": {
+      const sym = String(body.symbol || "SPUS").toUpperCase();
+      const found =
+        CURATED_MARKET_SYMBOLS.find((s) => s.symbol === sym) ||
+        CURATED_MARKET_SYMBOLS[0];
+      const basePrice = found.price || 50;
+      const closes: Array<{ day: string; close: number }> = [];
+      for (let i = 90; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000)
+          .toISOString()
+          .slice(0, 10);
+        const wave = Math.sin(i * 0.15) * 3;
+        closes.push({ day: d, close: Number((basePrice + wave).toFixed(2)) });
+      }
+      return {
+        symbol: sym,
+        quote: {
+          symbol: sym,
+          price: found.price || 50,
+          previous_close: found.previous_close || 49.5,
+          currency: "USD",
+          is_market_open: Boolean(found.is_market_open),
+          price_time: new Date().toISOString(),
+          fetched_at: new Date().toISOString(),
+          change_percent: found.change_percent,
+        },
+        available: true,
+        stale: false,
+        dailyCloses: closes,
+      } as T;
+    }
+    case "market-open": {
+      const sym = String(body.symbol || "SPUS").toUpperCase();
+      const amt = Number(body.amount || 10);
+      const found =
+        CURATED_MARKET_SYMBOLS.find((s) => s.symbol === sym) ||
+        CURATED_MARKET_SYMBOLS[0];
+      return {
+        id: "demo-market-new-" + Date.now(),
+        kid_id: DEMO_IDENTITY.kidId,
+        mode: "market",
+        symbol: sym,
+        label: `Market: ${sym}`,
+        principal: amt,
+        status: "active",
+        entryPrice: found.price || 50,
+        currentPrice: found.price || 50,
+        currentValue: amt,
+        profitRm: 0,
+        profitPct: 0,
+        created_at: new Date().toISOString(),
+        isMarketOpen: Boolean(found.is_market_open),
+        lastUpdated: new Date().toISOString(),
+      } as T;
+    }
+    case "market-sell":
+      return { success: true, payout: 18.89 } as T;
+    case "update-kid": {
+      if (body.market_tracker_enabled !== undefined) {
+        setDemoMarketEnabled(
+          body.market_tracker_enabled === null
+            ? null
+            : Boolean(body.market_tracker_enabled),
+        );
+      }
+      return { ok: true } as T;
+    }
+    case "kid-investments": {
+      const investListRes = getMockEdgeResponse<{ investments: any[] }>(
+        "kid-finance",
+        { action: "invest-list" },
+      );
+      const byKid: Record<string, any[]> = {
+        [DEMO_IDENTITY.kidId]: investListRes.investments,
+      };
+      return { investmentsByKid: byKid, byKid } as T;
+    }
     default:
       return { ok: true } as T;
   }
@@ -314,14 +758,21 @@ function getMockEdgeResponse<T>(functionName: string, body: Record<string, unkno
  * Falls back to error.message, then "Edge function call failed".
  */
 export async function extractEdgeErrorMessage(error: unknown): Promise<string> {
-  const friendlyUnknownAction = "This feature isn't available yet. The app is being updated. Please try again later.";
+  const friendlyUnknownAction =
+    "This feature isn't available yet. The app is being updated. Please try again later.";
 
   if (error instanceof FunctionsHttpError && error.context) {
     try {
       const res =
-        typeof error.context.clone === "function" ? error.context.clone() : error.context;
+        typeof error.context.clone === "function"
+          ? error.context.clone()
+          : error.context;
       const body = await res.json();
-      if (body && typeof body === "object" && typeof (body as { error?: unknown }).error === "string") {
+      if (
+        body &&
+        typeof body === "object" &&
+        typeof (body as { error?: unknown }).error === "string"
+      ) {
         const errorMsg = (body as { error: string }).error;
         if (errorMsg.startsWith("Unknown action:")) {
           return friendlyUnknownAction;
@@ -358,7 +809,7 @@ export function setParentPinSession(token: string, expiresAt: string): void {
   if (typeof window === "undefined" || !window.sessionStorage) return;
   window.sessionStorage.setItem(
     PIN_SESSION_KEY,
-    JSON.stringify({ token, expiresAt })
+    JSON.stringify({ token, expiresAt }),
   );
 }
 
@@ -368,7 +819,11 @@ export function getParentPinSession(): ParentPinSession | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed.token !== "string" || typeof parsed.expiresAt !== "string") {
+    if (
+      !parsed ||
+      typeof parsed.token !== "string" ||
+      typeof parsed.expiresAt !== "string"
+    ) {
       clearParentPinSession();
       return null;
     }
@@ -401,10 +856,14 @@ async function invoke<T = unknown>(
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke(functionName, { body: requestBody });
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: requestBody,
+    });
     if (error) {
       if (isParentBypassed() || isKidBypassed()) {
-        console.warn(`Edge function [${functionName}:${body.action}] failed, using mock response`);
+        console.warn(
+          `Edge function [${functionName}:${body.action}] failed, using mock response`,
+        );
         return getMockEdgeResponse<T>(functionName, body);
       }
       const message = await extractEdgeErrorMessage(error);
@@ -420,7 +879,10 @@ async function invoke<T = unknown>(
       if (isParentBypassed() || isKidBypassed()) {
         return getMockEdgeResponse<T>(functionName, body);
       }
-      const msg = typeof data.error === "string" ? data.error : "Edge function returned error";
+      const msg =
+        typeof data.error === "string"
+          ? data.error
+          : "Edge function returned error";
       if (msg === "PIN required") {
         clearParentPinSession();
         if (typeof window !== "undefined") {
@@ -446,25 +908,52 @@ async function invoke<T = unknown>(
 // Parent Finance Edge Functions — gateway verifies parent's Supabase JWT
 // ---------------------------------------------------------------------------
 
-export async function edgeParentDeposit(params: { kidId: string; amount: number; label?: string; type: "DEPOSIT" | "WITHDRAWAL"; }) {
-  return invoke<{ newBalance: number }>("parent-finance", { action: "deposit", ...params });
+export async function edgeParentDeposit(params: {
+  kidId: string;
+  amount: number;
+  label?: string;
+  type: "DEPOSIT" | "WITHDRAWAL";
+}) {
+  return invoke<{ newBalance: number }>("parent-finance", {
+    action: "deposit",
+    ...params,
+  });
 }
 
-export async function edgeParentGetStatement(params: { kidId: string; from: string; to: string; }) {
-  return invoke<{ kid: { id: string; name: string; balance: number }; transactions: TransactionRow[]; period: { from: string; to: string }; }>("parent-finance", { action: "get-statement", ...params });
+export async function edgeParentGetStatement(params: {
+  kidId: string;
+  from: string;
+  to: string;
+}) {
+  return invoke<{
+    kid: { id: string; name: string; balance: number };
+    transactions: TransactionRow[];
+    period: { from: string; to: string };
+  }>("parent-finance", { action: "get-statement", ...params });
 }
 
 export async function edgeParentGetProfile() {
-  return invoke<{ id: string; email: string } | null>("parent-finance", { action: "get-profile" });
+  return invoke<{ id: string; email: string } | null>("parent-finance", {
+    action: "get-profile",
+  });
 }
 
-export async function edgeParentCreateKid(params: { name: string; username: string; birth_date?: string }) {
-  return invoke<{ kid: any }>("parent-finance", { action: "create-kid", ...params });
+export async function edgeParentCreateKid(params: {
+  name: string;
+  username: string;
+  birth_date?: string;
+}) {
+  return invoke<{ kid: any }>("parent-finance", {
+    action: "create-kid",
+    ...params,
+  });
 }
-
 
 export async function edgeParentDeleteKid(params: { kidId: string }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "delete-kid", ...params });
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "delete-kid",
+    ...params,
+  });
 }
 
 export async function edgeParentUpdateKid(params: {
@@ -474,27 +963,52 @@ export async function edgeParentUpdateKid(params: {
   birth_date?: string;
   birth_year?: number;
   age_group_override?: string | null;
+  market_tracker_enabled?: boolean | null;
 }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "update-kid", ...params });
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "update-kid",
+    ...params,
+  });
 }
 
 export async function edgeParentResetKidPin(params: { kidId: string }) {
-  return invoke<{ ok: boolean; kidId: string; name: string; loginCode: string }>("parent-finance", { action: "reset-kid-pin", ...params });
+  return invoke<{
+    ok: boolean;
+    kidId: string;
+    name: string;
+    loginCode: string;
+  }>("parent-finance", { action: "reset-kid-pin", ...params });
 }
 
-export async function edgeParentApproveRequest(params: { approvalId: string; decision: "approve" | "decline" }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "approve-request", ...params });
+export async function edgeParentApproveRequest(params: {
+  approvalId: string;
+  decision: "approve" | "decline";
+}) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "approve-request",
+    ...params,
+  });
 }
 
-export async function edgeParentResolveReward(params: { rewardId: string; decision: "approve" | "decline" }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "resolve-reward", ...params });
+export async function edgeParentResolveReward(params: {
+  rewardId: string;
+  decision: "approve" | "decline";
+}) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "resolve-reward",
+    ...params,
+  });
 }
 
-export async function edgeParentSetPin(params: { pin: string; currentPin?: string }) {
-  const res = await invoke<{ ok: boolean; pinSession?: string; pinSessionExpiresAt?: string }>(
-    "parent-finance",
-    { action: "set-pin", ...params }
-  );
+export async function edgeParentSetPin(params: {
+  pin: string;
+  currentPin?: string;
+}) {
+  const res = await invoke<{
+    ok: boolean;
+    pinSession?: string;
+    pinSessionExpiresAt?: string;
+  }>("parent-finance", { action: "set-pin", ...params });
   if (res.pinSession && res.pinSessionExpiresAt) {
     setParentPinSession(res.pinSession, res.pinSessionExpiresAt);
   }
@@ -506,10 +1020,12 @@ export async function edgeParentGetPin() {
 }
 
 export async function edgeParentVerifyPin(params: { pin: string }) {
-  const res = await invoke<{ valid: boolean; attemptsLeft?: number; pinSession?: string; pinSessionExpiresAt?: string }>(
-    "parent-finance",
-    { action: "verify-pin", ...params }
-  );
+  const res = await invoke<{
+    valid: boolean;
+    attemptsLeft?: number;
+    pinSession?: string;
+    pinSessionExpiresAt?: string;
+  }>("parent-finance", { action: "verify-pin", ...params });
   if (res.valid && res.pinSession && res.pinSessionExpiresAt) {
     setParentPinSession(res.pinSession, res.pinSessionExpiresAt);
   }
@@ -517,42 +1033,79 @@ export async function edgeParentVerifyPin(params: { pin: string }) {
 }
 
 export async function edgeParentClearPin(params: { currentPin: string }) {
-  const res = await invoke<{ ok: boolean }>("parent-finance", { action: "clear-pin", ...params });
+  const res = await invoke<{ ok: boolean }>("parent-finance", {
+    action: "clear-pin",
+    ...params,
+  });
   clearParentPinSession();
   return res;
 }
 
-export async function edgeParentSetHibah(params: { kidId: string; rate: number }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "set-hibah", ...params });
+export async function edgeParentSetHibah(params: {
+  kidId: string;
+  rate: number;
+}) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "set-hibah",
+    ...params,
+  });
 }
-
 
 export async function edgeParentMarkNotificationsRead() {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "mark-notifications-read" });
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "mark-notifications-read",
+  });
 }
 
-export async function edgeParentSetAvatar(params: { kidId: string; avatar: string }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "set-avatar", ...params });
+export async function edgeParentSetAvatar(params: {
+  kidId: string;
+  avatar: string;
+}) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "set-avatar",
+    ...params,
+  });
 }
 
 export async function edgeParentSetSelfAvatar(params: { avatar: string }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "set-self-avatar", ...params });
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "set-self-avatar",
+    ...params,
+  });
 }
 
 export async function edgeParentGetSelfAvatar() {
-  return invoke<{ avatar: string | null }>("parent-finance", { action: "get-self-avatar" });
+  return invoke<{ avatar: string | null }>("parent-finance", {
+    action: "get-self-avatar",
+  });
 }
 
-export async function edgeParentCreateScheduledHibah(params: { kidId: string; amount: number; frequency: string; startDate: string; endDate?: string }) {
-  return invoke<{ ok: boolean; hibah: any }>("parent-finance", { action: "create-scheduled-hibah", ...params });
+export async function edgeParentCreateScheduledHibah(params: {
+  kidId: string;
+  amount: number;
+  frequency: string;
+  startDate: string;
+  endDate?: string;
+}) {
+  return invoke<{ ok: boolean; hibah: any }>("parent-finance", {
+    action: "create-scheduled-hibah",
+    ...params,
+  });
 }
 
 export async function edgeParentGetScheduledHibahs() {
-  return invoke<{ scheduledHibahs: any[] }>("parent-finance", { action: "get-scheduled-hibahs" });
+  return invoke<{ scheduledHibahs: any[] }>("parent-finance", {
+    action: "get-scheduled-hibahs",
+  });
 }
 
-export async function edgeParentDeactivateScheduledHibah(params: { hibahId: string }) {
-  return invoke<{ ok: boolean }>("parent-finance", { action: "deactivate-scheduled-hibah", ...params });
+export async function edgeParentDeactivateScheduledHibah(params: {
+  hibahId: string;
+}) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "deactivate-scheduled-hibah",
+    ...params,
+  });
 }
 
 export async function edgeParentSetKidCardControls(params: {
@@ -573,35 +1126,57 @@ export async function edgeParentSetKidCardControls(params: {
 export async function edgeExecuteScheduledHibahs() {
   // Cron trigger — no user session needed, parent-finance handles this action
   // before the JWT check so it works with just the anon key.
-  return invoke<{ processed: number }>("parent-finance", { action: "execute-scheduled-hibahs" });
+  return invoke<{ processed: number }>("parent-finance", {
+    action: "execute-scheduled-hibahs",
+  });
 }
-
 
 // ---------------------------------------------------------------------------
 // Kid Finance Edge Functions — verify_jwt=false, anon key only
 // ---------------------------------------------------------------------------
 
-export async function edgeKidSadaqah(params: { code: string; amount: number; cause?: string }) {
-  return invoke<{ ok: boolean; balance?: number; coins_awarded?: number; cause?: string | null }>(
-    "kid-finance",
-    { action: "sadaqah", ...params }
-  );
+export async function edgeKidSadaqah(params: {
+  code: string;
+  amount: number;
+  cause?: string;
+}) {
+  return invoke<{
+    ok: boolean;
+    balance?: number;
+    coins_awarded?: number;
+    cause?: string | null;
+  }>("kid-finance", { action: "sadaqah", ...params });
 }
 
 export async function edgeKidMarkNotificationsRead(params: { code: string }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "mark-notifications-read", ...params });
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "mark-notifications-read",
+    ...params,
+  });
 }
 
-export async function edgeKidRepayLoan(params: { code: string; loanId: string; amount: number }) {
-  return invoke<{ ok: boolean; paid: number; fullyRepaid: boolean; trustDelta: number }>("kid-finance", { action: "loan-repay", ...params });
+export async function edgeKidRepayLoan(params: {
+  code: string;
+  loanId: string;
+  amount: number;
+}) {
+  return invoke<{
+    ok: boolean;
+    paid: number;
+    fullyRepaid: boolean;
+    trustDelta: number;
+  }>("kid-finance", { action: "loan-repay", ...params });
 }
 
-export async function edgeKidInvestSettle(params: { code: string }) {
-  return invoke<{ paid: number }>("kid-finance", { action: "invest-settle", ...params });
-}
-
-export async function edgeKidContributeGoal(params: { code: string; goalId: string; amount: number }) {
-  return invoke<{ ok: boolean; added: number; saved: number }>("kid-finance", { action: "contribute-goal", ...params });
+export async function edgeKidContributeGoal(params: {
+  code: string;
+  goalId: string;
+  amount: number;
+}) {
+  return invoke<{ ok: boolean; added: number; saved: number }>("kid-finance", {
+    action: "contribute-goal",
+    ...params,
+  });
 }
 
 export async function edgeKidCreateGoal(params: {
@@ -610,7 +1185,10 @@ export async function edgeKidCreateGoal(params: {
   emoji?: string;
   target: number;
 }) {
-  return invoke<{ ok: boolean; goalId: string }>("kid-finance", { action: "create-goal", ...params });
+  return invoke<{ ok: boolean; goalId: string }>("kid-finance", {
+    action: "create-goal",
+    ...params,
+  });
 }
 
 export async function edgeKidUpdateGoal(params: {
@@ -620,14 +1198,20 @@ export async function edgeKidUpdateGoal(params: {
   emoji?: string;
   target: number;
 }) {
-  return invoke<{ ok: boolean; saved: number; refunded: number }>("kid-finance", { action: "update-goal", ...params });
+  return invoke<{ ok: boolean; saved: number; refunded: number }>(
+    "kid-finance",
+    { action: "update-goal", ...params },
+  );
 }
 
 export async function edgeKidDeleteGoal(params: {
   code: string;
   goalId: string;
 }) {
-  return invoke<{ ok: boolean; refunded: number }>("kid-finance", { action: "delete-goal", ...params });
+  return invoke<{ ok: boolean; refunded: number }>("kid-finance", {
+    action: "delete-goal",
+    ...params,
+  });
 }
 
 export async function edgeKidSetCardControls(params: {
@@ -644,27 +1228,61 @@ export async function edgeKidSetCardControls(params: {
 }
 
 export async function edgeKidLogin(params: { username: string; pin: string }) {
-  return invoke<{ kidId: string; name: string; code: string }>("kid-finance", { action: "login", ...params });
+  return invoke<{ kidId: string; name: string; code: string }>("kid-finance", {
+    action: "login",
+    ...params,
+  });
 }
 
 export async function edgeKidLoginByCode(params: { loginCode: string }) {
-  return invoke<{ kidId: string; name: string; code?: string; needsPinSetup?: boolean; username?: string }>("kid-finance", { action: "login-by-code", ...params });
+  return invoke<{
+    kidId: string;
+    name: string;
+    code?: string;
+    needsPinSetup?: boolean;
+    username?: string;
+  }>("kid-finance", { action: "login-by-code", ...params });
 }
 
 export async function edgeKidVerifyAccessCode(params: { loginCode: string }) {
-  return invoke<{ ok: boolean; kidId: string; username: string; name: string; needsBirthday?: boolean }>("kid-finance", { action: "verify-access-code", ...params });
+  return invoke<{
+    ok: boolean;
+    kidId: string;
+    username: string;
+    name: string;
+    needsBirthday?: boolean;
+  }>("kid-finance", { action: "verify-access-code", ...params });
 }
 
-export async function edgeKidSetInitialPin(params: { loginCode: string; pin: string; comfortName?: string; birthDate?: string }) {
-  return invoke<{ ok: boolean; kidId: string; name: string; code: string }>("kid-finance", { action: "set-initial-pin", ...params });
+export async function edgeKidSetInitialPin(params: {
+  loginCode: string;
+  pin: string;
+  comfortName?: string;
+  birthDate?: string;
+}) {
+  return invoke<{ ok: boolean; kidId: string; name: string; code: string }>(
+    "kid-finance",
+    { action: "set-initial-pin", ...params },
+  );
 }
 
-export async function edgeKidRegister(params: { setupCode: string; name: string; username: string; pin: string }) {
-  return invoke<{ ok: boolean; kidId: string; code: string }>("kid-finance", { action: "register", ...params });
+export async function edgeKidRegister(params: {
+  setupCode: string;
+  name: string;
+  username: string;
+  pin: string;
+}) {
+  return invoke<{ ok: boolean; kidId: string; code: string }>("kid-finance", {
+    action: "register",
+    ...params,
+  });
 }
 
 export async function edgeKidUnlock(params: { code: string; pin: string }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "unlock", ...params });
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "unlock",
+    ...params,
+  });
 }
 
 export async function edgeKidGetState(params: { code: string }) {
@@ -692,15 +1310,26 @@ export async function edgeKidGetState(params: { code: string }) {
   }>("kid-finance", { action: "get-state", ...params });
 }
 
-export async function edgeKidGetHistory(params: { code: string; days: number }) {
-  return invoke<{ txs: { id: string; type: string; amount: number; label: string | null; created_at: string }[] }>(
-    "kid-finance",
-    { action: "get-history", ...params },
-  );
+export async function edgeKidGetHistory(params: {
+  code: string;
+  days: number;
+}) {
+  return invoke<{
+    txs: {
+      id: string;
+      type: string;
+      amount: number;
+      label: string | null;
+      created_at: string;
+    }[];
+  }>("kid-finance", { action: "get-history", ...params });
 }
 
 export async function edgeKidClaimCoins(params: { code: string }) {
-  return invoke<{ claimed: number }>("kid-finance", { action: "claim-coins", ...params });
+  return invoke<{ claimed: number }>("kid-finance", {
+    action: "claim-coins",
+    ...params,
+  });
 }
 
 export interface QuestNode {
@@ -724,7 +1353,10 @@ export async function edgeKidQuestBoard(params: { code: string }) {
   }>("kid-finance", { action: "quest-board", ...params });
 }
 
-export async function edgeKidQuestStart(params: { code: string; questId: string }) {
+export async function edgeKidQuestStart(params: {
+  code: string;
+  questId: string;
+}) {
   return invoke<{
     attemptId: string;
     quest: {
@@ -759,40 +1391,62 @@ export async function edgeKidQuestAnswer(params: {
   }>("kid-finance", { action: "quest-answer", ...params });
 }
 
-export async function edgeKidInvestDeposit(params: { code: string; amount: number }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "invest-deposit", ...params });
+export async function edgeKidRequestApproval(params: {
+  code: string;
+  kind: "WITHDRAWAL" | "DEPOSIT";
+  amount: number;
+  reason: string;
+}) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "request-approval",
+    ...params,
+  });
 }
 
-export async function edgeKidInvestWithdraw(params: { code: string; amount: number }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "invest-withdraw", ...params });
+export async function edgeKidRequestLoan(params: {
+  code: string;
+  amount: number;
+  reason: string;
+  signature: string;
+  dueDays: number;
+}) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "request-loan",
+    ...params,
+  });
 }
 
-export async function edgeKidSetInvestRisk(params: { code: string; riskAppetite: string }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "set-invest-risk", ...params });
+export async function edgeKidRequestReward(params: {
+  code: string;
+  name: string;
+  cost: number;
+}) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "request-reward",
+    ...params,
+  });
 }
 
-export async function edgeKidSetInvestFrequency(params: { code: string; frequency: string }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "set-invest-frequency", ...params });
+export async function edgeKidUpdateProfile(params: {
+  code: string;
+  birth_date?: string | null;
+  birth_year?: number | null;
+  bio?: string | null;
+}) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "update-profile",
+    ...params,
+  });
 }
 
-export async function edgeKidRequestApproval(params: { code: string; kind: "WITHDRAWAL" | "DEPOSIT"; amount: number; reason: string }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "request-approval", ...params });
-}
-
-export async function edgeKidRequestLoan(params: { code: string; amount: number; reason: string; signature: string; dueDays: number }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "request-loan", ...params });
-}
-
-export async function edgeKidRequestReward(params: { code: string; name: string; cost: number }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "request-reward", ...params });
-}
-
-export async function edgeKidUpdateProfile(params: { code: string; birth_date?: string | null; birth_year?: number | null; bio?: string | null }) {
-  return invoke<{ ok: boolean }>("kid-finance", { action: "update-profile", ...params });
-}
-
-export async function edgeKidUploadAvatar(params: { code: string; base64Image: string }) {
-  return invoke<{ avatarUrl: string }>("kid-finance", { action: "upload-avatar", ...params });
+export async function edgeKidUploadAvatar(params: {
+  code: string;
+  base64Image: string;
+}) {
+  return invoke<{ avatarUrl: string }>("kid-finance", {
+    action: "upload-avatar",
+    ...params,
+  });
 }
 
 export interface PennyChatMessage {
@@ -893,3 +1547,394 @@ export async function edgeParentTransfer(params: {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Investment (Centsibility Funds) Edge Helpers
+// ---------------------------------------------------------------------------
+
+export interface InvestmentPathTick {
+  tick: number;
+  tickAt: string;
+  rate: number;
+  value: number;
+}
+
+export interface InvestmentItem {
+  id: string;
+  kid_id: string;
+  mode: "fund" | "market";
+  label: string | null;
+  principal: number;
+  status: "active" | "closed";
+  tier?: "low" | "medium" | "high";
+  frequency?: "minute" | "day" | "week";
+  lock_ticks?: number;
+  symbol?: string;
+  entry_price?: number;
+  entry_price_at?: string;
+  created_at: string;
+  closed_at: string | null;
+  payout: number | null;
+  close_reason: "matured" | "early" | "sold" | null;
+  currentValue: number;
+  profitRm: number;
+  profitPct: number;
+  endsAt: string | null;
+  nextUpdate: string | null;
+  path?: InvestmentPathTick[];
+  entryPrice?: number;
+  entryDate?: string;
+  currentPrice?: number;
+  lastUpdated?: string | null;
+  isMarketOpen?: boolean;
+  chartPoints?: Array<{ day: string; price: number }>;
+}
+
+export interface InvestmentOptionsResponse {
+  tiers: Record<
+    string,
+    { name: string; min_rate: number; max_rate: number; label: string }
+  >;
+  frequencies: Record<
+    string,
+    {
+      name: string;
+      interval_seconds: number;
+      lengths: number[];
+      min_amount: number;
+      max_amount: number;
+      max_open?: number;
+      daily_limit?: number;
+    }
+  >;
+  max_open_funds: number;
+}
+
+export interface InvestmentPreviewResponse {
+  minValue: number;
+  maxValue: number;
+  endsAt: string;
+}
+
+export async function edgeKidInvestOptions(params?: { code?: string }) {
+  return invoke<InvestmentOptionsResponse>("kid-finance", {
+    action: "invest-options",
+    ...params,
+  });
+}
+
+export async function edgeKidInvestPreview(params: {
+  code?: string;
+  tier: string;
+  frequency: string;
+  lockTicks: number;
+  amount: number;
+}) {
+  return invoke<InvestmentPreviewResponse>("kid-finance", {
+    action: "invest-preview",
+    ...params,
+  });
+}
+
+export async function edgeKidInvestList(params?: { code?: string }) {
+  return invoke<{ investments: InvestmentItem[] }>("kid-finance", {
+    action: "invest-list",
+    ...params,
+  });
+}
+
+export async function edgeKidInvestOpen(params: {
+  code?: string;
+  tier: string;
+  frequency: string;
+  lockTicks: number;
+  amount: number;
+  clientRequestId?: string;
+}) {
+  return invoke<InvestmentItem>("kid-finance", {
+    action: "invest-open",
+    ...params,
+  });
+}
+
+export async function edgeKidInvestClose(params: {
+  code?: string;
+  investmentId: string;
+}) {
+  return invoke<{ success: boolean; payout: number }>("kid-finance", {
+    action: "invest-close",
+    ...params,
+  });
+}
+
+export async function edgeParentGetKidInvestments(params?: { kidId?: string }) {
+  return invoke<{
+    investmentsByKid: Record<string, InvestmentItem[]>;
+    byKid?: Record<string, InvestmentItem[]>;
+  }>("parent-finance", {
+    action: "kid-investments",
+    ...params,
+  });
+}
+
+export interface MarketSymbolItem {
+  symbol: string;
+  name: string;
+  kind: "etf" | "stock";
+  halal_source: string;
+  halal_checked_on: string;
+  active: boolean;
+  price?: number | null;
+  previous_close?: number | null;
+  change_percent?: number | null;
+  is_market_open?: boolean;
+  last_updated?: string | null;
+}
+
+export interface MarketSymbolsResponse {
+  symbols: MarketSymbolItem[];
+  enabled: boolean;
+  ageGroup: "6-9" | "10-12" | "13-17";
+}
+
+export interface MarketSymbolDetailResponse {
+  symbol: string;
+  quote?: {
+    symbol: string;
+    price: number;
+    previous_close?: number | null;
+    currency: string;
+    is_market_open: boolean;
+    price_time?: string | null;
+    fetched_at: string;
+    change_percent?: number | null;
+  };
+  available: boolean;
+  stale?: boolean;
+  dailyCloses: Array<{ day: string; close: number }>;
+}
+
+export async function edgeKidMarketSymbols(params?: { code?: string }) {
+  return invoke<MarketSymbolsResponse>("kid-finance", {
+    action: "market-symbols",
+    ...params,
+  });
+}
+
+export async function edgeKidMarketSymbol(params: {
+  code?: string;
+  symbol: string;
+}) {
+  return invoke<MarketSymbolDetailResponse>("kid-finance", {
+    action: "market-symbol",
+    ...params,
+  });
+}
+
+export async function edgeKidMarketOpen(params: {
+  code?: string;
+  symbol: string;
+  amount: number;
+  clientRequestId?: string;
+}) {
+  return invoke<InvestmentItem>("kid-finance", {
+    action: "market-open",
+    ...params,
+  });
+}
+
+export async function edgeKidMarketSell(params: {
+  code?: string;
+  investmentId: string;
+}) {
+  return invoke<{ success: boolean; payout: number }>("kid-finance", {
+    action: "market-sell",
+    ...params,
+  });
+}
+
+export const CURATED_MARKET_SYMBOLS: MarketSymbolItem[] = [
+  {
+    symbol: "SPUS",
+    name: "SP Funds S&P 500 Sharia Industry Exclusions ETF",
+    kind: "etf",
+    halal_source: "S&P Shariah index (AAOIFI standards)",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 60.63,
+    previous_close: 60.33,
+    change_percent: 0.5,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "HLAL",
+    name: "Wahed FTSE USA Shariah ETF",
+    kind: "etf",
+    halal_source: "FTSE Shariah index",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 42.5,
+    previous_close: 43.2,
+    change_percent: -1.62,
+    is_market_open: true,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "UMMA",
+    name: "Wahed Dow Jones Islamic World ETF",
+    kind: "etf",
+    halal_source: "Dow Jones Islamic Market index",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 24.8,
+    previous_close: 24.75,
+    change_percent: 0.2,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "SPWO",
+    name: "SP Funds S&P World (ex-US) ETF",
+    kind: "etf",
+    halal_source: "S&P Shariah index",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 31.4,
+    previous_close: 31.25,
+    change_percent: 0.48,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "SPSK",
+    name: "SP Funds Dow Jones Global Sukuk ETF",
+    kind: "etf",
+    halal_source: "Dow Jones Sukuk index (lower swings)",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 18.25,
+    previous_close: 18.25,
+    change_percent: 0.0,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "SPRE",
+    name: "SP Funds S&P Global REIT Sharia ETF",
+    kind: "etf",
+    halal_source: "S&P Shariah index",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 21.15,
+    previous_close: 20.9,
+    change_percent: 1.2,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "SPTE",
+    name: "SP Funds S&P Global Technology ETF",
+    kind: "etf",
+    halal_source: "S&P Shariah index",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 35.8,
+    previous_close: 35.1,
+    change_percent: 1.99,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "AAPL",
+    name: "Apple Inc.",
+    kind: "stock",
+    halal_source:
+      "S&P 500 Shariah index, via SPUS holdings, checked 1 Oct 2026",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 228.5,
+    previous_close: 227.1,
+    change_percent: 0.62,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "MSFT",
+    name: "Microsoft Corporation",
+    kind: "stock",
+    halal_source:
+      "S&P 500 Shariah index, via SPUS holdings, checked 1 Oct 2026",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 418.2,
+    previous_close: 416.8,
+    change_percent: 0.34,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "GOOGL",
+    name: "Alphabet Inc.",
+    kind: "stock",
+    halal_source:
+      "S&P 500 Shariah index, via SPUS holdings, checked 1 Oct 2026",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 165.4,
+    previous_close: 166.0,
+    change_percent: -0.36,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "NVDA",
+    name: "NVIDIA Corporation",
+    kind: "stock",
+    halal_source:
+      "S&P 500 Shariah index, via SPUS holdings, checked 1 Oct 2026",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 122.9,
+    previous_close: 120.4,
+    change_percent: 2.08,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+  {
+    symbol: "TSLA",
+    name: "Tesla, Inc.",
+    kind: "stock",
+    halal_source:
+      "S&P 500 Shariah index, via SPUS holdings, checked 1 Oct 2026",
+    halal_checked_on: "2026-10-01",
+    active: true,
+    price: 242.1,
+    previous_close: 245.3,
+    change_percent: -1.3,
+    is_market_open: false,
+    last_updated: "2026-10-05T15:05:00Z",
+  },
+];
+
+let demoMarketEnabledState: boolean | null = null;
+export function setDemoMarketEnabled(enabled: boolean | null) {
+  demoMarketEnabledState = enabled;
+  if (typeof window !== "undefined") {
+    if (enabled === null)
+      window.localStorage.removeItem("centsibility.demo.market_enabled");
+    else
+      window.localStorage.setItem(
+        "centsibility.demo.market_enabled",
+        String(enabled),
+      );
+  }
+}
+export function getDemoMarketEnabled(): boolean | null {
+  if (typeof window !== "undefined") {
+    const raw = window.localStorage.getItem("centsibility.demo.market_enabled");
+    if (raw === "true") return true;
+    if (raw === "false") return false;
+  }
+  if (demoMarketEnabledState !== null) return demoMarketEnabledState;
+  return null;
+}

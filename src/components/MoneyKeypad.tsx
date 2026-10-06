@@ -157,7 +157,7 @@ export function MoneyKeypad({
 
           {tooLow && (
             <p className="text-xs text-[var(--error-text)] mt-1 font-medium">
-              Minimum is {formatRM(min)}
+              Minimum is {formatRM(min)} {/* privacy-ok: limit */}
             </p>
           )}
           {tooHigh && (

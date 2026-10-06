@@ -42,9 +42,14 @@ async function ejectUser(message: string, to = "/kid-login"): Promise<never> {
 
 const SESSION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+export function ParentLoadingState() {
+  return (
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6 text-center">
+      <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[var(--primary)] border-t-transparent mb-3" />
+      <p className="text-sm font-medium text-[var(--ink-muted)]">Loading…</p>
+    </div>
+  );
+}
 
 function ParentLayout() {
   const { user, loading: authLoading } = useAuth();
@@ -209,7 +214,7 @@ function ParentLayout() {
           sfx.success();
         } else {
           const attemptsMsg = res.attemptsLeft !== undefined
-            ? `Incorrect PIN — ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
+            ? `Incorrect PIN. ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
             : "Incorrect PIN";
           toast.error(attemptsMsg);
           sfx.error();
@@ -231,18 +236,13 @@ function ParentLayout() {
 
   // Loading state
   if (authLoading || initialising) {
-    return (
-      <AppShell mode="parent">
-        <div>[Loading parent status...]</div>
-      </AppShell>
-
-    );
+    return <ParentLoadingState />;
   }
 
-  // No user — let child routes render their own auth guards
+  // No user: let child routes render their own auth guards
   if (!user) return <Outlet />;
 
-  // PIN not yet verified — show Onboarding (if setting PIN) or PIN unlock screen
+  // PIN not yet verified: show Onboarding (if setting PIN) or PIN unlock screen
   if (!pinVerified) {
     if (isSettingPin) {
       return (
@@ -569,7 +569,7 @@ function ParentLayout() {
     );
   }
 
-  // PIN verified — render the actual parent child routes
+  // PIN verified: render the actual parent child routes
   return (
     <PrivacyProvider mode="parent">
       <PennyProvider mode="parent">

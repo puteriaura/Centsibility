@@ -114,7 +114,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
           } else {
             const attemptsMsg =
               res.attemptsLeft !== undefined
-                ? `Incorrect PIN — ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
+                ? `Incorrect PIN. ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
                 : "That PIN isn't right.";
             toast.error(attemptsMsg);
             sfx.error();
@@ -178,7 +178,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             Parent Verification
           </h2>
           <p className="text-xs text-[var(--text-secondary)] max-w-xs">
-            Enter your 6-digit Commander PIN to chat with Penny Coach.
+            Enter your 6-digit parent PIN to chat with Penny.
           </p>
 
           <div
@@ -252,7 +252,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
                       type="button"
                       aria-label="Not helpful"
                       onClick={() =>
-                        toast("Thanks — we'll keep improving Penny.")
+                        toast("Thanks, we'll keep improving Penny.")
                       }
                     >
                       <AppIcon name="thumbsdown" size={16} />

@@ -2,7 +2,7 @@ export function LandingTrustStrip() {
   const items = [
     { k: "0%", v: "Riba (Interest-Free)" },
     { k: "2.5%", v: "Auto Zakat Calculation" },
-    { k: "6–17", v: "Ages Supported" },
+    { k: "6-17", v: "Ages Supported" },
     { k: "AAOIFI", v: "Shariah Standards Aligned" },
   ];
   return (

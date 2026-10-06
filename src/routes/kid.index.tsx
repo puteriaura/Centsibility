@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StreakBadge } from "@/components/StreakBadge";
-import { useMoney } from "@/features/privacy";
+import { useMoney, Money } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +54,7 @@ import {
 import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/")({
-  head: () => ({ meta: [{ title: "Kid Home — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Kid Home | Centsibility" }] }),
   component: KidHome,
 });
 
@@ -202,7 +202,7 @@ function KidHome() {
             (moneyReq === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
         }),
       {
-        success: `${actionWord} request for ${formatRM(amount)} sent for approval`,
+        success: `${actionWord} request for ${formatRM(amount)} sent for approval`, // privacy-ok: toast
         failure: `${actionWord} request didn't go through`,
         onSuccess: () => {
           setMoneyReq(null);
@@ -266,7 +266,6 @@ function KidHome() {
           aria-label="Open profile settings"
           className="kid-greeting__profile"
         >
-          <AvatarBubble emoji={k.avatar ?? "phosphor:Smiley"} size={48} ring />
           <div>
             <h1 className="kid-greeting__name">{k.comfort_name ?? k.name}!</h1>
           </div>
@@ -296,7 +295,7 @@ function KidHome() {
       >
         <div className="balance-carousel__slide">
           {(() => {
-            const summary = getBalanceSummary(k, data.goals, data.loans);
+            const summary = getBalanceSummary(k, data.goals, data.loans, (data as any).investmentsValue);
             return (
               <BalanceCard
                 title="Spending balance"
@@ -308,7 +307,7 @@ function KidHome() {
                 breakdown={[
                   { label: "Spending", amount: summary.spending },
                   { label: "Tabung", amount: summary.tabung },
-                  { label: "Growth Tabung", amount: summary.growth },
+                  { label: "Investment", amount: summary.investments },
                 ]}
                 footnote={
                   summary.owed > 0
@@ -390,12 +389,12 @@ function KidHome() {
           <span className="quick-label">Tabung</span>
         </Link>
 
-        <Link to="/kid/zakat" onClick={() => sfx.tap()} className="quick-btn">
+        <Link to="/kid/invest" onClick={() => sfx.tap()} className="quick-btn">
           <span className="quick-circle quick-circle--amber">
             <span className="quick-circle__dot" aria-hidden="true" />
-            <AppIcon name="mosque" size={22} />
+            <AppIcon name="trending" size={22} />
           </span>
-          <span className="quick-label">Zakat</span>
+          <span className="quick-label">Investment</span>
         </Link>
 
         {/* Row 2 */}
@@ -519,15 +518,15 @@ function KidHome() {
             This month's spending
           </span>
           <div className="text-2xl font-extrabold text-[var(--ink)] mt-1 tabular-nums">
-            {formatRM(
-              walletTxs
+            <Money
+              amount={walletTxs
                 .filter(
                   (t) =>
                     isSpendingTransaction(t.type, t.label) &&
                     new Date(t.created_at) >= startOfMonth(new Date()),
                 )
-                .reduce((acc, t) => acc + Number(t.amount), 0),
-            )}
+                .reduce((acc, t) => acc + Number(t.amount), 0)}
+            />
           </div>
           <Button
             variant="primary"
@@ -712,7 +711,7 @@ function KidHome() {
                   </small>
                 </div>
                 <div className="text-base font-bold text-[var(--ink)] tabular-nums shrink-0">
-                  {formatRM(Number(a.amount))}
+                  <Money amount={Number(a.amount)} />
                 </div>
               </Card>
             ))}
@@ -752,7 +751,7 @@ function KidHome() {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-base font-extrabold text-[var(--ink)] tabular-nums">
-                        {formatRM(remaining)}
+                        <Money amount={remaining} />
                       </div>
                       <Link
                         to="/kid/loans"

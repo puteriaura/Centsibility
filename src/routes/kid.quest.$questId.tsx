@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { usePenny } from "@/features/penny";
 
 export const Route = createFileRoute("/kid/quest/$questId")({
-  head: () => ({ meta: [{ title: "Quest — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Quest | Centsibility" }] }),
   component: KidQuestRunnerPage,
 });
 

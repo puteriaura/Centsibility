@@ -20,7 +20,7 @@ export function QuoteCard({ variant: _variant = "kid" }: { variant?: "kid" | "pa
         </span>
       </div>
       <p className="text-xs sm:text-sm text-[var(--ink)] italic leading-relaxed my-1.5">“{q.text}”</p>
-      {q.source && <small className="text-xs text-[var(--text-secondary)] block font-semibold mt-1">— {q.source}</small>}
+      {q.source && <small className="text-xs text-[var(--text-secondary)] block font-semibold mt-1">{q.source}</small>}
     </Card>
   );
 }

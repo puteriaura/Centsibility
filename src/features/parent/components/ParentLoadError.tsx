@@ -35,8 +35,8 @@ export function ParentLoadError({
     const bannerText =
       message ||
       (timeStr
-        ? `Couldn't refresh — showing what we had at ${timeStr}.`
-        : "Couldn't refresh — showing earlier data.");
+        ? `Couldn't refresh. Showing what we had at ${timeStr}.`
+        : "Couldn't refresh. Showing earlier data.");
 
     return (
       <div

@@ -3,7 +3,7 @@ import { useKidData } from "@/hooks/use-kid-data";
 import { TransferFlow } from "@/features/transfer/TransferFlow";
 
 export const Route = createFileRoute("/kid/transfer")({
-  head: () => ({ meta: [{ title: "Transfer Money — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Transfer Money | Centsibility" }] }),
   component: KidTransferPage,
 });
 

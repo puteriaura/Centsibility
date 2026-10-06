@@ -1,183 +1,511 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SectionTitle } from "@/components/ui/section-title";
+import { Modal } from "@/components/ui/modal";
 import { useKidData } from "@/hooks/use-kid-data";
 import { KidLoadError } from "@/features/kid/components";
 import {
-  edgeKidInvestDeposit,
-  edgeKidInvestWithdraw,
-  edgeKidInvestSettle,
-  edgeKidSetInvestRisk,
-  edgeKidSetInvestFrequency,
+  edgeKidInvestOptions,
+  edgeKidInvestPreview,
+  edgeKidInvestList,
+  edgeKidInvestOpen,
+  edgeKidInvestClose,
+  edgeKidMarketSymbols,
+  edgeKidMarketSymbol,
+  edgeKidMarketOpen,
+  edgeKidMarketSell,
+  type InvestmentItem,
+  type InvestmentOptionsResponse,
+  type InvestmentPreviewResponse,
+  type MarketSymbolItem,
+  type MarketSymbolsResponse,
+  type MarketSymbolDetailResponse,
 } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
+import {
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  YAxis,
+  XAxis,
+  Tooltip,
+} from "recharts";
 import { formatRM } from "@/lib/format";
-import { useMoneyAction } from "@/hooks/use-money-action";
+import { Money, useMoney } from "@/features/privacy";
+import { usePenny } from "@/features/penny";
+import { sfx } from "@/lib/sounds";
+import { getBalanceSummary } from "@/lib/finance";
 
 export const Route = createFileRoute("/kid/invest")({
-  head: () => ({ meta: [{ title: "Growth Tabung — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Investment | Centsibility" }] }),
   component: KidInvest,
 });
 
-// Risk levels
-const RISK_LEVELS = [
-  { key: "very_low",  label: "Very Low",  rate: 0.0005, desc: "Tiny steady gains, minimal risk" },
-  { key: "low",       label: "Low",       rate: 0.001,  desc: "Small steady growth rate" },
-  { key: "medium",    label: "Medium",    rate: 0.002,  desc: "Balanced Shariah growth" },
-  { key: "high",      label: "High",      rate: 0.003,  desc: "Higher potential return swings" },
-  { key: "very_high", label: "Very High", rate: 0.004,  desc: "Maximum returns, highest volatility" },
-] as const;
+// ── helpers ──────────────────────────────────────────────────────────────────
 
-// Frequency options
-const FREQ_OPTIONS = [
-  { key: "minute",  label: "Every Min",  desc: "Instant live ticks" },
-  { key: "hourly",  label: "Hourly",     desc: "Compounded hourly" },
-  { key: "daily",   label: "Daily",      desc: "Daily market close" },
-  { key: "weekly",  label: "Weekly",     desc: "Weekly rebalancing" },
-  { key: "monthly", label: "Monthly",    desc: "Monthly harvest" },
-] as const;
+function pct(n: number) {
+  return n >= 0 ? `+${n.toFixed(2)}%` : `${n.toFixed(2)}%`;
+}
+
+function profitColor(n: number) {
+  return n > 0
+    ? "text-[var(--success-text)]"
+    : n < 0
+      ? "text-[var(--ink)]"
+      : "text-[var(--ink)]";
+}
+
+function fmtDate(iso?: string | null) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString("en-MY", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fmtTime(iso?: string | null) {
+  if (!iso) return "3:05 pm";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "3:05 pm";
+  return d
+    .toLocaleTimeString("en-MY", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toLowerCase();
+}
+
+function fmtRelative(iso: string) {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "now";
+  const mins = Math.round(diff / 60000);
+  if (mins === 0) return "in less than a minute";
+  if (mins < 60) return `in ${mins} min`;
+  const hrs = Math.round(diff / 3600000);
+  if (hrs < 24) return `in ${hrs} hr`;
+  return `${Math.round(diff / 86400000)} days`;
+}
+
+const TIER_NAMES: Record<string, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+const FREQ_NAMES: Record<string, string> = {
+  minute: "Every minute",
+  day: "Daily",
+  week: "Weekly",
+};
+
+const TIER_DESCS: Record<string, string> = {
+  low: "Slow and steady · smallest range per update",
+  medium: "Balanced · moderate range per update",
+  high: "Higher swings · largest range per update",
+};
+
+const FREQ_DESCS: Record<string, string> = {
+  minute: "Updates every minute. Good for watching live.",
+  day: "Updates once per day.",
+  week: "Updates once per week.",
+};
+
+const LOCK_LABELS: Record<string, Record<number, string>> = {
+  minute: { 5: "5 minutes", 10: "10 minutes", 30: "30 minutes", 60: "1 hour" },
+  day: { 3: "3 days", 7: "1 week", 14: "2 weeks", 30: "1 month" },
+  week: { 2: "2 weeks", 4: "4 weeks", 8: "8 weeks", 12: "3 months" },
+};
+
+const MARKET_LIMITS: Record<
+  "6-9" | "10-12" | "13-17",
+  { min: number; maxPer: number; maxTotal: number }
+> = {
+  "6-9": { min: 1, maxPer: 10, maxTotal: 20 },
+  "10-12": { min: 1, maxPer: 20, maxTotal: 50 },
+  "13-17": { min: 1, maxPer: 50, maxTotal: 150 },
+};
+
+// ── main component ────────────────────────────────────────────────────────────
 
 function KidInvest() {
   const { data, loading, error, refresh } = useKidData();
-  const [dir, setDir] = useState<"in" | "out">("in");
-  const [savingRisk, setSavingRisk] = useState(false);
-  const [savingFreq, setSavingFreq] = useState(false);
-  const { busy, run } = useMoneyAction();
+  const { openPenny } = usePenny();
+  const { format: formatMoney } = useMoney();
+
+  const [investments, setInvestments] = useState<InvestmentItem[] | null>(null);
+  const [listLoading, setListLoading] = useState(true);
+  const [options, setOptions] = useState<InvestmentOptionsResponse | null>(
+    null,
+  );
+  const [marketData, setMarketData] = useState<MarketSymbolsResponse | null>(
+    null,
+  );
+
+  // Detail / Close modals
+  const [selected, setSelected] = useState<InvestmentItem | null>(null);
+  const [showClose, setShowClose] = useState(false);
+  const [closeBusy, setCloseBusy] = useState(false);
+
+  // Start modal states
+  const [showStart, setShowStart] = useState(false);
+  const [chosenMode, setChosenMode] = useState<"fund" | "market" | null>(null);
+  const [hasSeenExplainer, setHasSeenExplainer] = useState(false);
+
+  // Fund flow steps: 0=tier, 1=speed, 2=length, 3=amount, 4=confirm
+  const [fundStep, setFundStep] = useState(0);
+  const [tier, setTier] = useState("low");
+  const [freq, setFreq] = useState("week");
+  const [lockTicks, setLockTicks] = useState(4);
+  const [fundAmount, setFundAmount] = useState(0);
+  const [preview, setPreview] = useState<InvestmentPreviewResponse | null>(
+    null,
+  );
+  const [previewBusy, setPreviewBusy] = useState(false);
+
+  // Market flow steps: "explainer" | "picker" | "detail" | "confirm"
+  const [marketStep, setMarketStep] = useState<
+    "explainer" | "picker" | "detail" | "confirm"
+  >("picker");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState<MarketSymbolItem | null>(
+    null,
+  );
+  const [symbolDetail, setSymbolDetail] =
+    useState<MarketSymbolDetailResponse | null>(null);
+  const [symbolDetailLoading, setSymbolDetailLoading] = useState(false);
+  const [marketAmount, setMarketAmount] = useState(0);
+  const [halalModalSymbol, setHalalModalSymbol] =
+    useState<MarketSymbolItem | null>(null);
+
+  const [openBusy, setOpenBusy] = useState(false);
+  const clientRequestIdRef = useRef<string>("");
+
+  const code = getKidSession()?.code;
+
+  // ── fetch invest list ──────────────────────────────────────────────────────
+  const fetchList = useCallback(async () => {
+    try {
+      const res = await edgeKidInvestList({ code: code ?? undefined });
+      setInvestments(res.investments);
+    } catch {
+      // silent — show stale
+    } finally {
+      setListLoading(false);
+    }
+  }, [code]);
+
+  const fetchMarketSymbols = useCallback(async () => {
+    try {
+      const res = await edgeKidMarketSymbols({ code: code ?? undefined });
+      setMarketData(res);
+    } catch {
+      // silent fallback
+    }
+  }, [code]);
 
   useEffect(() => {
-    const code = getKidSession()?.code;
-    if (!code) return;
-    edgeKidInvestSettle({ code })
-      .then((r) => {
-        if (r.paid > 0) toast.success(`Your investment grew by ${formatRM(r.paid)}!`);
-        else if (r.paid < 0) toast.error(`Investment dipped by ${formatRM(Math.abs(r.paid))}`);
-        refresh();
-      })
+    fetchList();
+    fetchMarketSymbols();
+    edgeKidInvestOptions({ code: code ?? undefined })
+      .then(setOptions)
       .catch(() => {});
-  }, [refresh]);
+  }, [fetchList, fetchMarketSymbols, code]);
 
+  // ── polling: 30s for minute funds, on-focus for others ────────────────────
+  const hasMinuteFund = investments?.some(
+    (inv) => inv.status === "active" && inv.frequency === "minute",
+  );
+
+  useEffect(() => {
+    if (!hasMinuteFund) return;
+    const id = setInterval(fetchList, 30000);
+    return () => clearInterval(id);
+  }, [hasMinuteFund, fetchList]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      fetchList();
+      fetchMarketSymbols();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchList, fetchMarketSymbols]);
+
+  // Curated symbols filtered
+  const filteredSymbols = useMemo(() => {
+    const list = marketData?.symbols ?? [];
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter(
+      (s) =>
+        s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q),
+    );
+  }, [marketData, searchQuery]);
+
+  // Last update time for curated list header
+  const latestQuoteTime = useMemo(() => {
+    const list = marketData?.symbols ?? [];
+    for (const s of list) {
+      if (s.last_updated) return fmtTime(s.last_updated);
+    }
+    return "3:05 pm";
+  }, [marketData]);
+
+  // ── load / error states ────────────────────────────────────────────────────
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
     return (
       <div className="space-y-4">
         <Skeleton style={{ height: "4rem", borderRadius: "16px" }} />
-        <Skeleton style={{ height: "14rem", borderRadius: "20px" }} />
-        <Skeleton style={{ height: "12rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "10rem", borderRadius: "20px" }} />
+        <Skeleton style={{ height: "10rem", borderRadius: "20px" }} />
       </div>
     );
   }
 
   const k = data.kid;
-  const code = getKidSession()?.code;
-  const currentRisk = (k.risk_appetite as string) || "low";
-  const currentFreq = (k.invest_frequency as string) || "daily";
-  const rate = Number(k.invest_rate ?? 0.001);
-  const balance = Number(k.balance);
-  const invested = Number(k.invest_balance);
-  const projected = invested * Math.pow(1 + rate, 4);
+  const summary = getBalanceSummary(k, data.goals, data.loans);
+  const walletBalance = summary.spending;
 
-  const setRisk = async (key: string) => {
-    if (!code || savingRisk) return;
-    setSavingRisk(true);
-    try {
-      await edgeKidSetInvestRisk({ code, riskAppetite: key });
-      toast.success("Risk level updated!");
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    } finally {
-      setSavingRisk(false);
-    }
-  };
+  const activeInvs = investments?.filter((i) => i.status === "active") ?? [];
+  const closedInvs = investments?.filter((i) => i.status === "closed") ?? [];
 
-  const setFreq = async (key: string) => {
-    if (!code || savingFreq) return;
-    setSavingFreq(true);
-    try {
-      await edgeKidSetInvestFrequency({ code, frequency: key });
-      toast.success("Frequency updated!");
-      refresh();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    } finally {
-      setSavingFreq(false);
-    }
-  };
+  const totalValue = activeInvs.reduce((s, i) => s + i.currentValue, 0);
 
-  const deposit = async (amount: number) => {
-    if (!code) return;
-    await run(
-      () => edgeKidInvestDeposit({ code, amount }),
-      {
-        success: `${formatRM(amount)} added to Growth Tabung`,
-        failure: "Deposit didn't go through",
-        refresh,
-      }
-    );
-  };
-
-  const withdraw = async (amount: number) => {
-    if (!code) return;
-    await run(
-      () => edgeKidInvestWithdraw({ code, amount }),
-      {
-        success: `${formatRM(amount)} back in your wallet`,
-        failure: "Recall didn't go through",
-        refresh,
-      }
-    );
-  };
-
-  // 7-day chart
-  const potTxs = data.txs.filter(
-    (t: (typeof data.txs)[number]) =>
-      ["INVEST_IN", "INVEST_OUT", "INVEST_GAIN", "INVEST_LOSS"].includes(t.type) &&
-      new Date(t.created_at).getTime() > Date.now() - 7 * 86400000,
+  // Market stats
+  const activeMarketInvs = activeInvs.filter((i) => i.mode === "market");
+  const totalMarketExposure = activeMarketInvs.reduce(
+    (s, i) => s + i.principal,
+    0,
   );
-  const chartData = [];
-  let runningBalance = invested;
-  for (let i = 0; i < 7; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    chartData.unshift({
-      name: d.toLocaleDateString("en-US", { weekday: "short" }),
-      value: Math.max(0, runningBalance),
-    });
-    const dayTxs = potTxs.filter(
-      (t: (typeof potTxs)[number]) =>
-        new Date(t.created_at).toDateString() === d.toDateString(),
-    );
-    for (const t of dayTxs) {
-      if (t.type === "INVEST_IN" || t.type === "INVEST_GAIN") runningBalance -= t.amount;
-      else if (t.type === "INVEST_OUT" || t.type === "INVEST_LOSS") runningBalance += t.amount;
+  const hasHadMarket = (investments || []).some((i) => i.mode === "market");
+
+  const ageGroup = marketData?.ageGroup || "10-12";
+  const marketLimits = MARKET_LIMITS[ageGroup] ?? MARKET_LIMITS["10-12"];
+  const maxMarketAllowed = Math.max(
+    0,
+    Math.min(
+      marketLimits.maxPer,
+      marketLimits.maxTotal - totalMarketExposure,
+      walletBalance,
+    ),
+  );
+
+  // ── close investment (Fund or Market) ──────────────────────────────────────
+  async function confirmClose() {
+    if (!selected || !code) return;
+    setCloseBusy(true);
+    try {
+      if (selected.mode === "market") {
+        const res = await edgeKidMarketSell({
+          code,
+          investmentId: selected.id,
+        });
+        if (res.success) {
+          toast.success(
+            `${formatRM(res.payout)} returned to your wallet`, // privacy-ok: toast
+          );
+          sfx.coin();
+        }
+      } else {
+        const res = await edgeKidInvestClose({
+          code,
+          investmentId: selected.id,
+        });
+        if (res.success) {
+          toast.success(
+            `${formatRM(res.payout)} returned to your wallet`, // privacy-ok: toast
+          );
+          sfx.coin();
+        }
+      }
+      await fetchList();
+      refresh();
+      setShowClose(false);
+      setSelected(null);
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : selected.mode === "market"
+            ? "Could not sell investment"
+            : "Could not close fund",
+      );
+    } finally {
+      setCloseBusy(false);
     }
   }
-  const startBal = chartData[0]?.value || 0;
-  const endBal = chartData[chartData.length - 1]?.value || 0;
-  let status: "PROFIT" | "LOSS" | "STAGNANT" = "STAGNANT";
-  if (endBal > startBal) status = "PROFIT";
-  else if (endBal < startBal) status = "LOSS";
 
-  const absChange = Math.abs(endBal - startBal);
-  const pctChange = startBal === 0 ? (endBal > 0 ? 100 : 0) : (absChange / startBal) * 100;
+  // ── open investment flows ──────────────────────────────────────────────────
+  function resetStart() {
+    setChosenMode(null);
+    setFundStep(0);
+    setTier("low");
+    setFreq("week");
+    setLockTicks(4);
+    setFundAmount(0);
+    setPreview(null);
+
+    setMarketStep(!hasSeenExplainer ? "explainer" : "picker");
+    setSearchQuery("");
+    setSelectedSymbol(null);
+    setSymbolDetail(null);
+    setMarketAmount(0);
+
+    clientRequestIdRef.current = crypto.randomUUID();
+  }
+
+  function openStart() {
+    resetStart();
+    setShowStart(true);
+    sfx.tap();
+  }
+
+  // Fund flow handlers
+  async function goToFundPreview(amt: number) {
+    setFundAmount(amt);
+    setPreviewBusy(true);
+    try {
+      const res = await edgeKidInvestPreview({
+        code: code ?? undefined,
+        tier,
+        frequency: freq,
+        lockTicks,
+        amount: amt,
+      });
+      setPreview(res);
+      setFundStep(4);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Preview failed");
+    } finally {
+      setPreviewBusy(false);
+    }
+  }
+
+  async function confirmFundOpen() {
+    if (!code || !fundAmount) return;
+    setOpenBusy(true);
+    try {
+      await edgeKidInvestOpen({
+        code,
+        tier,
+        frequency: freq,
+        lockTicks,
+        amount: fundAmount,
+        clientRequestId: clientRequestIdRef.current,
+      });
+      toast.success(
+        `Investment of ${formatRM(fundAmount)} started`, // privacy-ok: toast
+      );
+      sfx.coin();
+      setShowStart(false);
+      await fetchList();
+      refresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not open investment");
+    } finally {
+      setOpenBusy(false);
+    }
+  }
+
+  // Market flow handlers
+  async function pickMarketSymbol(sym: MarketSymbolItem) {
+    setSelectedSymbol(sym);
+    setSymbolDetail(null);
+    setSymbolDetailLoading(true);
+    setMarketStep("detail");
+    try {
+      const res = await edgeKidMarketSymbol({
+        code: code ?? undefined,
+        symbol: sym.symbol,
+      });
+      setSymbolDetail(res);
+    } catch {
+      toast.error("Could not load price chart");
+    } finally {
+      setSymbolDetailLoading(false);
+    }
+  }
+
+  async function confirmMarketOpen() {
+    if (!code || !selectedSymbol || !marketAmount) return;
+    setOpenBusy(true);
+    try {
+      await edgeKidMarketOpen({
+        code,
+        symbol: selectedSymbol.symbol,
+        amount: marketAmount,
+        clientRequestId: clientRequestIdRef.current,
+      });
+      toast.success(
+        `Investment of ${formatRM(marketAmount)} started`, // privacy-ok: toast
+      );
+      sfx.coin();
+      setShowStart(false);
+      await fetchList();
+      refresh();
+    } catch (e: unknown) {
+      toast.error(
+        e instanceof Error ? e.message : "Could not open market tracker",
+      );
+    } finally {
+      setOpenBusy(false);
+    }
+  }
+
+  // ── available lock ticks for current freq ─────────────────────────────────
+  const lockOptions = Object.keys(LOCK_LABELS[freq] ?? { 4: "" }).map(Number);
+  if (!lockOptions.includes(lockTicks)) setLockTicks(lockOptions[0] ?? 4);
+
+  const tierKeys = options
+    ? Object.keys(options.tiers)
+    : ["low", "medium", "high"];
+  const freqKeys = options
+    ? Object.keys(options.frequencies)
+    : ["minute", "day", "week"];
+  const maxFundAmount = options?.frequencies[freq]?.max_amount ?? 1000;
+  const minFundAmount = options?.frequencies[freq]?.min_amount ?? 1;
+
+  const minFundStr = formatRM(minFundAmount /* privacy-ok: limit */);
+  const maxVal = Math.min(maxFundAmount, walletBalance);
+  const maxFundStr = formatRM(maxVal /* privacy-ok: limit */);
+  const maxTot = marketLimits.maxTotal;
+  const marketMaxTotalStr = formatRM(maxTot /* privacy-ok: limit */);
+  const minLim = marketLimits.min;
+  const marketMinStr = formatRM(minLim /* privacy-ok: limit */);
+  const maxLim = maxMarketAllowed;
+  const marketMaxStr = formatRM(maxLim /* privacy-ok: limit */);
 
   return (
-    <div className="space-y-6 pb-12">
-      <section className="deposit-hero" aria-label="Growth Tabung">
+    <div className="space-y-5 pb-12">
+      {/* Disclaimer */}
+      <div className="px-4 py-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)] leading-relaxed">
+        <strong>Practice only.</strong> No real market, no real shares. Real
+        share prices help you learn how investing works.
+      </div>
+
+      {/* Hero: total value */}
+      <section className="deposit-hero" aria-label="Investment summary">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">In Growth Tabung</p>
-          <p className="deposit-hero__amount tabular-nums">{formatRM(invested)}</p>
-          <p className="deposit-hero__link" style={{ cursor: "default", textDecoration: "none" }}>
-            {status === "PROFIT" ? "+" : status === "LOSS" ? "−" : ""}
-            {formatRM(absChange)} ({pctChange.toFixed(1)}%) · 7 days · Wallet {formatRM(balance)}
+          <p className="deposit-hero__label">Total investment value</p>
+          <p className="deposit-hero__amount tabular-nums">
+            <Money amount={totalValue} />
+          </p>
+          <p
+            className="deposit-hero__link"
+            style={{ cursor: "default", textDecoration: "none" }}
+          >
+            {activeInvs.length} active investment
+            {activeInvs.length !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
@@ -185,201 +513,1362 @@ function KidInvest() {
         </div>
       </section>
 
-      <div>
-        <h1 className="text-lg font-bold text-[var(--ink)] m-0">Growth Tabung</h1>
-        <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 mb-0">
-          Shariah-compliant fund simulation with risk controls.
-        </p>
-      </div>
+      {/* Start button */}
+      <Button
+        type="button"
+        variant="primary"
+        className="w-full justify-center"
+        onClick={openStart}
+      >
+        <AppIcon name="plus" size={16} />
+        Start an investment
+      </Button>
 
-      {/* Balance card + chart */}
-      <Card variant="default" className="p-5 sm:p-6 rounded-2xl border border-[var(--border)] space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider block">
-              7-day movement
-            </span>
-            <div className="flex items-center gap-1.5 mt-1 text-xs">
-              <span
-                className={`font-bold tabular-nums ${
-                  status === "PROFIT"
-                    ? "text-[var(--success-text)]"
-                    : status === "LOSS"
-                      ? "text-[var(--error-text)]"
-                      : "text-[var(--text-muted)]"
-                }`}
-              >
-                {status === "PROFIT" ? "+ " : status === "LOSS" ? "- " : ""}{formatRM(absChange)} ({pctChange.toFixed(1)}%)
-              </span>
-            </div>
+      {/* Active investments */}
+      {listLoading && !investments && (
+        <div className="space-y-3">
+          <Skeleton style={{ height: "8rem", borderRadius: "16px" }} />
+          <Skeleton style={{ height: "8rem", borderRadius: "16px" }} />
+        </div>
+      )}
+
+      {activeInvs.length > 0 && (
+        <div className="space-y-3">
+          <div className="section-tag">
+            <span>ACTIVE INVESTMENTS</span>
           </div>
-
-          <div>
-            {status === "PROFIT" ? (
-              <Badge variant="success">Profit</Badge>
-            ) : status === "LOSS" ? (
-              <Badge variant="error">Dip</Badge>
+          {activeInvs.map((inv) =>
+            inv.mode === "market" ? (
+              <MarketCard
+                key={inv.id}
+                inv={inv}
+                onClick={() => setSelected(inv)}
+              />
             ) : (
-              <Badge variant="default">Steady</Badge>
+              <FundCard
+                key={inv.id}
+                inv={inv}
+                onClick={() => setSelected(inv)}
+              />
+            ),
+          )}
+        </div>
+      )}
+
+      {activeInvs.length === 0 && !listLoading && (
+        <Card variant="soft" className="p-8 text-center space-y-2">
+          <AppIcon name="invest" size={32} color="var(--text-muted)" />
+          <p className="text-sm text-[var(--text-secondary)]">
+            No active investments yet.
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">
+            Tap "Start an investment" above.
+          </p>
+        </Card>
+      )}
+
+      {closedInvs.length > 0 && (
+        <div className="space-y-3">
+          <div className="section-tag">
+            <span>PAST INVESTMENTS</span>
+          </div>
+          {closedInvs
+            .slice(0, 5)
+            .map((inv) =>
+              inv.mode === "market" ? (
+                <PastMarketCard key={inv.id} inv={inv} />
+              ) : (
+                <PastFundCard key={inv.id} inv={inv} />
+              ),
+            )}
+        </div>
+      )}
+
+      {/* ── Detail sheet ───────────────────────────────────────────── */}
+      <Modal
+        isOpen={!!selected && !showClose}
+        onClose={() => setSelected(null)}
+        title={
+          selected
+            ? selected.mode === "market"
+              ? `Market: ${selected.symbol}`
+              : `${TIER_NAMES[selected.tier ?? "low"] ?? selected.tier} Fund`
+            : ""
+        }
+      >
+        {selected && (
+          <div className="space-y-5 pb-2">
+            {selected.mode === "market" ? (
+              <>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="brand" className="text-[11px]">
+                      Market Tracker
+                    </Badge>
+                    <Badge variant="default" className="text-[11px]">
+                      {selected.symbol}
+                    </Badge>
+                  </div>
+                  {selected.isMarketOpen === false && (
+                    <Badge variant="warning" className="text-[11px]">
+                      Market closed
+                    </Badge>
+                  )}
+                </div>
+
+                <p className="text-xs text-[var(--text-muted)]">
+                  Delayed price · updated {fmtTime(selected.lastUpdated)}
+                </p>
+
+                {/* Price chart */}
+                {selected.chartPoints && selected.chartPoints.length > 1 && (
+                  <div className="h-28 -mx-1 pt-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={selected.chartPoints.map((p) => ({
+                          name: p.day,
+                          value: p.price,
+                        }))}
+                        margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
+                      >
+                        <XAxis dataKey="name" hide />
+                        <YAxis domain={["auto", "auto"]} hide />
+                        <Tooltip
+                          formatter={(v: number) => [
+                            `US$${v.toFixed(2)}`,
+                            "Price",
+                          ]}
+                          contentStyle={{ fontSize: 11 }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="var(--primary)"
+                          strokeWidth={2}
+                          fill="var(--primary-soft)"
+                          fillOpacity={0.25}
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <StatLine
+                    label="Put in"
+                    value={<Money amount={selected.principal} />}
+                  />
+                  <StatLine
+                    label="Value now"
+                    value={<Money amount={selected.currentValue} />}
+                  />
+                  <StatLine
+                    label="Gain or loss"
+                    value={
+                      <span className={profitColor(selected.profitRm)}>
+                        {selected.profitRm >= 0 ? "+" : "−"}
+                        <Money amount={Math.abs(selected.profitRm)} /> (
+                        {pct(selected.profitPct)})
+                      </span>
+                    }
+                  />
+                  <StatLine
+                    label="Entry price"
+                    value={`US$${(selected.entryPrice ?? selected.entry_price ?? 0).toFixed(2)}`}
+                  />
+                  <StatLine
+                    label="Current price"
+                    value={`US$${(selected.currentPrice ?? 0).toFixed(2)}`}
+                  />
+                  <StatLine
+                    label="Started"
+                    value={fmtDate(selected.entryDate || selected.created_at)}
+                  />
+                </div>
+
+                <div className="p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-xs text-[var(--text-secondary)] space-y-1">
+                  <p>
+                    Prices are in US dollars. Your RM play money follows the
+                    same percentage change.
+                  </p>
+                  <p className="text-[var(--text-muted)]">
+                    The US market opens at night in Malaysia.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center"
+                    onClick={() => {
+                      openPenny({
+                        context: {
+                          page: "invest",
+                          detail: `Active Market Tracker ${selected.symbol}. Principal ${formatRM(selected.principal /* privacy-ok: penny */)}, current value ${formatRM(selected.currentValue /* privacy-ok: penny */)}, profit ${pct(selected.profitPct)}.`,
+                        },
+                        prompt: `I have an active Market Tracker investment in ${selected.symbol}. Principal is ${formatRM(selected.principal /* privacy-ok: penny */)} and it is now worth ${formatRM(selected.currentValue /* privacy-ok: penny */)}. What do you think?`,
+                      });
+                      setSelected(null);
+                    }}
+                  >
+                    Ask Penny about this
+                  </Button>
+
+                  {selected.status === "active" && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      onClick={() => setShowClose(true)}
+                    >
+                      Sell
+                    </Button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start gap-2">
+                  <Badge variant="brand" className="text-[11px]">
+                    Centsibility Fund
+                  </Badge>
+                  <Badge variant="default" className="text-[11px]">
+                    {FREQ_NAMES[selected.frequency ?? "week"] ??
+                      selected.frequency}
+                  </Badge>
+                </div>
+
+                {/* Growth chart */}
+                {selected.path && selected.path.length > 1 && (
+                  <div className="h-28 -mx-1 pt-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={selected.path.map((p) => ({
+                          name: `Upd ${p.tick}`,
+                          value: p.value,
+                        }))}
+                        margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
+                      >
+                        <XAxis dataKey="name" hide />
+                        <YAxis domain={["auto", "auto"]} hide />
+                        <Tooltip
+                          formatter={(v: number) => [
+                            formatMoney(v),
+                            "Value",
+                          ]}
+                          contentStyle={{ fontSize: 11 }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="var(--primary)"
+                          strokeWidth={2}
+                          fill="var(--primary-soft)"
+                          fillOpacity={0.25}
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <StatLine
+                    label="Put in"
+                    value={<Money amount={selected.principal} />}
+                  />
+                  <StatLine
+                    label="Value now"
+                    value={<Money amount={selected.currentValue} />}
+                  />
+                  <StatLine
+                    label="Profit"
+                    value={
+                      <span className={profitColor(selected.profitRm)}>
+                        {pct(selected.profitPct)}{" "}
+                        <Money amount={Math.abs(selected.profitRm)} />
+                      </span>
+                    }
+                  />
+                  <StatLine label="Ends" value={fmtDate(selected.endsAt)} />
+                  {selected.nextUpdate && (
+                    <StatLine
+                      label="Next update"
+                      value={fmtRelative(selected.nextUpdate)}
+                    />
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center"
+                    onClick={() => {
+                      openPenny({
+                        context: {
+                          page: "invest",
+                          detail: `Active ${TIER_NAMES[selected.tier ?? "low"]} fund. Principal ${formatRM(selected.principal /* privacy-ok: penny */)}, current value ${formatRM(selected.currentValue /* privacy-ok: penny */)}, profit ${pct(selected.profitPct)}.`,
+                        },
+                        prompt: `I have an active ${TIER_NAMES[selected.tier ?? "low"]} investment. Principal is ${formatRM(selected.principal /* privacy-ok: penny */)} and it is now worth ${formatRM(selected.currentValue /* privacy-ok: penny */)}. What do you think?`,
+                      });
+                      setSelected(null);
+                    }}
+                  >
+                    Ask Penny about this
+                  </Button>
+
+                  {selected.status === "active" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-center text-[var(--error-text)]"
+                      onClick={() => setShowClose(true)}
+                    >
+                      Take out early
+                    </Button>
+                  )}
+                </div>
+              </>
             )}
           </div>
-        </div>
+        )}
+      </Modal>
 
-        {/* Solid fill only — no chart gradients */}
-        <div className="h-28 sm:h-32 -mx-2 pt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
-              <YAxis domain={["auto", "auto"]} hide />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="var(--primary)"
-                strokeWidth={2.5}
-                fill="var(--primary-soft)"
-                fillOpacity={0.25}
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Rate info footer */}
-        <div className="pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between text-xs text-[var(--text-secondary)] gap-2">
-          <span>
-            Growth rate: <strong className="text-[var(--ink)]">{(rate * 100).toFixed(2)}%</strong> / cycle
-          </span>
-          <span>
-            Cadence: <strong className="text-[var(--ink)]">{FREQ_OPTIONS.find((f) => f.key === currentFreq)?.label ?? currentFreq}</strong>
-          </span>
-          <span>
-            Projected (4 cycles): <strong className="text-[var(--primary-text)] font-bold">{formatRM(projected)}</strong>
-          </span>
-        </div>
-      </Card>
-
-      {/* ── Risk Appetite ── */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <AppIcon name="chart" size={18} color="var(--primary)" />
-          <SectionTitle>Risk Appetite</SectionTitle>
-        </div>
-        <Card variant="default" className="p-4 sm:p-5 space-y-3">
-          <p className="text-xs text-[var(--text-secondary)]">
-            Higher risk offers higher growth potential alongside potential market swings.
-          </p>
-          <div className="space-y-2">
-            {RISK_LEVELS.map((r) => {
-              const isSelected = currentRisk === r.key;
-              return (
-                <button
-                  key={r.key}
-                  type="button"
-                  onClick={() => setRisk(r.key)}
-                  disabled={savingRisk}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-xl border text-left transition-all duration-150 cursor-pointer min-h-[44px] ${
-                    isSelected
-                      ? "border-[var(--primary)] bg-[var(--surface-pink)] shadow-xs"
-                      : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <strong className={`text-sm ${isSelected ? "text-[var(--primary-text)]" : "text-[var(--ink)]"}`}>
-                        {r.label}
-                      </strong>
-                      {isSelected && <Badge variant="brand">Active</Badge>}
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">{r.desc}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold tabular-nums text-[var(--ink)]">
-                      {(r.rate * 100).toFixed(2)}%
-                    </span>
-                    <span className="block text-[10px] text-[var(--text-secondary)]">rate</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      </div>
-
-      {/* ── Update Frequency ── */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <AppIcon name="timer" size={18} color="var(--primary)" />
-          <SectionTitle>Growth Schedule</SectionTitle>
-        </div>
-        <Card variant="default" className="p-4 sm:p-5 space-y-3">
-          <p className="text-xs text-[var(--text-secondary)]">
-            Choose how frequently your investment portfolio compounds returns.
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {FREQ_OPTIONS.map((f) => {
-              const isSelected = currentFreq === f.key;
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setFreq(f.key)}
-                  disabled={savingFreq}
-                  className={`p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer min-h-[44px] ${
-                    isSelected
-                      ? "border-[var(--primary)] bg-[var(--surface-pink)] shadow-xs"
-                      : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
-                  }`}
-                >
-                  <strong className={`text-xs sm:text-sm block ${isSelected ? "text-[var(--primary-text)]" : "text-[var(--ink)]"}`}>
-                    {f.label}
+      {/* ── Sell / Early close confirm ──────────────────────────────── */}
+      <Modal
+        isOpen={showClose && !!selected}
+        onClose={() => setShowClose(false)}
+        title={selected?.mode === "market" ? "Sell now?" : "Take out early?"}
+      >
+        {selected && (
+          <div className="space-y-4 pb-2">
+            {selected.mode === "market" ? (
+              <>
+                <p className="text-sm text-[var(--ink)] leading-relaxed">
+                  Sell now for about{" "}
+                  <strong>
+                    <Money amount={selected.currentValue} />
+                  </strong>{" "}
+                  (price from {fmtTime(selected.lastUpdated)}).
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  The payout will be returned to your wallet immediately.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center"
+                    onClick={() => setShowClose(false)}
+                  >
+                    Keep it
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="w-full justify-center"
+                    disabled={closeBusy}
+                    onClick={confirmClose}
+                  >
+                    {closeBusy ? "Selling..." : "Sell"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--ink)]">
+                  You get back{" "}
+                  <strong>
+                    <Money amount={selected.principal} />
                   </strong>
-                  <span className="text-[11px] text-[var(--text-secondary)] mt-0.5 block">
-                    {f.desc}
-                  </span>
+                  . The profit so far,{" "}
+                  <strong>
+                    <Money amount={Math.abs(selected.profitRm)} />
+                  </strong>
+                  , is lost.
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Only use this if you really need the money now.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center"
+                    onClick={() => setShowClose(false)}
+                  >
+                    Keep it
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="w-full justify-center"
+                    disabled={closeBusy}
+                    onClick={confirmClose}
+                  >
+                    {closeBusy ? "Taking out..." : "Take out"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Halal screening info modal ──────────────────────────────── */}
+      <Modal
+        isOpen={!!halalModalSymbol}
+        onClose={() => setHalalModalSymbol(null)}
+        title="Halal screening"
+      >
+        {halalModalSymbol && (
+          <div className="space-y-3 pb-2 text-sm text-[var(--ink)]">
+            <div>
+              <strong className="block text-base font-bold">
+                {halalModalSymbol.symbol}
+              </strong>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {halalModalSymbol.name}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-1.5 text-xs">
+              <div>
+                <span className="text-[var(--text-muted)] block">
+                  Screening standard
+                </span>
+                <span className="font-semibold text-[var(--ink)]">
+                  {halalModalSymbol.halal_source}
+                </span>
+              </div>
+              <div>
+                <span className="text-[var(--text-muted)] block">
+                  Last checked
+                </span>
+                <span className="font-semibold text-[var(--ink)]">
+                  {halalModalSymbol.halal_checked_on}
+                </span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-center mt-2"
+              onClick={() => setHalalModalSymbol(null)}
+            >
+              Close
+            </Button>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Start flow sheet ────────────────────────────────────────── */}
+      <Modal
+        isOpen={showStart}
+        onClose={() => setShowStart(false)}
+        title={
+          chosenMode === null
+            ? "Start an investment"
+            : chosenMode === "fund"
+              ? ([
+                  "Choose a tier",
+                  "Choose speed",
+                  "Choose length",
+                  "Choose amount",
+                  "Confirm",
+                ][fundStep] ?? "Centsibility Fund")
+              : marketStep === "explainer"
+                ? "Market Tracker"
+                : marketStep === "picker"
+                  ? "Pick a share or ETF"
+                  : marketStep === "detail"
+                    ? (selectedSymbol?.symbol ?? "Market Tracker")
+                    : "Confirm"
+        }
+      >
+        <div className="space-y-4 pb-2">
+          {/* Step 0: Choose Mode */}
+          {chosenMode === null && (
+            <div className="space-y-3">
+              <p className="text-xs text-[var(--text-secondary)]">
+                Choose how you want to practice investing:
+              </p>
+
+              {/* Fund Option */}
+              <button
+                type="button"
+                className="w-full text-left p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all min-h-[44px]"
+                onClick={() => {
+                  setChosenMode("fund");
+                  setFundStep(0);
+                  sfx.tap();
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <strong className="text-sm text-[var(--ink)]">
+                    Centsibility Fund
+                  </strong>
+                  <Badge variant="brand" className="text-[10px]">
+                    Protected
+                  </Badge>
+                </div>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Centsibility Fund. Practice profits. You never get back less
+                  than you put in.
+                </p>
+              </button>
+
+              {/* Market Option */}
+              {marketData?.enabled === false ? (
+                <div className="w-full p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] opacity-80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <strong className="text-sm text-[var(--text-muted)]">
+                      Market Tracker
+                    </strong>
+                    <Badge variant="default" className="text-[10px]">
+                      Locked
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Market Tracker. Follows a real share price. It can go down.
+                  </p>
+                  <p className="text-xs font-semibold text-[var(--primary)] pt-1">
+                    Ask your parent to switch on Market Tracker
+                  </p>
+                </div>
+              ) : marketData === null || marketData.symbols.length === 0 ? (
+                <div className="w-full p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] opacity-80 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <strong className="text-sm text-[var(--text-muted)]">
+                      Market Tracker
+                    </strong>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Market Tracker isn't switched on yet
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="w-full text-left p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all min-h-[44px]"
+                  onClick={() => {
+                    setChosenMode("market");
+                    if (!hasSeenExplainer) {
+                      setMarketStep("explainer");
+                    } else {
+                      setMarketStep("picker");
+                    }
+                    sfx.tap();
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <strong className="text-sm text-[var(--ink)]">
+                      Market Tracker
+                    </strong>
+                    <Badge variant="default" className="text-[10px]">
+                      Real prices
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Market Tracker. Follows a real share price. It can go down.
+                  </p>
                 </button>
-              );
-            })}
-          </div>
-        </Card>
+              )}
+            </div>
+          )}
+
+          {/* ── Centsibility Fund Flow ──────────────────────────────── */}
+          {chosenMode === "fund" && (
+            <>
+              {fundStep === 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Each tier sets how much the fund can gain or lose each
+                    update.
+                  </p>
+                  {tierKeys.map((t) => {
+                    const td = options?.tiers[t];
+                    const minRate = td ? (td.min_rate * 100).toFixed(3) : "?";
+                    const maxRate = td ? (td.max_rate * 100).toFixed(3) : "?";
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        className={`w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] ${tier === t ? "border-[var(--primary)] bg-[var(--surface-pink)]" : "border-[var(--border)] hover:bg-[var(--surface-soft)]"}`}
+                        onClick={() => {
+                          setTier(t);
+                          sfx.tap();
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <strong className="text-sm text-[var(--ink)]">
+                            {TIER_NAMES[t] ?? t}
+                          </strong>
+                          <span className="text-xs text-[var(--text-secondary)] tabular-nums">
+                            {minRate}% to {maxRate}% per update
+                          </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          {TIER_DESCS[t] ?? ""}
+                        </p>
+                      </button>
+                    );
+                  })}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setChosenMode(null)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      onClick={() => {
+                        setFundStep(1);
+                        sfx.tap();
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {fundStep === 1 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    How often do you want your fund to update?
+                  </p>
+                  {freqKeys.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      className={`w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] ${freq === f ? "border-[var(--primary)] bg-[var(--surface-pink)]" : "border-[var(--border)] hover:bg-[var(--surface-soft)]"}`}
+                      onClick={() => {
+                        setFreq(f);
+                        sfx.tap();
+                      }}
+                    >
+                      <strong className="text-sm text-[var(--ink)]">
+                        {FREQ_NAMES[f] ?? f}
+                      </strong>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                        {FREQ_DESCS[f] ?? ""}
+                      </p>
+                    </button>
+                  ))}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setFundStep(0)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      onClick={() => {
+                        setFundStep(2);
+                        sfx.tap();
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {fundStep === 2 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    How long should the fund run? Early exit forfeits profit.
+                  </p>
+                  {lockOptions.map((lt) => (
+                    <button
+                      key={lt}
+                      type="button"
+                      className={`w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] ${lockTicks === lt ? "border-[var(--primary)] bg-[var(--surface-pink)]" : "border-[var(--border)] hover:bg-[var(--surface-soft)]"}`}
+                      onClick={() => {
+                        setLockTicks(lt);
+                        sfx.tap();
+                      }}
+                    >
+                      <strong className="text-sm text-[var(--ink)]">
+                        {LOCK_LABELS[freq]?.[lt] ?? `${lt} updates`}
+                      </strong>
+                    </button>
+                  ))}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setFundStep(1)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      onClick={() => {
+                        setFundStep(3);
+                        sfx.tap();
+                      }}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {fundStep === 3 && (
+                <div className="space-y-3">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Min <strong>{minFundStr}</strong> · Max{" "}
+                    <strong>{maxFundStr}</strong> · Wallet{" "}
+                    <strong>
+                      <Money amount={walletBalance} />
+                    </strong>
+                  </p>
+                  <MoneyKeypad
+                    min={minFundAmount}
+                    max={Math.min(maxFundAmount, walletBalance)}
+                    busy={previewBusy}
+                    confirmLabel="Preview"
+                    onConfirm={(amt) => goToFundPreview(amt)}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-center text-xs"
+                    onClick={() => setFundStep(2)}
+                  >
+                    Back
+                  </Button>
+                </div>
+              )}
+
+              {fundStep === 4 && preview && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-1">
+                    <p className="text-sm text-[var(--ink)]">
+                      Could finish between{" "}
+                      <strong>
+                        <Money amount={preview.minValue} />
+                      </strong>{" "}
+                      and{" "}
+                      <strong>
+                        <Money amount={preview.maxValue} />
+                      </strong>{" "}
+                      on <strong>{fmtDate(preview.endsAt)}</strong>.
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      You never get back less than what you put in.
+                    </p>
+                  </div>
+                  <div className="text-xs text-[var(--text-secondary)] space-y-0.5">
+                    <div className="flex justify-between">
+                      <span>Amount</span>
+                      <strong>
+                        <Money amount={fundAmount} />
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tier</span>
+                      <strong>{TIER_NAMES[tier] ?? tier}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Speed</span>
+                      <strong>{FREQ_NAMES[freq] ?? freq}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Length</span>
+                      <strong>
+                        {LOCK_LABELS[freq]?.[lockTicks] ??
+                          `${lockTicks} updates`}
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setFundStep(3)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      disabled={openBusy}
+                      onClick={confirmFundOpen}
+                    >
+                      {openBusy ? "Starting..." : "Confirm"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Market Tracker Flow ─────────────────────────────────── */}
+          {chosenMode === "market" && (
+            <>
+              {/* Explainer Step */}
+              {marketStep === "explainer" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-2">
+                    <strong className="text-sm text-[var(--ink)] block">
+                      How Market Tracker works
+                    </strong>
+                    <p className="text-xs text-[var(--ink)] leading-relaxed">
+                      {ageGroup === "6-9"
+                        ? "Prices go up and down every day. Your play money can go down too."
+                        : ageGroup === "10-12"
+                          ? "Share prices change every day. Your play money can go down, even below what you put in. What happened before doesn't tell us what happens next."
+                          : "This follows a real market price. Your play money can fall below what you put in. Past results don't predict the future. This is practice, not advice."}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setChosenMode(null)}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      onClick={() => {
+                        setHasSeenExplainer(true);
+                        setMarketStep("picker");
+                        sfx.tap();
+                      }}
+                    >
+                      I understand
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Picker Step */}
+              {marketStep === "picker" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                    <span>Curated Shariah-screened</span>
+                    <span>Delayed price · updated {latestQuoteTime}</span>
+                  </div>
+
+                  {/* Search box */}
+                  <input
+                    type="text"
+                    placeholder="Search symbols or names..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                  />
+
+                  {/* Symbol List */}
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {filteredSymbols.map((s) => (
+                      <div
+                        key={s.symbol}
+                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all flex items-center justify-between gap-2"
+                      >
+                        <button
+                          type="button"
+                          className="text-left flex-1"
+                          onClick={() => pickMarketSymbol(s)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <strong className="text-sm text-[var(--ink)]">
+                              {s.symbol}
+                            </strong>
+                            {s.is_market_open === false && (
+                              <Badge variant="warning" className="text-[10px]">
+                                Market closed
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)] line-clamp-1 mt-0.5">
+                            {s.name}
+                          </p>
+                        </button>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            className="inline-flex"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHalalModalSymbol(s);
+                            }}
+                          >
+                            <Badge
+                              variant="brand"
+                              className="text-[10px] cursor-pointer hover:opacity-80"
+                            >
+                              Halal screened
+                            </Badge>
+                          </button>
+                          <span
+                            className={`text-xs font-semibold tabular-nums ${profitColor(s.change_percent ?? 0)}`}
+                          >
+                            {pct(s.change_percent ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {filteredSymbols.length === 0 && (
+                      <p className="text-xs text-[var(--text-muted)] text-center py-4">
+                        No symbols match your search.
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center"
+                    onClick={() => setChosenMode(null)}
+                  >
+                    Back
+                  </Button>
+                </div>
+              )}
+
+              {/* Detail & Keypad Step */}
+              {marketStep === "detail" && selectedSymbol && (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <strong className="text-base font-bold text-[var(--ink)]">
+                        {selectedSymbol.symbol}
+                      </strong>
+                      <p className="text-xs text-[var(--text-secondary)]">
+                        {selectedSymbol.name}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHalalModalSymbol(selectedSymbol)}
+                    >
+                      <Badge
+                        variant="brand"
+                        className="text-[10px] cursor-pointer hover:opacity-80"
+                      >
+                        Halal screened
+                      </Badge>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                    <span>
+                      {selectedSymbol.is_market_open === false
+                        ? `Market closed · last close US$${(symbolDetail?.quote?.price ?? selectedSymbol.price ?? 0).toFixed(2)}`
+                        : `Market open · US$${(symbolDetail?.quote?.price ?? selectedSymbol.price ?? 0).toFixed(2)}`}
+                    </span>
+                    <span>
+                      Delayed price · updated{" "}
+                      {fmtTime(
+                        symbolDetail?.quote?.fetched_at ??
+                          selectedSymbol.last_updated,
+                      )}
+                    </span>
+                  </div>
+
+                  {/* 90-day price chart */}
+                  {symbolDetailLoading ? (
+                    <Skeleton
+                      style={{ height: "6rem", borderRadius: "12px" }}
+                    />
+                  ) : symbolDetail?.dailyCloses &&
+                    symbolDetail.dailyCloses.length > 1 ? (
+                    <div className="h-28 -mx-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={symbolDetail.dailyCloses}
+                          margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
+                        >
+                          <XAxis dataKey="day" hide />
+                          <YAxis domain={["auto", "auto"]} hide />
+                          <Tooltip
+                            formatter={(v: number) => [
+                              `US$${v.toFixed(2)}`,
+                              "Close",
+                            ]}
+                            contentStyle={{ fontSize: 11 }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="close"
+                            stroke="var(--primary)"
+                            strokeWidth={2}
+                            fill="var(--primary-soft)"
+                            fillOpacity={0.25}
+                            isAnimationActive={false}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : null}
+
+                  <div className="p-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[11px] text-[var(--text-secondary)] space-y-0.5">
+                    <p>
+                      Prices are in US dollars. Your RM play money follows the
+                      same percentage change.
+                    </p>
+                    <p className="text-[var(--text-muted)]">
+                      The US market opens at night in Malaysia.
+                    </p>
+                  </div>
+
+                  {activeMarketInvs.length >= 5 ? (
+                    <div className="p-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)]">
+                      You already have 5 open market investments (maximum). Sell
+                      one before starting another.
+                    </div>
+                  ) : maxMarketAllowed <= 0 ? (
+                    <div className="p-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)]">
+                      You have reached your total market limit of{" "}
+                      {marketMaxTotalStr}.
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-[var(--text-secondary)]">
+                        Min <strong>{marketMinStr}</strong> · Max{" "}
+                        <strong>{marketMaxStr}</strong> · Wallet{" "}
+                        <strong>
+                          <Money amount={walletBalance} />
+                        </strong>
+                      </p>
+                      <MoneyKeypad
+                        min={marketLimits.min}
+                        max={maxMarketAllowed}
+                        confirmLabel="Next"
+                        onConfirm={(amt) => {
+                          setMarketAmount(amt);
+                          setMarketStep("confirm");
+                        }}
+                      />
+                    </>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-center text-xs"
+                    onClick={() => setMarketStep("picker")}
+                  >
+                    Back to symbol list
+                  </Button>
+                </div>
+              )}
+
+              {/* Confirm Step */}
+              {marketStep === "confirm" && selectedSymbol && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-2">
+                    <p className="text-sm text-[var(--ink)] leading-relaxed">
+                      Practice investing{" "}
+                      <strong>
+                        <Money amount={marketAmount} />
+                      </strong>{" "}
+                      in <strong>{selectedSymbol.symbol}</strong> at{" "}
+                      <strong>
+                        US$
+                        {(
+                          symbolDetail?.quote?.price ??
+                          selectedSymbol.price ??
+                          0
+                        ).toFixed(2)}
+                      </strong>
+                      .
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                      Your play money will follow real share prices. It can go
+                      down.
+                    </p>
+                  </div>
+
+                  <div className="text-xs text-[var(--text-secondary)] space-y-0.5">
+                    <div className="flex justify-between">
+                      <span>Symbol</span>
+                      <strong>{selectedSymbol.symbol}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Amount</span>
+                      <strong>
+                        <Money amount={marketAmount} />
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Status</span>
+                      <strong>
+                        {selectedSymbol.is_market_open === false
+                          ? "Market closed"
+                          : "Market open"}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setMarketStep("detail")}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full justify-center"
+                      disabled={openBusy}
+                      onClick={confirmMarketOpen}
+                    >
+                      {openBusy ? "Starting..." : "Confirm"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ── Fund card (active Centsibility Fund) ──────────────────────────────────────
+
+function FundCard({
+  inv,
+  onClick,
+}: {
+  inv: InvestmentItem;
+  onClick: () => void;
+}) {
+  const isMinute = inv.frequency === "minute";
+  return (
+    <Card
+      variant="default"
+      className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] cursor-pointer transition-all"
+      onClick={() => {
+        sfx.tap();
+        onClick();
+      }}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="brand" className="text-[11px]">
+            Centsibility Fund
+          </Badge>
+          <Badge variant="default" className="text-[11px]">
+            {TIER_NAMES[inv.tier ?? "low"] ?? inv.tier}
+          </Badge>
+          <Badge variant="default" className="text-[11px]">
+            {FREQ_NAMES[inv.frequency ?? "week"] ?? inv.frequency}
+          </Badge>
+        </div>
+        <AppIcon
+          name="chevron"
+          size={16}
+          className="text-[var(--text-muted)] shrink-0 mt-0.5"
+        />
       </div>
 
-      {/* ── Transfer Energy / Invest & Recall ── */}
-      <div className="space-y-3">
-        <SectionTitle>Manage Growth Tabung</SectionTitle>
-        <Card variant="default" className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={dir === "in" ? "primary" : "secondary"}
-              onClick={() => setDir("in")}
-              className="w-full justify-center"
-            >
-              <AppIcon name="plus" size={14} /> Add to Growth Tabung
-            </Button>
-            <Button
-              type="button"
-              variant={dir === "out" ? "primary" : "secondary"}
-              onClick={() => setDir("out")}
-              className="w-full justify-center"
-            >
-              <AppIcon name="recall" size={14} /> Back to wallet
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] py-1 border-b border-[var(--border)]">
-            <span>Spending wallet: <strong>{formatRM(balance)}</strong></span>
-            <span>Growth Tabung: <strong>{formatRM(invested)}</strong></span>
-          </div>
-
-          <MoneyKeypad
-            key={dir}
-            min={0.5}
-            max={dir === "in" ? balance : invested}
-            confirmLabel={dir === "in" ? "Deposit to Growth Tabung" : "Back to spending wallet"}
-            busy={busy}
-            onConfirm={dir === "in" ? deposit : withdraw}
-          />
-        </Card>
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div>
+          <p className="text-[var(--text-muted)]">Put in</p>
+          <p className="font-semibold tabular-nums text-[var(--ink)]">
+            <Money amount={inv.principal} />
+          </p>
+        </div>
+        <div>
+          <p className="text-[var(--text-muted)]">Value now</p>
+          <p className="font-semibold tabular-nums text-[var(--ink)]">
+            <Money amount={inv.currentValue} />
+          </p>
+        </div>
+        <div>
+          <p className="text-[var(--text-muted)]">Profit</p>
+          <p
+            className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
+          >
+            {pct(inv.profitPct)}
+          </p>
+        </div>
       </div>
+
+      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
+        <span>Ends {fmtDate(inv.endsAt)}</span>
+        {inv.nextUpdate && (
+          <span>
+            {isMinute ? "Next update " : "Next "}
+            {fmtRelative(inv.nextUpdate)}
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+// ── Market card (active Market Tracker) ──────────────────────────────────────
+
+function MarketCard({
+  inv,
+  onClick,
+}: {
+  inv: InvestmentItem;
+  onClick: () => void;
+}) {
+  return (
+    <Card
+      variant="default"
+      className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] cursor-pointer transition-all"
+      onClick={() => {
+        sfx.tap();
+        onClick();
+      }}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="brand" className="text-[11px]">
+            Market Tracker
+          </Badge>
+          <Badge variant="default" className="text-[11px]">
+            {inv.symbol || "SPUS"}
+          </Badge>
+          {inv.isMarketOpen === false && (
+            <Badge variant="warning" className="text-[11px]">
+              Market closed
+            </Badge>
+          )}
+        </div>
+        <AppIcon
+          name="chevron"
+          size={16}
+          className="text-[var(--text-muted)] shrink-0 mt-0.5"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div>
+          <p className="text-[var(--text-muted)]">Put in</p>
+          <p className="font-semibold tabular-nums text-[var(--ink)]">
+            <Money amount={inv.principal} />
+          </p>
+        </div>
+        <div>
+          <p className="text-[var(--text-muted)]">Value now</p>
+          <p className="font-semibold tabular-nums text-[var(--ink)]">
+            <Money amount={inv.currentValue} />
+          </p>
+        </div>
+        <div>
+          <p className="text-[var(--text-muted)]">Gain or loss</p>
+          <p
+            className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
+          >
+            {inv.profitRm >= 0 ? "+" : "−"}
+            <Money amount={Math.abs(inv.profitRm)} />
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
+        <span>
+          Entry US${(inv.entryPrice ?? inv.entry_price ?? 0).toFixed(2)} ·{" "}
+          {fmtDate(inv.entryDate || inv.created_at)}
+        </span>
+        <span>Delayed · {fmtTime(inv.lastUpdated)}</span>
+      </div>
+    </Card>
+  );
+}
+
+// ── Past fund card (Centsibility Fund) ────────────────────────────────────────
+
+function PastFundCard({ inv }: { inv: InvestmentItem }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] text-xs">
+      <div>
+        <p className="font-semibold text-[var(--ink)]">
+          {TIER_NAMES[inv.tier ?? "low"] ?? inv.tier} Fund
+        </p>
+        <p className="text-[var(--text-muted)]">
+          {inv.close_reason === "early" ? "Closed early" : "Matured"} ·{" "}
+          {fmtDate(inv.closed_at ?? inv.endsAt)}
+        </p>
+      </div>
+      <div className="text-right tabular-nums">
+        <p className="font-bold text-[var(--ink)]">
+          <Money amount={inv.payout ?? inv.principal} />
+        </p>
+        {inv.close_reason !== "early" && (
+          <p className={profitColor(inv.profitRm)}>{pct(inv.profitPct)}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Past market card (Market Tracker) ────────────────────────────────────────
+
+function PastMarketCard({ inv }: { inv: InvestmentItem }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] text-xs">
+      <div>
+        <p className="font-semibold text-[var(--ink)]">
+          Market: {inv.symbol || "Ticker"}
+        </p>
+        <p className="text-[var(--text-muted)]">
+          Sold · {fmtDate(inv.closed_at ?? inv.created_at)}
+        </p>
+      </div>
+      <div className="text-right tabular-nums">
+        <p className="font-bold text-[var(--ink)]">
+          <Money amount={inv.payout ?? inv.currentValue} />
+        </p>
+        <p className={profitColor(inv.profitRm)}>
+          {inv.profitRm >= 0 ? "+" : "−"}
+          <Money amount={Math.abs(inv.profitRm)} /> ({pct(inv.profitPct)})
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── small helper ──────────────────────────────────────────────────────────────
+
+function StatLine({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide">
+        {label}
+      </p>
+      <div className="text-sm font-semibold text-[var(--ink)]">{value}</div>
     </div>
   );
 }

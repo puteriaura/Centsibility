@@ -184,6 +184,8 @@ const ICONS: Record<string, LucideIcon> = {
   key: KeyRound,
   lock: Lock,
   trend: TrendingUp,
+  trending: TrendingUp,
+  "trending-up": TrendingUp,
   target: Target,
   goal: Target,
   goals: Target,

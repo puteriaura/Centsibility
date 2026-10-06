@@ -70,20 +70,28 @@ export { TRANSACTION_TYPE_LABELS } from "./labels";
 export interface BalanceSummary {
   spending: number; // kids.balance: cash they can spend now
   tabung: number;   // sum of goals.saved
-  growth: number;   // kids.invest_balance (Growth Tabung)
-  total: number;    // spending + tabung + growth
+  investments: number; // sum of current investments value
+  /** @deprecated use investments */
+  growth: number;
+  total: number;    // spending + tabung + investments
   owed: number;     // what active loans still owe; never subtracted from total
 }
 
 export function getBalanceSummary(
-  kid: { balance: number | string; invest_balance?: number | string | null },
+  kid: { balance: number | string; invest_balance?: number | string | null; investmentsValue?: number | string | null },
   goals: { saved: number | string }[] = [],
   loans: { amount: number | string; repaid: number | string; status: string }[] = [],
+  investmentsValue?: number | string | null,
 ): BalanceSummary {
   const spendingCents = Math.round((Number(kid.balance) || 0) * 100);
-  const growthCents = Math.round((Number(kid.invest_balance) || 0) * 100);
+  const invVal = investmentsValue !== undefined && investmentsValue !== null
+    ? investmentsValue
+    : (kid.investmentsValue !== undefined && kid.investmentsValue !== null
+      ? kid.investmentsValue
+      : kid.invest_balance);
+  const investmentsCents = Math.round((Number(invVal) || 0) * 100);
   const tabungCents = goals.reduce((acc, g) => acc + Math.round((Number(g.saved) || 0) * 100), 0);
-  const totalCents = spendingCents + tabungCents + growthCents;
+  const totalCents = spendingCents + tabungCents + investmentsCents;
 
   const owedCents = loans
     .filter((l) => l.status === "active")
@@ -93,10 +101,12 @@ export function getBalanceSummary(
       return acc + Math.max(0, amt - rep);
     }, 0);
 
+  const invNum = investmentsCents / 100;
   return {
     spending: spendingCents / 100,
     tabung: tabungCents / 100,
-    growth: growthCents / 100,
+    investments: invNum,
+    growth: invNum,
     total: totalCents / 100,
     owed: owedCents / 100,
   };

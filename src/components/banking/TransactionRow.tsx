@@ -1,6 +1,5 @@
 import * as React from "react";
 import { AppIcon } from "@/components/ui/app-icon";
-import { formatRM } from "@/lib/format";
 import { transactionAmount } from "@/lib/finance";
 import { useMoney, MASKED_AMOUNT } from "@/features/privacy";
 
@@ -30,7 +29,7 @@ export function TransactionRow({
   onClick,
   className = "",
 }: TransactionRowProps) {
-  const { isMasked, locked, openUnlockSheet } = useMoney();
+  const { isMasked, locked, openUnlockSheet, format } = useMoney();
   const amt = type !== undefined ? transactionAmount(type, label, amount) : null;
   const isPos = amt ? amt.tone === "in" : isIncome;
   const defaultIcon = isPos ? "deposit" : "withdrawal";
@@ -78,7 +77,7 @@ export function TransactionRow({
             ? MASKED_AMOUNT
             : amt
               ? amt.text
-              : formatRM(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
+              : format(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
         </span>
       </div>
     </div>

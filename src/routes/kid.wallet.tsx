@@ -1,16 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SectionTitle } from "@/components/ui/section-title";
 import { StatCard, TransactionRow } from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
 import { KidLoadError } from "@/features/kid/components";
-import {
-  edgeKidSadaqah,
-  edgeKidInvestSettle,
-  edgeKidRequestApproval,
-} from "@/lib/edge";
+import { edgeKidSadaqah, edgeKidRequestApproval } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
@@ -28,7 +24,7 @@ import { useMoneyAction } from "@/hooks/use-money-action";
 import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/wallet")({
-  head: () => ({ meta: [{ title: "Wallet — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Wallet | Centsibility" }] }),
   component: KidWallet,
 });
 
@@ -39,21 +35,6 @@ function KidWallet() {
   const { busy, run } = useMoneyAction();
   const [tab, setTab] = useState<Tab>("deposit");
   const [showHeroBreakdown, setShowHeroBreakdown] = useState(false);
-
-  useEffect(() => {
-    const code = getKidSession()?.code;
-    if (!code) return;
-    edgeKidInvestSettle({ code })
-      .then((r) => {
-        if (r.paid > 0) {
-          sfx.coin();
-          toast.success(`Investment grew by ${formatRM(r.paid)}!`);
-        }
-        refresh();
-      })
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -69,7 +50,6 @@ function KidWallet() {
   const k = data.kid;
   const code = getKidSession()?.code;
   const balance = Number(k.balance);
-  const invested = Number(k.invest_balance ?? 0);
 
   const ask = async (
     kind: "DEPOSIT" | "WITHDRAWAL",
@@ -89,7 +69,7 @@ function KidWallet() {
             (kind === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
         }),
       {
-        success: `${actionWord} request for ${formatRM(amount)} sent for approval`,
+        success: `${actionWord} request for ${formatRM(amount)} sent for approval`, // privacy-ok: toast
         failure: `${actionWord} request didn't go through`,
         refresh,
       },
@@ -156,9 +136,9 @@ function KidWallet() {
               </strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-white">Growth Tabung</span>
+              <span className="text-white">Investment</span>
               <strong className="tabular-nums font-bold">
-                <Money amount={balanceSummary.growth} />
+                <Money amount={balanceSummary.investments} />
               </strong>
             </div>
             {balanceSummary.owed > 0 && (
@@ -236,14 +216,14 @@ function KidWallet() {
           <div className="deposit-account-card__top">
             <div>
               <strong>Tabung</strong>
-              <p>{data.goals.length} Tabung, Growth included</p>
+              <p>{data.goals.length} Tabung</p>
             </div>
             <span className="deposit-account-card__badge">Savings</span>
           </div>
           <div className="deposit-account-card__bottom">
             <span>Account balance</span>
             <strong className="tabular-nums">
-              <Money amount={balanceSummary.tabung + balanceSummary.growth} />
+              <Money amount={balanceSummary.tabung} />
             </strong>
           </div>
         </Link>

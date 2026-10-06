@@ -22,11 +22,30 @@ import { toast } from "sonner";
 
 const PennyContext = React.createContext<PennyContextValue | null>(null);
 
+const fallbackPennyContext: PennyContextValue = {
+  messages: [],
+  busy: false,
+  isOpen: false,
+  mode: "kid",
+  pageContext: null,
+  parentPinRequired: false,
+  openPenny: () => {},
+  closePenny: () => {},
+  send: async () => {},
+  newChat: () => {},
+  setPageContext: () => {},
+  setParentPinRequired: () => {},
+  retryAfterParentPin: async () => {},
+};
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function usePenny(): PennyContextValue {
   const ctx = React.useContext(PennyContext);
   if (!ctx) {
-    throw new Error("usePenny must be used within a PennyProvider");
+    if (import.meta.env?.DEV) {
+      console.warn("usePenny called outside PennyProvider; returning fallback");
+    }
+    return fallbackPennyContext;
   }
   return ctx;
 }

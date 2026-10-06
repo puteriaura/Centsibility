@@ -24,7 +24,7 @@ export function LandingCTA() {
     >
       <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
         <h2 style={{ fontSize: "clamp(2rem, 4vw, 2.75rem)", fontWeight: 800, color: "var(--ink)", margin: "0 0 1rem", letterSpacing: "-0.02em" }}>
-          Raise a generation that thrives — halal-y.
+          Raise a generation that thrives, halal-y.
         </h2>
         <p style={{ fontSize: "1.05rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 2rem" }}>
           Get started and give your children an authentic financial head-start that is deeply faithful, mathematically sound, and fun.

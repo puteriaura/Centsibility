@@ -5,6 +5,11 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 export const MASKED_AMOUNT = "RM*****";
 
+export function maskAmounts(text: string, masked: boolean): string {
+  if (!masked || !text) return text;
+  return text.replace(/RM\s?[\d,]+(?:\.\d{2})?/g, MASKED_AMOUNT);
+}
+
 export function useMoney() {
   const privacy = usePrivacy();
 

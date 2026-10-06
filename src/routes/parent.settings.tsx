@@ -28,7 +28,7 @@ import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { parentDisplayName } from "@/lib/display-name";
 
 export const Route = createFileRoute("/parent/settings")({
-  head: () => ({ meta: [{ title: "Settings — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Settings | Centsibility" }] }),
   component: Settings,
 });
 
@@ -353,7 +353,7 @@ function Settings() {
           </CardHeader>
           <CardContent>
             <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", margin: "0 0 0.85rem" }}>
-              Set a 4–6 digit PIN. It is stored only as a hash on the server.
+              Set a 4 to 6 digit PIN. It is stored only as a hash on the server.
             </p>
             {hasPin ? (
               <div

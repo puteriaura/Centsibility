@@ -101,7 +101,9 @@ Grounding: use only numbers and names from "Child's data". If something isn't th
 
 Limits: no investment, legal or religious rulings. For religious questions, give the simple general idea and suggest asking a parent or an ustaz. Encourage talking to a parent before big money decisions. Never ask for passwords, PINs, codes, addresses or emails. If the child is in the middle of a quest question they have not answered yet, give a hint, never the answer.
 
-Words: say "Tabung" for savings pots and "Growth Tabung" for the investment pot. Never write internal codes or words joined with underscores.
+Words: say "Tabung" for savings pots. Never write internal codes or words joined with underscores.
+
+Rules: Centsibility Funds are a practice game with made-up profits. Explain how results happened (a random profit each update within the range). Never present them as real investing advice. Market Tracker follows real prices. Explain price moves in simple words. Never give buy or sell advice, never predict prices, never say an investment is a good or bad choice.
 
 Style: no em dashes or en dashes. Never open with "Got it", "Sure", "Certainly", "Absolutely", "Great question" or similar; start with the answer. Markdown: short paragraphs, bullet points allowed, bold for key numbers, no tables or headings. Under 120 words, or under 180 for a summary.`;
 
@@ -245,10 +247,10 @@ export function typeLabel(type: string): string {
     SADAQAH: "Sadaqah",
     GOAL_IN: "Tabung deposit",
     GOAL_OUT: "Back from Tabung",
-    INVEST_IN: "Growth Tabung deposit",
-    INVEST_OUT: "Back from Growth Tabung",
-    INVEST_GAIN: "Growth Tabung gain",
-    INVEST_LOSS: "Growth Tabung dip",
+    INVEST_IN: "Moved to Investment",
+    INVEST_OUT: "Back from Investment",
+    INVEST_GAIN: "Investment profit",
+    INVEST_LOSS: "Investment loss",
     TRANSFER_IN: "Transfer received",
     TRANSFER_OUT: "Transfer sent",
   };
@@ -316,11 +318,23 @@ export function getMytDateInfo(d: Date = new Date()) {
 // Kid Coach Context Builder (T27 Section 3)
 // ---------------------------------------------------------------------------
 
+export interface OpenInvestmentContext {
+  mode: string;
+  tier?: string;
+  symbol?: string;
+  principal: number;
+  currentValue: number;
+  profitPct: number;
+  endsAt?: string;
+}
+
 export interface BuildKidCoachContextInput {
   ageGroup?: string | null;
   name?: string | null; // comfort_name only
   balance?: number;
   investBalance?: number;
+  investmentsValue?: number;
+  investments?: OpenInvestmentContext[];
   coins?: number;
   streakDays?: number;
   goals?: Array<{ name: string; target: number; saved: number }>;
@@ -392,9 +406,9 @@ export function buildKidCoachContext(data: BuildKidCoachContextInput): string[] 
   // 2. Balances
   // keep in sync with src/lib/finance.ts getBalanceSummary
   const spendingCents = Math.round((Number(data.balance) || 0) * 100);
-  const growthCents = Math.round((Number(data.investBalance) || 0) * 100);
+  const investmentCents = Math.round((Number(data.investmentsValue ?? data.investBalance) || 0) * 100);
   const tabungCents = (data.goals || []).reduce((acc, g) => acc + Math.round((Number(g.saved) || 0) * 100), 0);
-  const totalCents = spendingCents + tabungCents + growthCents;
+  const totalCents = spendingCents + tabungCents + investmentCents;
   const owedCents = (data.loans || [])
     .filter((l) => l.status === "active")
     .reduce((acc, l) => {
@@ -405,14 +419,22 @@ export function buildKidCoachContext(data: BuildKidCoachContextInput): string[] 
 
   const spending = spendingCents / 100;
   const tabung = tabungCents / 100;
-  const growth = growthCents / 100;
+  const investment = investmentCents / 100;
   const total = totalCents / 100;
   const owed = owedCents / 100;
 
-  lines.push(`Spending balance: RM${spending.toFixed(2)}, Tabung: RM${tabung.toFixed(2)}, Growth Tabung: RM${growth.toFixed(2)}, Total: RM${total.toFixed(2)}`);
+  lines.push(`Spending balance: RM${spending.toFixed(2)}, Tabung: RM${tabung.toFixed(2)}, Investment: RM${investment.toFixed(2)}, Total: RM${total.toFixed(2)}`);
 
   // 3. What is owed on loans
   lines.push(`Owed on loans: RM${owed.toFixed(2)}`);
+
+  // Open investments
+  if (data.investments && data.investments.length > 0) {
+    for (const inv of data.investments) {
+      const modeStr = inv.mode === "fund" ? `Centsibility Fund (${inv.tier || "Standard"})` : `Market Tracker (${inv.symbol || ""})`;
+      lines.push(`Investment ${modeStr}: put in RM${inv.principal.toFixed(2)}, value now RM${inv.currentValue.toFixed(2)} (${inv.profitPct >= 0 ? "+" : ""}${inv.profitPct.toFixed(2)}%), ends ${inv.endsAt || "unknown"}`);
+    }
+  }
 
   // 4. Each Tabung as "name: RM saved of RM target (NN%)"
   if (data.goals && data.goals.length > 0) {
@@ -564,7 +586,9 @@ export interface ParentCoachKidData {
   ageGroup?: string | null;
   spending: number;
   tabung: number;
-  growth: number;
+  growth?: number;
+  investments?: number;
+  investmentsList?: OpenInvestmentContext[];
   spentThisWeek: number;
   spentLastWeek: number;
   topCategoryThisWeek?: string | null;
@@ -600,7 +624,13 @@ export function buildParentCoachContext(data: BuildParentCoachContextInput): str
 
     lines.push(`--- ${identifier} ---`);
     lines.push(`Age group: ${k.ageGroup || "not available yet"}`);
-    lines.push(`Spending: RM${(Number(k.spending) || 0).toFixed(2)}, Tabung: RM${(Number(k.tabung) || 0).toFixed(2)}, Growth Tabung: RM${(Number(k.growth) || 0).toFixed(2)}`);
+    lines.push(`Spending: RM${(Number(k.spending) || 0).toFixed(2)}, Tabung: RM${(Number(k.tabung) || 0).toFixed(2)}, Investment: RM${(Number(k.investments ?? k.growth) || 0).toFixed(2)}`);
+    if (k.investmentsList && k.investmentsList.length > 0) {
+      for (const inv of k.investmentsList) {
+        const modeStr = inv.mode === "fund" ? `Centsibility Fund (${inv.tier || "Standard"})` : `Market Tracker (${inv.symbol || ""})`;
+        lines.push(`Investment ${modeStr}: put in RM${inv.principal.toFixed(2)}, value now RM${inv.currentValue.toFixed(2)} (${inv.profitPct >= 0 ? "+" : ""}${inv.profitPct.toFixed(2)}%), ends ${inv.endsAt || "unknown"}`);
+      }
+    }
     lines.push(`Spent this week: RM${(Number(k.spentThisWeek) || 0).toFixed(2)}, Spent last week: RM${(Number(k.spentLastWeek) || 0).toFixed(2)}`);
     lines.push(`Top category this week: ${(k.topCategoryThisWeek || "none").replace(/_/g, " ")}`);
     lines.push(`Saved this week: RM${(Number(k.savedThisWeek) || 0).toFixed(2)}`);

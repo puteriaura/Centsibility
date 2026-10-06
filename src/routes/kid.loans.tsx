@@ -21,7 +21,7 @@ import { useMoneyAction } from "@/hooks/use-money-action";
 import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/loans")({
-  head: () => ({ meta: [{ title: "My Loans — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "My Loans | Centsibility" }] }),
   component: KidLoans,
 });
 
@@ -76,7 +76,7 @@ function KidLoans() {
         const remaining = Math.max(0, prevRemaining - Number(res.paid));
         return res.fullyRepaid
           ? "Loan fully repaid!"
-          : `${formatRM(res.paid)} paid back. ${formatRM(remaining)} left`;
+          : `${formatRM(res.paid)} paid back. ${formatRM(remaining)} left`; // privacy-ok: toast
       },
       failure: "Repayment didn't go through",
       onSuccess: () => {
@@ -221,7 +221,7 @@ function KidLoans() {
           {!signStep ? (
             <div className="space-y-3 pt-2">
               <div className="text-xs font-semibold text-[var(--text-secondary)]">
-                Select loan amount (Min. RM10.00 — Max RM500.00)
+                Select loan amount (Min. RM10.00 to Max RM500.00)
               </div>
               <MoneyKeypad
                 min={10.0}
@@ -248,7 +248,7 @@ function KidLoans() {
                         Requested Amount
                       </span>
                       <strong className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                        {formatRM(reqAmt!)}
+                        {formatRM(reqAmt!)} {/* privacy-ok: typing */}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs">
@@ -264,7 +264,7 @@ function KidLoans() {
                         Admin fee
                       </span>
                       <strong className="text-sm font-semibold text-[var(--ink)] tabular-nums">
-                        {formatRM(qard.adminFee)}
+                        {formatRM(qard.adminFee)} {/* privacy-ok: typing */}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs pt-1 border-t border-[var(--border)]">
@@ -272,7 +272,7 @@ function KidLoans() {
                         You receive
                       </span>
                       <strong className="text-base font-extrabold text-[var(--success-text)] tabular-nums">
-                        {formatRM(qard.payout)}
+                        {formatRM(qard.payout)} {/* privacy-ok: typing */}
                       </strong>
                     </div>
                     <div className="flex justify-between items-center text-xs">
@@ -280,7 +280,7 @@ function KidLoans() {
                         You repay
                       </span>
                       <strong className="text-sm font-bold text-[var(--primary-text)] tabular-nums">
-                        {formatRM(reqAmt!)}
+                        {formatRM(reqAmt!)} {/* privacy-ok: typing */}
                       </strong>
                     </div>
                     <Button
@@ -458,10 +458,10 @@ function KidLoans() {
                         <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
                           <span>
                             Wallet Balance:{" "}
-                            <strong>{formatRM(kidBalance)}</strong>
+                            <strong><Money amount={kidBalance} /></strong>
                           </span>
                           <span>
-                            Outstanding: <strong>{formatRM(remaining)}</strong>
+                            Outstanding: <strong><Money amount={remaining} /></strong>
                           </span>
                         </div>
                         <MoneyKeypad

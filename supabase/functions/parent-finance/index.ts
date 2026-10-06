@@ -23,6 +23,10 @@ import {
   PennyChatMessage,
   ParentCoachKidData,
 } from "../_shared/deepseek.ts";
+import {
+  currentInvestmentValues,
+  formatInvestmentList,
+} from "../_shared/investments.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,6 +122,8 @@ serve(async (req: Request) => {
         return await handleTransfer(adminClient, parentId, params, user);
       case "penny-chat":
         return await handlePennyChat(adminClient, parentId, params, user);
+      case "kid-investments":
+        return await handleKidInvestments(adminClient, parentId, params);
       default:
         return jsonError(`Unknown action: ${action}`, 400);
     }
@@ -327,6 +333,7 @@ async function handleUpdateKid(
     birth_date?: string;
     birth_year?: number;
     age_group_override?: string | null;
+    market_tracker_enabled?: boolean | string | null;
   }
 ) {
   const kid = await verifyKidOwnership(admin, params.kidId, parentId, "username");
@@ -349,6 +356,20 @@ async function handleUpdateKid(
       updates.age_group_override = params.age_group_override;
     } else {
       return jsonError("Age group override must be '6-9', '10-12', '13-17', or empty.", 400);
+    }
+  }
+
+  if (params.market_tracker_enabled !== undefined) {
+    if (params.market_tracker_enabled === null || params.market_tracker_enabled === "") {
+      updates.market_tracker_enabled = null;
+    } else if (typeof params.market_tracker_enabled === "boolean") {
+      updates.market_tracker_enabled = params.market_tracker_enabled;
+    } else if (params.market_tracker_enabled === "true") {
+      updates.market_tracker_enabled = true;
+    } else if (params.market_tracker_enabled === "false") {
+      updates.market_tracker_enabled = false;
+    } else {
+      return jsonError("market_tracker_enabled must be boolean or null", 400);
     }
   }
 
@@ -875,13 +896,14 @@ async function handlePennyChat(
   const kidsCoachData: ParentCoachKidData[] = [];
 
   for (const kid of (kidsRows || [])) {
-    const [ageGroupRes, goalsRes, txsRes, completionsRes, loansRes, approvalsRes] = await Promise.all([
+    const [ageGroupRes, goalsRes, txsRes, completionsRes, loansRes, approvalsRes, invsInfo] = await Promise.all([
       admin.rpc("kid_age_group", { p_kid_id: kid.id }),
       admin.from("goals").select("saved").eq("kid_id", kid.id),
       admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).gte("created_at", cutoff).order("created_at", { ascending: false }).limit(300),
       admin.from("quest_completions").select("quest_id", { count: "exact", head: true }).eq("kid_id", kid.id),
       admin.from("loans").select("status, due_date").eq("kid_id", kid.id),
       admin.from("approvals").select("id").eq("kid_id", kid.id).eq("status", "pending"),
+      currentInvestmentValues(admin, kid.id),
     ]);
 
     const ageGroup = (ageGroupRes.data as string) || "10-12";
@@ -937,7 +959,9 @@ async function handlePennyChat(
       ageGroup,
       spending: Number(kid.balance) || 0,
       tabung,
-      growth: Number(kid.invest_balance) || 0,
+      growth: invsInfo.totalValue,
+      investments: invsInfo.totalValue,
+      investmentsList: invsInfo.investments,
       spentThisWeek,
       spentLastWeek,
       topCategoryThisWeek,
@@ -1009,5 +1033,45 @@ async function handlePennyChat(
     const msg = err instanceof Error ? err.message : String(err);
     return jsonError(msg || "Penny AI service error", 500);
   }
+}
+
+async function handleKidInvestments(
+  admin: Admin,
+  parentId: string,
+  params: Record<string, unknown>
+) {
+  let targetKidIds: string[] = [];
+
+  if (params.kidId !== undefined && params.kidId !== null && params.kidId !== "") {
+    const kid = await verifyKidOwnership(admin, String(params.kidId), parentId, "id");
+    targetKidIds = [kid.id];
+  } else {
+    const { data: kids, error } = await admin
+      .from("kids")
+      .select("id")
+      .eq("parent_id", parentId);
+    if (error) return jsonError(error.message, 500);
+    targetKidIds = (kids || []).map((k: { id: string }) => k.id);
+  }
+
+  const byKid: Record<string, unknown[]> = {};
+
+  for (const kidId of targetKidIds) {
+    await admin.rpc("kid_investments_settle", { p_kid_id: kidId });
+
+    const { data: invs, error } = await admin
+      .from("investments")
+      .select("*")
+      .eq("kid_id", kidId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) return jsonError(error.message, 500);
+
+    const formattedList = await formatInvestmentList(admin, invs || []);
+    byKid[kidId] = formattedList;
+  }
+
+  return jsonOk({ investmentsByKid: byKid, byKid });
 }
 

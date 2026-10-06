@@ -81,7 +81,7 @@ export function PrivacyUnlockSheet({
             } else {
               const attemptsMsg =
                 res.attemptsLeft !== undefined
-                  ? `Incorrect PIN — ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
+                  ? `Incorrect PIN. ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
                   : "That PIN isn't right.";
               setErrorMsg(attemptsMsg);
               sfx.error();

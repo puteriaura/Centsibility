@@ -19,11 +19,11 @@ import {
   transactionTypeLabel,
   humanizeCode,
 } from "@/lib/labels";
-import { usePrivacy, Money, LogInToView } from "@/features/privacy";
+import { usePrivacy, Money, LogInToView, maskAmounts } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 
 export const Route = createFileRoute("/kid/insights")({
-  head: () => ({ meta: [{ title: "Insights — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Insights | Centsibility" }] }),
   component: KidInsights,
 });
 
@@ -403,7 +403,7 @@ function KidInsights() {
           <span className="insights-recap__avatar" aria-hidden="true">
             <AppIcon name="penny" size={22} color="#fff" />
           </span>
-          <span className="insights-recap__text">{summary.highlight}</span>
+          <span className="insights-recap__text">{maskAmounts(summary.highlight, locked)}</span>
         </button>
 
         <div className="section-tag">
@@ -747,7 +747,7 @@ function KidInsights() {
                 letterSpacing: "-0.01em",
               }}
             >
-              {slides[storyIdx].body}
+              {maskAmounts(slides[storyIdx].body, locked)}
             </p>
 
             {/* Mascot Illustration at Bottom (matching Reference Screenshot 2) */}

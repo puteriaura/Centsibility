@@ -14,6 +14,7 @@ import {
   DEMO_SCHEDULED_HIBAHS,
   DEMO_GOALS,
 } from "@/lib/demo-data";
+import { edgeParentGetKidInvestments, type InvestmentItem } from "@/lib/edge";
 import type {
   Kid,
   Approval,
@@ -61,6 +62,7 @@ export function useParentData() {
   const [scheduledHibahs, setScheduledHibahs] = useState<ScheduledHibah[]>(() =>
     isParentBypassed() ? DEMO_SCHEDULED_HIBAHS : [],
   );
+  const [investmentsByKid, setInvestmentsByKid] = useState<Record<string, InvestmentItem[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(() => isParentBypassed());
@@ -175,6 +177,16 @@ export function useParentData() {
           equal(prev, sh.data || []) ? prev : ((sh.data || []) as ScheduledHibah[]),
         );
       }
+
+      // Fetch kid investments
+      try {
+        const invRes = await edgeParentGetKidInvestments();
+        if (invRes?.investmentsByKid) {
+          setInvestmentsByKid(invRes.investmentsByKid);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch kid investments:", err);
+      }
     } catch (err) {
       console.warn("Failed to fetch parent data from Supabase:", err);
       if (isParentBypassed()) {
@@ -226,6 +238,7 @@ export function useParentData() {
     txs,
     notifications,
     scheduledHibahs,
+    investmentsByKid,
     loading,
     error,
     hasLoaded,

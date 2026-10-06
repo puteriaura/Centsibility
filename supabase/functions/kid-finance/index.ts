@@ -16,6 +16,15 @@ import {
   PennyChatMessage,
   validateBirthdayUpdate,
 } from "../_shared/deepseek.ts";
+import {
+  getQuote,
+  getDailyCloses,
+  getCuratedSymbols,
+} from "../_shared/market.ts";
+import {
+  currentInvestmentValues,
+  formatInvestmentList,
+} from "../_shared/investments.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,6 +74,8 @@ const RESOLVE_ERRORS: Record<string, [string, number]> = {
   insufficient_coins: ["Kid doesn't have enough coins", 400],
   insufficient_invested: ["Insufficient invested balance", 400],
   invalid_amount: ["Invalid amount", 400],
+  invalid_option: ["Pick an investment tier, frequency, and length from the options.", 400],
+  limit_reached: ["You have reached the limit for open investments. Wait for one to finish.", 403],
   invalid_cause: ["Pick a cause from the list.", 400],
   invalid_type: ["Invalid type", 400],
   invalid_limit: ["Invalid limit", 400],
@@ -89,6 +100,9 @@ const RESOLVE_ERRORS: Record<string, [string, number]> = {
   already_answered: ["You already answered that one.", 409],
   invalid_choice: ["Pick one of the answers.", 400],
   wrong_kid: ["Forbidden.", 403],
+  market_off: ["Market Tracker is switched off. Ask a parent to switch it on.", 403],
+  invalid_symbol: ["Pick a symbol from the curated list.", 400],
+  stale_quote: ["Market price is refreshing. Please try again in a moment.", 409],
 };
 
 function handleRpcError(error: { message: string }) {
@@ -203,7 +217,6 @@ serve(async (req: Request) => {
       case "mark-notifications-read": return await handleMarkNotificationsRead(admin, params, requestId);
       case "sadaqah":          return await handleSadaqah(admin, params, requestId);
       case "loan-repay":       return await handleLoanRepay(admin, params, requestId);
-      case "invest-settle":    return await handleInvestSettle(admin, params, requestId);
       case "create-goal":      return await handleCreateGoal(admin, params, requestId);
       case "update-goal":      return await handleUpdateGoal(admin, params, requestId);
       case "delete-goal":      return await handleDeleteGoal(admin, params, requestId);
@@ -212,10 +225,15 @@ serve(async (req: Request) => {
       case "quest-board":      return await handleQuestBoard(admin, params, requestId);
       case "quest-start":      return await handleQuestStart(admin, params, requestId);
       case "quest-answer":     return await handleQuestAnswer(admin, params, requestId);
-      case "invest-deposit":   return await handleInvestDeposit(admin, params, requestId);
-      case "invest-withdraw":  return await handleInvestWithdraw(admin, params, requestId);
-      case "set-invest-risk":  return await handleSetInvestRisk(admin, params, requestId);
-      case "set-invest-frequency": return await handleSetInvestFrequency(admin, params, requestId);
+      case "invest-options":   return await handleInvestOptions(admin, params, requestId);
+      case "invest-preview":   return await handleInvestPreview(admin, params, requestId);
+      case "invest-list":      return await handleInvestList(admin, params, requestId);
+      case "invest-open":      return await handleInvestOpen(admin, params, requestId);
+      case "invest-close":     return await handleInvestClose(admin, params, requestId);
+      case "market-symbols":   return await handleMarketSymbols(admin, params, requestId);
+      case "market-symbol":    return await handleMarketSymbol(admin, params, requestId);
+      case "market-open":      return await handleMarketOpen(admin, params, requestId);
+      case "market-sell":      return await handleMarketSell(admin, params, requestId);
       case "request-approval": return await handleRequestApproval(admin, params, requestId);
       case "request-loan":     return await handleRequestLoan(admin, params, requestId);
       case "request-reward":   return await handleRequestReward(admin, params, requestId);
@@ -529,7 +547,12 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     kid = { ...kid, streak: newStreak, last_login_date: today };
   }
 
-  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes] = await Promise.all([
+  // Settle investments first and refresh kid's balance
+  await admin.rpc("kid_investments_settle", { p_kid_id: kid.id });
+  const { data: refKid } = await admin.from("kids").select("balance").eq("id", kid.id).maybeSingle();
+  if (refKid) kid.balance = refKid.balance;
+
+  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes, investRes] = await Promise.all([
     admin.from("goals").select("*").eq("kid_id", kid.id).order("created_at"),
     admin.from("transactions").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(100),
     admin.from("rewards").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }),
@@ -540,7 +563,10 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     admin.from("kid_notifications").select("id", { count: "exact", head: true }).eq("kid_id", kid.id).eq("read", false),
     admin.from("quest_completions").select("id", { count: "exact", head: true }).eq("kid_id", kid.id),
     admin.rpc("kid_age_group", { p_kid_id: kid.id }),
+    currentInvestmentValues(admin, kid.id),
   ]);
+
+  const investmentsValue = investRes.totalValue;
 
   const safeKid = { ...kid };
   delete safeKid.hashed_pin;
@@ -561,6 +587,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     parent: parentRes.data ?? null,
     notifications: notificationsRes.data ?? [],
     unreadNotifications: unreadRes.count ?? 0,
+    investmentsValue: Number(investmentsValue.toFixed(2)),
   });
 }
 
@@ -641,58 +668,180 @@ async function handleQuestAnswer(admin: Admin, params: Record<string, unknown>, 
   return jsonOk(data);
 }
 
-async function handleInvestDeposit(admin: Admin, params: Record<string, unknown>, requestId: string) {
+async function handleInvestOptions(admin: Admin, _params: Record<string, unknown>, _requestId: string) {
+  const { data, error } = await admin.rpc("investment_fund_options");
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
+}
+
+async function handleInvestPreview(admin: Admin, params: Record<string, unknown>, _requestId: string) {
+  const tier = typeof params.tier === "string" ? params.tier.toLowerCase() : "";
+  const frequency = typeof params.frequency === "string" ? params.frequency.toLowerCase() : "";
+  const lockTicks = Number(params.lockTicks);
   const amount = Number(params.amount);
-  const kid = await getKid(admin, params.code, requestId);
-  const { data, error } = await admin.rpc("kid_invest_transfer", {
-    p_kid_id: kid.id,
-    p_direction: "IN",
-    p_amount: amount,
+
+  if (!tier || !frequency || isNaN(lockTicks) || lockTicks <= 0 || isNaN(amount) || amount <= 0) {
+    return jsonError("Pick an investment tier, frequency, and length from the options.", 400);
+  }
+
+  const rates: Record<string, [number, number]> = {
+    low: [0.001, 0.010],
+    medium: [0.001, 0.030],
+    high: [-0.020, 0.050],
+  };
+
+  const range = rates[tier];
+  if (!range) {
+    return jsonError("Pick an investment tier, frequency, and length from the options.", 400);
+  }
+
+  const [lo, hi] = range;
+  let minVal = amount * Math.pow(1 + lo, lockTicks);
+  const maxVal = amount * Math.pow(1 + hi, lockTicks);
+
+  if (tier === "high") {
+    minVal = Math.max(amount, minVal);
+  }
+
+  const intervalMs = frequency === "minute" ? 60000 : frequency === "day" ? 86400000 : 7 * 86400000;
+  const endsAt = new Date(Date.now() + lockTicks * intervalMs).toISOString();
+
+  return jsonOk({
+    minValue: Number(minVal.toFixed(2)),
+    maxValue: Number(maxVal.toFixed(2)),
+    endsAt,
   });
-  if (error) return handleRpcError(error);
-  return jsonOk({ ok: true, ...(data ?? {}) });
 }
 
-async function handleInvestWithdraw(admin: Admin, params: Record<string, unknown>, requestId: string) {
+async function handleInvestList(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  await admin.rpc("kid_investments_settle", { p_kid_id: kid.id });
+
+  const { data: invs, error } = await admin
+    .from("investments")
+    .select("*")
+    .eq("kid_id", kid.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) return jsonError(error.message, 500);
+
+  const formattedList = await formatInvestmentList(admin, invs || []);
+
+  return jsonOk({ investments: formattedList });
+}
+
+async function handleMarketSymbols(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const symbols = await getCuratedSymbols(admin);
+  const { data: ageGroup } = await admin.rpc("kid_age_group", { p_kid_id: kid.id });
+  let enabled = kid.market_tracker_enabled;
+  if (enabled === null || enabled === undefined) {
+    enabled = ageGroup === "13-17";
+  }
+  return jsonOk({ symbols, enabled: Boolean(enabled), ageGroup: ageGroup || "10-12" });
+}
+
+async function handleMarketSymbol(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  await getKid(admin, params.code, requestId);
+  const symbol = typeof params.symbol === "string" ? params.symbol.trim().toUpperCase() : "";
+  if (!symbol) return jsonError("Missing symbol", 400);
+
+  const quoteRes = await getQuote(admin, symbol);
+  const closesRes = await getDailyCloses(admin, symbol);
+
+  return jsonOk({
+    symbol,
+    quote: quoteRes.quote,
+    available: quoteRes.available,
+    stale: quoteRes.stale,
+    dailyCloses: closesRes.closes,
+  });
+}
+
+async function handleMarketOpen(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const symbol = typeof params.symbol === "string" ? params.symbol.trim().toUpperCase() : "";
   const amount = Number(params.amount);
-  const kid = await getKid(admin, params.code, requestId);
-  const { data, error } = await admin.rpc("kid_invest_transfer", {
+  const clientRequestId = typeof params.clientRequestId === "string" && params.clientRequestId.trim() ? params.clientRequestId.trim() : null;
+
+  if (!symbol) return jsonError("Missing symbol", 400);
+  if (isNaN(amount) || amount < 1.00) return jsonError("Invalid amount", 400);
+
+  // Refresh quote if stale
+  await getQuote(admin, symbol);
+
+  const { data, error } = await admin.rpc("kid_market_open", {
     p_kid_id: kid.id,
-    p_direction: "OUT",
+    p_symbol: symbol,
     p_amount: amount,
+    p_client_request_id: clientRequestId,
   });
+
   if (error) return handleRpcError(error);
-  return jsonOk({ ok: true, ...(data ?? {}) });
+  return jsonOk(data);
 }
 
-async function handleSetInvestRisk(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const riskAppetite = typeof params.riskAppetite === "string" ? params.riskAppetite : "";
-  const rateMap: Record<string, number> = { very_low: 0.0005, low: 0.001, medium: 0.002, high: 0.003, very_high: 0.004 };
-  if (!rateMap[riskAppetite]) return jsonError(`Invalid riskAppetite "${riskAppetite}"`, 400);
+async function handleMarketSell(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const kid = await getKid(admin, params.code, requestId);
-  const { error } = await admin.from("kids").update({ risk_appetite: riskAppetite, invest_rate: rateMap[riskAppetite] }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to set risk: ${error.message}`, 500);
-  return jsonOk({ ok: true });
-}
+  const investmentId = typeof params.investmentId === "string" ? params.investmentId.trim() : "";
+  if (!investmentId) return jsonError("Missing investmentId", 400);
 
-async function handleSetInvestFrequency(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const frequency = typeof params.frequency === "string" ? params.frequency : "";
-  const valid = ["minute", "hourly", "daily", "weekly", "monthly"];
-  if (!valid.includes(frequency)) return jsonError(`Invalid frequency "${frequency}"`, 400);
-  const kid = await getKid(admin, params.code, requestId);
-  const { error } = await admin.from("kids").update({ invest_frequency: frequency }).eq("id", kid.id);
-  if (error) return jsonError(`Failed to set frequency: ${error.message}`, 500);
-  return jsonOk({ ok: true });
-}
+  const { data: inv } = await admin
+    .from("investments")
+    .select("symbol")
+    .eq("id", investmentId)
+    .eq("kid_id", kid.id)
+    .maybeSingle();
 
-async function handleInvestSettle(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const kid = await getKid(admin, params.code, requestId);
-  const { data, error } = await admin.rpc("kid_invest_settle", {
+  if (!inv) return jsonError("Not found", 404);
+
+  if (inv.symbol) {
+    await getQuote(admin, inv.symbol);
+  }
+
+  const { data, error } = await admin.rpc("kid_investment_close", {
     p_kid_id: kid.id,
+    p_investment_id: investmentId,
   });
+
   if (error) return handleRpcError(error);
-  const paid = typeof data?.paid === "number" ? data.paid : Number(data?.paid ?? 0);
-  return jsonOk({ paid });
+  return jsonOk(data);
+}
+
+async function handleInvestOpen(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const tier = typeof params.tier === "string" ? params.tier.toLowerCase() : "";
+  const frequency = typeof params.frequency === "string" ? params.frequency.toLowerCase() : "";
+  const lockTicks = Number(params.lockTicks);
+  const amount = Number(params.amount);
+  const clientRequestId = typeof params.clientRequestId === "string" && params.clientRequestId.trim() ? params.clientRequestId.trim() : null;
+
+  const { data, error } = await admin.rpc("kid_investment_open", {
+    p_kid_id: kid.id,
+    p_tier: tier,
+    p_frequency: frequency,
+    p_lock_ticks: lockTicks,
+    p_amount: amount,
+    p_client_request_id: clientRequestId,
+  });
+
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
+}
+
+async function handleInvestClose(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const investmentId = typeof params.investmentId === "string" ? params.investmentId.trim() : "";
+  if (!investmentId) return jsonError("Missing investmentId", 400);
+
+  const { data, error } = await admin.rpc("kid_investment_close", {
+    p_kid_id: kid.id,
+    p_investment_id: investmentId,
+  });
+
+  if (error) return handleRpcError(error);
+  return jsonOk(data);
 }
 
 async function handleRequestApproval(admin: Admin, params: Record<string, unknown>, requestId: string) {
@@ -970,13 +1119,14 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
   // 2. Fetch context data
   // keep in sync with tests/sql/penny-context-columns.test.mjs
   const cutoff = new Date(Date.now() - 35 * 86400 * 1000).toISOString();
-  const [ageGroupRes, goalsRes, loansRes, txsRes, completionsRes, questBoardRes] = await Promise.all([
+  const [ageGroupRes, goalsRes, loansRes, txsRes, completionsRes, questBoardRes, invsInfo] = await Promise.all([
     admin.rpc("kid_age_group", { p_kid_id: kid.id }),
     admin.from("goals").select("name, target, saved").eq("kid_id", kid.id).limit(10),
     admin.from("loans").select("amount, repaid, status, due_date").eq("kid_id", kid.id).limit(5),
     admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).gte("created_at", cutoff).order("created_at", { ascending: false }).limit(300),
     admin.from("quest_completions").select("completed_at, quests(title)").eq("kid_id", kid.id).order("completed_at", { ascending: false }).limit(5),
     admin.rpc("kid_quest_board", { p_kid_id: kid.id }),
+    currentInvestmentValues(admin, kid.id),
   ]);
 
   const ageGroup = (ageGroupRes.data as string) || "10-12";
@@ -1025,7 +1175,9 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     ageGroup,
     name: pennyName,
     balance: Number(kid.balance) || 0,
-    investBalance: Number(kid.invest_balance) || 0,
+    investBalance: invsInfo.totalValue,
+    investmentsValue: invsInfo.totalValue,
+    investments: invsInfo.investments,
     coins: Number(kid.coins) || 0,
     streakDays: Number(kid.streak) || 0,
     goals,

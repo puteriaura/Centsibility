@@ -11,8 +11,10 @@ import { sanitizeDisplayText } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
 import { sfx } from "@/lib/sounds";
 
+import { usePrivacy, maskAmounts } from "@/features/privacy";
+
 export const Route = createFileRoute("/kid/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Notifications | Centsibility" }] }),
   component: KidNotifications,
 });
 
@@ -45,6 +47,7 @@ function getNotificationIcon(kind: string): string {
 
 function KidNotifications() {
   const { data, loading, error, refresh } = useKidData();
+  const { locked } = usePrivacy();
 
   useEffect(() => {
     const code = getKidSession()?.code;
@@ -86,7 +89,7 @@ function KidNotifications() {
           {notifications.map((n) => {
             const iconName = getNotificationIcon(n.kind);
             const timeStr = formatTimeAgo(n.created_at);
-            const cleanMessage = sanitizeDisplayText(n.message);
+            const cleanMessage = maskAmounts(sanitizeDisplayText(n.message), locked);
 
             const content = (
               <div className="flex items-start gap-3 p-3.5">

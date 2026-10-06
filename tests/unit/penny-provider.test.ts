@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import React from "react";
+import { renderToString } from "react-dom/server";
 import {
   getPennyStorageKey,
   loadCachedMessages,
@@ -6,6 +8,8 @@ import {
   clearCachedMessages,
   PENNY_STORAGE_KEY_PREFIX,
 } from "../../src/features/penny/storage";
+import { usePenny } from "../../src/features/penny/PennyProvider";
+import { ParentLoadingState } from "../../src/routes/parent";
 import type { ChatMessage } from "../../src/features/penny/types";
 
 class MockStorage {
@@ -115,4 +119,28 @@ describe("Penny message persistence (T34)", () => {
     clearCachedMessages();
     expect(loadCachedMessages("parent")).toBeNull();
   });
+
+  it("renders a component calling usePenny() without provider and returns fallback", () => {
+    function ConsumerWithoutProvider() {
+      const penny = usePenny();
+      return React.createElement(
+        "div",
+        null,
+        `isOpen:${penny.isOpen},messages:${penny.messages.length}`,
+      );
+    }
+
+    expect(() => {
+      const html = renderToString(React.createElement(ConsumerWithoutProvider));
+      expect(html).toContain("isOpen:false,messages:0");
+    }).not.toThrow();
+  });
+
+  it("renders ParentLoadingState without throwing", () => {
+    expect(() => {
+      const html = renderToString(React.createElement(ParentLoadingState));
+      expect(html).toContain("Loading…");
+    }).not.toThrow();
+  });
 });
+

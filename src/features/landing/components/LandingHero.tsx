@@ -50,7 +50,7 @@ export function LandingHero() {
               maxWidth: "520px",
             }}
           >
-            A friendly Islamic finance app where young savers learn through interest-free Qard, voluntary Hibah, purposeful Sadaqah, and automated Zakat — while parents guide their journey with clarity and trust.
+            A friendly Islamic finance app where young savers learn through interest-free Qard, voluntary Hibah, purposeful Sadaqah, and automated Zakat, while parents guide their journey with clarity and trust.
           </p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center" }}>

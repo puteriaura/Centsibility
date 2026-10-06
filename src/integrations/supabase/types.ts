@@ -209,6 +209,7 @@ export type Database = {
           penny_ai_date?: string | null;
           penny_ai_count?: number;
           age_group_override?: "6-9" | "10-12" | "13-17" | null;
+          market_tracker_enabled?: boolean | null;
         };
         Insert: {
           avatar?: string;
@@ -251,6 +252,7 @@ export type Database = {
           penny_ai_date?: string | null;
           penny_ai_count?: number;
           age_group_override?: "6-9" | "10-12" | "13-17" | null;
+          market_tracker_enabled?: boolean | null;
         };
         Update: {
           avatar?: string;
@@ -293,6 +295,7 @@ export type Database = {
           penny_ai_date?: string | null;
           penny_ai_count?: number;
           age_group_override?: "6-9" | "10-12" | "13-17" | null;
+          market_tracker_enabled?: boolean | null;
         };
         Relationships: [];
       };

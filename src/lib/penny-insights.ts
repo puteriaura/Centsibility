@@ -124,7 +124,7 @@ export function buildSpendingSummary(
 
   let highlight =
     txCount === 0
-      ? "Quiet stretch so far — when you move money, I’ll spot patterns for you."
+      ? "Quiet stretch so far. When you move money, I’ll spot patterns for you."
       : top
         ? `Big week for ${top.label.toLowerCase()}! You made ${top.count} related move${top.count === 1 ? "" : "s"} totaling RM${top.amount.toFixed(2)}.`
         : `You completed ${txCount} transactions recently. Keep tracking to level up your savings game.`;
@@ -146,7 +146,7 @@ export function buildSpendingSummary(
     dailyAvg,
     topCategories,
     highlight,
-    rangeLabel: `${fmt(rangeStart)} – ${fmt(rangeEnd)}`,
+    rangeLabel: `${fmt(rangeStart)} to ${fmt(rangeEnd)}`,
     rangeStart,
     rangeEnd,
   };
@@ -197,7 +197,7 @@ export function pennyReply(
     return `Sadaqah cleanses wealth like water extinguishes fire. Even RM1 makes a huge difference. Your recent outflow is ${formatRM(s.moneyOut)}. Giving with pure intention brings barakah into everything you save!`;
   }
   if (/invest|growth|halal/.test(q)) {
-    return `Halal growth means risk you truly understand. Check Growth Tabung to start with conservative risk, then allocate small amounts from your wallet. Always check in with your parent first. That is wise, not weak.`;
+    return `Halal growth means risk you truly understand. Check Investment to practice with Centsibility Funds and learn how growth works. Always check in with your parent first. That is wise, not weak.`;
   }
   if (/hello|hi |salam|hey/.test(q)) {
     return `Salam and hi there ${kidName}! I'm Penny, your money buddy. Ask me about spending breakdowns, Tabung, sadaqah, or rewards. I'll ground everything in your real transactions.`;

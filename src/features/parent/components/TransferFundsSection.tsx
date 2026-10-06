@@ -30,7 +30,7 @@ export function TransferFundsSection({
       });
       sfx.success();
       toast.success(
-        `${actionType === "DEPOSIT" ? "Deposited" : "Withdrew"} ${formatRM(amount)}`,
+        `${actionType === "DEPOSIT" ? "Deposited" : "Withdrew"} ${formatRM(amount)}`, // privacy-ok: toast
       );
       onSuccess();
     } catch (e: unknown) {

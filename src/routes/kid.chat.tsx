@@ -8,7 +8,7 @@ export const Route = createFileRoute("/kid/chat")({
   validateSearch: (s: Record<string, unknown>): ChatSearch => ({
     q: typeof s.q === "string" ? s.q : undefined,
   }),
-  head: () => ({ meta: [{ title: "Penny — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Penny | Centsibility" }] }),
   component: KidChatRoute,
 });
 

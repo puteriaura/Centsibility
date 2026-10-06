@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Parent Login — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Parent Login | Centsibility" }] }),
   component: Login,
 });
 
@@ -202,7 +202,7 @@ function Login() {
                     setBusy(true);
                     try {
                       await adminBypassParent();
-                      toast.success("Admin bypass — parent demo activated");
+                      toast.success("Admin bypass: parent demo activated");
                       nav({ to: "/parent" });
                     } catch (err: unknown) {
                       toast.error(

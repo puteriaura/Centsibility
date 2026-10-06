@@ -14,7 +14,7 @@ import { edgeKidSetCardControls } from "@/lib/edge";
 import { usePenny } from "@/features/penny";
 
 export const Route = createFileRoute("/kid/card")({
-  head: () => ({ meta: [{ title: "Debit Card-i — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Debit Card-i | Centsibility" }] }),
   component: KidCard,
 });
 
@@ -113,7 +113,7 @@ function KidCard() {
     setSavingLimit(true);
     try {
       await edgeKidSetCardControls({ code, dailyLimit });
-      toast.success(`Daily limit saved: ${formatRM(dailyLimit)}`);
+      toast.success(`Daily limit saved: ${formatRM(dailyLimit)}`); // privacy-ok: toast
       refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to save daily limit");
@@ -371,7 +371,7 @@ function KidCard() {
                   </span>
                 </div>
                 <strong className="text-sm text-[var(--primary-text)] tabular-nums font-bold">
-                  {formatRM(dailyLimit)}
+                  {formatRM(dailyLimit)} {/* privacy-ok: limit */}
                 </strong>
               </div>
               <input

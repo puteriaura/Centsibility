@@ -24,7 +24,7 @@ export const Route = createFileRoute("/kid/missions")({
   validateSearch: (search: Record<string, unknown>): MissionsSearch => ({
     tab: search.tab === "rewards" ? "rewards" : "quests",
   }),
-  head: () => ({ meta: [{ title: "Missions — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Missions | Centsibility" }] }),
   component: KidMissionsPage,
 });
 

@@ -28,7 +28,7 @@ import { Money } from "@/features/privacy";
 import { useMoneyAction } from "@/hooks/use-money-action";
 
 export const Route = createFileRoute("/kid/goals")({
-  head: () => ({ meta: [{ title: "Tabung — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Tabung | Centsibility" }] }),
   component: KidGoals,
 });
 
@@ -96,15 +96,13 @@ function KidGoals() {
 
   const summary = getBalanceSummary(data.kid, data.goals, data.loans);
   const balance = summary.spending;
-  const growth = summary.growth;
-  const totalInTabung = summary.tabung + summary.growth;
-  const riskLabel = RISK_LABELS[data.kid.risk_appetite as string] || "Low";
+  const totalInTabung = summary.tabung;
   const code = getKidSession()?.code;
 
   const save = async (goalId: string, goalName: string, amount: number) => {
     if (!code) return;
     await run(() => edgeKidContributeGoal({ code, goalId, amount }), {
-      success: (res) => `${formatRM(res.added)} saved to ${goalName}`,
+      success: (res) => `${formatRM(res.added)} saved to ${goalName}`, // privacy-ok: toast
       failure: "Could not save to Tabung",
       onSuccess: () => {
         setActiveGoal(null);
@@ -164,7 +162,7 @@ function KidGoals() {
         success: (res) => {
           const refunded = res.refunded || 0;
           return refunded > 0
-            ? `${name} updated. ${formatRM(refunded)} back in your wallet`
+            ? `${name} updated. ${formatRM(refunded)} back in your wallet` // privacy-ok: toast
             : `${name} updated`;
         },
         failure: "Failed to update Tabung",
@@ -182,7 +180,7 @@ function KidGoals() {
       success: (res) => {
         const refunded = res.refunded || 0;
         return refunded > 0
-          ? `${goalName} removed. ${formatRM(refunded)} back in your wallet`
+          ? `${goalName} removed. ${formatRM(refunded)} back in your wallet` // privacy-ok: toast
           : `${goalName} removed`;
       },
       failure: "Failed to delete Tabung",
@@ -221,7 +219,7 @@ function KidGoals() {
               minHeight: "44px",
             }}
           >
-            <span>{data.goals.length} Tabung · Growth included</span>
+            <span>{data.goals.length} Tabung</span>
             <AppIcon name="info" size={14} color="#fff" />
           </button>
         </div>
@@ -235,8 +233,8 @@ function KidGoals() {
           id="tabung-hero-info"
           className="p-3.5 rounded-xl text-xs leading-relaxed text-[var(--ink)] bg-[var(--surface-soft)] border border-[var(--border)]"
         >
-          Money you've put aside, including Growth Tabung. Your spending balance
-          is separate.
+          Money you've put aside in savings goals. Your spending balance is
+          separate.
         </div>
       )}
 
@@ -247,45 +245,19 @@ function KidGoals() {
 
       {/* Tabung List */}
       <div className="space-y-3">
-        {/* 4. Growth Tabung first */}
+        {/* Investment link note */}
         <Link
           to="/kid/invest"
           onClick={() => sfx.tap()}
-          className="block text-inherit no-underline"
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[var(--primary-text)] text-xs font-medium no-underline hover:border-[var(--primary)] transition-all"
         >
-          <Card
-            variant="default"
-            className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] transition-all cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: "var(--primary-soft)" }}
-              >
-                <AppIcon name="invest" size={28} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-base font-bold text-[var(--ink)] leading-snug truncate m-0">
-                    Growth Tabung
-                  </h3>
-                  <span className="text-base font-bold tabular-nums text-[var(--ink)] shrink-0">
-                    <Money amount={growth} />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-2 mt-1">
-                  <span className="text-xs text-[var(--text-secondary)]">
-                    Halal growth · {riskLabel}
-                  </span>
-                  <AppIcon
-                    name="chevron"
-                    size={18}
-                    className="text-[var(--text-muted)] shrink-0"
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
+          <AppIcon name="invest" size={16} />
+          <span>Investments are on the Investment page</span>
+          <AppIcon
+            name="chevron"
+            size={14}
+            className="ml-auto text-[var(--text-muted)]"
+          />
         </Link>
 
         {/* Empty state if 0 goals */}
@@ -449,8 +421,8 @@ function KidGoals() {
                       <div className="flex items-center justify-between gap-2">
                         {!complete ? (
                           <span className="text-xs text-[var(--text-secondary)]">
-                            Wallet {formatRM(balance)} · Remaining:{" "}
-                            {formatRM(remaining)}
+                            Wallet <Money amount={balance} /> · Remaining:{" "}
+                            <Money amount={remaining} />
                           </span>
                         ) : (
                           <span className="text-xs font-medium text-[var(--success-text)] flex items-center gap-1">

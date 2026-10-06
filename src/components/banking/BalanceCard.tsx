@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Card } from "@/components/ui/card";
 import { AppIcon } from "@/components/ui/app-icon";
-import { formatRM } from "@/lib/format";
+import { Money } from "@/features/privacy";
 
 export interface BalanceCardProps {
   title?: string;
@@ -84,7 +84,7 @@ export function BalanceCard({
               className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${strong}`}
               aria-label={hideBalance ? "Amount hidden" : undefined}
             >
-              {hideBalance ? HIDDEN : formatRM(balance)}
+              {hideBalance ? HIDDEN : <Money amount={balance} />}
             </div>
 
             {secondaryBalance ? (
@@ -102,7 +102,7 @@ export function BalanceCard({
                     className={`tabular-nums ${strong}`}
                     aria-label={hideBalance ? "Amount hidden" : undefined}
                   >
-                    {hideBalance ? HIDDEN : formatRM(secondaryBalance.amount)}
+                    {hideBalance ? HIDDEN : <Money amount={secondaryBalance.amount} />}
                   </strong>
                   <AppIcon
                     name={expanded ? "chevron-up" : "chevron-down"}
@@ -114,7 +114,7 @@ export function BalanceCard({
                 <div className={`text-sm mt-1.5 flex items-center gap-1 font-medium ${soft}`}>
                   <span>{secondaryBalance.label}</span>
                   <strong className={`tabular-nums ${strong}`}>
-                    {hideBalance ? HIDDEN : formatRM(secondaryBalance.amount)}
+                    {hideBalance ? HIDDEN : <Money amount={secondaryBalance.amount} />}
                   </strong>
                 </div>
               )
@@ -151,7 +151,7 @@ export function BalanceCard({
                   className={`tabular-nums font-bold ${strong}`}
                   aria-label={hideBalance ? "Amount hidden" : undefined}
                 >
-                  {hideBalance ? HIDDEN : formatRM(row.amount)}
+                  {hideBalance ? HIDDEN : <Money amount={row.amount} />}
                 </strong>
               </div>
             ))}

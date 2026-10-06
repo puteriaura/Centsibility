@@ -16,9 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatRM } from "@/lib/format";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { approvalKindLabel } from "@/lib/labels";
+import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/parent/approvals")({
-  head: () => ({ meta: [{ title: "Approvals — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Approvals | Centsibility" }] }),
   component: Approvals,
 });
 
@@ -176,7 +177,7 @@ function Approvals() {
                       </div>
                       <p className="notif-item__body mt-1">
                         {isTransfer
-                          ? (a.reason ? `“${a.reason}” · ${senderName} wants to transfer ${formatRM(Number(a.amount))} to ${recipientName}` : `${senderName} wants to transfer ${formatRM(Number(a.amount))} to ${recipientName}`)
+                          ? (a.reason ? `“${a.reason}” · ${senderName} wants to transfer ${formatRM(Number(a.amount))} to ${recipientName}` : `${senderName} wants to transfer ${formatRM(Number(a.amount))} to ${recipientName}`) // privacy-ok: typing
                           : (parsed?.reason ?? a.reason)}
                       </p>
                       {isQard && parsed?.dueDays && (
@@ -187,7 +188,7 @@ function Approvals() {
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-xl font-extrabold text-[var(--ink)] tabular-nums block">
-                        {formatRM(Number(a.amount))}
+                        <Money amount={Number(a.amount)} />
                       </span>
                     </div>
                   </div>
@@ -213,7 +214,7 @@ function Approvals() {
                       <div className="flex justify-between text-[var(--text-secondary)]">
                         <span>Requested Amount</span>
                         <span className="tabular-nums font-semibold">
-                          {formatRM(Number(a.amount))}
+                          <Money amount={Number(a.amount)} />
                         </span>
                       </div>
                       <div className="flex justify-between text-[var(--text-secondary)]">
@@ -221,14 +222,14 @@ function Approvals() {
                         <span className="text-[var(--ink)] font-bold">
                           {(() => {
                             const q = computeQardPayout(Number(a.amount));
-                            return `Fees ${formatRM(q.totalFees)} · Child receives ${formatRM(q.payout)}`;
+                            return `Fees ${formatRM(q.totalFees)} · Child receives ${formatRM(q.payout)}`; // privacy-ok: typing
                           })()}
                         </span>
                       </div>
                       <div className="flex justify-between pt-1 border-t border-[var(--border)] font-bold text-[var(--ink)]">
                         <span>Child Repayment Due</span>
                         <span className="tabular-nums text-[var(--primary-text)]">
-                          {formatRM(Number(a.amount))}
+                          <Money amount={Number(a.amount)} />
                         </span>
                       </div>
                     </div>

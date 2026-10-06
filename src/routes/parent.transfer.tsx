@@ -8,7 +8,7 @@ export const Route = createFileRoute("/parent/transfer")({
   validateSearch: (s: Record<string, unknown>): ParentTransferSearch => ({
     kid: typeof s.kid === "string" ? s.kid : undefined,
   }),
-  head: () => ({ meta: [{ title: "Send Money — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Send Money | Centsibility" }] }),
   component: ParentTransferPage,
 });
 

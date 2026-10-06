@@ -30,15 +30,16 @@ import { parentDisplayName } from "@/lib/display-name";
 import { approvalKindLabel, sanitizeDisplayText } from "@/lib/labels";
 import { getBalanceSummary } from "@/lib/finance";
 
-import { Money, EyeToggle } from "@/features/privacy";
+import { Money, EyeToggle, usePrivacy, maskAmounts } from "@/features/privacy";
 
 export const Route = createFileRoute("/parent/")({
-  head: () => ({ meta: [{ title: "Parent Dashboard — Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Parent Dashboard | Centsibility" }] }),
   component: ParentHome,
 });
 
 function ParentHome() {
   const { user } = useAuth();
+  const { locked } = usePrivacy();
   const {
     kids,
     goals,
@@ -48,6 +49,7 @@ function ParentHome() {
     txs,
     notifications,
     scheduledHibahs,
+    investmentsByKid,
     loading,
     error,
     hasLoaded,
@@ -182,7 +184,10 @@ function ParentHome() {
   const familyTotal = kids.reduce((sum, k) => {
     const kGoals = goals.filter((g) => g.kid_id === k.id);
     const kLoans = loans.filter((l) => l.kid_id === k.id);
-    const summary = getBalanceSummary(k, kGoals, kLoans);
+    const kInv = investmentsByKid?.[k.id]
+      ?.filter((i) => i.status === "active")
+      .reduce((s, i) => s + (Number(i.currentValue) || 0), 0);
+    const summary = getBalanceSummary(k, kGoals, kLoans, kInv);
     return sum + summary.total;
   }, 0);
 
@@ -209,9 +214,6 @@ function ParentHome() {
           >
             View Insights →
           </Link>
-        </div>
-        <div className="deposit-hero__mascot" aria-hidden="true">
-          <AvatarBubble emoji={parentAvatar} size={56} kind="parent" />
         </div>
       </section>
 
@@ -336,7 +338,7 @@ function ParentHome() {
                   to={n.link ?? "/parent/approvals"}
                   className="hover:underline"
                 >
-                  {sanitizeDisplayText(n.message)}
+                  {maskAmounts(sanitizeDisplayText(n.message), locked)}
                 </Link>
               </li>
             ))}
@@ -407,6 +409,11 @@ function ParentHome() {
                     scheduledHibahs={
                       scheduledHibahs?.filter((h) => h.kid_id === c.id) || []
                     }
+                    investmentsValue={
+                      investmentsByKid?.[c.id]
+                        ?.filter((i) => i.status === "active")
+                        .reduce((sum, i) => sum + (Number(i.currentValue) || 0), 0)
+                    }
                     onDeleteInitiate={setDeletingKidId}
                     onRefresh={refresh}
                     defaultOpen={kids.length === 1}
@@ -459,7 +466,7 @@ function ParentHome() {
                   </p>
                 </div>
                 <span className="text-base font-extrabold text-[var(--ink)] tabular-nums shrink-0">
-                  {formatRM(Number(a.amount))}
+                  <Money amount={Number(a.amount)} />
                 </span>
               </Card>
             ))}
