@@ -32,10 +32,10 @@ dist-ssr
 *.sln
 *.sw?
 screenshots/
-tests/mobile/results/
 test-results/
 
 # Supabase functions local env
 supabase/functions/.env
 .vercel
 .env*
+.agents/
