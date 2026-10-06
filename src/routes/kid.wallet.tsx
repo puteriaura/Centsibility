@@ -77,9 +77,9 @@ function KidWallet() {
   };
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: "deposit", label: "Deposit", icon: "deposit" },
-    { key: "withdraw", label: "Withdraw", icon: "withdraw" },
-    { key: "loan", label: "Loan", icon: "loan" },
+    { key: "deposit", label: "Add money", icon: "deposit" },
+    { key: "withdraw", label: "Cash out", icon: "withdraw" },
+    { key: "loan", label: "Borrow", icon: "loan" },
   ];
 
   const balanceSummary = getBalanceSummary(k, data.goals, data.loans);
@@ -112,7 +112,8 @@ function KidWallet() {
               setShowHeroBreakdown((prev) => !prev);
             }}
           >
-            {showHeroBreakdown ? "Hide balance info ↑" : "View balance info →"}
+            {showHeroBreakdown ? "Hide breakdown" : "Show breakdown"}
+            <AppIcon name={showHeroBreakdown ? "chevron-up" : "chevron-down"} size={16} />
           </button>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
@@ -155,7 +156,7 @@ function KidWallet() {
       <div
         className="deposit-quick-row"
         role="navigation"
-        aria-label="Deposit shortcuts"
+        aria-label="Wallet shortcuts"
       >
         <Link
           to="/kid/history"
@@ -166,12 +167,12 @@ function KidWallet() {
           <span>History</span>
         </Link>
         <Link
-          to="/kid/goals"
+          to="/kid/transfer"
           className="deposit-quick-tile"
           onClick={() => sfx.tap()}
         >
-          <AppIcon name="save" size={22} />
-          <span>Tabung</span>
+          <AppIcon name="transfer" size={22} />
+          <span>Transfer</span>
         </Link>
         <Link
           to="/kid/insights"
@@ -253,7 +254,7 @@ function KidWallet() {
       <div
         className="tab-pills-container no-scrollbar"
         role="tablist"
-        aria-label="Wallet actions"
+        aria-label="Ask a parent"
       >
         {tabs.map((t) => {
           const isActive = tab === t.key;
@@ -269,7 +270,6 @@ function KidWallet() {
               }}
               className={`tab-pill ${isActive ? "is-active" : ""}`}
             >
-              <AppIcon name={t.icon} size={16} />
               {t.label}
             </button>
           );
@@ -280,15 +280,15 @@ function KidWallet() {
       {tab === "deposit" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
+            <div className="list-row__icon" aria-hidden="true">
               <AppIcon name="deposit" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">
-                Request Money
+              <h3 className="m-0 text-base font-bold text-[var(--ink)]">
+                Ask a parent to add money
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Ask parent to deposit money into your digital savings.
+              <p className="m-0 text-sm text-[var(--text-2)]">
+                They approve it before it reaches your wallet.
               </p>
             </div>
           </div>
@@ -297,7 +297,7 @@ function KidWallet() {
             max={10000}
             busy={busy}
             showReference
-            confirmLabel="Transmit Request"
+            confirmLabel="Send request"
             onConfirm={(amt, ref) => ask("DEPOSIT", amt, ref)}
           />
         </Card>
@@ -306,15 +306,15 @@ function KidWallet() {
       {tab === "withdraw" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
+            <div className="list-row__icon" aria-hidden="true">
               <AppIcon name="withdraw" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">
-                Withdraw Cash
+              <h3 className="m-0 text-base font-bold text-[var(--ink)]">
+                Ask a parent for cash
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Ask parent to convert your digital balance into physical cash.
+              <p className="m-0 text-sm text-[var(--text-2)]">
+                They approve it before any money leaves your wallet.
               </p>
             </div>
           </div>
@@ -323,7 +323,7 @@ function KidWallet() {
             max={balance}
             busy={busy}
             showReference
-            confirmLabel="Transmit Request"
+            confirmLabel="Send request"
             onConfirm={(amt, ref) => ask("WITHDRAWAL", amt, ref)}
           />
         </Card>
@@ -332,16 +332,15 @@ function KidWallet() {
       {tab === "loan" && (
         <Card variant="default" className="p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
+            <div className="list-row__icon" aria-hidden="true">
               <AppIcon name="loan" size={20} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">
-                Qard Hasan (Benevolent Loan)
+              <h3 className="m-0 text-base font-bold text-[var(--ink)]">
+                Qard Hasan loan
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Interest-free financial assistance with digital agreement and
-                repayment scheduling.
+              <p className="m-0 text-sm text-[var(--text-2)]">
+                Borrow with no interest, sign an agreement, and pay back on a schedule.
               </p>
             </div>
           </div>
@@ -364,8 +363,8 @@ function KidWallet() {
           </div>
 
           <Link to="/kid/loans" className="block mt-2">
-            <Button variant="outline" className="w-full justify-center">
-              Enter Loan Agreement Center →
+            <Button variant="secondary" className="w-full justify-center">
+              Go to Loans
             </Button>
           </Link>
         </Card>
@@ -374,16 +373,16 @@ function KidWallet() {
       {/* Transaction History Section */}
       <div id="wallet-history" className="space-y-3 scroll-mt-4">
         <div className="flex items-center justify-between">
-          <SectionTitle>Recent Activity</SectionTitle>
+          <SectionTitle>Recent activity</SectionTitle>
           {data.txs.filter((t: (typeof data.txs)[number]) =>
             isWalletTransaction(t.type),
           ).length > 0 && (
             <Link
               to="/kid/history"
               onClick={() => sfx.tap()}
-              className="text-xs font-semibold text-[var(--primary-text)] hover:underline min-h-[44px] inline-flex items-center"
+              className="text-sm font-semibold text-[var(--action-text)] no-underline min-h-[44px] inline-flex items-center"
             >
-              See all →
+              See all
             </Link>
           )}
         </div>
@@ -398,7 +397,7 @@ function KidWallet() {
             if (walletTxs.length === 0) {
               return (
                 <div className="py-8 text-center text-sm text-[var(--text-muted)]">
-                  No transactions yet. Start by requesting a deposit!
+                  No transactions yet. Ask a parent to add money to get started.
                 </div>
               );
             }

@@ -205,7 +205,7 @@ function Settings() {
         </div>
         <button type="button" className="settings-logout" onClick={doLogout}>
           <AppIcon name="exit" size={16} />
-          Log out
+          Sign out
         </button>
       </div>
 

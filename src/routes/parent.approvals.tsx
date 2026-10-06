@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
 import {
@@ -15,10 +15,18 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatRM } from "@/lib/format";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
-import { approvalKindLabel } from "@/lib/labels";
-import { Money } from "@/features/privacy";
+import { approvalKindLabel, sanitizeDisplayText } from "@/lib/labels";
+import { Money, maskAmounts, usePrivacy } from "@/features/privacy";
+
+type ApprovalsTab = "requests" | "rewards" | "activity";
 
 export const Route = createFileRoute("/parent/approvals")({
+  validateSearch: (s: Record<string, unknown>): { tab?: ApprovalsTab } => ({
+    tab:
+      s.tab === "rewards" || s.tab === "activity" || s.tab === "requests"
+        ? s.tab
+        : undefined,
+  }),
   head: () => ({ meta: [{ title: "Approvals | Centsibility" }] }),
   component: Approvals,
 });
@@ -26,10 +34,25 @@ export const Route = createFileRoute("/parent/approvals")({
 const parseQard = parseQardReason;
 
 function Approvals() {
-  const { approvals, rewards, loading, error, hasLoaded, lastLoadedAt, refresh } =
-    useParentData();
+  const {
+    approvals,
+    rewards,
+    notifications,
+    loading,
+    error,
+    hasLoaded,
+    lastLoadedAt,
+    refresh,
+  } = useParentData();
+  const { locked } = usePrivacy();
+  const search = Route.useSearch();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"requests" | "rewards">("requests");
+  // The bell opens the Activity tab: notifications are marked read on this
+  // page, so this is also where their text has to be readable.
+  const [tab, setTab] = useState<ApprovalsTab>(search.tab ?? "requests");
+  useEffect(() => {
+    setTab(search.tab ?? "requests");
+  }, [search.tab]);
 
   useEffect(() => {
     edgeParentMarkNotificationsRead();
@@ -86,14 +109,11 @@ function Approvals() {
       {error && hasLoaded && (
         <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
       )}
-      <div>
-        <h1 className="settings-page-title">Notifications</h1>
-        <p className="text-sm text-[var(--text-secondary)] mt-1 mb-0">
-          Review money requests and reward wishlists from your children.
-        </p>
-      </div>
+      <p className="text-sm text-[var(--text-2)] m-0">
+        Review money requests and reward wishlists from your children.
+      </p>
 
-      <div className="segment-tabs" role="tablist" aria-label="Notification categories">
+      <div className="segment-tabs" role="tablist" aria-label="Approval categories">
         <button
           type="button"
           role="tab"
@@ -103,9 +123,9 @@ function Approvals() {
           className="segment-tab"
           onClick={() => setTab("requests")}
         >
-          Alerts
+          Requests
           {approvals.length > 0 ? (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--error-strong)] text-white text-[10px] font-bold">
+            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--neg)] text-white text-[11px] font-bold">
               {approvals.length > 99 ? "99+" : approvals.length}
             </span>
           ) : null}
@@ -121,21 +141,32 @@ function Approvals() {
         >
           Rewards
           {rewards.length > 0 ? (
-            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--error-strong)] text-white text-[10px] font-bold">
+            <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--neg)] text-white text-[11px] font-bold">
               {rewards.length > 99 ? "99+" : rewards.length}
             </span>
           ) : null}
         </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-act"
+          aria-selected={tab === "activity"}
+          aria-controls="panel-act"
+          className="segment-tab"
+          onClick={() => setTab("activity")}
+        >
+          Activity
+        </button>
       </div>
 
-      {hasLoaded && !error && totalPending === 0 && (
+      {tab !== "activity" && hasLoaded && !error && totalPending === 0 && (
         <Card variant="soft" className="p-8 text-center space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-[var(--success-soft)] text-[var(--success-text)] flex items-center justify-center mx-auto">
             <AppIcon name="approve" size={24} />
           </div>
-          <h3 className="text-base font-bold text-[var(--ink)]">All Clear!</h3>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-            No pending child authorization requests at this time.
+          <h3 className="m-0 text-base font-bold text-[var(--ink)]">All clear</h3>
+          <p className="m-0 text-sm text-[var(--text-2)]">
+            Nothing is waiting for your approval.
           </p>
         </Card>
       )}
@@ -143,7 +174,7 @@ function Approvals() {
       {tab === "requests" && (
         <div className="space-y-3" role="tabpanel" id="panel-req" aria-labelledby="tab-req">
           {hasLoaded && !error && approvals.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)] py-6 text-center">No money or loan alerts.</p>
+            <p className="text-sm text-[var(--text-3)] py-6 text-center">No money or loan requests.</p>
           ) : (
             approvals.map((a) => {
               const isQard = a.kind === "QARD";
@@ -218,7 +249,7 @@ function Approvals() {
                         </span>
                       </div>
                       <div className="flex justify-between text-[var(--text-secondary)]">
-                        <span>Interest / Admin Charges</span>
+                        <span>Admin fees</span>
                         <span className="text-[var(--ink)] font-bold">
                           {(() => {
                             const q = computeQardPayout(Number(a.amount));
@@ -253,7 +284,7 @@ function Approvals() {
                       loading={isBusy}
                       onClick={() => decide(a.id, "approve")}
                     >
-                      <AppIcon name="approve" size={14} /> Approve Request
+                      <AppIcon name="approve" size={14} /> Approve
                     </Button>
                   </div>
                 </Card>
@@ -322,6 +353,41 @@ function Approvals() {
                 </Card>
               );
             })
+          )}
+        </div>
+      )}
+
+      {tab === "activity" && (
+        <div role="tabpanel" id="panel-act" aria-labelledby="tab-act">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-[var(--text-3)] py-6 text-center">No activity yet.</p>
+          ) : (
+            <div className="list-panel">
+              {notifications.slice(0, 30).map((n) => {
+                const text = maskAmounts(sanitizeDisplayText(n.message), locked);
+                const body = (
+                  <>
+                    <span className="list-row__icon" aria-hidden="true">
+                      <AppIcon name="bell" size={18} />
+                    </span>
+                    <span className="list-row__body">
+                      <span className="text-sm font-semibold leading-snug text-[var(--ink)]">{text}</span>
+                      <span className="list-row__sub">{formatDate(n.created_at)}</span>
+                    </span>
+                    {!n.read && <span className="notif-item__dot" aria-label="New" />}
+                  </>
+                );
+                return n.link ? (
+                  <Link key={n.id} to={n.link} className="list-row">
+                    {body}
+                  </Link>
+                ) : (
+                  <div key={n.id} className="list-row">
+                    {body}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}

@@ -27,7 +27,8 @@ export const Route = createFileRoute("/kid/insights")({
   component: KidInsights,
 });
 
-const CAT_COLORS = ["#3B5BDB", "#DD2D4A", "#F5A623", "#0F8FA3", "#6E5FB8"];
+// Chart palette (styles.css --chart-*): distinct hues for categories only; red stays reserved for money out.
+const CAT_COLORS = ["#1F4FD1", "#0F766E", "#B45309", "#6941C6", "#475467"];
 
 function formatDateHeader(dateStr: string) {
   try {
@@ -282,7 +283,7 @@ function KidInsights() {
               : "none",
         }}
       >
-        <h1 className="insights-ask-hero__title">Hi {k.name}! Ask me about:</h1>
+        <h2 className="insights-ask-hero__title">Hi {k.name}! Ask me about:</h2>
         <div className="insights-ask-actions">
           <button
             type="button"
@@ -353,7 +354,7 @@ function KidInsights() {
             openPenny({ context: { page: "Insights" } });
           }}
         >
-          {pullOffset > 30 ? "Release to open chat ✨" : "Pull down to chat"}
+          {pullOffset > 30 ? "Release to open chat" : "Pull down to chat"}
         </button>
       </section>
 
@@ -673,13 +674,12 @@ function KidInsights() {
               cursor: "pointer",
               position: "relative",
               overflow: "hidden",
-              background:
+              backgroundColor:
                 slides[storyIdx].tone === "primary"
-                  ? "linear-gradient(165deg, #101652 0%, #2E1A75 40%, #6E1F99 100%)"
+                  ? "var(--action)"
                   : slides[storyIdx].tone === "lilac"
-                    ? "linear-gradient(165deg, #20134D 0%, #462285 45%, #8B32B0 100%)"
-                    : "linear-gradient(165deg, #0A1128 0%, #1C2B59 50%, #2A3C7A 100%)",
-              boxShadow: "0 12px 36px rgba(0, 0, 0, 0.45)",
+                    ? "var(--blue-800)"
+                    : "var(--gray-800)",
             }}
             onPointerDown={() => setIsPaused(true)}
             onPointerUp={(e) => {
@@ -775,12 +775,7 @@ function KidInsights() {
               >
                 <AppIcon name="penny" size={54} color="#ffffff" />
               </div>
-              <div
-                style={{ display: "flex", gap: "4px", alignItems: "center" }}
-              >
-                <AppIcon name="sparkles" size={24} color="#ffd43b" />
-                <span style={{ fontSize: "1.4rem" }}>🪙🪙</span>
-              </div>
+
             </div>
           </div>
 

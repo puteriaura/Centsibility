@@ -12,7 +12,7 @@ function KidTransferPage() {
   const kidData = useKidData();
 
   return (
-    <div className="py-2 px-1">
+    <div className="pt-2">
       <TransferFlow
         mode="kid"
         kid={kidData.data?.kid}

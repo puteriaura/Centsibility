@@ -310,10 +310,7 @@ export function TransferFlow({
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--ink)] m-0 truncate">
-            {mode === "kid" ? "Transfer Money" : "Send Money to Child"}
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5 mb-0">
+          <p className="text-sm text-[var(--text-2)] m-0">
             {mode === "kid"
               ? "Send pocket money to your siblings or return to parents"
               : "Direct transfer into your child's spending account"}
@@ -330,7 +327,7 @@ export function TransferFlow({
           <div
             key={s}
             className={`h-1.5 flex-1 rounded-full transition-colors ${
-              s <= step ? "bg-[var(--primary)]" : "bg-[var(--surface-soft)]"
+              s <= step ? "bg-[var(--action)]" : "bg-[var(--surface-sunken)]"
             }`}
           />
         ))}
@@ -340,7 +337,7 @@ export function TransferFlow({
       {step === 1 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] m-0">
+            <h2 className="section-title__heading">
               Select Recipient
             </h2>
             {mode === "kid" && (
@@ -535,7 +532,7 @@ export function TransferFlow({
             disabled={!recipientId}
             onClick={() => goToStep(2)}
           >
-            Continue to Amount →
+            Continue
           </Button>
         </div>
       )}
@@ -556,8 +553,8 @@ export function TransferFlow({
 
           {/* Large Amount Input Card */}
           <Card variant="soft" className="p-6 text-center space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] block">
-              Enter Amount
+            <span className="text-xs font-bold text-[var(--text-muted)] block">
+              Enter amount
             </span>
             <div className="flex items-center justify-center gap-1">
               <span className="text-2xl font-bold text-[var(--text-muted)]">RM</span>
@@ -663,7 +660,7 @@ export function TransferFlow({
               disabled={!amountValidation.valid || !noteValidation.valid}
               onClick={() => goToStep(3)}
             >
-              Review Transfer →
+              Review
             </Button>
           </div>
         </div>

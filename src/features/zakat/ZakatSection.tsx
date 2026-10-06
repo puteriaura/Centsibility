@@ -278,8 +278,8 @@ export function ZakatSection() {
 
           {/* Amount Due Callout */}
           <div className="p-4 rounded-xl bg-[var(--surface-pink)] border border-[var(--primary-soft)] text-center space-y-1">
-            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider block">
-              Zakat Due (2.5%)
+            <span className="text-xs font-semibold text-[var(--text-secondary)] block">
+              Zakat due (2.5%)
             </span>
             <div className="text-3xl font-extrabold text-[var(--primary-text)] tabular-nums">
               <Money amount={zakatDue} />
@@ -294,8 +294,8 @@ export function ZakatSection() {
           {/* Distribution Suggestions */}
           {aboveNisab && zakatDue > 0 && (
             <div className="space-y-2 pt-2">
-              <h4 className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
-                Suggested Distribution Categories
+              <h4 className="text-xs font-bold text-[var(--ink)]">
+                Suggested categories
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -314,7 +314,7 @@ export function ZakatSection() {
                         size={14}
                         color="var(--primary)"
                       />
-                      <span className="text-[10px] text-[var(--text-muted)] font-semibold">
+                      <span className="text-[11px] text-[var(--text-muted)] font-semibold">
                         {cat.pct}%
                       </span>
                     </div>

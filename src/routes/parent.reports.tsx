@@ -45,13 +45,14 @@ function groupByDate(txs: Tx[]): Record<string, Tx[]> {
   );
 }
 
+// Chart palette (styles.css --chart-*): categories only, never the brand pink of the old theme
 const PIE_COLORS = [
-  "#EC008C",
-  "#B60081",
-  "#161A50",
-  "#F5A623",
-  "#17A673",
-  "#9B72CF",
+  "#1F4FD1",
+  "#0F766E",
+  "#B45309",
+  "#6941C6",
+  "#475467",
+  "#BE185D",
 ];
 
 function Reports() {
@@ -213,18 +214,9 @@ function Reports() {
       )}
       {/* Header + Selector Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[var(--ink)] flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-              <AppIcon name="chart" size={20} />
-            </div>
-            Monthly Statements
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
-            Financial analytics, category breakdown, and exportable statements
-            for your family.
-          </p>
-        </div>
+        <p className="m-0 text-sm text-[var(--text-2)]">
+          Monthly statements for each child: categories, entries and a copy you can save or share.
+        </p>
 
         <div className="flex items-center gap-2">
           <select
@@ -470,7 +462,7 @@ function Reports() {
               variant="default"
               className="p-5 sm:p-6 border border-[var(--border)] space-y-4"
             >
-              <h3 className="text-sm font-bold text-[var(--ink)] uppercase tracking-wider">
+              <h3 className="text-base font-bold text-[var(--ink)]">
                 Expense Category Breakdown
               </h3>
               <div className="h-52 w-full">
@@ -592,13 +584,10 @@ function Reports() {
                       key={t}
                       type="button"
                       onClick={() => setTypeFilter(t)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-[var(--primary)] text-white shadow-xs"
-                          : "bg-[var(--surface-soft)] text-[var(--text-secondary)] hover:text-[var(--ink)] hover:bg-[var(--white)] border border-[var(--border)]"
-                      }`}
+                      aria-pressed={isSelected}
+                      className={`kid-chip px-3.5 ${isSelected ? "is-active" : ""}`}
                     >
-                      {t === "ALL" ? "All Entries" : transactionTypeLabel(t)}
+                      {t === "ALL" ? "All entries" : transactionTypeLabel(t)}
                     </button>
                   );
                 })}
@@ -613,7 +602,7 @@ function Reports() {
                 ) : (
                   sortedDates.map((date) => (
                     <div key={date} className="space-y-2">
-                      <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">
+                      <span className="text-xs font-semibold text-[var(--text-2)] block">
                         {format(
                           new Date(date + "T12:00:00"),
                           "EEEE, d MMMM yyyy",
@@ -668,7 +657,7 @@ function Reports() {
                                 </span>
                                 {runBal !== undefined && (
                                   <span
-                                    className="text-[10px] text-[var(--text-muted)] tabular-nums block"
+                                    className="text-[11px] text-[var(--text-muted)] tabular-nums block"
                                     aria-label={
                                       isMasked ? "Amount hidden" : undefined
                                     }

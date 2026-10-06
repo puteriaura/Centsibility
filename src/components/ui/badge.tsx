@@ -1,18 +1,19 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
+// Badges label state; they never compete with buttons, so none are solid fills.
 const badgeVariants = cva(
-  "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold select-none transition-colors",
+  "inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-xs font-semibold whitespace-nowrap select-none",
   {
     variants: {
       variant: {
-        default: "bg-[var(--surface-soft)] text-[var(--ink)] border border-[var(--border)]",
-        brand: "bg-[var(--primary)] text-white",
-        soft: "bg-[var(--primary-soft)] text-[var(--ink)] font-bold",
-        success: "bg-[var(--success-soft)] text-[var(--ink)] font-bold",
-        warning: "bg-[var(--warning-soft)] text-[var(--ink)] font-bold",
-        error: "bg-[var(--error-soft)] text-[var(--ink)] font-bold",
-        outline: "bg-transparent text-[var(--text-secondary)] border border-[var(--border)]",
+        default: "bg-[var(--surface-sunken)] text-[var(--text-2)]",
+        brand: "bg-[var(--action-tint)] text-[var(--action-text)]",
+        soft: "bg-[var(--action-tint)] text-[var(--action-text)]",
+        success: "bg-[var(--pos-bg)] text-[var(--pos)]",
+        warning: "bg-[var(--warn-bg)] text-[var(--warn)]",
+        error: "bg-[var(--neg-bg)] text-[var(--neg)]",
+        outline: "bg-transparent text-[var(--text-2)] border border-[var(--line)]",
       },
     },
     defaultVariants: {

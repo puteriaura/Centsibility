@@ -76,7 +76,7 @@ export function Money({
 }
 
 export function LogInToView({
-  label = "Log in to view",
+  label = "Unlock to view",
   className = "",
 }: {
   label?: string;

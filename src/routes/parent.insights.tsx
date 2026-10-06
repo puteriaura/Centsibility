@@ -110,7 +110,7 @@ function ParentInsights() {
       </section>
 
       <Card variant="default" className="m-0 p-3.5 space-y-2">
-        <p className="text-[10px] font-bold tracking-wider text-[var(--text-muted)] m-0 uppercase">
+        <p className="text-xs font-semibold text-[var(--text-2)] m-0">
           Spending recap
         </p>
         <p className="text-sm text-[var(--ink)] m-0 leading-snug font-semibold">
@@ -122,7 +122,7 @@ function ParentInsights() {
       </Card>
 
       <div className="space-y-2">
-        <p className="text-[10px] font-bold tracking-wider text-[var(--text-muted)] m-0 uppercase">
+        <p className="text-xs font-semibold text-[var(--text-2)] m-0">
           Children
         </p>
         {kids.length > 4 && (
@@ -174,7 +174,7 @@ function ParentInsights() {
       </div>
 
       <Card variant="default" className="p-0 m-0 overflow-hidden">
-        <p className="text-[10px] font-bold tracking-wider text-[var(--text-muted)] m-0 uppercase px-3.5 pt-3">
+        <p className="text-xs font-semibold text-[var(--text-2)] m-0 px-3.5 pt-3">
           Top categories
         </p>
         {hasLoaded && !error && summary.topCategories.length === 0 ? (
@@ -229,7 +229,7 @@ function ParentInsights() {
           nav({ to: "/parent/reports" });
         }}
       >
-        Open detailed reports
+        View monthly statements
       </Button>
     </div>
   );

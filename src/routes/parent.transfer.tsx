@@ -18,7 +18,7 @@ function ParentTransferPage() {
   const parentData = useParentData();
 
   return (
-    <div className="py-2 px-1">
+    <div className="pt-2">
       <TransferFlow
         mode="parent"
         preselectedKidId={kid}

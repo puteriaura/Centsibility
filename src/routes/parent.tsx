@@ -1,3 +1,5 @@
+// PIN and onboarding screens centre on the keypad by convention (AEON's PIN screen does too).
+// avoid-ai-design-ignore-file: L1, SD4w
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { edgeParentGetPin, edgeParentSetPin, edgeParentVerifyPin, edgeParentGetProfile, clearParentPinSession } from "@/lib/edge";
@@ -255,27 +257,20 @@ function ParentLayout() {
   if (!pinVerified) {
     if (isSettingPin) {
       return (
-        <div
-          className="min-h-[100dvh] flex flex-col justify-between p-6 sm:p-8"
-          style={{
-            background: "linear-gradient(180deg, #fdf0f3 0%, #ffffff 60%)",
-            maxWidth: "440px",
-            margin: "0 auto",
-          }}
-        >
+        <div className="pin-screen">
           {/* Top Progress Header */}
           <div>
-            <div className="flex items-center justify-between text-xs font-bold text-[var(--text-muted)] mb-2">
-              <span>STEP {onboardingStep} OF 3</span>
+            <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-2)] mb-2">
+              <span>Step {onboardingStep} of 3</span>
               <span>
                 {onboardingStep === 1
-                  ? "Comfort Name"
+                  ? "Your name"
                   : onboardingStep === 2
-                  ? "6-Digit PIN"
-                  : "All Set!"}
+                  ? "6-digit PIN"
+                  : "All set"}
               </span>
             </div>
-            <div className="w-full bg-[var(--border)] h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-[var(--surface-sunken)] h-1.5 rounded-full overflow-hidden">
               <div
                 className="bg-[var(--primary)] h-full transition-all duration-300"
                 style={{
@@ -288,12 +283,12 @@ function ParentLayout() {
           {/* Step 1: Comfort Name */}
           {onboardingStep === 1 && (
             <div className="my-auto py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[var(--surface-pink)] border border-[var(--primary-soft)] flex items-center justify-center mx-auto shadow-sm">
-                <AppIcon name="penny" size={32} color="var(--primary)" />
+              <div className="w-16 h-16 rounded-full bg-[var(--action-tint)] flex items-center justify-center mx-auto">
+                <AppIcon name="penny" size={32} color="var(--action)" />
               </div>
               <div className="text-center">
                 <h1 className="text-2xl font-extrabold text-[var(--ink)] tracking-tight">
-                  Salam! Welcome to Centsibility
+                  Salam, welcome to Centsibility
                 </h1>
                 <p className="text-xs text-[var(--text-secondary)] mt-1.5">
                   What should your children and Penny call you?
@@ -301,9 +296,9 @@ function ParentLayout() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[var(--ink)] block">
-                  Choose a suggested name or type your own:
-                </label>
+                <p className="text-sm font-semibold text-[var(--ink)] m-0">
+                  Pick one or type your own
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {["Mama", "Papa", "Ummi", "Baba", "Abi", "Coach Dan"].map((suggestion) => (
                     <button
@@ -313,11 +308,8 @@ function ParentLayout() {
                         setComfortNameInput(suggestion);
                         sfx.pop();
                       }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                        comfortNameInput === suggestion
-                          ? "bg-[var(--primary)] text-white shadow-sm"
-                          : "bg-white border border-[var(--border)] text-[var(--ink)] hover:border-[var(--primary)]"
-                      }`}
+                      aria-pressed={comfortNameInput === suggestion}
+                      className={`kid-chip px-3.5 ${comfortNameInput === suggestion ? "is-active" : ""}`}
                     >
                       {suggestion}
                     </button>
@@ -333,10 +325,10 @@ function ParentLayout() {
                 maxLength={30}
               />
 
-              <div className="p-3 bg-[var(--surface-pink)] border border-[var(--primary-soft)] rounded-xl text-xs text-[var(--ink)] text-center font-medium">
-                ✨ The app and Penny will greet you as:{" "}
-                <strong>{comfortNameInput.trim() || "Parent"}</strong>
-              </div>
+              <p className="m-0 text-sm text-[var(--text-2)] text-center">
+                The app and Penny will call you{" "}
+                <strong className="text-[var(--ink)]">{comfortNameInput.trim() || "Parent"}</strong>
+              </p>
 
               <Button
                 variant="primary"
@@ -345,9 +337,10 @@ function ParentLayout() {
                   sfx.tap();
                   setOnboardingStep(2);
                 }}
-                className="w-full justify-center py-3 text-sm font-bold shadow-md mt-4"
+                size="lg"
+                className="w-full mt-4"
               >
-                Next: Protect Your Vault →
+                Next: set your PIN
               </Button>
             </div>
           )}
@@ -356,10 +349,10 @@ function ParentLayout() {
           {onboardingStep === 2 && (
             <div className="my-auto py-6 text-center">
               <h1 className="text-2xl font-extrabold text-[var(--ink)] tracking-tight">
-                Create Your 6-Digit PIN
+                Create your 6-digit PIN
               </h1>
-              <p className="text-xs text-[var(--text-secondary)] mt-1.5">
-                Set a secret 6-digit PIN to protect parent settings and loan approvals.
+              <p className="text-sm text-[var(--text-2)] mt-1.5">
+                It protects parent settings and loan approvals.
               </p>
 
               {/* 6 Rounded Square Boxes */}
@@ -394,9 +387,9 @@ function ParentLayout() {
               <button
                 type="button"
                 onClick={() => setOnboardingStep(1)}
-                className="text-xs text-[var(--text-secondary)] hover:underline mt-4 inline-block"
+                className="text-sm font-semibold text-[var(--action-text)] mt-4 min-h-[44px] inline-flex"
               >
-                ← Back to Comfort Name
+                Back to name
               </button>
             </div>
           )}
@@ -404,36 +397,30 @@ function ParentLayout() {
           {/* Step 3: All Set Celebration */}
           {onboardingStep === 3 && (
             <div className="my-auto py-6 space-y-5 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center mx-auto shadow-sm">
-                <AppIcon name="sparkles" size={32} color="#059669" />
+              <div className="w-16 h-16 rounded-full bg-[var(--pos-bg)] flex items-center justify-center mx-auto">
+                <AppIcon name="check" size={32} color="var(--pos)" />
               </div>
               <div>
                 <h1 className="text-2xl font-extrabold text-[var(--ink)] tracking-tight">
-                  You're all set, {comfortNameInput.trim() || "Parent"}! 🎉
+                  You're all set, {comfortNameInput.trim() || "Parent"}
                 </h1>
                 <p className="text-xs text-[var(--text-secondary)] mt-1.5">
-                  Your halal family banking command center is ready.
+                  Your family dashboard is ready.
                 </p>
               </div>
 
-              <div className="p-4 bg-white border border-[var(--border)] rounded-2xl text-left space-y-3 shadow-sm">
+              <div className="p-4 bg-[var(--surface)] border border-[var(--line)] rounded-2xl text-left space-y-3">
                 <div className="flex items-center gap-2.5 text-xs text-[var(--ink)]">
-                  <span className="w-6 h-6 rounded-full bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary)] font-bold text-xs shrink-0">
-                    ✓
-                  </span>
-                  <span><strong>6-Digit Security PIN</strong> active & safe</span>
+                  <AppIcon name="check" size={20} color="var(--pos)" className="shrink-0" />
+                  <span><strong>6-digit PIN</strong> is on</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-xs text-[var(--ink)]">
-                  <span className="w-6 h-6 rounded-full bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary)] font-bold text-xs shrink-0">
-                    ✓
-                  </span>
-                  <span><strong>Real RM Savings & Hibah</strong> rewards enabled</span>
+                  <AppIcon name="check" size={20} color="var(--pos)" className="shrink-0" />
+                  <span><strong>Savings and Hibah</strong> rewards are on</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-xs text-[var(--ink)]">
-                  <span className="w-6 h-6 rounded-full bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary)] font-bold text-xs shrink-0">
-                    ✓
-                  </span>
-                  <span><strong>Penny AI Companion</strong> ready to guide your family</span>
+                  <AppIcon name="check" size={20} color="var(--pos)" className="shrink-0" />
+                  <span><strong>Penny</strong> is ready to help your family</span>
                 </div>
               </div>
 
@@ -445,7 +432,8 @@ function ParentLayout() {
                   setIsSettingPin(false);
                   toast.success("Welcome to your dashboard!");
                 }}
-                className="w-full justify-center py-3.5 text-sm font-bold shadow-md mt-4"
+                size="lg"
+                className="w-full mt-4"
               >
                 Open my family dashboard
               </Button>
@@ -457,14 +445,7 @@ function ParentLayout() {
 
     // Returning parent PIN unlock screen
     return (
-      <div
-        className="min-h-[100dvh] flex flex-col justify-between p-6 sm:p-8"
-        style={{
-          background: "linear-gradient(180deg, #fdf0f3 0%, #ffffff 60%)",
-          maxWidth: "440px",
-          margin: "0 auto",
-        }}
-      >
+      <div className="pin-screen">
         {/* Quiet outline controls: close on the left, help on the right */}
         <div className="flex items-center justify-between pt-2">
           <button
@@ -495,10 +476,10 @@ function ParentLayout() {
 
         {/* PIN Title & Digit Boxes */}
         <div className="text-center my-auto py-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
+          <h1 className="text-2xl font-bold text-[var(--ink)]">
             Enter your 6-digit PIN
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-2">
+          <p className="text-sm text-[var(--text-2)] mt-2">
             Enter your PIN to manage your family banking
           </p>
 
@@ -532,10 +513,9 @@ function ParentLayout() {
                 window.location.href = "/login";
               });
             }}
-            className="text-xs sm:text-sm font-semibold text-[var(--ink)] hover:text-[var(--primary-text)] transition-colors inline-flex items-center gap-1.5"
+            className="text-sm font-semibold text-[var(--action-text)] min-h-[44px] inline-flex items-center"
           >
-            <span>Login with password</span>
-            <span aria-hidden="true">→</span>
+            <span>Sign in with Google instead</span>
           </button>
         </div>
 

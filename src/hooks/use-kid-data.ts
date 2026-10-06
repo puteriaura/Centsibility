@@ -70,10 +70,10 @@ export function useKidData() {
                 : approvalKindLabel(a.kind);
         if (a.status === "approved") {
           sfx.success();
-          toast.success(`✅ ${label} approved: ${reasonClean || "RM " + a.amount}`);
+          toast.success(`${label} approved: ${reasonClean || "RM " + a.amount}`);
         } else {
           sfx.error();
-          toast.error(`❌ ${label} declined: ${reasonClean || "RM " + a.amount}`);
+          toast.error(`${label} declined: ${reasonClean || "RM " + a.amount}`);
         }
       }
       for (const r of res.rewards) {
@@ -83,7 +83,7 @@ export function useKidData() {
         if (firstLoad.current) continue;
         if (r.status === "approved") {
           sfx.success();
-          toast.success(`🎁 Reward granted: ${r.name}`);
+          toast.success(`Reward granted: ${r.name}`);
         } else if (r.status === "declined") {
           sfx.error();
           toast.error(`Reward declined: ${r.name}`);

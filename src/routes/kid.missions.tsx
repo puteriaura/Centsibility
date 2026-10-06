@@ -97,7 +97,7 @@ function KidMissionsPage() {
       >
         <div className="deposit-hero__copy">
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide bg-white/20 text-white">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--blue-800)] text-white">
               {ageGroup === "6-9"
                 ? "Little Savers · ages 6 to 9"
                 : ageGroup === "13-17"
@@ -106,7 +106,7 @@ function KidMissionsPage() {
             </span>
             <StreakBadge count={streak} />
           </div>
-          <p className="deposit-hero__label">Total Points Balance</p>
+          <p className="deposit-hero__label">Total points</p>
           <div className="flex items-baseline gap-2">
             <p className="deposit-hero__amount tabular-nums">
               {coins.toLocaleString()}
@@ -138,7 +138,7 @@ function KidMissionsPage() {
             <AppIcon name="missions" size={16} />
             Quests
             {completedCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-[var(--surface-pink)] text-[var(--primary-text)]">
+              <span className="px-1.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--surface-pink)] text-[var(--primary-text)]">
                 {completedCount}/{totalQuests}
               </span>
             )}
@@ -238,7 +238,7 @@ function KidMissionsPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wide">
+                          <span className="text-xs font-bold text-[var(--text-muted)]">
                             Quest {q.position}
                           </span>
                           <span className="text-[11px] font-bold text-[var(--primary-hover)]">
@@ -249,7 +249,7 @@ function KidMissionsPage() {
                           {q.title}
                         </h2>
                         <p className="text-xs text-[var(--text-secondary)] line-clamp-1 mt-0.5 mb-0">
-                          {q.summary}
+                          {isLocked && prevTitle ? `Finish ${prevTitle} to unlock` : q.summary}
                         </p>
                       </div>
                     </div>
@@ -257,25 +257,18 @@ function KidMissionsPage() {
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       {isDone ? (
                         <>
-                          <Badge variant="success">Done ✓</Badge>
+                          <Badge variant="success">Done</Badge>
                           {q.bestCorrect !== null && (
-                            <span className="text-[10px] text-[var(--text-muted)] font-medium">
+                            <span className="text-[11px] text-[var(--text-muted)] font-medium">
                               Score: {q.bestCorrect}/{q.questionCount}
                             </span>
                           )}
                         </>
                       ) : isLocked ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge variant="outline">Locked</Badge>
-                          {prevTitle && (
-                            <span className="text-[10px] text-[var(--text-muted)] font-medium text-right max-w-[140px] truncate">
-                              Finish {prevTitle} to unlock
-                            </span>
-                          )}
-                        </div>
+                        <Badge variant="outline">Locked</Badge>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--primary-text)] bg-[var(--surface-pink)] px-3 py-1.5 rounded-full">
-                          Start →
+                        <span className="inline-flex h-8 items-center rounded-full bg-[var(--action)] px-4 text-xs font-bold text-white">
+                          Start
                         </span>
                       )}
                     </div>

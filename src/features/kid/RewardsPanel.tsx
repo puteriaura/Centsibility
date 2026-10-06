@@ -119,7 +119,7 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
                 }}
                 className="text-xs font-bold text-[var(--primary-text)] hover:underline shrink-0 bg-transparent border-0 cursor-pointer p-0"
               >
-                Go to Quests →
+                Go to quests
               </button>
             ) : null}
           </Card>

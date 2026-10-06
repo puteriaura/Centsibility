@@ -136,7 +136,7 @@ function KidSadaqah() {
       <div
         role="tablist"
         aria-label="Sadaqah and Zakat options"
-        className="flex items-center gap-1.5 p-1 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]"
+        className="tab-pills-container"
       >
         <button
           type="button"
@@ -152,11 +152,7 @@ function KidSadaqah() {
             if (e.key === "ArrowRight")
               navigate({ to: "/kid/sadaqah", search: { tab: "zakat" } });
           }}
-          className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer text-center ${
-            activeTab === "sadaqah"
-              ? "bg-[var(--primary)] text-white shadow-xs"
-              : "text-[var(--text-secondary)] hover:text-[var(--ink)]"
-          }`}
+          className="tab-pill"
         >
           Sadaqah
         </button>
@@ -174,11 +170,7 @@ function KidSadaqah() {
             if (e.key === "ArrowLeft")
               navigate({ to: "/kid/sadaqah", search: { tab: undefined } });
           }}
-          className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-lg transition-colors cursor-pointer text-center ${
-            activeTab === "zakat"
-              ? "bg-[var(--primary)] text-white shadow-xs"
-              : "text-[var(--text-secondary)] hover:text-[var(--ink)]"
-          }`}
+          className="tab-pill"
         >
           Zakat
         </button>
@@ -218,22 +210,22 @@ function KidSadaqah() {
             </div>
           </section>
 
-          <div className="p-3 rounded-xl bg-[var(--surface-pink)] border border-[var(--primary-soft)] text-center">
-            <p className="text-sm font-bold text-[var(--primary-text)] m-0">
+          <div className="px-2 text-center">
+            <p className="text-base font-semibold leading-snug text-[var(--ink)] m-0">
               &ldquo;Charity extinguishes sins just as water extinguishes
               fire.&rdquo;
             </p>
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
+            <p className="text-xs font-semibold text-[var(--text-2)] mt-1 mb-0">
               Hadith
             </p>
           </div>
 
           <div className="promo-banner promo-banner--aqua">
             <div className="max-w-[70%]">
-              <h2 className="text-sm sm:text-base font-extrabold text-[var(--ink)] leading-snug m-0">
+              <h2 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
                 Give sadaqah and earn reward points - start with RM1
               </h2>
-              <p className="text-xs text-[var(--ink)]/80 mt-1 mb-0">
+              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">
                 Your kindness reaches local masjids, orphans, and clean water
                 projects.
               </p>
@@ -264,8 +256,8 @@ function KidSadaqah() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block mb-2">
-                  Choose a Cause
+                <label className="text-xs font-bold text-[var(--ink)] block mb-2">
+                  Choose a cause
                 </label>
                 <div
                   className="grid grid-cols-1 sm:grid-cols-3 gap-2.5"

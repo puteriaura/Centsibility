@@ -368,7 +368,7 @@ function KidGoals() {
                   {isEditing ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
+                        <span className="text-xs font-bold text-[var(--ink)]">
                           Edit Tabung
                         </span>
                         <Button

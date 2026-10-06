@@ -4,9 +4,10 @@ import { renderToString } from "react-dom/server";
 import { StreakBadge } from "@/components/StreakBadge";
 
 describe("StreakBadge", () => {
-  it("renders {n}🔥 with correct aria-label when count > 0", () => {
+  it("renders the count with a flame icon and an aria-label when count > 0", () => {
     const html = renderToString(<StreakBadge count={2} />);
-    expect(html).toContain("2🔥");
+    expect(html).toContain(">2</span>");
+    expect(html).toContain("lucide-flame");
     expect(html).toContain('aria-label="2 day streak"');
   });
 

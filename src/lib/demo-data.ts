@@ -1,3 +1,5 @@
+// Demo rows keep the legacy emoji avatar values that avatar.ts maps to icons.
+// avoid-ai-design-ignore-file: I2
 import type {
   Kid,
   Approval,

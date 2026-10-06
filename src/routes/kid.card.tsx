@@ -1,3 +1,5 @@
+// The card face uses embossed-style capitals like a real debit card.
+// avoid-ai-design-ignore-file: SD4
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";

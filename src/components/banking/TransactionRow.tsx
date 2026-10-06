@@ -17,6 +17,8 @@ export interface TransactionRowProps {
   className?: string;
 }
 
+// One row of a statement. Icons stay neutral; only the amount carries
+// direction: money in is green with a plus, money out is ink with a minus.
 export function TransactionRow({
   title,
   subtitle,
@@ -32,54 +34,50 @@ export function TransactionRow({
   const { isMasked, locked, openUnlockSheet, format } = useMoney();
   const amt = type !== undefined ? transactionAmount(type, label, amount) : null;
   const isPos = amt ? amt.tone === "in" : isIncome;
-  const defaultIcon = isPos ? "deposit" : "withdrawal";
-  const iconName = icon || defaultIcon;
+  const iconName = icon || (isPos ? "deposit" : "withdrawal");
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between py-3.5 px-3 rounded-xl transition-colors duration-150 ${
-        onClick ? "hover:bg-[var(--surface-soft)] cursor-pointer" : ""
+      className={`flex items-center justify-between gap-3 py-3 px-2 ${
+        onClick ? "cursor-pointer rounded-xl hover:bg-[var(--surface-hover)]" : ""
       } ${className}`.trim()}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            isPos
-              ? "bg-[var(--success-soft)] text-[var(--success-text)]"
-              : "bg-[var(--surface-soft)] text-[var(--primary-text)]"
-          }`}
-        >
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="tx-icon" aria-hidden="true">
           <AppIcon name={iconName} size={20} />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[var(--ink)] truncate leading-snug">
-            {title}
-          </p>
-          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mt-0.5">
+          <p className="m-0 truncate text-sm font-semibold leading-snug text-[var(--ink)]">{title}</p>
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-3)]">
             {date && <span>{date}</span>}
-            {date && subtitle && <span>·</span>}
+            {date && subtitle && <span aria-hidden="true">·</span>}
             {subtitle && <span className="truncate">{subtitle}</span>}
           </div>
         </div>
       </div>
 
-      <div className="text-right shrink-0 ml-3">
-        <span
-          className={`text-sm font-bold tabular-nums block leading-snug ${
-            (amt ? amt.tone === "out" : !isIncome) ? "text-[var(--ink)]" : "text-[var(--success-text)]"
-          }`}
-          aria-label={isMasked ? "Amount hidden" : undefined}
-          onClick={locked ? (e) => { e.stopPropagation(); openUnlockSheet(); } : undefined}
-          style={locked ? { cursor: "pointer" } : undefined}
-        >
-          {isMasked
-            ? MASKED_AMOUNT
-            : amt
-              ? amt.text
-              : format(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
-        </span>
-      </div>
+      <span
+        className={`shrink-0 text-sm font-bold tabular-nums ${
+          isPos ? "text-[var(--pos)]" : "text-[var(--ink)]"
+        }`}
+        aria-label={isMasked ? "Amount hidden" : undefined}
+        onClick={
+          locked
+            ? (e) => {
+                e.stopPropagation();
+                openUnlockSheet();
+              }
+            : undefined
+        }
+        style={locked ? { cursor: "pointer" } : undefined}
+      >
+        {isMasked
+          ? MASKED_AMOUNT
+          : amt
+            ? amt.text
+            : format(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
+      </span>
     </div>
   );
 }

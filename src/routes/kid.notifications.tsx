@@ -113,9 +113,7 @@ function KidNotifications() {
                   </p>
                 </div>
                 {n.link && (
-                  <span className="text-[var(--text-muted)] text-sm shrink-0 self-center">
-                    →
-                  </span>
+                  <AppIcon name="forward" size={18} className="shrink-0 self-center text-[var(--text-3)]" />
                 )}
               </div>
             );

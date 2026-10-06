@@ -83,7 +83,7 @@ export function LandingHero() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
               <div>
                 <small style={{ fontSize: "0.8125rem", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Aiman&apos;s Space Savings
+                  Aiman&apos;s Savings
                 </small>
                 <div style={{ fontSize: "2.25rem", fontWeight: 800, marginTop: "0.25rem", fontVariantNumeric: "tabular-nums" }}>
                   RM 142.50

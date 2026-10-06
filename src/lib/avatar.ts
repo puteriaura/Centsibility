@@ -1,3 +1,5 @@
+// Maps legacy emoji avatars stored in the database to icons; the emoji are data, never rendered.
+// avoid-ai-design-ignore-file: I2
 /** Canonical avatar defaults — use when no photo URL is set. */
 export const DEFAULT_KID_AVATAR = "phosphor:Smiley";
 export const DEFAULT_PARENT_AVATAR = "phosphor:User";
@@ -9,7 +11,7 @@ const isUrl = (v: string) =>
 const LEGACY_EMOJI: Record<string, string> = {
   "🧒": DEFAULT_KID_AVATAR,
   "👨‍👩‍👧": DEFAULT_PARENT_AVATAR,
-  "🚀": "phosphor:Sparkles",
+  "🚀": "phosphor:Star",
   "🙂": DEFAULT_KID_AVATAR,
   "😊": DEFAULT_KID_AVATAR,
   "😺": "phosphor:Cat",

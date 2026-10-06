@@ -34,7 +34,7 @@ export function QuickAction({
       } ${className}`.trim()}
     >
       {badge !== undefined && (
-        <span className="absolute top-2 right-2 bg-[var(--primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center z-10">
+        <span className="absolute top-2 right-2 bg-[var(--primary)] text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center z-10">
           {badge}
         </span>
       )}

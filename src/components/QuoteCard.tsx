@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { getDailyQuote } from "@/data/quotes";
-import { AppIcon } from "@/components/ui/app-icon";
 import { Card } from "@/components/ui/card";
 
+// A quiet closing panel: no tint, no icon, the words carry it.
 export function QuoteCard({ variant: _variant = "kid" }: { variant?: "kid" | "parent" }) {
   const [q, setQ] = useState(() => getDailyQuote());
   useEffect(() => {
@@ -11,17 +11,12 @@ export function QuoteCard({ variant: _variant = "kid" }: { variant?: "kid" | "pa
   }, []);
 
   return (
-    <Card variant="soft" className="p-4 sm:p-5 border border-[var(--border)]">
-      <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[var(--ink)]">
-        <AppIcon name="book" size={18} color="var(--primary)" aria-hidden />
-        <span>
-          Daily Reflection ·{" "}
-          {new Date().toLocaleDateString(undefined, { weekday: "long" })}
-        </span>
-      </div>
-      <p className="text-xs sm:text-sm text-[var(--ink)] italic leading-relaxed my-1.5">“{q.text}”</p>
-      {q.source && <small className="text-xs text-[var(--text-secondary)] block font-semibold mt-1">{q.source}</small>}
+    <Card className="p-5">
+      <p className="section-title__heading m-0 mb-2">
+        Reflection for {new Date().toLocaleDateString(undefined, { weekday: "long" })}
+      </p>
+      <blockquote className="m-0 text-base leading-relaxed text-[var(--ink)]">“{q.text}”</blockquote>
+      {q.source && <p className="m-0 mt-2 text-xs font-semibold text-[var(--text-2)]">{q.source}</p>}
     </Card>
   );
 }
-

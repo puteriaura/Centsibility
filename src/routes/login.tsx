@@ -98,7 +98,7 @@ function Login() {
             <span>Centsibility</span>
           </Link>
           <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-            Next-Generation Halal Family Banking
+            Family money, the Shariah way
           </p>
         </div>
 
@@ -174,7 +174,7 @@ function Login() {
                 }}
               >
                 <AppIcon name="kid" size={16} />
-                <span>Young Saver? Sign in with Kid Code →</span>
+                <span>Kid? Sign in with your code</span>
               </Link>
             </div>
 

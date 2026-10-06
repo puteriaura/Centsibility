@@ -48,7 +48,7 @@ export function FlightLogSection({ kidTxs }: FlightLogSectionProps) {
                       {transactionTitle(t)}
                     </span>
                   </div>
-                  <small className="text-[10px] text-[var(--text-muted)] mt-0.5 block">
+                  <small className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
                     {formatDate(t.created_at)}
                   </small>
                 </div>

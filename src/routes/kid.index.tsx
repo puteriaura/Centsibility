@@ -4,21 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StreakBadge } from "@/components/StreakBadge";
 import { useMoney, Money } from "@/features/privacy";
-import { usePenny } from "@/features/penny";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
-import {
-  BalanceCard,
-  QuickAction,
-  TransactionRow,
-  StatCard,
-} from "@/components/banking";
+import { BalanceCard, TransactionRow } from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
 import {
   edgeKidClaimCoins,
-  edgeKidRequestReward,
-  edgeKidRequestApproval,
   edgeKidUpdateProfile,
   edgeKidUploadAvatar,
 } from "@/lib/edge";
@@ -29,20 +21,13 @@ import { QuoteCard } from "@/components/QuoteCard";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { cleanApprovalReason } from "@/lib/qard";
-import {
-  KidLoadError,
-  StatChip,
-  RewardCoinPicker,
-  TX_ICON_MAP,
-} from "@/features/kid/components";
+import { KidLoadError, TX_ICON_MAP } from "@/features/kid/components";
 import { AppIcon } from "@/components/ui/app-icon";
 import { startOfMonth } from "date-fns";
-import { formatDate, formatRM } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import {
   getBalanceSummary,
-  isDebitTransaction,
   isSpendingTransaction,
   isWalletTransaction,
 } from "@/lib/finance";
@@ -51,7 +36,20 @@ import {
   transactionTypeLabel,
   approvalKindLabel,
 } from "@/lib/labels";
-import { useMoneyAction } from "@/hooks/use-money-action";
+
+// Home order follows the AEON pattern: balance first, then shortcuts, then
+// anything waiting on the kid, one promotion, the month, recent activity.
+// Dock items (Wallet, Loans, Card) and Penny (header) are not repeated here.
+const SHORTCUTS: Array<{ to: string; label: string; icon: string }> = [
+  { to: "/kid/transfer", label: "Transfer", icon: "transfer" },
+  { to: "/kid/wallet", label: "Request", icon: "deposit" },
+  { to: "/kid/goals", label: "Tabung", icon: "save" },
+  { to: "/kid/invest", label: "Investment", icon: "trending" },
+  { to: "/kid/sadaqah", label: "Sadaqah", icon: "sadaqah" },
+  { to: "/kid/missions", label: "Missions", icon: "missions" },
+  { to: "/kid/history", label: "History", icon: "history" },
+  { to: "/kid/insights", label: "Insights", icon: "reports" },
+];
 
 export const Route = createFileRoute("/kid/")({
   head: () => ({ meta: [{ title: "Kid Home | Centsibility" }] }),
@@ -59,15 +57,8 @@ export const Route = createFileRoute("/kid/")({
 });
 
 function KidHome() {
-  const { openPenny } = usePenny();
   const nav = useNavigate();
   const { data, loading, error, refresh } = useKidData();
-  const { busy, run } = useMoneyAction();
-  const [showReward, setShowReward] = useState(false);
-  const [rName, setRName] = useState("");
-  const [moneyReq, setMoneyReq] = useState<null | "DEPOSIT" | "WITHDRAWAL">(
-    null,
-  );
 
   const [showProfile, setShowProfile] = useState(false);
   const [pBio, setPBio] = useState("");
@@ -171,47 +162,6 @@ function KidHome() {
     refresh();
   };
 
-  const submitRewardWithCost = async (cost: number) => {
-    if (!code || !rName.trim()) {
-      toast.error("Give the reward a name first!");
-      return;
-    }
-    const rewardName = rName.trim();
-    await run(() => edgeKidRequestReward({ code, name: rewardName, cost }), {
-      success: `Reward request sent: ${rewardName}`,
-      failure: "Reward request didn't go through",
-      onSuccess: () => {
-        setShowReward(false);
-        setRName("");
-      },
-      refresh,
-    });
-  };
-
-  const submitMoneyReq = async (amount: number, reference?: string) => {
-    if (!code || !moneyReq) return;
-    const actionWord = moneyReq === "DEPOSIT" ? "Deposit" : "Withdrawal";
-    await run(
-      () =>
-        edgeKidRequestApproval({
-          code,
-          kind: moneyReq,
-          amount,
-          reason:
-            reference ||
-            (moneyReq === "DEPOSIT" ? "Deposit request" : "Withdrawal request"),
-        }),
-      {
-        success: `${actionWord} request for ${formatRM(amount)} sent for approval`, // privacy-ok: toast
-        failure: `${actionWord} request didn't go through`,
-        onSuccess: () => {
-          setMoneyReq(null);
-        },
-        refresh,
-      },
-    );
-  };
-
   const pendingApprovals = data.approvals.filter(
     (a: (typeof data.approvals)[number]) => a.status === "pending",
   );
@@ -257,22 +207,35 @@ function KidHome() {
     }
   };
 
+  const monthStart = startOfMonth(new Date());
+  const monthTxs = walletTxs.filter(
+    (t: (typeof walletTxs)[number]) => new Date(t.created_at) >= monthStart,
+  );
+  const monthSpent = monthTxs
+    .filter((t) => isSpendingTransaction(t.type, t.label))
+    .reduce((acc, t) => acc + Number(t.amount), 0);
+  const activeLoans = data.loans.filter(
+    (l: (typeof data.loans)[number]) => l.status === "active",
+  );
+  const unclaimed = Math.round(Number(k.unclaimed_coins) || 0);
+  const hasUpdates =
+    unclaimed > 0 || pendingApprovals.length > 0 || activeLoans.length > 0;
+  const summary = getBalanceSummary(
+    k,
+    data.goals,
+    data.loans,
+    (data as { investmentsValue?: number }).investmentsValue,
+  );
+  const points = Math.round(Number(k.coins)).toLocaleString("en-MY");
+
   return (
     <>
       <div className="kid-greeting">
-        <button
-          type="button"
-          onClick={openProfile}
-          aria-label="Open profile settings"
-          className="kid-greeting__profile"
-        >
-          <div>
-            <h1 className="kid-greeting__name">{k.comfort_name ?? k.name}!</h1>
-          </div>
-        </button>
-        <div className="flex items-center gap-2">
-          <StreakBadge count={k.streak} />
+        <div className="kid-greeting__profile">
+          <span className="kid-greeting__eyebrow">Assalamualaikum</span>
+          <h1 className="kid-greeting__name">{k.comfort_name ?? k.name}</h1>
         </div>
+        <StreakBadge count={k.streak} />
       </div>
 
       {/* Balance carousel: the next card peeks in, so the dots mean something */}
@@ -294,42 +257,31 @@ function KidHome() {
         onPointerCancel={onCarouselPointerUp}
       >
         <div className="balance-carousel__slide">
-          {(() => {
-            const summary = getBalanceSummary(k, data.goals, data.loans, (data as any).investmentsValue);
-            return (
-              <BalanceCard
-                title="Spending balance"
-                balance={summary.spending}
-                secondaryBalance={{
-                  label: "Total balance",
-                  amount: summary.total,
-                }}
-                breakdown={[
-                  { label: "Spending", amount: summary.spending },
-                  { label: "Tabung", amount: summary.tabung },
-                  { label: "Investment", amount: summary.investments },
-                ]}
-                footnote={
-                  summary.owed > 0
-                    ? `Owed on loans: ${format(summary.owed)} (not taken off your total)`
-                    : undefined
-                }
-                hideBalance={isMasked}
-                onToggleHide={() => {
-                  if (locked) openUnlockSheet();
-                  else toggleHidden();
-                }}
-                onArrowClick={() => nav({ to: "/kid/wallet" })}
-                metadata={[
-                  {
-                    label: "Hibah",
-                    value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%`,
-                  },
-                  { label: "100% Halal" },
-                ]}
-              />
-            );
-          })()}
+          <BalanceCard
+            title="Spending balance"
+            balance={summary.spending}
+            secondaryBalance={{ label: "Total", amount: summary.total }}
+            breakdown={[
+              { label: "Spending", amount: summary.spending },
+              { label: "Tabung", amount: summary.tabung },
+              { label: "Investment", amount: summary.investments },
+            ]}
+            footnote={
+              summary.owed > 0
+                ? `Owed on loans: ${format(summary.owed)} (not taken off your total)`
+                : undefined
+            }
+            hideBalance={isMasked}
+            onToggleHide={() => {
+              if (locked) openUnlockSheet();
+              else toggleHidden();
+            }}
+            onArrowClick={() => nav({ to: "/kid/wallet" })}
+            metadata={[
+              { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
+              { label: "Shariah" },
+            ]}
+          />
         </div>
         <Link
           to="/kid/missions"
@@ -341,108 +293,99 @@ function KidHome() {
             sfx.tap();
           }}
           className="balance-carousel__slide points-card"
-          aria-label={`${Math.round(Number(k.coins))} reward points, open missions`}
+          aria-label={`${points} reward points, open missions`}
         >
           <span className="points-card__label">Reward points</span>
-          <strong className="points-card__value tabular-nums">
-            {Math.round(Number(k.coins)).toLocaleString("en-MY")}
-          </strong>
+          <strong className="points-card__value tabular-nums">{points}</strong>
           <span className="points-card__meta">
-            Level {k.level} · {k.xp} XP
+            Level {k.level} · {k.xp} XP · Trust {k.trust_score}
           </span>
         </Link>
       </div>
       <div className="pager-dots" aria-hidden="true">
         {[0, 1].map((i) => (
-          <span
-            key={i}
-            className={i === balanceSlide ? "pager-dot--active" : "pager-dot"}
-          />
+          <span key={i} className={i === balanceSlide ? "pager-dot--active" : "pager-dot"} />
         ))}
       </div>
 
-      {/* 4 x 2 quick actions: white circles on the canvas */}
-      <div className="quick-grid">
-        {/* Row 1 */}
-        <Link
-          to="/kid/transfer"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
-          <span className="quick-circle">
-            <AppIcon name="transfer" size={24} />
-          </span>
-          <span className="quick-label">Transfer</span>
-        </Link>
+      <nav className="quick-grid" aria-label="Shortcuts">
+        {SHORTCUTS.map((item) => (
+          <Link key={item.label} to={item.to} onClick={() => sfx.tap()} className="quick-btn">
+            <span className="quick-circle">
+              <AppIcon name={item.icon} size={24} strokeWidth={1.75} />
+            </span>
+            <span className="quick-label">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
 
-        <Link to="/kid/history" onClick={() => sfx.tap()} className="quick-btn">
-          <span className="quick-circle">
-            <AppIcon name="history" size={22} />
-          </span>
-          <span className="quick-label">History</span>
-        </Link>
+      {/* Anything waiting on the kid or on a parent, in one list */}
+      {hasUpdates && (
+        <>
+          <SectionTitle>Updates</SectionTitle>
+          <div className="list-panel">
+            {unclaimed > 0 && (
+              <button type="button" onClick={claim} className="list-row">
+                <span className="list-row__icon list-row__icon--pos" aria-hidden="true">
+                  <AppIcon name="gift" size={20} />
+                </span>
+                <span className="list-row__body">
+                  <span className="list-row__title">{unclaimed} points to collect</span>
+                  <span className="list-row__sub">Tap to add them to your points</span>
+                </span>
+                <span className="list-row__end text-[var(--pos)]">Collect</span>
+              </button>
+            )}
+            {pendingApprovals.map((a: (typeof pendingApprovals)[number]) => (
+              <div key={a.id} className="list-row">
+                <span className="list-row__icon" aria-hidden="true">
+                  <AppIcon name="timer" size={20} />
+                </span>
+                <span className="list-row__body">
+                  <span className="list-row__title">{cleanApprovalReason(a.reason)}</span>
+                  <span className="list-row__sub">
+                    {approvalKindLabel(a.kind)} · Waiting for a parent
+                  </span>
+                </span>
+                <span className="list-row__end">
+                  <Money amount={Number(a.amount)} />
+                </span>
+              </div>
+            ))}
+            {activeLoans.map((l: (typeof activeLoans)[number]) => {
+              const remaining = Number(l.amount) - Number(l.repaid);
+              const overdue = new Date(l.due_date) < new Date();
+              return (
+                <Link key={l.id} to="/kid/loans" className="list-row" onClick={() => sfx.tap()}>
+                  <span className="list-row__icon" aria-hidden="true">
+                    <AppIcon name="loan" size={20} />
+                  </span>
+                  <span className="list-row__body">
+                    <span className="list-row__title">{l.reason || "Qard loan"}</span>
+                    <span className="list-row__sub">
+                      {overdue && (
+                        <Badge variant="error" className="mr-1.5 h-5 px-2">
+                          Overdue
+                        </Badge>
+                      )}
+                      Due {formatDate(l.due_date)}
+                    </span>
+                  </span>
+                  <span className="list-row__end">
+                    <Money amount={remaining} />
+                    <span className="block text-xs font-semibold text-[var(--action-text)]">Repay</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-        <Link to="/kid/goals" onClick={() => sfx.tap()} className="quick-btn">
-          <span className="quick-circle quick-circle--aqua">
-            <AppIcon name="save" size={24} />
-          </span>
-          <span className="quick-label">Tabung</span>
-        </Link>
-
-        <Link to="/kid/invest" onClick={() => sfx.tap()} className="quick-btn">
-          <span className="quick-circle quick-circle--amber">
-            <span className="quick-circle__dot" aria-hidden="true" />
-            <AppIcon name="trending" size={22} />
-          </span>
-          <span className="quick-label">Investment</span>
-        </Link>
-
-        {/* Row 2 */}
-        <Link to="/kid/loans" onClick={() => sfx.tap()} className="quick-btn">
-          <span className="quick-circle">
-            <AppIcon name="loan" size={22} />
-          </span>
-          <span className="quick-label">Loans</span>
-        </Link>
-
-        <Link
-          to="/kid/missions"
-          onClick={() => sfx.tap()}
-          className="quick-btn"
-        >
-          <span className="quick-circle quick-circle--amber">
-            <AppIcon name="missions" size={22} />
-          </span>
-          <span className="quick-label">Missions</span>
-        </Link>
-
-        <Link to="/kid/sadaqah" onClick={() => sfx.tap()} className="quick-btn">
-          <span className="quick-circle quick-circle--aqua">
-            <span className="quick-circle__dot" aria-hidden="true" />
-            <AppIcon name="sadaqah" size={22} />
-          </span>
-          <span className="quick-label">Sadaqah</span>
-        </Link>
-
-        <button
-          type="button"
-          onClick={() => {
-            sfx.tap();
-            openPenny({ context: { page: "Home" } });
-          }}
-          className="quick-btn bg-transparent border-none cursor-pointer"
-        >
-          <span className="quick-circle quick-circle--coral">
-            <AppIcon name="penny" size={24} />
-          </span>
-          <span className="quick-label">Penny</span>
-        </button>
-      </div>
-
-      {/* One promotion, text left and art right */}
-      <div className="promo-banner promo-banner--aqua">
-        <div className="max-w-[70%]">
-          <h3 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
+      {/* One promotion */}
+      <div className="promo-banner mt-7">
+        <div className="max-w-[68%]">
+          <h3 className="m-0 text-base font-bold leading-snug text-[var(--ink)]">
             Give sadaqah and earn points. Start with RM1.
           </h3>
           <button
@@ -451,338 +394,52 @@ function KidHome() {
               sfx.pop();
               nav({ to: "/kid/sadaqah" });
             }}
-            className="promo-banner__btn promo-banner__btn--aqua"
+            className="promo-banner__btn"
           >
             Give now
           </button>
         </div>
-        <div className="w-16 h-16 rounded-full bg-white/60 flex items-center justify-center text-[var(--secondary-text)] shrink-0">
-          <AppIcon name="sadaqah" size={30} />
-        </div>
-      </div>
-
-      <div className="section-tag">
-        <span>Insights</span>
-      </div>
-
-      <button
-        type="button"
-        className="insights-recap"
-        onClick={() => {
-          sfx.tap();
-          nav({ to: "/kid/insights" });
-        }}
-      >
-        <span className="insights-recap__avatar" aria-hidden="true">
-          <AppIcon name="star" size={20} color="#fff" />
+        <span className="promo-banner__art" aria-hidden="true">
+          <AppIcon name="sadaqah" size={30} strokeWidth={1.75} />
         </span>
-        <span className="insights-recap__text">
-          Big week! You made {walletTxs.length} transactions and earned{" "}
-          {Math.round(Number(k.coins))} points.
-        </span>
-      </button>
-
-      <div className="section-tag">
-        <span>Missions</span>
       </div>
 
-      <div className="bg-white rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-[var(--surface-pink)] flex items-center justify-center text-[var(--primary-text)] shrink-0">
-          <AppIcon name="quest" size={24} />
-        </div>
-        <div className="min-w-0">
-          <h4 className="text-base font-bold text-[var(--ink)] m-0">
-            Missions
-          </h4>
-          <p className="text-sm text-[var(--text-muted)] mt-0.5 mb-0">
-            Learn money skills and earn points
-          </p>
-          <Link
-            to="/kid/missions"
-            onClick={() => sfx.tap()}
-            className="text-sm font-bold text-[var(--ink)] hover:text-[var(--primary-text)] inline-flex items-center gap-1 mt-2"
-          >
-            <span>Open Missions</span>
-            <span aria-hidden="true">→</span>
+      <SectionTitle
+        action={
+          <Link to="/kid/insights" onClick={() => sfx.tap()}>
+            Insights
           </Link>
-        </div>
-      </div>
-
-      <div className="section-tag">
-        <span>Spending summary</span>
-      </div>
-
-      <div className="bg-white rounded-2xl p-5 flex items-center justify-between gap-4">
-        <div>
-          <span className="text-sm text-[var(--text-secondary)] font-medium">
-            This month's spending
+        }
+      >
+        This month
+      </SectionTitle>
+      <Link to="/kid/insights" className="month-panel" onClick={() => sfx.tap()}>
+        <span className="month-panel__label">Spent so far</span>
+        <span className="month-panel__amount">
+          <Money amount={monthSpent} />
+        </span>
+        <span className="month-panel__note">
+          <span className="insights-recap__avatar" aria-hidden="true">
+            <AppIcon name="penny" size={18} />
           </span>
-          <div className="text-2xl font-extrabold text-[var(--ink)] mt-1 tabular-nums">
-            <Money
-              amount={walletTxs
-                .filter(
-                  (t) =>
-                    isSpendingTransaction(t.type, t.label) &&
-                    new Date(t.created_at) >= startOfMonth(new Date()),
-                )
-                .reduce((acc, t) => acc + Number(t.amount), 0)}
-            />
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              sfx.tap();
-              nav({ to: "/kid/insights" });
-            }}
-            className="mt-3 text-xs font-bold"
-          >
-            View Insights
-          </Button>
-        </div>
+          {monthTxs.length === 0
+            ? "No transactions yet this month."
+            : `${monthTxs.length} ${monthTxs.length === 1 ? "transaction" : "transactions"} this month. You have ${points} points.`}
+        </span>
+      </Link>
 
-        <div className="w-16 h-16 rounded-full border-2 border-[var(--primary)] flex items-center justify-center shrink-0">
-          <AppIcon name="trend" size={22} color="var(--primary)" />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <QuoteCard variant="kid" />
-      </div>
-
-      {/* Unclaimed Coins banner if present */}
-      {k.unclaimed_coins > 0 && (
-        <button
-          type="button"
-          onClick={claim}
-          aria-label={`Claim ${Math.round(Number(k.unclaimed_coins))} unclaimed points`}
-          className="block w-full text-left mt-4 transition-transform active:scale-[0.98] cursor-pointer"
-        >
-          <Card
-            variant="soft"
-            className="p-4 border border-[var(--success)]/30 bg-[var(--success-soft)]/30 flex items-center justify-between gap-3"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--success-soft)] text-[var(--success-text)] flex items-center justify-center shrink-0">
-                <AppIcon name="gift" size={20} />
-              </div>
-              <div>
-                <strong className="text-sm font-bold text-[var(--ink)] block">
-                  Unclaimed Points Available!
-                </strong>
-                <small className="text-xs text-[var(--text-secondary)]">
-                  Tap here to add to your balance
-                </small>
-              </div>
-            </div>
-            <div className="text-base font-extrabold text-[var(--success-text)] tabular-nums shrink-0">
-              +{Math.round(Number(k.unclaimed_coins))}
-            </div>
-          </Card>
-        </button>
-      )}
-
-      {/* Stats Chips */}
-      <div className="grid grid-cols-3 gap-2.5 mt-4">
-        <StatChip icon="star" label="Level" value={k.level.toString()} />
-        <StatChip icon="target" label="XP" value={k.xp.toString()} />
-        <StatChip icon="trust" label="Trust" value={k.trust_score.toString()} />
-      </div>
-
-      <SectionTitle>Money requests</SectionTitle>
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="primary"
-          onClick={() => setMoneyReq("DEPOSIT")}
-          className="justify-center"
-        >
-          <AppIcon name="plus" size={16} />
-          Ask Deposit
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => setMoneyReq("WITHDRAWAL")}
-          className="justify-center"
-        >
-          <AppIcon name="minus" size={16} />
-          Ask Withdraw
-        </Button>
-      </div>
-
-      {moneyReq && (
-        <Card
-          variant="default"
-          className="mt-4 p-5 space-y-4 border border-[var(--border)]"
-        >
-          <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border)]">
-            <div className="w-9 h-9 rounded-xl bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-              <AppIcon
-                name={moneyReq === "DEPOSIT" ? "deposit" : "withdrawal"}
-                size={18}
-              />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[var(--ink)]">
-                {moneyReq === "DEPOSIT"
-                  ? "Ask Parent to Deposit"
-                  : "Ask Parent to Withdraw"}
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                {moneyReq === "DEPOSIT"
-                  ? "Add savings to your digital wallet"
-                  : "Convert digital balance into cash"}
-              </p>
-            </div>
-          </div>
-          <MoneyKeypad
-            min={0.5}
-            max={moneyReq === "WITHDRAWAL" ? Number(k.balance) : 10000}
-            busy={busy}
-            showReference
-            confirmLabel={
-              moneyReq === "DEPOSIT"
-                ? "Send Deposit Request"
-                : "Send Withdrawal Request"
-            }
-            onConfirm={submitMoneyReq}
-            onCancel={() => setMoneyReq(null)}
-          />
-        </Card>
-      )}
-
-      {showReward && (
-        <Card
-          variant="default"
-          className="mt-4 p-5 space-y-4 border border-[var(--border)]"
-        >
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[var(--surface-pink)] text-[var(--primary-text)] flex items-center justify-center shrink-0">
-                <AppIcon name="gift" size={18} />
-              </div>
-              <h3 className="text-sm font-bold text-[var(--ink)]">
-                Custom Wishlist Request
-              </h3>
-            </div>
-            <span className="text-xs font-bold text-[var(--primary-text)] flex items-center gap-1">
-              {Math.round(Number(k.coins)).toLocaleString()}{" "}
-              <AppIcon name="star" size={12} />
-            </span>
-          </div>
-          <Input
-            label="What would you like to request?"
-            value={rName}
-            onChange={(e) => setRName(e.target.value)}
-            placeholder="e.g. New book, day trip, ice cream treat"
-            maxLength={100}
-          />
-          <RewardCoinPicker
-            maxPoints={Math.max(1, Math.floor(k.coins))}
-            onConfirm={(cost) => {
-              void submitRewardWithCost(cost);
-            }}
-            onCancel={() => setShowReward(false)}
-            rewardName={rName}
-          />
-        </Card>
-      )}
-
-      {pendingApprovals.length > 0 && (
-        <div className="space-y-3">
-          <SectionTitle>Waiting for approval</SectionTitle>
-          <div className="space-y-2.5">
-            {pendingApprovals.map((a: (typeof pendingApprovals)[number]) => (
-              <Card
-                key={a.id}
-                variant="default"
-                className="p-4 border border-[var(--border)] flex items-center justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={a.kind === "QARD" ? "warning" : "brand"}>
-                      {approvalKindLabel(a.kind)}
-                    </Badge>
-                    <span className="text-xs font-semibold text-[var(--ink)]">
-                      {cleanApprovalReason(a.reason)}
-                    </span>
-                  </div>
-                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">
-                    Sent to parent for review
-                  </small>
-                </div>
-                <div className="text-base font-bold text-[var(--ink)] tabular-nums shrink-0">
-                  <Money amount={Number(a.amount)} />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {data.loans.filter(
-        (l: (typeof data.loans)[number]) => l.status === "active",
-      ).length > 0 && (
-        <div className="space-y-3">
-          <SectionTitle>My Qard loans</SectionTitle>
-          <div className="space-y-2.5">
-            {data.loans
-              .filter((l: (typeof data.loans)[number]) => l.status === "active")
-              .map((l: (typeof data.loans)[number]) => {
-                const remaining = Number(l.amount) - Number(l.repaid);
-                const overdue = new Date(l.due_date) < new Date();
-                return (
-                  <Card
-                    key={l.id}
-                    variant="default"
-                    className="p-4 border border-[var(--border)] flex items-center justify-between gap-3"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={overdue ? "error" : "warning"}>
-                          {overdue ? "Overdue" : "Active"}
-                        </Badge>
-                        <strong className="text-sm font-bold text-[var(--ink)]">
-                          {l.reason || "Qard loan"}
-                        </strong>
-                      </div>
-                      <small className="text-xs text-[var(--text-secondary)] mt-0.5 block">
-                        Due {formatDate(l.due_date)}
-                      </small>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-base font-extrabold text-[var(--ink)] tabular-nums">
-                        <Money amount={remaining} />
-                      </div>
-                      <Link
-                        to="/kid/loans"
-                        className="text-xs font-bold text-[var(--primary-text)] hover:underline inline-block mt-0.5"
-                      >
-                        Repay →
-                      </Link>
-                    </div>
-                  </Card>
-                );
-              })}
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <SectionTitle>Transaction History</SectionTitle>
-        {walletTxs.length > 0 && (
-          <Link
-            to="/kid/history"
-            onClick={() => sfx.tap()}
-            className="text-xs font-semibold text-[var(--primary-text)] hover:underline min-h-[44px] inline-flex items-center"
-          >
-            See all →
-          </Link>
-        )}
-      </div>
-      <Card
-        variant="default"
-        className="p-2 divide-y divide-[var(--border)] overflow-hidden"
+      <SectionTitle
+        action={
+          walletTxs.length > 0 ? (
+            <Link to="/kid/history" onClick={() => sfx.tap()}>
+              See all
+            </Link>
+          ) : undefined
+        }
       >
+        Recent activity
+      </SectionTitle>
+      <Card className="px-2 py-1 divide-y divide-[var(--line)]">
         {walletTxs.slice(0, 5).map((t: (typeof walletTxs)[number]) => {
           const title = transactionTitle(t);
           const typeLabel = transactionTypeLabel(t.type, t.label);
@@ -804,11 +461,13 @@ function KidHome() {
           );
         })}
         {walletTxs.length === 0 && (
-          <div className="p-6 text-center text-xs text-[var(--text-muted)]">
-            No activity yet.
-          </div>
+          <p className="m-0 p-6 text-center text-sm text-[var(--text-3)]">No activity yet.</p>
         )}
       </Card>
+
+      <div className="mt-7">
+        <QuoteCard variant="kid" />
+      </div>
 
       {showProfile && (
         <div className="profile-sheet">

@@ -12,21 +12,22 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 function NotFoundComponent() {
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--surface-pink)]">
-      <Card variant="default" className="max-w-md w-full p-8 text-center rounded-3xl shadow-lg border border-[var(--border)]">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--primary-soft)] text-[var(--primary-text)] flex items-center justify-center">
-          <AppIcon name="compass" size={32} />
+    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
+      <Card variant="default" className="max-w-md w-full p-6 rounded-3xl">
+        <div className="w-14 h-14 mb-4 rounded-full bg-[var(--action-tint)] text-[var(--action)] flex items-center justify-center">
+          <AppIcon name="compass" size={30} />
         </div>
-        <h1 className="text-4xl font-extrabold text-[var(--primary-text)] tracking-tight">404</h1>
-        <h2 className="text-xl font-bold text-[var(--ink)] mt-2">Page not found</h2>
-        <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
+        <p className="m-0 section-title__heading">Error 404</p>
+        <h1 className="text-2xl font-bold text-[var(--ink)] mt-2">Page not found</h1>
+        <p className="text-sm text-[var(--text-2)] mt-2 leading-relaxed">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <div className="mt-6 flex justify-center">
-          <Link to="/">
-            <Button variant="primary" className="font-bold">
-              Return Home
-            </Button>
+        <div className="mt-6 flex">
+          <Link
+            to="/"
+            className="inline-flex h-11 items-center rounded-full bg-[var(--action)] px-5 text-sm font-semibold text-white no-underline hover:bg-[var(--action-pressed)] hover:text-white"
+          >
+            Go to the start page
           </Link>
         </div>
       </Card>
@@ -37,16 +38,16 @@ function NotFoundComponent() {
 export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: () => void }) {
   const router = useRouter();
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--surface-pink)]">
-      <Card variant="default" className="max-w-md w-full p-8 text-center rounded-3xl shadow-lg border border-[var(--border)]">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--error-soft)] text-[var(--error-text)] flex items-center justify-center">
-          <AppIcon name="close" size={32} />
+    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
+      <Card variant="default" className="max-w-md w-full p-6 rounded-3xl">
+        <div className="w-14 h-14 mb-4 rounded-full bg-[var(--neg-bg)] text-[var(--neg)] flex items-center justify-center">
+          <AppIcon name="close" size={30} />
         </div>
-        <h1 className="text-2xl font-extrabold text-[var(--ink)]">Something went wrong</h1>
-        <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
+        <h1 className="text-2xl font-bold text-[var(--ink)]">Something went wrong</h1>
+        <p className="text-sm text-[var(--text-2)] mt-2 leading-relaxed">
           {error?.message || "An unexpected error occurred. Please try again."}
         </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="mt-6 flex items-center gap-3">
           <Button
             variant="primary"
             onClick={() => {
@@ -56,8 +57,8 @@ export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: 
           >
             Try again
           </Button>
-          <Link to="/">
-            <Button variant="secondary">Go home</Button>
+          <Link to="/" className="text-sm font-semibold text-[var(--action-text)] no-underline">
+            Go to the start page
           </Link>
         </div>
       </Card>

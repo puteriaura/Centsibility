@@ -168,16 +168,16 @@ function KidLoans() {
       {selectedTab === "active" && !requesting && (
         <article className="financing-promo">
           <div className="financing-promo__art">
-            <span className="bg-white text-[var(--ink)] text-xs font-bold px-3 py-1 rounded-full">
+            <span className="inline-flex h-6 items-center rounded-full bg-[var(--surface)] px-2.5 text-xs font-bold text-[var(--action-text)]">
               Interest free
             </span>
-            <AppIcon name="handshake" size={36} color="#fff" />
+            <AppIcon name="handshake" size={36} strokeWidth={1.5} color="var(--action)" />
           </div>
           <div className="financing-promo__body">
             <h2 className="text-base font-bold text-[var(--ink)] m-0">
               Qard Hasan loan
             </h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 mb-4 leading-relaxed">
+            <p className="text-sm text-[var(--text-2)] mt-1 mb-4 leading-relaxed">
               Interest-free support anytime. Repay on schedule to grow your
               trust score.
             </p>
@@ -226,7 +226,7 @@ function KidLoans() {
               <MoneyKeypad
                 min={10.0}
                 max={500}
-                confirmLabel="Next: Fill Details →"
+                confirmLabel="Next: add details"
                 onConfirm={(amt) => {
                   setReqAmt(amt);
                   setSignStep(true);

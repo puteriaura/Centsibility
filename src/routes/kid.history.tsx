@@ -79,7 +79,7 @@ function KidHistoryPage() {
         className="p-4 rounded-2xl text-white shadow-sm"
         style={{ background: "var(--primary)" }}
       >
-        <span className="text-xs font-semibold tracking-wider uppercase text-white block">
+        <span className="text-xs font-semibold text-white block">
           Spending balance
         </span>
         <span className="text-2xl font-bold tabular-nums text-white block mt-1">
@@ -149,7 +149,7 @@ function KidHistoryPage() {
             <div key={group.key} className="space-y-2">
               {/* Date Header: full-width band on soft surface */}
               <div
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-[var(--ink)] tracking-wide uppercase"
+                className="section-title__heading px-1 pt-3 pb-2"
                 style={{ background: "var(--surface-soft)" }}
               >
                 {group.heading}

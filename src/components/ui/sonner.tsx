@@ -12,11 +12,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         style: {
           border: "none",
-          background: "#fff",
+          background: "var(--surface)",
           color: "var(--ink)",
           borderRadius: "16px",
-          boxShadow: "0 8px 24px rgba(17, 17, 17, 0.12)",
-          fontFamily: "var(--font-sans)",
+          boxShadow: "var(--shadow-xl)",
+          fontFamily: "var(--font-text)",
+          fontSize: "14px",
         },
       }}
       {...props}

@@ -1,29 +1,31 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
+// One filled button per view (primary). Secondary is tonal blue, outline is
+// for neutral alternatives, ghost for inline text actions. All are pills.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 select-none cursor-pointer focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] min-h-[44px] min-w-[44px]",
+  "inline-flex items-center justify-center gap-2 font-semibold select-none cursor-pointer rounded-full transition-colors duration-150 disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] min-h-[44px] min-w-[44px]",
   {
     variants: {
       variant: {
         primary:
-          "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2",
+          "bg-[var(--action)] text-[var(--on-action)] hover:bg-[var(--action-pressed)] active:bg-[var(--blue-800)]",
         secondary:
-          "bg-white text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--surface-soft)] hover:border-[var(--primary-soft)] hover:text-[var(--primary-text)] shadow-sm",
+          "bg-[var(--action-tint)] text-[var(--action-text)] hover:bg-[var(--action-tint-strong)]",
         outline:
-          "bg-transparent text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--primary-pale)] hover:border-[var(--primary)] hover:text-[var(--primary-text)]",
+          "bg-[var(--surface)] text-[var(--ink)] border border-[var(--line-strong)] hover:bg-[var(--surface-hover)]",
         ghost:
-          "bg-transparent text-[var(--primary-text)] hover:bg-[var(--primary-pale)] border-transparent",
+          "bg-transparent text-[var(--action-text)] hover:bg-[var(--action-tint)]",
         danger:
-          "bg-[var(--error-strong)] text-white hover:bg-[var(--error-strong-hover)] shadow-sm focus-visible:ring-2 focus-visible:ring-[var(--error)]",
+          "bg-[var(--neg)] text-white hover:bg-[var(--red-800)]",
         brand:
-          "bg-[var(--primary)] text-white shadow-md hover:bg-[var(--primary-hover)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
+          "bg-[var(--action)] text-[var(--on-action)] hover:bg-[var(--action-pressed)] active:bg-[var(--blue-800)]",
       },
       size: {
-        sm: "h-11 px-3.5 text-xs rounded-full min-h-[44px] min-w-[44px]",
-        md: "h-11 px-5 text-sm rounded-full min-h-[44px]",
-        lg: "h-13 px-6 text-base rounded-full min-h-[48px]",
-        icon: "h-11 w-11 rounded-full min-h-[44px] min-w-[44px] p-0 flex items-center justify-center",
+        sm: "h-10 px-4 text-sm",
+        md: "h-11 px-5 text-sm",
+        lg: "h-12 px-6 text-base",
+        icon: "h-11 w-11 p-0",
       },
     },
     defaultVariants: {
@@ -45,13 +47,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
         className={buttonVariants({ variant, size, className })}
-        data-variant={variant}
+        data-variant={variant ?? "primary"}
         {...props}
       >
         {loading && (
           <span
-            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-1"
+            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
             aria-hidden="true"
           />
         )}

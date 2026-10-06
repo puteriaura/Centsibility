@@ -199,7 +199,7 @@ function KidQuestRunnerPage() {
           {passed ? (
             <div className="space-y-4">
               <SuccessState
-                title={firstCompletion ? "Quest Complete! 🎉" : "Practice Complete! 🌟"}
+                title={firstCompletion ? "Quest complete" : "Practice complete"}
                 detail={
                   firstCompletion
                     ? `Awesome! You scored ${answerResult.correctCount} of ${answerResult.total}. +${answerResult.pointsAwarded || questPoints} points added to your balance!`
@@ -288,7 +288,7 @@ function KidQuestRunnerPage() {
 
       {/* Quest Title Card */}
       <div className="space-y-1">
-        <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider m-0">
+        <p className="text-xs font-bold text-[var(--text-muted)] m-0">
           {questTitle}
         </p>
         <div className="w-full bg-[var(--surface-muted)] rounded-full h-2 overflow-hidden">
@@ -391,7 +391,7 @@ function KidQuestRunnerPage() {
                     className="text-xs font-bold text-[var(--primary-hover)] hover:underline inline-flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer"
                   >
                     <AppIcon name="chat" size={14} />
-                    Ask Penny why →
+                    Ask Penny why
                   </button>
                 </div>
               );
@@ -408,7 +408,7 @@ function KidQuestRunnerPage() {
               onClick={handleNext}
               className="w-full justify-center min-h-[48px] text-sm font-bold"
             >
-              {answerResult.done ? "See Quest Results →" : "Next Question →"}
+              {answerResult.done ? "See results" : "Next question"}
             </Button>
           </div>
         )}

@@ -307,7 +307,7 @@ export function CrewMemberCard({
               className="text-[11px] px-2 py-0.5 font-medium"
             >
               {cardFrozen ? "Card frozen" : `Card limit RM${dailyLimit}/day`}
-              {controlsLocked && " 🔒"}
+              {controlsLocked && <AppIcon name="lock" size={12} aria-label="Locked" />}
             </Badge>
           </div>
           <span className="crew-card__sub truncate">

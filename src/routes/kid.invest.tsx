@@ -491,12 +491,6 @@ function KidInvest() {
 
   return (
     <div className="space-y-5 pb-12">
-      {/* Disclaimer */}
-      <div className="px-4 py-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)] leading-relaxed">
-        <strong>Practice only.</strong> No real market, no real shares. Real
-        share prices help you learn how investing works.
-      </div>
-
       {/* Hero: total value */}
       <section className="deposit-hero" aria-label="Investment summary">
         <div className="deposit-hero__copy">
@@ -516,6 +510,15 @@ function KidInvest() {
           <AppIcon name="invest" size={32} color="#fff" />
         </div>
       </section>
+
+      {/* Disclaimer */}
+      <p className="m-0 flex items-start gap-2 text-sm leading-relaxed text-[var(--text-2)]">
+        <AppIcon name="info" size={18} className="mt-0.5 shrink-0 text-[var(--action)]" />
+        <span>
+          <strong className="text-[var(--ink)]">Practice only.</strong> No real market, no real
+          shares. Real share prices help you learn how investing works.
+        </span>
+      </p>
 
       {/* Start button */}
       <Button
@@ -1068,7 +1071,7 @@ function KidInvest() {
                     <strong className="text-sm text-[var(--text-muted)]">
                       Market Tracker
                     </strong>
-                    <Badge variant="default" className="text-[10px]">
+                    <Badge variant="default" className="text-[11px]">
                       Locked
                     </Badge>
                   </div>
@@ -1085,7 +1088,7 @@ function KidInvest() {
                     <strong className="text-sm text-[var(--text-muted)]">
                       Market Tracker
                     </strong>
-                    <Badge variant="default" className="text-[10px]">
+                    <Badge variant="default" className="text-[11px]">
                       Locked
                     </Badge>
                   </div>
@@ -1114,7 +1117,7 @@ function KidInvest() {
                     <strong className="text-sm text-[var(--ink)]">
                       Market Tracker
                     </strong>
-                    <Badge variant="default" className="text-[10px]">
+                    <Badge variant="default" className="text-[11px]">
                       Real prices
                     </Badge>
                   </div>
@@ -1436,7 +1439,7 @@ function KidInvest() {
                               {s.symbol}
                             </strong>
                             {s.is_market_open === false && (
-                              <Badge variant="warning" className="text-[9px] px-1 py-0 leading-tight">
+                              <Badge variant="warning" className="mt-0.5 h-5 px-1.5 text-[11px]">
                                 Closed
                               </Badge>
                             )}
@@ -1467,7 +1470,7 @@ function KidInvest() {
                         >
                           <Badge
                             variant="brand"
-                            className="text-[10px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
+                            className="text-[11px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
                             aria-label="Shariah screened"
                           >
                             <Moon size={11} aria-hidden="true" />
@@ -1528,7 +1531,7 @@ function KidInvest() {
                     >
                       <Badge
                         variant="brand"
-                        className="text-[10px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
+                        className="text-[11px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
                         aria-label="Shariah screened"
                       >
                         <Moon size={11} aria-hidden="true" />
@@ -1882,7 +1885,7 @@ function PastFundCard({ inv }: { inv: InvestmentItem }) {
             {TIER_NAMES[inv.tier ?? "low"] ?? inv.tier} Fund
           </p>
           {inv.protected && (
-            <Badge variant="default" className="text-[10px] py-0 px-1.5">
+            <Badge variant="default" className="text-[11px] py-0 px-1.5">
               Protected
             </Badge>
           )}
@@ -1935,7 +1938,7 @@ function PastMarketCard({ inv }: { inv: InvestmentItem }) {
 function StatLine({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide">
+      <p className="text-xs text-[var(--text-muted)]">
         {label}
       </p>
       <div className="text-sm font-semibold text-[var(--ink)]">{value}</div>

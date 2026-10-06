@@ -284,7 +284,7 @@ function KidLogin() {
                 </div>
 
                 <Button disabled={busy || !quickCode.trim()} type="submit" variant="primary" style={{ width: "100%", height: "48px", fontSize: "1rem" }}>
-                  {busy ? "Checking code…" : "Continue →"}
+                  {busy ? "Checking code…" : "Continue"}
                 </Button>
               </form>
             )}
@@ -384,7 +384,7 @@ function KidLogin() {
                     variant="primary"
                     style={{ flex: 2, height: "48px", fontSize: "1rem" }}
                   >
-                    {busy ? "Saving PIN…" : "Activate Vault ✨"}
+                    {busy ? "Saving PIN…" : "Save PIN and sign in"}
                   </Button>
                 </div>
               </form>
@@ -409,7 +409,7 @@ function KidLogin() {
                 }}
               >
                 <AppIcon name="parent" size={16} />
-                <span>Parent sign in here →</span>
+                <span>Parent? Sign in here</span>
               </Link>
             </div>
 

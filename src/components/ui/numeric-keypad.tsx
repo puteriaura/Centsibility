@@ -45,10 +45,8 @@ export function NumericKeypad({
       className={
         isPinStyle
           ? `pin-grid ${className}`.trim()
-          : `grid grid-cols-3 gap-2.5 ${className}`.trim()
+          : `keypad-grid my-2 ${className}`.trim()
       }
-
-      style={isPinStyle ? undefined : { margin: "0.5rem 0" }}
     >
       {keys.flat().map((key, idx) => {
         const isDelete = key === "⌫" || key === "delete";
@@ -74,12 +72,10 @@ export function NumericKeypad({
             >
               {isDelete ? (
                 <span className="pin-backspace" aria-hidden="true">
-                  <AppIcon name="backspace" size={20} />
+                  <AppIcon name="backspace" size={24} />
                 </span>
               ) : isClear ? (
-                <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-secondary)" }}>
-                  C
-                </span>
+                <span className="text-sm font-bold text-[var(--text-2)]">C</span>
               ) : (
                 key
               )}
@@ -100,10 +96,9 @@ export function NumericKeypad({
                   ? "Clear"
                   : `Key ${key}`
             }
-            className="min-w-[48px] min-h-[48px]"
-            style={{ padding: "0.75rem", fontSize: "1.25rem", fontWeight: "bold" }}
+            className="keypad-key"
           >
-            {key}
+            {isDelete ? <AppIcon name="backspace" size={22} /> : key}
           </button>
         );
       })}

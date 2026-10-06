@@ -10,21 +10,20 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className = "", label, helperText, error, leftIcon, rightIcon, id, disabled, ...props }, ref) => {
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+    const autoId = React.useId();
+    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : autoId);
+    const messageId = error || helperText ? `${inputId}-message` : undefined;
 
     return (
       <div className="w-full mb-3">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-xs font-semibold text-[var(--ink)] mb-1.5"
-          >
+          <label htmlFor={inputId} className="block text-sm font-semibold text-[var(--ink)] mb-1.5">
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
+            <div className="absolute left-3.5 flex items-center pointer-events-none text-[var(--text-3)]">
               {leftIcon}
             </div>
           )}
@@ -33,31 +32,39 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={props.type || "text"}
             disabled={disabled}
-            className={`w-full min-h-[48px] px-4 py-3 text-base text-[var(--text-primary)] bg-white border rounded-[var(--radius-sm)] transition-all duration-150 outline-none
-              ${leftIcon ? "pl-10" : ""}
-              ${rightIcon ? "pr-10" : ""}
-              ${
-                error
-                  ? "border-[var(--error)] focus:ring-2 focus:ring-[var(--error)]/20"
-                  : "border-[var(--border)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20"
-              }
-              ${disabled ? "bg-[var(--surface-soft)] text-[var(--text-muted)] cursor-not-allowed" : ""}
-              ${className}
-            `.trim()}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={messageId}
+            className={[
+              "w-full min-h-[48px] px-4 py-3 text-base text-[var(--ink)] bg-[var(--surface)] border rounded-xl outline-none",
+              "focus:border-[var(--action)] focus:shadow-[var(--focus-ring)]",
+              leftIcon ? "pl-10" : "",
+              rightIcon ? "pr-10" : "",
+              error
+                ? "border-[var(--neg)] focus:border-[var(--neg)]"
+                : "border-[var(--line-strong)]",
+              disabled
+                ? "bg-[var(--surface-sunken)] border-[var(--line)] text-[var(--text-2)] cursor-not-allowed"
+                : "",
+              className,
+            ]
+              .filter(Boolean)
+              .join(" ")}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3.5 flex items-center text-[var(--text-muted)]">
+            <div className="absolute right-3.5 flex items-center text-[var(--text-3)]">
               {rightIcon}
             </div>
           )}
         </div>
         {error ? (
-          <p className="mt-1 text-xs text-[var(--error-text)] font-medium" role="alert">
+          <p id={messageId} className="mt-1.5 mb-0 text-xs font-semibold text-[var(--neg)]" role="alert">
             {error}
           </p>
         ) : helperText ? (
-          <p className="mt-1 text-xs text-[var(--text-muted)]">{helperText}</p>
+          <p id={messageId} className="mt-1.5 mb-0 text-xs text-[var(--text-3)]">
+            {helperText}
+          </p>
         ) : null}
       </div>
     );

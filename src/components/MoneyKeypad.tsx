@@ -150,28 +150,28 @@ export function MoneyKeypad({
     return (
       <div className="space-y-4">
         {/* Amount display */}
-        <div className="p-4 rounded-2xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
-          <div className="text-3xl font-extrabold text-[var(--ink)] tabular-nums">
+        <div className="py-2 text-center" aria-live="polite">
+          <div className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] tabular-nums">
             {display}
           </div>
 
           {tooLow && (
-            <p className="text-xs text-[var(--error-text)] mt-1 font-medium">
+            <p className="text-xs text-[var(--neg)] mt-1 mb-0 font-semibold">
               Minimum is {formatRM(min)} {/* privacy-ok: limit */}
             </p>
           )}
           {tooHigh && (
-            <p className="text-xs text-[var(--error-text)] mt-1 font-medium">
+            <p className="text-xs text-[var(--neg)] mt-1 mb-0 font-semibold">
               Maximum is RM{max.toLocaleString("en-MY")}
             </p>
           )}
           {!tooLow && !tooHigh && confirmDisabled && disabledHint && (
-            <p className="text-xs text-[var(--text-muted)] mt-1 font-medium">
+            <p className="text-xs text-[var(--text-3)] mt-1 mb-0 font-medium">
               {disabledHint}
             </p>
           )}
           {!tooLow && !tooHigh && !confirmDisabled && amount > 0 && (
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
+            <p className="text-xs text-[var(--text-2)] mt-1 mb-0">
               Tap Next when ready
             </p>
           )}
@@ -194,7 +194,7 @@ export function MoneyKeypad({
             disabled={!valid || busy || confirmDisabled}
             className="flex-1 justify-center font-bold"
           >
-            {showReference ? "Next →" : confirmLabel}
+            {showReference ? "Next" : confirmLabel}
           </Button>
         </div>
       </div>
@@ -205,26 +205,24 @@ export function MoneyKeypad({
   return (
     <div className="space-y-4">
       {/* Amount recap */}
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--surface-soft)] border border-[var(--border)]">
+      <div className="flex items-center justify-between gap-2 py-1">
         <button
           type="button"
           onClick={() => setStep("amount")}
           aria-label="Back to amount"
-          className="p-2 rounded-xl hover:bg-white text-[var(--ink)] transition-colors"
+          className="h-11 w-11 rounded-full hover:bg-[var(--surface-sunken)] text-[var(--ink)]"
         >
           <AppIcon name="back" size={20} />
         </button>
-        <div className="text-2xl font-extrabold text-[var(--ink)] tabular-nums">
+        <div className="font-display text-2xl font-bold text-[var(--ink)] tabular-nums">
           {display}
         </div>
-        <small className="text-xs text-[var(--text-muted)]">(edit)</small>
+        <span className="w-11" aria-hidden="true" />
       </div>
 
       {/* Reference options */}
       <div className="space-y-2">
-        <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block">
-          Transmission Purpose
-        </label>
+        <p className="text-sm font-semibold text-[var(--ink)] m-0">What is it for?</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {REFERENCE_OPTIONS.map((opt) => (
             <Button
@@ -244,9 +242,10 @@ export function MoneyKeypad({
           <input
             value={customRef}
             onChange={(e) => setCustomRef(e.target.value)}
-            placeholder="Log details..."
+            placeholder="Add a short note"
+            aria-label="Note"
             maxLength={100}
-            className="w-full h-11 px-3 mt-2 rounded-xl border border-[var(--border)] bg-white text-base font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
+            className="mt-2"
           />
         )}
       </div>

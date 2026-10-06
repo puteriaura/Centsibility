@@ -170,8 +170,8 @@ export function ScheduleHibahSection({
 
       {scheduledHibahs && scheduledHibahs.length > 0 && (
         <div className="pt-4 border-t border-[var(--border)] space-y-2">
-          <strong className="text-xs font-bold text-[var(--ink)] block uppercase tracking-wider">
-            Active Schedules
+          <strong className="text-xs font-bold text-[var(--ink)] block">
+            Active schedules
           </strong>
           <ul className="space-y-2">
             {scheduledHibahs.map((h) => (

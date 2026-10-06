@@ -23,6 +23,8 @@ export interface BalanceCardProps {
 
 const HIDDEN = "RM*****";
 
+// The screen's one solid blue block. Hierarchy inside it: label, then the
+// amount (largest type on the screen), then one supporting line.
 export function BalanceCard({
   title = "Spending balance",
   balance,
@@ -43,45 +45,43 @@ export function BalanceCard({
   const [internalExpanded, setInternalExpanded] = React.useState(false);
   const isExpandedControlled = typeof isExpanded === "boolean";
   const expanded = isExpandedControlled ? isExpanded : internalExpanded;
+  const breakdownId = React.useId();
 
   const handleToggleExpanded = () => {
     const next = !expanded;
-    if (!isExpandedControlled) {
-      setInternalExpanded(next);
-    }
+    if (!isExpandedControlled) setInternalExpanded(next);
     onToggleExpanded?.(next);
   };
 
   const isDark = variant === "brand" || variant === "navy";
-  // White text on raspberry is 4.62:1; tinted white (white/85) dropped it to 3.7:1.
-  const soft = isDark ? "text-white" : "text-[var(--text-secondary)]";
+  // White text on the brand blue is 6.8:1; tinted white would drop below AA.
+  const soft = isDark ? "text-white" : "text-[var(--text-2)]";
   const strong = isDark ? "text-white" : "text-[var(--ink)]";
+  const divider = isDark ? "border-white/25" : "border-[var(--line)]";
 
   return (
     <div className={`w-full ${className}`.trim()}>
-      <Card variant={variant} className="relative overflow-hidden px-5 py-4 sm:p-6 rounded-2xl">
-        <div className="flex items-center justify-between relative z-10">
-          <span className={`text-sm font-medium ${soft}`}>{title}</span>
+      <Card variant={variant} className="balance-hero">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`balance-hero__label ${soft}`}>{title}</span>
           {onToggleHide && (
             <button
               type="button"
               onClick={onToggleHide}
-              className={`min-w-[44px] min-h-[44px] -my-2.5 -mr-2.5 flex items-center justify-center p-1.5 rounded-full transition-colors ${
-                isDark
-                  ? "text-white hover:bg-white/10"
-                  : "text-[var(--text-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-soft)]"
+              className={`-my-2.5 -mr-2.5 h-11 w-11 shrink-0 rounded-full ${
+                isDark ? "text-white hover:bg-white/15" : "text-[var(--text-2)] hover:bg-[var(--surface-sunken)]"
               }`}
               aria-label={hideBalance ? "Show balance" : "Hide balance"}
             >
-              <AppIcon name={hideBalance ? "show" : "hide"} size={18} />
+              <AppIcon name={hideBalance ? "show" : "hide"} size={20} />
             </button>
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 my-1 relative z-10">
-          <div>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <div className="min-w-0">
             <div
-              className={`text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ${strong}`}
+              className={`balance-hero__amount ${strong}`}
               aria-label={hideBalance ? "Amount hidden" : undefined}
             >
               {hideBalance ? HIDDEN : <Money amount={balance} />}
@@ -91,27 +91,21 @@ export function BalanceCard({
               breakdown && breakdown.length > 0 ? (
                 <button
                   type="button"
-                  id="balance-breakdown-trigger"
                   aria-expanded={expanded}
-                  aria-controls="balance-breakdown-details"
+                  aria-controls={breakdownId}
                   onClick={handleToggleExpanded}
-                  className={`text-sm mt-1.5 flex items-center gap-1.5 font-medium text-left transition-opacity hover:opacity-90 ${soft}`}
+                  className={`mt-1 -ml-1 min-h-[36px] px-1 justify-start gap-1.5 rounded-lg text-sm font-medium ${soft} ${
+                    isDark ? "hover:bg-white/10" : "hover:bg-[var(--surface-sunken)]"
+                  }`}
                 >
                   <span>{secondaryBalance.label}</span>
-                  <strong
-                    className={`tabular-nums ${strong}`}
-                    aria-label={hideBalance ? "Amount hidden" : undefined}
-                  >
+                  <strong className={`tabular-nums ${strong}`}>
                     {hideBalance ? HIDDEN : <Money amount={secondaryBalance.amount} />}
                   </strong>
-                  <AppIcon
-                    name={expanded ? "chevron-up" : "chevron-down"}
-                    size={14}
-                    className="ml-0.5"
-                  />
+                  <AppIcon name={expanded ? "chevron-up" : "chevron-down"} size={16} />
                 </button>
               ) : (
-                <div className={`text-sm mt-1.5 flex items-center gap-1 font-medium ${soft}`}>
+                <div className={`mt-1 flex items-center gap-1.5 text-sm font-medium ${soft}`}>
                   <span>{secondaryBalance.label}</span>
                   <strong className={`tabular-nums ${strong}`}>
                     {hideBalance ? HIDDEN : <Money amount={secondaryBalance.amount} />}
@@ -119,7 +113,7 @@ export function BalanceCard({
                 </div>
               )
             ) : subtitle ? (
-              <p className={`text-sm mt-1 ${soft}`}>{subtitle}</p>
+              <p className={`mt-1 mb-0 text-sm ${soft}`}>{subtitle}</p>
             ) : null}
           </div>
 
@@ -127,65 +121,54 @@ export function BalanceCard({
             <button
               type="button"
               onClick={onArrowClick}
-              className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/25 hover:bg-white/35 text-white flex items-center justify-center shrink-0"
-              aria-label="View balance details"
+              className={`h-11 w-11 shrink-0 rounded-full ${
+                isDark ? "bg-white text-[var(--action)] hover:bg-[var(--blue-50)]" : "bg-[var(--action)] text-white"
+              }`}
+              aria-label="Open wallet"
             >
-              <AppIcon name="forward" size={18} />
+              <AppIcon name="forward" size={20} />
             </button>
           )}
         </div>
 
         {expanded && breakdown && breakdown.length > 0 && (
-          <div
-            id="balance-breakdown-details"
-            role="region"
-            aria-labelledby="balance-breakdown-trigger"
-            className={`mt-3 pt-3 border-t space-y-2 text-xs relative z-10 ${
-              isDark ? "border-white/20 text-white" : "border-[var(--border)] text-[var(--ink)]"
-            }`}
-          >
-            {breakdown.map((row, idx) => (
-              <div key={idx} className="flex items-center justify-between">
+          <div id={breakdownId} className={`mt-3 pt-3 border-t ${divider} space-y-1.5 text-sm`}>
+            {breakdown.map((row) => (
+              <div key={row.label} className="flex items-center justify-between">
                 <span className={soft}>{row.label}</span>
                 <strong
-                  className={`tabular-nums font-bold ${strong}`}
+                  className={`tabular-nums font-semibold ${strong}`}
                   aria-label={hideBalance ? "Amount hidden" : undefined}
                 >
                   {hideBalance ? HIDDEN : <Money amount={row.amount} />}
                 </strong>
               </div>
             ))}
-            {footnote && (
-              <p
-                className={`text-[11px] pt-1.5 mt-1 border-t ${
-                  isDark ? "border-white/10 text-white" : "border-[var(--border)] text-[var(--text-muted)]"
-                }`}
-              >
-                {footnote}
-              </p>
-            )}
+            {footnote && <p className={`m-0 pt-1.5 text-xs ${soft}`}>{footnote}</p>}
           </div>
         )}
 
-        {(metadata || actions) && (
-          <div
-            className={`mt-3 pt-2.5 flex flex-wrap items-center justify-between gap-3 border-t relative z-10 ${
-              isDark ? "border-white/20" : "border-[var(--border)]"
-            }`}
-          >
+        {(metadata?.length || actions) && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
             {metadata && metadata.length > 0 ? (
-              <div className="flex items-center gap-3 text-sm">
-                {metadata.map((item, idx) => (
-                  <span key={idx} className={`inline-flex items-center gap-1 font-medium ${soft}`}>
-                    <span>{item.label}</span>
-                    {item.value && <strong className={strong}>{item.value}</strong>}
+              <div className="flex flex-wrap items-center gap-2">
+                {metadata.map((item) => (
+                  <span
+                    key={item.label}
+                    className={
+                      isDark
+                        ? "balance-hero__meta text-white"
+                        : "inline-flex h-[26px] items-center rounded-full bg-[var(--surface-sunken)] px-2.5 text-xs font-semibold text-[var(--text-2)]"
+                    }
+                  >
+                    {item.label}
+                    {item.value ? <strong className="ml-1">{item.value}</strong> : null}
                   </span>
                 ))}
               </div>
             ) : (
-              <div />
+              <span />
             )}
-
             {actions && <div className="flex items-center gap-2">{actions}</div>}
           </div>
         )}

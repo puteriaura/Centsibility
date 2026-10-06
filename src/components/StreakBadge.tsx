@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AppIcon } from "@/components/ui/app-icon";
 
 export interface StreakBadgeProps {
   count: number;
@@ -11,11 +12,12 @@ export function StreakBadge({ count, className = "" }: StreakBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-[var(--surface-soft)] text-[var(--ink)] border border-[var(--border)] tabular-nums shadow-2xs ${className}`.trim()}
+      className={`inline-flex h-8 items-center gap-1 rounded-full bg-[var(--surface)] pl-2 pr-3 text-sm font-bold tabular-nums text-[var(--ink)] ${className}`.trim()}
       role="status"
       aria-label={`${n} day streak`}
     >
-      {`${n}🔥`}
+      <AppIcon name="flame" size={16} color="var(--warn)" />
+      {n}
     </span>
   );
 }

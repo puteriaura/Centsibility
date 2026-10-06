@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  Circle,
   Coffee,
   Compass,
   Crown,
@@ -127,7 +128,7 @@ const ICONS: Record<string, LucideIcon> = {
   butterfly: Sparkles,
   sparkles: Sparkles,
   crown: Crown,
-  rocket: Sparkles,
+  rocket: Star,
   star: Star,
   planet: Landmark,
   gamecontroller: Gamepad2,
@@ -284,7 +285,8 @@ export function AppIcon({
   color?: string;
   className?: string;
 } & Omit<LucideProps, "size" | "color" | "ref">) {
-  const Icon = ICONS[normalize(name)] ?? Sparkles;
+  // Unknown names render a plain dot, so a missing mapping is visible rather than decorative
+  const Icon = ICONS[normalize(name)] ?? Circle;
   return (
     <Icon
       size={size}
