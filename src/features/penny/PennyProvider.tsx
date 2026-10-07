@@ -1,3 +1,7 @@
+import {
+  previousTurnIntent,
+  type PennyIntent,
+} from "../../../supabase/functions/_shared/penny-intents";
 import * as React from "react";
 import {
   type ChatMessage,
@@ -97,6 +101,7 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
   const pendingMessageRef = React.useRef<{
     text: string;
     context?: PennyPageContext;
+    previousIntent?: PennyIntent;
   } | null>(null);
 
   // Sync to session storage on change
@@ -128,6 +133,7 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
       setMessages((prev) => [...prev, userMsg]);
       setBusy(true);
 
+      const previousIntent = previousTurnIntent(messages);
       const ctxToSend = contextOverride ?? pageContext ?? undefined;
 
       if (mode === "kid") {
@@ -153,16 +159,11 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
           return;
         }
 
-        const history = messages.slice(-10).map((m) => ({
-          role: m.role,
-          content: m.text,
-        }));
-
         try {
           const res = await edgeKidPennyChat({
             code,
             message: trimmed,
-            history,
+            previousIntent,
             context: ctxToSend,
           });
 
@@ -171,6 +172,7 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
             role: "assistant",
             text: res.reply,
             remaining: res.remaining,
+            intent: res.intent,
           };
           setMessages((prev) => [...prev, replyMsg]);
         } catch (err: unknown) {
@@ -199,15 +201,11 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
         }
       } else {
         // Parent mode
-        const history = messages.slice(-10).map((m) => ({
-          role: m.role,
-          content: m.text,
-        }));
 
         try {
           const res = await edgeParentPennyChat({
             message: trimmed,
-            history,
+            previousIntent,
             context: ctxToSend,
           });
 
@@ -216,6 +214,7 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
             role: "assistant",
             text: res.reply,
             remaining: res.remaining,
+            intent: res.intent,
           };
           setMessages((prev) => [...prev, replyMsg]);
           sfx.pop();
@@ -227,7 +226,11 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
             errMsg.toLowerCase().includes("pin")
           ) {
             // Store pending message to retry after parent PIN verified
-            pendingMessageRef.current = { text: trimmed, context: ctxToSend };
+            pendingMessageRef.current = {
+              text: trimmed,
+              context: ctxToSend,
+              previousIntent,
+            };
             setParentPinRequired(true);
             setBusy(false);
             return;
@@ -266,15 +269,11 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
     pendingMessageRef.current = null;
 
     setBusy(true);
-    const history = messages.slice(-10).map((m) => ({
-      role: m.role,
-      content: m.text,
-    }));
 
     try {
       const res = await edgeParentPennyChat({
         message: pending.text,
-        history,
+        previousIntent: pending.previousIntent,
         context: pending.context ?? pageContext ?? undefined,
       });
 
@@ -283,6 +282,7 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
         role: "assistant",
         text: res.reply,
         remaining: res.remaining,
+        intent: res.intent,
       };
       setMessages((prev) => [...prev, replyMsg]);
       sfx.pop();
@@ -292,7 +292,7 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
     } finally {
       setBusy(false);
     }
-  }, [messages, pageContext]);
+  }, [pageContext]);
 
   const openPenny = React.useCallback(
     (opts?: PennyOpenOptions) => {

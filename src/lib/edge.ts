@@ -1,3 +1,4 @@
+import type { PennyIntent } from "../../supabase/functions/_shared/penny-intents";
 // Typed helpers for invoking Supabase Edge Functions.
 // These replace the old client-side "server function" calls
 // for financial operations that must run server-side.
@@ -1599,13 +1600,14 @@ export interface PennyChatMessage {
 export async function edgeKidPennyChat(params: {
   code: string;
   message: string;
-  history?: PennyChatMessage[];
+  previousIntent?: PennyIntent;
   thinking?: boolean;
   model?: string;
   context?: { page: string; detail?: string };
 }) {
   return invoke<{
     reply: string;
+    intent?: PennyIntent;
     model: string;
     thinking: boolean;
     remaining: number;
@@ -1614,7 +1616,7 @@ export async function edgeKidPennyChat(params: {
 
 export async function edgeParentPennyChat(params: {
   message: string;
-  history?: PennyChatMessage[];
+  previousIntent?: PennyIntent;
   thinking?: boolean;
   model?: string;
   pinSession?: string;
@@ -1622,6 +1624,7 @@ export async function edgeParentPennyChat(params: {
 }) {
   return invoke<{
     reply: string;
+    intent?: PennyIntent;
     model: string;
     thinking: boolean;
     remaining: number;

@@ -1,3 +1,4 @@
+import type { PennyIntent } from "../../../supabase/functions/_shared/penny-intents";
 export type PennyRole = "user" | "assistant";
 
 export interface ChatMessage {
@@ -5,6 +6,7 @@ export interface ChatMessage {
   role: PennyRole;
   text: string;
   remaining?: number;
+  intent?: PennyIntent;
   offline?: boolean;
 }
 

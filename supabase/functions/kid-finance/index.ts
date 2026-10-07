@@ -1091,7 +1091,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
   const safety = filterPennyInput(message);
   if (safety) {
     console.log(JSON.stringify({ intent: "sensitive", fields: [] }));
-    return jsonOk({ reply: safety.reply, thinking: false });
+    return jsonOk({ reply: safety.reply, thinking: false, intent: "sensitive" });
   }
 
 
@@ -1109,7 +1109,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
   console.log(JSON.stringify(plan.audit));
-  if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false });
+  if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
@@ -1125,7 +1125,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     requestParams = buildPennyRequest({
       model: typeof params.model === "string" ? params.model : undefined,
       thinking: isThinking,
-      history: [],
+      previousIntent: params.previousIntent,
       message: plan.question,
       systemPrompt: system,
       groundingData: contextLines,
@@ -1152,6 +1152,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     const result = await callPenny(apiKey, requestParams);
     return jsonOk({
       reply: result.reply,
+      intent: plan.intent,
       model: result.model,
       thinking: result.thinking,
       remaining: typeof remaining === "number" ? remaining : 0,

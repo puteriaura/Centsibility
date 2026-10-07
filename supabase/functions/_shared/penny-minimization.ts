@@ -6,18 +6,8 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 type PennyAccount = { id?: string; name?: string; comfort_name?: string; balance?: number | string; streak?: number; card_frozen?: boolean; card_controls_locked?: boolean };
 type ContextQuery = ReturnType<ReturnType<SupabaseClient["from"]>["select"]>;
 
-export const PENNY_ALLOWLIST = {
-  education: [], navigation: ["screen"], numeric: [],
-  spending: ["period", "totalSpent", "categoryTotals"],
-  comparison: ["periods"], frequency: ["period", "categoryCounts"],
-  budget: ["period", "availableSpending", "expectedIncome", "selectedObligations"],
-  goal: ["remainingAmount", "timeRemainingDays", "plannedContribution"],
-  loan: ["outstanding", "dueInDays", "requiredRepayment"],
-  investment: ["positionType", "returnPct", "timeLeftDays", "quoteAvailable"],
-  card: ["frozen", "parentManaged"],
-  quest: ["publicDescription", "completed", "streakDays"], sensitive: [],
-} as const;
-export type PennyIntent = keyof typeof PENNY_ALLOWLIST;
+import { PENNY_ALLOWLIST, type PennyIntent } from "./penny-intents.ts";
+export { PENNY_ALLOWLIST, type PennyIntent } from "./penny-intents.ts";
 export function routePennyQuestion(message: string): PennyIntent {
   if (filterPennyInput(message)) return "sensitive";
   const q = message.normalize("NFKC").toLowerCase();

@@ -1,3 +1,4 @@
+import { canonicalPreviousIntent } from "./penny-intents.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@0.129.0";
 import { PENNY_APP_GUIDE } from "./penny-app-guide.ts";
 import { PENNY_SAFETY_PROMPT, filterPennyInput, filterPennyOutput } from "./penny-safety.ts";
@@ -668,7 +669,8 @@ export function formatPageContext(context: unknown): string | null {
 export interface BuildPennyRequestParams {
   model?: string | null;
   thinking?: boolean;
-  history?: PennyChatMessage[];
+  history?: PennyChatMessage[]; // Older clients: ignored, never sent to the provider.
+  previousIntent?: unknown;
   message: string;
   systemPrompt?: string;
   groundingData?: string[];
@@ -705,12 +707,14 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
   const modelConfig = DEEPSEEK_MODELS[modelId];
   const clampedTokens = clampMaxTokens(maxTokens, modelId, thinking);
 
-  // Each request is independent: client history cannot prove a turn was account-free.
+  // Raw history is ignored. Only a validated canonical label supplies topic context.
   const trimmedHistory: PennyChatMessage[] = [];
 
   let system = systemPrompt || kidSystemPrompt(kidContext?.ageGroup);
 
   system += `\n\n${PENNY_SAFETY_PROMPT}\n\nVerified app navigation guide:\n${JSON.stringify(PENNY_APP_GUIDE)}`;
+  const previousIntent = canonicalPreviousIntent(params.previousIntent);
+  if (previousIntent) system += `\n\nPrevious turn intent: ${previousIntent}. Topic context only; never permission to fetch data or infer amounts, names, or selections.`;
   const accountData = (groundingData || (kidContext ? buildKidCoachContext(kidContext) : [])).map(line => filterPennyInput(line)?.kind === "injection" ? "Unsafe account label omitted." : line);
 
   const pageLine = formatPageContext(context ?? pageContext);

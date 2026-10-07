@@ -877,7 +877,7 @@ async function handlePennyChat(
   const safety = filterPennyInput(message);
   if (safety) {
     console.log(JSON.stringify({ intent: "sensitive", fields: [] }));
-    return jsonOk({ reply: safety.reply, thinking: false });
+    return jsonOk({ reply: safety.reply, thinking: false, intent: "sensitive" });
   }
 
 
@@ -896,14 +896,14 @@ async function handlePennyChat(
   const intent = routePennyQuestion(message);
   let selectedKid = {};
   if (intent !== "education" && intent !== "navigation") {
-    if (typeof params.kidId !== "string") return jsonOk({ reply: "Choose one child before asking about their account.", thinking: false });
+    if (typeof params.kidId !== "string") return jsonOk({ reply: "Choose one child before asking about their account.", thinking: false, intent });
     const { data, error } = await admin.from("kids").select("id, name, comfort_name, balance, streak, card_frozen, card_controls_locked").eq("id", params.kidId).eq("parent_id", parentId).maybeSingle();
     if (error || !data) return jsonError("Child not available", 404);
     selectedKid = data;
   }
   const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
   console.log(JSON.stringify(plan.audit));
-  if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false });
+  if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
@@ -919,7 +919,7 @@ async function handlePennyChat(
     requestParams = buildPennyRequest({
       model: typeof params.model === "string" ? params.model : undefined,
       thinking: isThinking,
-      history: [],
+      previousIntent: params.previousIntent,
       message: plan.question,
       systemPrompt: system,
       groundingData: contextLines,
@@ -949,6 +949,7 @@ async function handlePennyChat(
     const result = await callPenny(apiKey, requestParams);
     return jsonOk({
       reply: result.reply,
+      intent: plan.intent,
       model: result.model,
       thinking: result.thinking,
       remaining: typeof remaining === "number" ? remaining : 0,
