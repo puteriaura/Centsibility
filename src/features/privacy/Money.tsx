@@ -14,7 +14,7 @@ export function useMoney() {
   const privacy = usePrivacy();
 
   const format = React.useCallback(
-    (amount: number, options?: { sign?: boolean }): string => {
+    (amount: number | null, options?: { sign?: boolean }): string => {
       if (privacy.isMasked) {
         return MASKED_AMOUNT;
       }
@@ -30,7 +30,7 @@ export function useMoney() {
 }
 
 export interface MoneyProps {
-  amount: number;
+  amount: number | null;
   sign?: boolean;
   className?: string;
   onClick?: () => void;

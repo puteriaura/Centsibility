@@ -323,8 +323,8 @@ export interface OpenInvestmentContext {
   tier?: string;
   symbol?: string;
   principal: number;
-  currentValue: number;
-  profitPct: number;
+  currentValue: number | null;
+  profitPct: number | null;
   endsAt?: string;
 }
 
@@ -333,7 +333,7 @@ export interface BuildKidCoachContextInput {
   name?: string | null; // comfort_name only
   balance?: number;
   investBalance?: number;
-  investmentsValue?: number;
+  investmentsValue?: number | null;
   investments?: OpenInvestmentContext[];
   coins?: number;
   streakDays?: number;
@@ -423,7 +423,8 @@ export function buildKidCoachContext(data: BuildKidCoachContextInput): string[] 
   const total = totalCents / 100;
   const owed = owedCents / 100;
 
-  lines.push(`Spending balance: RM${spending.toFixed(2)}, Tabung: RM${tabung.toFixed(2)}, Investment: RM${investment.toFixed(2)}, Total: RM${total.toFixed(2)}`);
+  if (data.investmentsValue === null) lines.push("Investment and total value unavailable: a market quote is missing. Do not infer the entry price as today’s value.");
+  else lines.push(`Spending balance: RM${spending.toFixed(2)}, Tabung: RM${tabung.toFixed(2)}, Investment: RM${investment.toFixed(2)}, Total: RM${total.toFixed(2)}`);
 
   // 3. What is owed on loans
   lines.push(`Owed on loans: RM${owed.toFixed(2)}`);
@@ -432,7 +433,7 @@ export function buildKidCoachContext(data: BuildKidCoachContextInput): string[] 
   if (data.investments && data.investments.length > 0) {
     for (const inv of data.investments) {
       const modeStr = inv.mode === "fund" ? `Centsibility Fund (${inv.tier || "Standard"})` : `Market Tracker (${inv.symbol || ""})`;
-      lines.push(`Investment ${modeStr}: put in RM${inv.principal.toFixed(2)}, value now RM${inv.currentValue.toFixed(2)} (${inv.profitPct >= 0 ? "+" : ""}${inv.profitPct.toFixed(2)}%), ends ${inv.endsAt || "unknown"}`);
+      lines.push(`Investment ${modeStr}: put in RM${inv.principal.toFixed(2)}, value now RM${(inv.currentValue === null ? "unavailable" : inv.currentValue.toFixed(2))} (${(inv.profitPct ?? 0) >= 0 ? "+" : ""}${(inv.profitPct === null ? "unavailable" : inv.profitPct.toFixed(2))}%), ends ${inv.endsAt || "unknown"}`);
     }
   }
 
@@ -628,7 +629,7 @@ export function buildParentCoachContext(data: BuildParentCoachContextInput): str
     if (k.investmentsList && k.investmentsList.length > 0) {
       for (const inv of k.investmentsList) {
         const modeStr = inv.mode === "fund" ? `Centsibility Fund (${inv.tier || "Standard"})` : `Market Tracker (${inv.symbol || ""})`;
-        lines.push(`Investment ${modeStr}: put in RM${inv.principal.toFixed(2)}, value now RM${inv.currentValue.toFixed(2)} (${inv.profitPct >= 0 ? "+" : ""}${inv.profitPct.toFixed(2)}%), ends ${inv.endsAt || "unknown"}`);
+        lines.push(`Investment ${modeStr}: put in RM${inv.principal.toFixed(2)}, value now RM${(inv.currentValue === null ? "unavailable" : inv.currentValue.toFixed(2))} (${(inv.profitPct ?? 0) >= 0 ? "+" : ""}${(inv.profitPct === null ? "unavailable" : inv.profitPct.toFixed(2))}%), ends ${inv.endsAt || "unknown"}`);
       }
     }
     lines.push(`Spent this week: RM${(Number(k.spentThisWeek) || 0).toFixed(2)}, Spent last week: RM${(Number(k.spentLastWeek) || 0).toFixed(2)}`);

@@ -165,10 +165,10 @@ function ParentHome() {
     const kLoans = loans.filter((l) => l.kid_id === k.id);
     const kInv = investmentsByKid?.[k.id]
       ?.filter((i) => i.status === "active")
-      .reduce((s, i) => s + (Number(i.currentValue) || 0), 0);
+      .reduce((s, i) => s === null || i.currentValue === null ? null : s + Number(i.currentValue), 0 as number | null);
     const summary = getBalanceSummary(k, kGoals, kLoans, kInv);
-    return sum + summary.total;
-  }, 0);
+    return sum === null || summary.total === null ? null : sum + summary.total;
+  }, 0 as number | null);
 
   return (
     <div className="parent-page mobile-stack pb-4">
@@ -332,7 +332,7 @@ function ParentHome() {
                     investmentsValue={
                       investmentsByKid?.[c.id]
                         ?.filter((i) => i.status === "active")
-                        .reduce((sum, i) => sum + (Number(i.currentValue) || 0), 0)
+                        .reduce((sum, i) => sum === null || i.currentValue === null ? null : sum + Number(i.currentValue), 0 as number | null)
                     }
                     onDeleteInitiate={setDeletingKidId}
                     onRefresh={refresh}

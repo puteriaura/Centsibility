@@ -1419,6 +1419,7 @@ export async function edgeKidGetState(params: { code: string }) {
   return invoke<{
     kid: any;
     ageGroup?: "6-9" | "10-12" | "13-17";
+    investmentsValue?: number | null;
     questsCompleted?: number;
     goals: any[];
     txs: any[];
@@ -1706,17 +1707,18 @@ export interface InvestmentItem {
   closed_at: string | null;
   payout: number | null;
   close_reason: "matured" | "early" | "sold" | null;
-  currentValue: number;
-  profitRm: number;
-  profitPct: number;
+  currentValue: number | null;
+  profitRm: number | null;
+  profitPct: number | null;
   endsAt: string | null;
   nextUpdate: string | null;
   path?: InvestmentPathTick[];
   entryPrice?: number;
   entryDate?: string;
-  currentPrice?: number;
+  currentPrice?: number | null;
   lastUpdated?: string | null;
-  isMarketOpen?: boolean;
+  isMarketOpen?: boolean | null;
+  stale?: boolean;
   chartPoints?: Array<{ day: string; price: number }>;
 }
 
@@ -1819,6 +1821,8 @@ export interface MarketSymbolItem {
   change_percent?: number | null;
   is_market_open?: boolean;
   last_updated?: string | null;
+  stale?: boolean;
+  halal_url?: string;
 }
 
 export interface MarketSymbolsResponse {

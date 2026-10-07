@@ -50,14 +50,16 @@ export const Route = createFileRoute("/kid/invest")({
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function pct(n: number) {
+function pct(n: number | null) {
+  if (n === null) return "Data unavailable";
   if (n < 0) {
     return `\u2212${Math.abs(n).toFixed(2)}%`;
   }
   return `+${n.toFixed(2)}%`;
 }
 
-function profitColor(n: number) {
+function profitColor(n: number | null) {
+  if (n === null) return "text-[var(--text-muted)]";
   return n > 0
     ? "text-[var(--success-text)]"
     : n < 0
@@ -76,11 +78,12 @@ function fmtDate(iso?: string | null) {
 }
 
 function fmtTime(iso?: string | null) {
-  if (!iso) return "3:05 pm";
+  if (!iso) return "unavailable";
   const d = new Date(iso);
-  if (isNaN(d.getTime())) return "3:05 pm";
+  if (isNaN(d.getTime())) return "unavailable";
   return d
-    .toLocaleTimeString("en-MY", {
+    .toLocaleString("en-MY", {
+      day: "numeric", month: "short",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -150,6 +153,7 @@ function KidInvest() {
   const [options, setOptions] = useState<InvestmentOptionsResponse | null>(
     null,
   );
+  const [marketError, setMarketError] = useState<string | null>(null);
   const [marketData, setMarketData] = useState<MarketSymbolsResponse | null>(
     null,
   );
@@ -211,8 +215,9 @@ function KidInvest() {
     try {
       const res = await edgeKidMarketSymbols({ code: code ?? undefined });
       setMarketData(res);
-    } catch {
-      // silent fallback
+      setMarketError(null);
+    } catch (error) {
+      setMarketError(error instanceof Error ? error.message : "Market data unavailable. Try again.");
     }
   }, [code]);
 
@@ -241,7 +246,8 @@ function KidInvest() {
       fetchMarketSymbols();
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    const timer = window.setInterval(() => { if (!document.hidden) onFocus(); }, 60000);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [fetchList, fetchMarketSymbols]);
 
   // Curated symbols filtered
@@ -261,7 +267,7 @@ function KidInvest() {
     for (const s of list) {
       if (s.last_updated) return fmtTime(s.last_updated);
     }
-    return "3:05 pm";
+    return "unavailable";
   }, [marketData]);
 
   // ── load / error states ────────────────────────────────────────────────────
@@ -283,7 +289,7 @@ function KidInvest() {
   const activeInvs = investments?.filter((i) => i.status === "active") ?? [];
   const closedInvs = investments?.filter((i) => i.status === "closed") ?? [];
 
-  const totalValue = activeInvs.reduce((s, i) => s + i.currentValue, 0);
+  const totalValue = activeInvs.some(i => i.currentValue === null) ? null : activeInvs.reduce((s, i) => s + (i.currentValue ?? 0), 0);
 
   // Market stats
   const activeMarketInvs = activeInvs.filter((i) => i.mode === "market");
@@ -616,6 +622,8 @@ function KidInvest() {
                       {selected.symbol}
                     </Badge>
                   </div>
+                  {selected.stale && <Badge variant="warning">Stale data</Badge>}
+                  {selected.currentValue === null && <Badge variant="warning">Data unavailable</Badge>}
                   {selected.isMarketOpen === false && (
                     <Badge variant="warning" className="text-[11px]">
                       Market closed
@@ -675,8 +683,8 @@ function KidInvest() {
                     label="Gain or loss"
                     value={
                       <span className={profitColor(selected.profitRm)}>
-                        {selected.profitRm >= 0 ? "+" : "−"}
-                        <Money amount={Math.abs(selected.profitRm)} /> (
+                        {selected.profitRm === null ? "" : selected.profitRm >= 0 ? "+" : "−"}
+                        <Money amount={selected.profitRm === null ? null : Math.abs(selected.profitRm)} /> (
                         {pct(selected.profitPct)})
                       </span>
                     }
@@ -799,11 +807,11 @@ function KidInvest() {
                     value={<Money amount={selected.currentValue} />}
                   />
                   <StatLine
-                    label={selected.profitRm < 0 ? "Loss" : "Profit"}
+                    label={(selected.profitRm ?? 0) < 0 ? "Loss" : "Profit"}
                     value={
                       <span className={profitColor(selected.profitRm)}>
                         {pct(selected.profitPct)}{" "}
-                        <Money amount={Math.abs(selected.profitRm)} />
+                        <Money amount={selected.profitRm === null ? null : Math.abs(selected.profitRm)} />
                       </span>
                     }
                   />
@@ -902,7 +910,7 @@ function KidInvest() {
                   </strong>
                   . The profit so far,{" "}
                   <strong>
-                    <Money amount={Math.abs(selected.profitRm)} />
+                    <Money amount={selected.profitRm === null ? null : Math.abs(selected.profitRm)} />
                   </strong>
                   , is lost.
                 </p>
@@ -974,6 +982,7 @@ function KidInvest() {
       >
         {halalModalSymbol && (
           <div className="space-y-3 pb-2 text-sm text-[var(--ink)]">
+            <p>The moon marks an investment with Shariah screening evidence. Screening checks businesses and finances against Islamic rules. It does not promise a profit, and status can change.</p>
             <div>
               <strong className="block text-base font-bold">
                 {halalModalSymbol.symbol}
@@ -989,6 +998,7 @@ function KidInvest() {
                 </span>
                 <span className="font-semibold text-[var(--ink)]">
                   {halalModalSymbol.halal_source}
+                  {halalModalSymbol.halal_url && <a className="block underline" href={halalModalSymbol.halal_url} target="_blank" rel="noreferrer">Read the source</a>}
                 </span>
               </div>
               <div>
@@ -1405,8 +1415,8 @@ function KidInvest() {
               {marketStep === "picker" && (
                 <div className="flex flex-col max-h-[calc(100dvh-12rem)] min-h-0">
                   <div className="shrink-0 space-y-2 pb-2">
-                    <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                      <span>Curated Shariah-screened</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
+                      <span>Curated investments</span>
                       <span>Delayed price · updated {latestQuoteTime}</span>
                     </div>
 
@@ -1424,10 +1434,11 @@ function KidInvest() {
 
                   {/* Symbol List */}
                   <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
+                    {marketError && <p role="alert" className="text-xs text-[var(--error-text)]">{marketError} <button type="button" onClick={fetchMarketSymbols}>Retry</button></p>}
                     {filteredSymbols.map((s) => (
                       <div
                         key={s.symbol}
-                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_auto_5.5rem] items-center gap-2"
+                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-2"
                       >
                         <button
                           type="button"
@@ -1474,11 +1485,12 @@ function KidInvest() {
                             aria-label="Shariah screened"
                           >
                             <Moon size={11} aria-hidden="true" />
-                            <span>Shariah</span>
+                            <span className="sr-only">Screening information</span>
                           </Badge>
                         </button>
 
-                        <div className="text-right shrink-0">
+                        <div className="col-span-3 flex flex-wrap justify-between gap-2 text-xs">
+                          <span>{s.price == null ? "Data unavailable" : `US$${s.price.toFixed(2)}`} {s.stale ? " · Stale" : ""}</span>
                           {s.change_percent != null && s.price != null ? (
                             <span
                               className={`text-xs font-semibold tabular-nums ${profitColor(s.change_percent)}`}
@@ -1487,7 +1499,7 @@ function KidInvest() {
                             </span>
                           ) : (
                             <span className="text-xs text-[var(--text-muted)]">
-                              No price yet
+                              Data unavailable
                             </span>
                           )}
                         </div>
@@ -1535,16 +1547,16 @@ function KidInvest() {
                         aria-label="Shariah screened"
                       >
                         <Moon size={11} aria-hidden="true" />
-                        <span>Shariah</span>
+                        <span className="sr-only">Screening information</span>
                       </Badge>
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
                     <span>
-                      {selectedSymbol.is_market_open === false
-                        ? `Market closed · last close US$${(symbolDetail?.quote?.price ?? selectedSymbol.price ?? 0).toFixed(2)}`
-                        : `Market open · US$${(symbolDetail?.quote?.price ?? selectedSymbol.price ?? 0).toFixed(2)}`}
+                      {(symbolDetail?.quote?.price ?? selectedSymbol.price) == null ? "Data unavailable" : `US$${(symbolDetail?.quote?.price ?? selectedSymbol.price)?.toFixed(2)}`}
+                      {(symbolDetail?.quote?.is_market_open ?? selectedSymbol.is_market_open) === false ? " · Market closed" : (symbolDetail?.quote?.is_market_open ?? selectedSymbol.is_market_open) === true ? " · Market open" : ""}
+                      {(symbolDetail?.stale ?? selectedSymbol.stale) ? " · Stale data" : ""}
                     </span>
                     <span>
                       Delayed price · updated{" "}
@@ -1777,7 +1789,7 @@ export function FundCard({
         </div>
         <div>
           <p className="text-[var(--text-muted)]">
-            {inv.profitRm < 0 ? "Loss" : "Profit"}
+            {(inv.profitRm ?? 0) < 0 ? "Loss" : "Profit"}
           </p>
           <p
             className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
@@ -1826,6 +1838,8 @@ function MarketCard({
           <Badge variant="default" className="text-[11px]">
             {inv.symbol || "SPUS"}
           </Badge>
+          {inv.stale && <Badge variant="warning">Stale data</Badge>}
+          {inv.currentValue === null && <Badge variant="warning">Data unavailable</Badge>}
           {inv.isMarketOpen === false && (
             <Badge variant="warning" className="text-[11px]">
               Market closed
@@ -1857,8 +1871,8 @@ function MarketCard({
           <p
             className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
           >
-            {inv.profitRm >= 0 ? "+" : "−"}
-            <Money amount={Math.abs(inv.profitRm)} />
+            {inv.profitRm === null ? "" : inv.profitRm >= 0 ? "+" : "−"}
+            <Money amount={inv.profitRm === null ? null : Math.abs(inv.profitRm)} />
           </p>
         </div>
       </div>
@@ -1925,8 +1939,8 @@ function PastMarketCard({ inv }: { inv: InvestmentItem }) {
           <Money amount={inv.payout ?? inv.currentValue} />
         </p>
         <p className={profitColor(inv.profitRm)}>
-          {inv.profitRm >= 0 ? "+" : "−"}
-          <Money amount={Math.abs(inv.profitRm)} /> ({pct(inv.profitPct)})
+          {inv.profitRm === null ? "" : inv.profitRm >= 0 ? "+" : "−"}
+          <Money amount={inv.profitRm === null ? null : Math.abs(inv.profitRm)} /> ({pct(inv.profitPct)})
         </p>
       </div>
     </div>

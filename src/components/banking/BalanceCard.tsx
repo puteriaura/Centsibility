@@ -10,12 +10,12 @@ export interface BalanceCardProps {
   hideBalance?: boolean;
   onToggleHide?: () => void;
   metadata?: Array<{ label: string; value?: string }>;
-  secondaryBalance?: { label: string; amount: number };
+  secondaryBalance?: { label: string; amount: number | null };
   onArrowClick?: () => void;
   actions?: React.ReactNode;
   variant?: "brand" | "navy" | "default";
   className?: string;
-  breakdown?: Array<{ label: string; amount: number }>;
+  breakdown?: Array<{ label: string; amount: number | null }>;
   footnote?: string;
   isExpanded?: boolean;
   onToggleExpanded?: (expanded: boolean) => void;

@@ -5,7 +5,8 @@
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export function formatRM(amount: number, options: { sign?: boolean } = {}): string {
+export function formatRM(amount: number | null, options: { sign?: boolean } = {}): string {
+  if (amount === null) return "Data unavailable";
   const value = Number.isFinite(amount) ? amount : 0;
   const digits = Math.abs(value).toLocaleString("en-MY", {
     minimumFractionDigits: 2,

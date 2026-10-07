@@ -33,7 +33,7 @@ export interface CrewMemberCardProps {
   }>;
   kidTxs: Transaction[];
   scheduledHibahs: ScheduledHibah[];
-  investmentsValue?: number;
+  investmentsValue?: number | null;
   onDeleteInitiate: (kidId: string) => void;
   onRefresh: () => void;
   /** Start expanded (e.g. single-child households). */

@@ -70,10 +70,10 @@ export { TRANSACTION_TYPE_LABELS } from "./labels";
 export interface BalanceSummary {
   spending: number; // kids.balance: cash they can spend now
   tabung: number;   // sum of goals.saved
-  investments: number; // sum of current investments value
+  investments: number | null; // sum of current investments value
   /** @deprecated use investments */
-  growth: number;
-  total: number;    // spending + tabung + investments
+  growth: number | null;
+  total: number | null;    // spending + tabung + investments
   owed: number;     // what active loans still owe; never subtracted from total
 }
 
@@ -89,6 +89,7 @@ export function getBalanceSummary(
     : (kid.investmentsValue !== undefined && kid.investmentsValue !== null
       ? kid.investmentsValue
       : kid.invest_balance);
+  const unavailable = investmentsValue === null || (investmentsValue === undefined && kid.investmentsValue === null);
   const investmentsCents = Math.round((Number(invVal) || 0) * 100);
   const tabungCents = goals.reduce((acc, g) => acc + Math.round((Number(g.saved) || 0) * 100), 0);
   const totalCents = spendingCents + tabungCents + investmentsCents;
@@ -105,9 +106,9 @@ export function getBalanceSummary(
   return {
     spending: spendingCents / 100,
     tabung: tabungCents / 100,
-    investments: invNum,
-    growth: invNum,
-    total: totalCents / 100,
+    investments: unavailable ? null : invNum,
+    growth: unavailable ? null : invNum,
+    total: unavailable ? null : totalCents / 100,
     owed: owedCents / 100,
   };
 }

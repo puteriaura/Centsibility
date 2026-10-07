@@ -1,5 +1,6 @@
 // supabase/functions/_shared/market.ts
 // T36: Market Tracker integration with Twelve Data
+import { SCREENING } from "./market-screening.ts";
 
 export interface MarketQuote {
   symbol: string;
@@ -30,6 +31,8 @@ export interface MarketSymbol {
   change_percent?: number | null;
   is_market_open?: boolean;
   last_updated?: string | null;
+  stale?: boolean;
+  halal_url?: string;
 }
 
 export interface MarketQuoteResult {
@@ -77,7 +80,7 @@ export function parseQuotePayload(data: unknown): MarketQuote | null {
     changePercent = Math.round(((price - prevClose) / prevClose) * 10000) / 100;
   }
 
-  const isOpen = Boolean(obj.is_market_open);
+  const isOpen = obj.is_market_open === true || obj.is_market_open === "true";
   const currency = String(obj.currency || "USD");
 
   let priceTime: string | null = null;
@@ -187,17 +190,12 @@ export async function checkRateLimit(
 }
 
 export function isMarketHoursWindow(now: Date = new Date()): boolean {
-  // Monday to Friday, 13:30 to 21:00 UTC
-  const day = now.getUTCDay();
-  if (day < 1 || day > 5) return false;
-
-  const hours = now.getUTCHours();
-  const mins = now.getUTCMinutes();
-  const totalMins = hours * 60 + mins;
-
-  // 13:30 UTC is 13 * 60 + 30 = 810 mins
-  // 21:00 UTC is 21 * 60 = 1260 mins
-  return totalMins >= 810 && totalMins < 1260;
+  // Used only for cache freshness; the provider determines open/closed, including holidays.
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const part = (type: string) => parts.find(p => p.type === type)?.value;
+  if (["Sat", "Sun"].includes(part("weekday") || "")) return false;
+  const minutes = Number(part("hour")) * 60 + Number(part("minute"));
+  return minutes >= 570 && minutes < 960;
 }
 
 export function isQuoteStale(quote: MarketQuote, now: Date = new Date()): boolean {
@@ -205,6 +203,7 @@ export function isQuoteStale(quote: MarketQuote, now: Date = new Date()): boolea
   const nowTime = now.getTime();
   const diffMs = nowTime - fetchedTime;
 
+  if (!Number.isFinite(fetchedTime)) return true;
   if (isMarketHoursWindow(now) || quote.is_market_open) {
     // In market hours window or when quote is reported open: stale after 10 minutes
     return diffMs > 10 * 60 * 1000;
@@ -420,25 +419,30 @@ export async function getDailyCloses(
 }
 
 export async function getCuratedSymbols(admin: any): Promise<MarketSymbol[]> {
-  const { data: symbols } = await admin
+  const { data: symbols, error: symbolsError } = await admin
     .from("market_symbols")
     .select("*")
     .eq("active", true)
     .order("kind", { ascending: true })
     .order("symbol", { ascending: true });
 
+  if (symbolsError) throw new Error("The instrument list is unavailable. Try again.");
   if (!symbols || symbols.length === 0) return [];
+  // Refresh serially: each request observes the existing provider budget.
+  const freshness = new Map<string, MarketQuoteResult>();
+  for (const symbol of symbols) freshness.set(symbol.symbol, await getQuote(admin, symbol.symbol));
 
-  const { data: quotes } = await admin
+  const { data: quotes, error: quotesError } = await admin
     .from("market_quotes")
     .select("*");
 
+  if (quotesError) throw new Error("Quote data is unavailable. Try again.");
   const quoteMap = new Map<string, any>();
   for (const q of (quotes || [])) {
     quoteMap.set(q.symbol, q);
   }
 
-  return symbols.map((s: any) => {
+  return symbols.filter((s: any) => SCREENING[s.symbol]).map((s: any) => {
     const q = quoteMap.get(s.symbol);
     let changePct: number | null = null;
     let price: number | null = null;
@@ -460,14 +464,16 @@ export async function getCuratedSymbols(admin: any): Promise<MarketSymbol[]> {
       symbol: s.symbol,
       name: s.name,
       kind: s.kind,
-      halal_source: s.halal_source,
-      halal_checked_on: s.halal_checked_on,
+      halal_source: SCREENING[s.symbol].source,
+      halal_checked_on: SCREENING[s.symbol].checked,
+      halal_url: SCREENING[s.symbol].url,
       active: s.active,
       price,
       previous_close: prevClose,
       change_percent: changePct,
       is_market_open: isOpen,
       last_updated: lastUpdated,
+      stale: q ? Boolean(freshness.get(s.symbol)?.stale) : false,
     };
   });
 }

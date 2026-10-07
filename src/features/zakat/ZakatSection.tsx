@@ -50,6 +50,7 @@ export function ZakatSection() {
     );
   }
 
+  const missingValuation = useWallet && data.investmentsValue === null;
   const walletBalance =
     Number(data.kid.balance) +
     Number((data as any).investmentsValue ?? data.kid.invest_balance ?? 0);
@@ -93,7 +94,7 @@ export function ZakatSection() {
           <p className="deposit-hero__label">Estimated zakat due</p>
           <p className="deposit-hero__amount tabular-nums">
             {calculated && aboveNisab ? (
-              <Money amount={zakatDue} />
+              <Money amount={missingValuation ? null : zakatDue} />
             ) : (
               <Money amount={0} />
             )}
@@ -161,7 +162,7 @@ export function ZakatSection() {
             <span className="text-[var(--text-secondary)]">
               Wallet + Investment Pool ={" "}
               <strong className="text-[var(--primary-text)] tabular-nums">
-                <Money amount={walletBalance} />
+                <Money amount={missingValuation ? null : walletBalance} />
               </strong>
             </span>
           </div>
@@ -282,17 +283,17 @@ export function ZakatSection() {
               Zakat due (2.5%)
             </span>
             <div className="text-3xl font-extrabold text-[var(--primary-text)] tabular-nums">
-              <Money amount={zakatDue} />
+              <Money amount={missingValuation ? null : zakatDue} />
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
-              {aboveNisab
+              {missingValuation ? "A market quote is missing. We cannot calculate your total wealth or Zakat yet." : aboveNisab
                 ? "This amount purifies your wealth and supports eligible recipients in the community."
                 : "Your net wealth is below the Nisab threshold; no Zakat is obligatory at this time."}
             </p>
           </div>
 
           {/* Distribution Suggestions */}
-          {aboveNisab && zakatDue > 0 && (
+          {!missingValuation && aboveNisab && zakatDue > 0 && (
             <div className="space-y-2 pt-2">
               <h4 className="text-xs font-bold text-[var(--ink)]">
                 Suggested categories

@@ -2,9 +2,10 @@
 // Shared helper for calculating investment values and formatting investment lists
 
 import { OpenInvestmentContext } from "./deepseek.ts";
+import { isQuoteStale } from "./market.ts";
 
 export interface InvestmentValueResult {
-  totalValue: number;
+  totalValue: number | null;
   investments: OpenInvestmentContext[];
 }
 
@@ -41,11 +42,11 @@ export async function currentInvestmentValues(
 
       const cachedPrice = qRow && qRow.price !== null && qRow.price !== undefined
         ? Number(qRow.price)
-        : entryPrice;
+        : null;
       const principal = Number(inv.principal);
       // round(principal * cached price / entry_price, 2)
-      const currentValue = Number((principal * (cachedPrice / entryPrice)).toFixed(2));
-      const profitPct = Number((((currentValue - principal) / principal) * 100).toFixed(2));
+      const currentValue = cachedPrice !== null && cachedPrice > 0 && entryPrice > 0 ? Number((principal * (cachedPrice / entryPrice)).toFixed(2)) : null;
+      const profitPct = currentValue === null ? null : Number((((currentValue - principal) / principal) * 100).toFixed(2));
 
       contextList.push({
         mode: "market",
@@ -88,7 +89,7 @@ export async function currentInvestmentValues(
     }
   }
 
-  const totalValue = Number(contextList.reduce((sum, item) => sum + item.currentValue, 0).toFixed(2));
+  const totalValue = contextList.some(item => item.currentValue === null) ? null : Number(contextList.reduce((sum, item) => sum + (item.currentValue ?? 0), 0).toFixed(2));
   return { totalValue, investments: contextList };
 }
 
@@ -115,12 +116,12 @@ export async function formatInvestmentList(
 
         const currentPrice = qRow && qRow.price !== null && qRow.price !== undefined
           ? Number(qRow.price)
-          : entryPrice;
+          : null;
         const currentValue = inv.status === "closed" && inv.payout !== null && inv.payout !== undefined
           ? Number(inv.payout)
-          : Number((Number(inv.principal) * (currentPrice / entryPrice)).toFixed(2));
-        const profitRm = Number((currentValue - Number(inv.principal)).toFixed(2));
-        const profitPct = Number((((currentValue - Number(inv.principal)) / Number(inv.principal)) * 100).toFixed(2));
+          : currentPrice !== null && currentPrice > 0 && entryPrice > 0 ? Number((Number(inv.principal) * (currentPrice / entryPrice)).toFixed(2)) : null;
+        const profitRm = currentValue === null ? null : Number((currentValue - Number(inv.principal)).toFixed(2));
+        const profitPct = currentValue === null ? null : Number((((currentValue - Number(inv.principal)) / Number(inv.principal)) * 100).toFixed(2));
 
         const entryDay = (entryDate || nowIso).slice(0, 10);
         const { data: closes } = await admin
@@ -149,7 +150,8 @@ export async function formatInvestmentList(
           entryDate,
           currentPrice,
           lastUpdated: qRow?.fetched_at || null,
-          isMarketOpen: Boolean(qRow?.is_market_open),
+          isMarketOpen: qRow ? Boolean(qRow.is_market_open) : null,
+          stale: qRow ? isQuoteStale(qRow, now) : false,
           chartPoints,
           endsAt: inv.closed_at ?? null,
           nextUpdate: null,

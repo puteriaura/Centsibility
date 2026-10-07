@@ -367,11 +367,11 @@ function Reports() {
                           <Money amount={inv.currentValue} />
                         </div>
                         <span
-                          className={`text-[11px] font-semibold tabular-nums ${inv.profitRm >= 0 ? "text-[var(--success-text)]" : "text-[var(--ink)]"}`}
+                          className={`text-[11px] font-semibold tabular-nums ${(inv.profitRm ?? 0) >= 0 ? "text-[var(--success-text)]" : "text-[var(--ink)]"}`}
                         >
-                          {inv.profitRm >= 0 ? "+" : "−"}
-                          <Money amount={Math.abs(inv.profitRm)} /> (
-                          {inv.profitPct >= 0 ? "+" : ""}
+                          {(inv.profitRm ?? 0) >= 0 ? "+" : "−"}
+                          <Money amount={inv.profitRm === null ? null : Math.abs(inv.profitRm)} /> (
+                          {(inv.profitPct ?? 0) >= 0 ? "+" : ""}
                           {inv.profitPct}%)
                         </span>
                       </div>

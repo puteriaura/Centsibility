@@ -572,7 +572,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     parent: parentRes.data ?? null,
     notifications: notificationsRes.data ?? [],
     unreadNotifications: unreadRes.count ?? 0,
-    investmentsValue: Number(investmentsValue.toFixed(2)),
+    investmentsValue: investmentsValue === null ? null : Number(investmentsValue.toFixed(2)),
   });
 }
 
