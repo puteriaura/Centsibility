@@ -806,11 +806,9 @@ export async function callPenny(
   } catch (err: unknown) {
     const errObj = err as { status?: number; name?: string; message?: string };
     if (errObj?.status === 401) {
-      console.error("Penny AI is misconfigured (401 from provider)");
       throw new PennyError("Penny AI is misconfigured", 502);
     }
     if (errObj?.status === 429) {
-      console.warn("Penny AI rate limited (429 from provider)");
       throw new PennyError("Penny is busy, try again soon", 503);
     }
     if (
@@ -818,10 +816,8 @@ export async function callPenny(
       errObj?.name === "APIConnectionTimeoutError" ||
       errObj?.message?.toLowerCase().includes("timeout")
     ) {
-      console.warn("Penny AI request timed out");
       throw new PennyError("Penny timed out, try again soon", 504);
     }
-    console.error("DeepSeek request failed");
     throw new PennyError("Penny AI service error", 500);
   }
 
@@ -831,7 +827,6 @@ export async function callPenny(
   }
 
   const checked = filterPennyOutput(rawReply, requestParams.messages.at(-1)?.content || "");
-  if (checked.blocked) console.warn(JSON.stringify({ event: "penny-output-blocked", model: requestParams.model }));
   const reply = sanitizePennyReply(checked.reply);
   if (!reply || reply.trim() === "") {
     throw new PennyError("Penny couldn't finish that answer", 502);

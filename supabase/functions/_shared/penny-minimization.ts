@@ -49,6 +49,27 @@ const QUESTIONS: Record<PennyIntent, string> = {
   card: "Explain the relevant card restrictions and how to ask a parent for help.",
   quest: "Give coaching or a hint about the selected public quest or saving streak, never an answer key.",
 };
+function publicQuestion(message: string, navigation: boolean) {
+  // No free-form question text crosses the provider boundary: unknown names/amounts
+  // cannot be reliably anonymized with regex. Preserve only recognized public topics.
+  const topics: Array<[RegExp, string]> = [
+    [/freeze|frozen|beku/i, "how to freeze or unfreeze a practice card"],
+    [/moon|shariah|halal/i, "the moon screening icon and dated Shariah evidence"],
+    [/compound/i, "compound growth with a small fictional example"],
+    [/balance|baki/i, "what a spending balance means"],
+    [/sadaqah|zakat/i, "general giving concepts, without religious rulings"],
+    [/loan|repay|pinjaman|hutang/i, "loans and repayment"],
+    [/budget|bajet/i, "budgeting and needs versus wants"],
+    [/transfer|pindah/i, "family transfers and parent approval"],
+    [/goal|tabung|saving|save|simpan/i, "saving and Tabung"],
+    [/investment|fund|market|pelaburan/i, "practice Funds and Market Tracker, without investment advice"],
+    [/quest|mission|misi/i, "money learning missions and hints"],
+    [/card|kad/i, "practice card controls"],
+    [/RM|ringgit|currency/i, "Malaysian ringgit and money amounts"],
+  ];
+  const topic = topics.find(([rule]) => rule.test(message))?.[1];
+  return topic ? `${navigation ? "Explain the verified app steps for" : "Explain"} ${topic}.` : "Offer general money help and ask which money topic or app screen the user needs.";
+}
 const cents = (v: unknown) => Math.round((Number(v) || 0) * 100);
 const daysLeft = (value: unknown, now: Date) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? Math.ceil((Date.parse(value) - now.getTime()) / 86400000) : null;
 const moneyInput = (q: string, label: string) => {
@@ -141,8 +162,7 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
   }
   // Fail closed if a future change tries to send an unapproved field.
   for (const field of Object.keys(fields)) if (!(PENNY_ALLOWLIST[intent] as readonly string[]).includes(field)) throw new Error("Unapproved Penny field");
-  let question = QUESTIONS[intent] || message;
-  // Known account names are never needed for educational help. Personal intents use templates.
-  for (const name of [kid.name, kid.comfort_name].filter((s: unknown) => typeof s === "string" && s)) question = question.replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "[name omitted]");
+  let question = QUESTIONS[intent] || publicQuestion(message, intent === "navigation");
+  if (/\b(saya|aku|bagaimana|berapa|mana|simpan|belanja|bajet|pinjaman|kad|minggu|bulan)\b/i.test(message)) question += " Reply in Malay.";
   return { intent, fields, question, localReply, audit: { intent, fields: Object.keys(fields) } };
 }

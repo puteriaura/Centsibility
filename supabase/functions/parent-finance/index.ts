@@ -928,8 +928,7 @@ async function handlePennyChat(
       allowPro,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError(msg, 400);
+    return jsonError("Penny request settings are invalid", 400);
   }
 
 

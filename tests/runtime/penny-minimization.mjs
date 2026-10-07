@@ -57,6 +57,10 @@ for(const [intent,message,context,keys] of cases){
 }
 assert.equal(routePennyQuestion('What do you think?'),'education');
 assert.equal(routePennyQuestion('Explain loans'),'education');
+const unrecognizedPrivate=await minimizePennyQuestion(admin,kid,'My friend Alice Sample has RM12345.67 and wants saving help',{},now);
+assert.deepEqual(unrecognizedPrivate.fields,{});
+assert.ok(!unrecognizedPrivate.question.includes('Alice'));
+assert.ok(!unrecognizedPrivate.question.includes('12345.67'));
 assert.equal(routePennyQuestion('Ringkaskan belanja saya minggu ini'),'spending');
 assert.equal((await minimizePennyQuestion(admin,kid,'How is my streak?',{},now)).fields.streakDays,4);
 tables.goals.push({id:'g2',target:100,saved:50});
