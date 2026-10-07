@@ -7,6 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import { isValidPinFormat, hashPin, verifyStoredPin } from "./pin.ts";
 import { verifyKidOwnership, OwnershipError } from "./ownership.ts";
+import { setMarketTracker } from "./market_tracker.ts";
 import { mytRange, StatementError } from "./statement.ts";
 import {
   buildPennyRequest,
@@ -124,6 +125,8 @@ serve(async (req: Request) => {
         return await handlePennyChat(adminClient, parentId, params, user);
       case "kid-investments":
         return await handleKidInvestments(adminClient, parentId, params);
+      case "set-market-tracker":
+        return await handleSetMarketTracker(adminClient, parentId, params);
       default:
         return jsonError(`Unknown action: ${action}`, 400);
     }
@@ -166,6 +169,7 @@ const PIN_GATED_ACTIONS = new Set([
   "set-kid-card-controls",
   "reset-kid-pin",
   "penny-chat",
+  "set-market-tracker",
 ]);
 
 async function issuePinSession(admin: Admin, parentId: string): Promise<{ pinSession: string; pinSessionExpiresAt: string }> {
@@ -722,6 +726,18 @@ async function handleSetKidCardControls(
 
   if (error) return resolveError(error);
   return jsonOk(data);
+}
+
+async function handleSetMarketTracker(
+  admin: Admin,
+  parentId: string,
+  params: Record<string, unknown>
+) {
+  const res = await setMarketTracker(admin, parentId, params);
+  if (!res.ok) {
+    return jsonError(res.error || "Failed", res.status);
+  }
+  return jsonOk(res.data);
 }
 
 // ---------------------------------------------------------------------------

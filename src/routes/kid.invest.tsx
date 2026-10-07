@@ -26,6 +26,7 @@ import {
 import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { AppIcon } from "@/components/ui/app-icon";
+import { Moon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -50,7 +51,10 @@ export const Route = createFileRoute("/kid/invest")({
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function pct(n: number) {
-  return n >= 0 ? `+${n.toFixed(2)}%` : `${n.toFixed(2)}%`;
+  if (n < 0) {
+    return `\u2212${Math.abs(n).toFixed(2)}%`;
+  }
+  return `+${n.toFixed(2)}%`;
 }
 
 function profitColor(n: number) {
@@ -108,9 +112,9 @@ const FREQ_NAMES: Record<string, string> = {
 };
 
 const TIER_DESCS: Record<string, string> = {
-  low: "Slow and steady · smallest range per update",
-  medium: "Balanced · moderate range per update",
-  high: "Higher swings · largest range per update",
+  low: "Can move up to 0.5% each update",
+  medium: "Can move up to 1% each update",
+  high: "Can move up to 2% each update",
 };
 
 const FREQ_DESCS: Record<string, string> = {
@@ -736,6 +740,11 @@ function KidInvest() {
                   <Badge variant="brand" className="text-[11px]">
                     Centsibility Fund
                   </Badge>
+                  {selected.protected && (
+                    <Badge variant="default" className="text-[11px]">
+                      Protected
+                    </Badge>
+                  )}
                   <Badge variant="default" className="text-[11px]">
                     {FREQ_NAMES[selected.frequency ?? "week"] ??
                       selected.frequency}
@@ -787,7 +796,7 @@ function KidInvest() {
                     value={<Money amount={selected.currentValue} />}
                   />
                   <StatLine
-                    label="Profit"
+                    label={selected.profitRm < 0 ? "Loss" : "Profit"}
                     value={
                       <span className={profitColor(selected.profitRm)}>
                         {pct(selected.profitPct)}{" "}
@@ -881,7 +890,7 @@ function KidInvest() {
                   </Button>
                 </div>
               </>
-            ) : (
+            ) : selected.protected ? (
               <>
                 <p className="text-sm text-[var(--ink)]">
                   You get back{" "}
@@ -896,6 +905,38 @@ function KidInvest() {
                 </p>
                 <p className="text-xs text-[var(--text-muted)]">
                   Only use this if you really need the money now.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center"
+                    onClick={() => setShowClose(false)}
+                  >
+                    Keep it
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="w-full justify-center"
+                    disabled={closeBusy}
+                    onClick={confirmClose}
+                  >
+                    {closeBusy ? "Taking out..." : "Take out"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--ink)]">
+                  You get back about{" "}
+                  <strong>
+                    <Money amount={selected.currentValue} />
+                  </strong>
+                  , the value now.
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  The payout will be returned to your wallet immediately.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
@@ -1014,13 +1055,9 @@ function KidInvest() {
                   <strong className="text-sm text-[var(--ink)]">
                     Centsibility Fund
                   </strong>
-                  <Badge variant="brand" className="text-[10px]">
-                    Protected
-                  </Badge>
                 </div>
                 <p className="text-xs text-[var(--text-muted)] mt-1">
-                  Centsibility Fund. Practice profits. You never get back less
-                  than you put in.
+                  Centsibility Fund. Practice ups and downs with made-up prices.
                 </p>
               </button>
 
@@ -1039,7 +1076,7 @@ function KidInvest() {
                     Market Tracker. Follows a real share price. It can go down.
                   </p>
                   <p className="text-xs font-semibold text-[var(--primary)] pt-1">
-                    Ask your parent to switch on Market Tracker
+                    Ask your parent to switch on Market Tracker. They can do it on your card in the parent app.
                   </p>
                 </div>
               ) : marketData === null || marketData.symbols.length === 0 ? (
@@ -1048,9 +1085,15 @@ function KidInvest() {
                     <strong className="text-sm text-[var(--text-muted)]">
                       Market Tracker
                     </strong>
+                    <Badge variant="default" className="text-[10px]">
+                      Locked
+                    </Badge>
                   </div>
                   <p className="text-xs text-[var(--text-muted)]">
-                    Market Tracker isn't switched on yet
+                    Market Tracker. Follows a real share price. It can go down.
+                  </p>
+                  <p className="text-xs font-semibold text-[var(--primary)] pt-1">
+                    Ask your parent to switch on Market Tracker. They can do it on your card in the parent app.
                   </p>
                 </div>
               ) : (
@@ -1089,13 +1132,15 @@ function KidInvest() {
               {fundStep === 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-[var(--text-secondary)]">
-                    Each tier sets how much the fund can gain or lose each
-                    update.
+                    Like a real market, nobody knows which way it goes. You can
+                    lose some of what you put in.
                   </p>
                   {tierKeys.map((t) => {
-                    const td = options?.tiers[t];
-                    const minRate = td ? (td.min_rate * 100).toFixed(3) : "?";
-                    const maxRate = td ? (td.max_rate * 100).toFixed(3) : "?";
+                    const tierCards: Record<string, string> = {
+                      low: "Low: moves up to 0.5% each update",
+                      medium: "Medium: up to 1%",
+                      high: "High: up to 2%",
+                    };
                     return (
                       <button
                         key={t}
@@ -1108,15 +1153,9 @@ function KidInvest() {
                       >
                         <div className="flex items-center justify-between">
                           <strong className="text-sm text-[var(--ink)]">
-                            {TIER_NAMES[t] ?? t}
+                            {tierCards[t] ?? TIER_NAMES[t] ?? t}
                           </strong>
-                          <span className="text-xs text-[var(--text-secondary)] tabular-nums">
-                            {minRate}% to {maxRate}% per update
-                          </span>
                         </div>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                          {TIER_DESCS[t] ?? ""}
-                        </p>
                       </button>
                     );
                   })}
@@ -1194,7 +1233,7 @@ function KidInvest() {
               {fundStep === 2 && (
                 <div className="space-y-2">
                   <p className="text-xs text-[var(--text-secondary)]">
-                    How long should the fund run? Early exit forfeits profit.
+                    How long should the fund run?
                   </p>
                   {lockOptions.map((lt) => (
                     <button
@@ -1236,7 +1275,7 @@ function KidInvest() {
               )}
 
               {fundStep === 3 && (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[calc(100dvh-12rem)] overflow-y-auto pr-1 pb-[calc(5rem+env(safe-area-inset-bottom,16px))]">
                   <p className="text-xs text-[var(--text-secondary)]">
                     Min <strong>{minFundStr}</strong> · Max{" "}
                     <strong>{maxFundStr}</strong> · Wallet{" "}
@@ -1266,18 +1305,7 @@ function KidInvest() {
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-1">
                     <p className="text-sm text-[var(--ink)]">
-                      Could finish between{" "}
-                      <strong>
-                        <Money amount={preview.minValue} />
-                      </strong>{" "}
-                      and{" "}
-                      <strong>
-                        <Money amount={preview.maxValue} />
-                      </strong>{" "}
-                      on <strong>{fmtDate(preview.endsAt)}</strong>.
-                    </p>
-                    <p className="text-xs text-[var(--text-muted)]">
-                      You never get back less than what you put in.
+                      The value can go up or down. Higher risk means bigger moves.
                     </p>
                   </div>
                   <div className="text-xs text-[var(--text-secondary)] space-y-0.5">
@@ -1372,69 +1400,93 @@ function KidInvest() {
 
               {/* Picker Step */}
               {marketStep === "picker" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                    <span>Curated Shariah-screened</span>
-                    <span>Delayed price · updated {latestQuoteTime}</span>
+                <div className="flex flex-col max-h-[calc(100dvh-12rem)] min-h-0">
+                  <div className="shrink-0 space-y-2 pb-2">
+                    <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                      <span>Curated Shariah-screened</span>
+                      <span>Delayed price · updated {latestQuoteTime}</span>
+                    </div>
+
+                    {/* Search box */}
+                    <div className="sticky top-0 z-10 bg-white">
+                      <input
+                        type="text"
+                        placeholder="Search symbols or names..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                      />
+                    </div>
                   </div>
 
-                  {/* Search box */}
-                  <input
-                    type="text"
-                    placeholder="Search symbols or names..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
-                  />
-
                   {/* Symbol List */}
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
                     {filteredSymbols.map((s) => (
                       <div
                         key={s.symbol}
-                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all flex items-center justify-between gap-2"
+                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_auto_5.5rem] items-center gap-2"
                       >
                         <button
                           type="button"
-                          className="text-left flex-1"
+                          className="text-left"
                           onClick={() => pickMarketSymbol(s)}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-start">
                             <strong className="text-sm text-[var(--ink)]">
                               {s.symbol}
                             </strong>
                             {s.is_market_open === false && (
-                              <Badge variant="warning" className="text-[10px]">
-                                Market closed
+                              <Badge variant="warning" className="text-[9px] px-1 py-0 leading-tight">
+                                Closed
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-[var(--text-muted)] line-clamp-1 mt-0.5">
-                            {s.name}
-                          </p>
                         </button>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            className="inline-flex"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setHalalModalSymbol(s);
-                            }}
-                          >
-                            <Badge
-                              variant="brand"
-                              className="text-[10px] cursor-pointer hover:opacity-80"
-                            >
-                              Halal screened
-                            </Badge>
-                          </button>
+                        <button
+                          type="button"
+                          className="text-left min-w-0"
+                          onClick={() => pickMarketSymbol(s)}
+                        >
                           <span
-                            className={`text-xs font-semibold tabular-nums ${profitColor(s.change_percent ?? 0)}`}
+                            className="block truncate text-xs text-[var(--text-muted)]"
+                            aria-hidden="true"
                           >
-                            {pct(s.change_percent ?? 0)}
+                            {s.name}
                           </span>
+                          <span className="sr-only">{s.name}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="inline-flex shrink-0 justify-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHalalModalSymbol(s);
+                          }}
+                        >
+                          <Badge
+                            variant="brand"
+                            className="text-[10px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
+                            aria-label="Shariah screened"
+                          >
+                            <Moon size={11} aria-hidden="true" />
+                            <span>Shariah</span>
+                          </Badge>
+                        </button>
+
+                        <div className="text-right shrink-0">
+                          {s.change_percent != null && s.price != null ? (
+                            <span
+                              className={`text-xs font-semibold tabular-nums ${profitColor(s.change_percent)}`}
+                            >
+                              {pct(s.change_percent)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[var(--text-muted)]">
+                              No price yet
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1445,20 +1497,22 @@ function KidInvest() {
                     )}
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full justify-center"
-                    onClick={() => setChosenMode(null)}
-                  >
-                    Back
-                  </Button>
+                  <div className="shrink-0 pt-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,16px))]">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-center"
+                      onClick={() => setChosenMode(null)}
+                    >
+                      Back
+                    </Button>
+                  </div>
                 </div>
               )}
 
               {/* Detail & Keypad Step */}
               {marketStep === "detail" && selectedSymbol && (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[calc(100dvh-12rem)] overflow-y-auto pr-1 pb-[calc(5rem+env(safe-area-inset-bottom,16px))]">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <strong className="text-base font-bold text-[var(--ink)]">
@@ -1474,9 +1528,11 @@ function KidInvest() {
                     >
                       <Badge
                         variant="brand"
-                        className="text-[10px] cursor-pointer hover:opacity-80"
+                        className="text-[10px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
+                        aria-label="Shariah screened"
                       >
-                        Halal screened
+                        <Moon size={11} aria-hidden="true" />
+                        <span>Shariah</span>
                       </Badge>
                     </button>
                   </div>
@@ -1662,7 +1718,7 @@ function KidInvest() {
 
 // ── Fund card (active Centsibility Fund) ──────────────────────────────────────
 
-function FundCard({
+export function FundCard({
   inv,
   onClick,
 }: {
@@ -1684,6 +1740,11 @@ function FundCard({
           <Badge variant="brand" className="text-[11px]">
             Centsibility Fund
           </Badge>
+          {inv.protected && (
+            <Badge variant="default" className="text-[11px]">
+              Protected
+            </Badge>
+          )}
           <Badge variant="default" className="text-[11px]">
             {TIER_NAMES[inv.tier ?? "low"] ?? inv.tier}
           </Badge>
@@ -1712,7 +1773,9 @@ function FundCard({
           </p>
         </div>
         <div>
-          <p className="text-[var(--text-muted)]">Profit</p>
+          <p className="text-[var(--text-muted)]">
+            {inv.profitRm < 0 ? "Loss" : "Profit"}
+          </p>
           <p
             className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
           >
@@ -1814,9 +1877,16 @@ function PastFundCard({ inv }: { inv: InvestmentItem }) {
   return (
     <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] text-xs">
       <div>
-        <p className="font-semibold text-[var(--ink)]">
-          {TIER_NAMES[inv.tier ?? "low"] ?? inv.tier} Fund
-        </p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="font-semibold text-[var(--ink)]">
+            {TIER_NAMES[inv.tier ?? "low"] ?? inv.tier} Fund
+          </p>
+          {inv.protected && (
+            <Badge variant="default" className="text-[10px] py-0 px-1.5">
+              Protected
+            </Badge>
+          )}
+        </div>
         <p className="text-[var(--text-muted)]">
           {inv.close_reason === "early" ? "Closed early" : "Matured"} ·{" "}
           {fmtDate(inv.closed_at ?? inv.endsAt)}

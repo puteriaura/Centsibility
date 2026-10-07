@@ -42,3 +42,79 @@ describe("calculateInvestmentGrowth", () => {
     expect(grown).toBeGreaterThanOrEqual(0);
   });
 });
+
+import React from "react";
+import { renderToString } from "react-dom/server";
+import {
+  getMockEdgeResponse,
+  InvestmentItem,
+  InvestmentPreviewResponse,
+} from "../../src/lib/edge";
+import { FundCard } from "../../src/routes/kid.invest";
+
+describe("T39 investment features", () => {
+  it("the preview minimum can be below the principal", () => {
+    const preview = getMockEdgeResponse<InvestmentPreviewResponse>(
+      "kid-finance",
+      {
+        action: "invest-preview",
+        tier: "low",
+        frequency: "minute",
+        lockTicks: 5,
+        amount: 10,
+      }
+    );
+    // With low tier rate of -0.5% each update, 10 * (1 - 0.005)^5 = ~9.75
+    expect(preview.minValue).toBeLessThan(10);
+    expect(preview.minValue).toBeCloseTo(9.75, 1);
+  });
+
+  it("the card shows Protected only for protected funds", () => {
+    const protectedInv: InvestmentItem = {
+      id: "inv-protected-1",
+      kid_id: "kid-1",
+      mode: "fund",
+      tier: "low",
+      frequency: "minute",
+      principal: 10,
+      currentValue: 10.05,
+      profitRm: 0.05,
+      profitPct: 0.5,
+      status: "active",
+      endsAt: new Date(Date.now() + 600000).toISOString(),
+      protected: true,
+    };
+
+    const unprotectedInv: InvestmentItem = {
+      id: "inv-unprotected-1",
+      kid_id: "kid-1",
+      mode: "fund",
+      tier: "low",
+      frequency: "minute",
+      principal: 10,
+      currentValue: 9.95,
+      profitRm: -0.05,
+      profitPct: -0.5,
+      status: "active",
+      endsAt: new Date(Date.now() + 600000).toISOString(),
+      protected: false,
+    };
+
+    const protectedHtml = renderToString(
+      React.createElement(FundCard, {
+        inv: protectedInv,
+        onClick: () => {},
+      })
+    );
+    expect(protectedHtml).toContain("Protected");
+
+    const unprotectedHtml = renderToString(
+      React.createElement(FundCard, {
+        inv: unprotectedInv,
+        onClick: () => {},
+      })
+    );
+    expect(unprotectedHtml).not.toContain("Protected");
+  });
+});
+

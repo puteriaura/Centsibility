@@ -471,9 +471,9 @@ Deno.test("T35: typeLabel maps investment transaction types", () => {
   assertEquals(typeLabel("INVEST_LOSS"), "Investment loss");
 });
 
-Deno.test("T35: kidSystemPrompt includes Centsibility Funds rule and removes Growth Tabung", () => {
+Deno.test("T39: kidSystemPrompt includes Centsibility Funds up-and-down rule and removes Growth Tabung", () => {
   const prompt = kidSystemPrompt("10-12");
-  assertEquals(prompt.includes("Centsibility Funds are a practice game with made-up profits"), true);
+  assertEquals(prompt.includes("Centsibility Funds move up and down at random each update, like a real market; nobody can predict them"), true);
   assertEquals(prompt.includes("Growth Tabung"), false);
 });
 

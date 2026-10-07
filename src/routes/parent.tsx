@@ -150,38 +150,18 @@ function ParentLayout() {
   // -----------------------------------------------------------------------
   // 2️⃣  Keypad
   // -----------------------------------------------------------------------
-  const handleKeyPress = useCallback((key: string) => {
-    if (key === "⌫") {
-      setPinInput((p) => p.slice(0, -1));
-    } else if (key === "00") {
-      // "00" appends two zeros but never exceeds 6 digits
-      setPinInput((p) => {
-        const next = p + "00";
-        return next.slice(0, 6);
-      });
-    } else {
-      setPinInput((p) => {
-        if (p.length >= 6) return p;
-        return p + key;
-      });
-    }
-  }, []);
-
-  // -----------------------------------------------------------------------
-  const submitPin = async () => {
-    if (pinInput.length !== 6) {
-      toast.error("PIN must be exactly 6 digits");
+  const submitPin = useCallback(async (overridePin?: string) => {
+    const pinToUse = overridePin ?? pinInput;
+    if (pinToUse.length !== 6 || pinProcessing) {
       return;
     }
-
-
 
     setPinProcessing(true);
 
     try {
       if (isSettingPin) {
         // ---- SET new PIN ----
-        const res = await edgeParentSetPin({ pin: pinInput });
+        const res = await edgeParentSetPin({ pin: pinToUse });
 
         if (comfortNameInput.trim()) {
           try {
@@ -202,7 +182,7 @@ function ParentLayout() {
         setOnboardingStep(3);
       } else {
         // ---- VERIFY existing PIN ----
-        const res = await edgeParentVerifyPin({ pin: pinInput });
+        const res = await edgeParentVerifyPin({ pin: pinToUse });
 
         if (res.valid) {
           setPinVerified(true);
@@ -228,7 +208,36 @@ function ParentLayout() {
     } finally {
       setPinProcessing(false);
     }
-  };
+  }, [pinInput, pinProcessing, isSettingPin, comfortNameInput]);
+
+  // -----------------------------------------------------------------------
+  // 2️⃣  Keypad
+  // -----------------------------------------------------------------------
+  const handleKeyPress = useCallback((key: string) => {
+    if (pinProcessing) return;
+
+    if (key === "⌫" || key === "delete") {
+      setPinInput((p) => p.slice(0, -1));
+      return;
+    }
+
+    setPinInput((p) => {
+      let next = p;
+      if (key === "00") {
+        next = (p + "00").slice(0, 6);
+      } else if (/^\d$/.test(key)) {
+        if (p.length >= 6) return p;
+        next = p + key;
+      } else {
+        return p;
+      }
+
+      if (next.length === 6) {
+        void submitPin(next);
+      }
+      return next;
+    });
+  }, [pinProcessing, submitPin]);
 
   // -----------------------------------------------------------------------
   // 4️⃣  Render
@@ -381,19 +390,6 @@ function ParentLayout() {
                 disabled={pinProcessing}
                 variant="pin"
               />
-
-              {pinInput.length === 6 && (
-                <div className="mt-4">
-                  <Button
-                    variant="primary"
-                    onClick={submitPin}
-                    disabled={pinProcessing}
-                    className="w-full justify-center py-3 text-sm font-bold shadow-md"
-                  >
-                    {pinProcessing ? "Saving..." : "Save 6-Digit PIN →"}
-                  </Button>
-                </div>
-              )}
 
               <button
                 type="button"
@@ -551,19 +547,6 @@ function ParentLayout() {
             disabled={pinProcessing}
             variant="pin"
           />
-
-          {pinInput.length === 6 && (
-            <div className="mt-4">
-              <Button
-                variant="primary"
-                onClick={submitPin}
-                disabled={pinProcessing}
-                className="w-full justify-center py-3 text-sm font-bold shadow-md"
-              >
-                {pinProcessing ? "Verifying..." : "Unlock Dashboard"}
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );

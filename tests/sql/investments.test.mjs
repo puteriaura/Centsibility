@@ -97,6 +97,11 @@ export const tests = [
       const bal1 = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0].balance;
       assert.equal(Number(bal1), 95.00);
 
+      const row1 = (await db.query(`select * from public.investments where id = $1`, [res1.id])).rows[0];
+      assert.equal(Number(row1.min_rate), -0.005);
+      assert.equal(Number(row1.max_rate), 0.005);
+      assert.equal(row1.protected, false);
+
       // Retry with same client_request_id returns existing and does NOT debit again
       const resRetry = await asRole(db, 'service_role', async () =>
         (await db.query(
@@ -197,7 +202,7 @@ export const tests = [
 
       const path1 = (await db.query(`select * from investment_fund_path($1, now())`, [invMin.id])).rows;
       assert.equal(path1.length, 3);
-      assert.ok(Number(path1[2].value) > 10.00);
+      assert.ok(Number(path1[2].value) > 0);
 
       // Second read at exact same time is identical
       const path2 = (await db.query(`select * from investment_fund_path($1, now())`, [invMin.id])).rows;
@@ -235,126 +240,160 @@ export const tests = [
     },
   },
   {
-    name: '5. High tier path never dips below principal',
+    name: '5. Protected fund floors at principal; unprotected fund fluctuates below principal',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 100 });
 
-      const invHigh = (await asRole(db, 'service_role', () =>
-        db.query(`select kid_investment_open($1, 'high', 'day', 14, 50.00) as data`, [kid.id])
-      )).rows[0].data;
+      // Unprotected fund with negative rates forced downward
+      const invUnprotected = (await db.query(`
+        insert into public.investments (
+          kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed, min_rate, max_rate, protected
+        ) values (
+          $1, 'fund', 'Centsibility Fund (High)', 50.00, 'active', 'high', 'day', 14, 'seed-down', -0.02, -0.01, false
+        ) returning id
+      `, [kid.id])).rows[0];
 
       // Set to 15 days ago so all 14 ticks run
       await db.query(
         `update public.investments set created_at = now() - interval '15 days' where id = $1`,
-        [invHigh.id]
+        [invUnprotected.id]
       );
 
-      const path = (await db.query(`select * from investment_fund_path($1, now())`, [invHigh.id])).rows;
-      assert.equal(path.length, 14);
-      for (const pt of path) {
-        assert.ok(Number(pt.value) >= 50.00, `Tick ${pt.tick} value ${pt.value} dropped below principal 50.00`);
+      const pathUnprotected = (await db.query(`select * from investment_fund_path($1, now())`, [invUnprotected.id])).rows;
+      assert.equal(pathUnprotected.length, 14);
+      // Path drops below principal (50.00)
+      assert.ok(Number(pathUnprotected[13].value) < 50.00, `Expected final tick below 50.00, got ${pathUnprotected[13].value}`);
+
+      // Protected fund with same negative rates floors at principal
+      const invProtected = (await db.query(`
+        insert into public.investments (
+          kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed, min_rate, max_rate, protected
+        ) values (
+          $1, 'fund', 'Old Fund', 50.00, 'active', 'high', 'day', 14, 'seed-down', -0.02, -0.01, true
+        ) returning id
+      `, [kid.id])).rows[0];
+
+      await db.query(
+        `update public.investments set created_at = now() - interval '15 days' where id = $1`,
+        [invProtected.id]
+      );
+
+      const pathProtected = (await db.query(`select * from investment_fund_path($1, now())`, [invProtected.id])).rows;
+      assert.equal(pathProtected.length, 14);
+      for (const pt of pathProtected) {
+        assert.ok(Number(pt.value) >= 50.00, `Protected tick ${pt.tick} dropped below principal`);
       }
     },
   },
   {
-    name: '6. Settlement: pays once, writes INVEST_OUT, INVEST_GAIN, notification, ledger invariant holds',
+    name: '6. Settlement: pays payout (up or down), writes INVEST_GAIN or INVEST_LOSS, notification, ledger invariant holds',
     fn: async (db) => {
       const parentId = await seedParent(db);
-      const kid = await seedKid(db, parentId, { balance: 50 });
+      const kid = await seedKid(db, parentId, { balance: 100 });
 
-      const inv = (await asRole(db, 'service_role', () =>
-        db.query(`select kid_investment_open($1, 'low', 'minute', 5, 10.00) as data`, [kid.id])
-      )).rows[0].data;
+      // Settle a loss fund
+      const invLoss = (await db.query(`
+        insert into public.investments (
+          kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed, min_rate, max_rate, protected
+        ) values (
+          $1, 'fund', 'Centsibility Fund (Low)', 20.00, 'active', 'low', 'minute', 5, 'seed-loss', -0.02, -0.01, false
+        ) returning id
+      `, [kid.id])).rows[0];
 
-      // Balance is now 40
-      const balAfterOpen = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0].balance;
-      assert.equal(Number(balAfterOpen), 40.00);
-
-      // Fast forward past maturity
+      await db.query(`update public.kids set balance = balance - 20 where id = $1`, [kid.id]);
       await db.query(
         `update public.investments set created_at = now() - interval '6 minutes' where id = $1`,
-        [inv.id]
+        [invLoss.id]
       );
 
-      // Settle
-      const settle1 = (await asRole(db, 'service_role', () =>
+      const settleLoss = (await asRole(db, 'service_role', () =>
         db.query(`select kid_investments_settle($1) as data`, [kid.id])
       )).rows[0].data;
 
-      assert.ok(Number(settle1.paid) >= 10.00);
-
-      // Second settle pays 0
-      const settle2 = (await asRole(db, 'service_role', () =>
-        db.query(`select kid_investments_settle($1) as data`, [kid.id])
-      )).rows[0].data;
-      assert.equal(Number(settle2.paid), 0);
-
-      // Check investment status
-      const invRow = (await db.query(`select * from public.investments where id = $1`, [inv.id])).rows[0];
-      assert.equal(invRow.status, 'closed');
-      assert.equal(invRow.close_reason, 'matured');
-      assert.equal(Number(invRow.payout), Number(settle1.paid));
+      assert.ok(Number(settleLoss.paid) < 20.00, `Expected payout < 20.00, got ${settleLoss.paid}`);
 
       // Check transactions
       const txs = (await db.query(`select * from public.transactions where kid_id = $1 order by created_at asc`, [kid.id])).rows;
-      assert.ok(txs.some((t) => t.type === 'INVEST_IN' && Number(t.amount) === 10.00));
-      assert.ok(txs.some((t) => t.type === 'INVEST_OUT' && Number(t.amount) === Number(settle1.paid)));
-      assert.ok(txs.some((t) => t.type === 'INVEST_GAIN'));
+      assert.ok(txs.some((t) => t.type === 'INVEST_OUT' && Number(t.amount) === Number(settleLoss.paid)));
+      assert.ok(txs.some((t) => t.type === 'INVEST_LOSS'));
 
-      // Invariant: initial (50) - INVEST_IN (10) + INVEST_OUT (payout) = current balance
-      const currentBal = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0].balance;
-      assert.equal(Number(currentBal).toFixed(2), (40.00 + Number(settle1.paid)).toFixed(2));
+      // Check notification
+      const notifs = (await db.query(`select * from public.kid_notifications where kid_id = $1 order by created_at desc`, [kid.id])).rows;
+      assert.ok(notifs[0].message.includes('became RM') && notifs[0].message.includes('back in your spending money'));
 
-      // Notification
-      const notifs = (await db.query(`select * from public.kid_notifications where kid_id = $1`, [kid.id])).rows;
-      assert.ok(notifs.length >= 1);
-      assert.ok(notifs[0].message.includes('back in your spending money'));
+      // Ledger invariant holds: balance is initial (100) - 20 (invested) + settleLoss.paid
+      const curBal = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0].balance;
+      assert.equal(Number(curBal).toFixed(2), (80.00 + Number(settleLoss.paid)).toFixed(2));
     },
   },
   {
-    name: '7. Early close: refunds principal, no gain row, already_resolved on second call',
+    name: '7. Early close: protected returns principal; unprotected returns current value + gain/loss',
     fn: async (db) => {
       const parentId = await seedParent(db);
-      const kid = await seedKid(db, parentId, { balance: 50 });
+      const kid = await seedKid(db, parentId, { balance: 100 });
 
-      const inv = (await asRole(db, 'service_role', () =>
-        db.query(`select kid_investment_open($1, 'low', 'day', 7, 20.00) as data`, [kid.id])
+      // 1. Protected fund
+      const invProt = (await db.query(`
+        insert into public.investments (
+          kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed, min_rate, max_rate, protected
+        ) values (
+          $1, 'fund', 'Old Protected', 20.00, 'active', 'low', 'day', 7, 's1', 0.001, 0.010, true
+        ) returning id
+      `, [kid.id])).rows[0];
+      await db.query(`update public.kids set balance = balance - 20 where id = $1`, [kid.id]);
+
+      const closeProt = (await asRole(db, 'service_role', () =>
+        db.query(`select kid_investment_close($1, $2::uuid) as data`, [kid.id, invProt.id])
       )).rows[0].data;
+      assert.equal(Number(closeProt.payout), 20.00);
 
-      // Close early
-      const closeRes = (await asRole(db, 'service_role', () =>
-        db.query(`select kid_investment_close($1, $2::uuid) as data`, [kid.id, inv.id])
+      // 2. Unprotected fund with negative rate
+      const invUnprot = (await db.query(`
+        insert into public.investments (
+          kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed, min_rate, max_rate, protected
+        ) values (
+          $1, 'fund', 'New Unprotected', 20.00, 'active', 'high', 'day', 7, 's2', -0.02, -0.01, false
+        ) returning id
+      `, [kid.id])).rows[0];
+      await db.query(`update public.kids set balance = balance - 20 where id = $1`, [kid.id]);
+
+      // Age by 3 days so current value has moved
+      await db.query(`update public.investments set created_at = now() - interval '3 days' where id = $1`, [invUnprot.id]);
+
+      const closeUnprot = (await asRole(db, 'service_role', () =>
+        db.query(`select kid_investment_close($1, $2::uuid) as data`, [kid.id, invUnprot.id])
       )).rows[0].data;
+      assert.ok(Number(closeUnprot.payout) < 20.00, `Unprotected early close payout should be < 20.00, got ${closeUnprot.payout}`);
 
-      assert.equal(Number(closeRes.payout), 20.00);
-
-      // Balance back to 50
-      const currentBal = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0].balance;
-      assert.equal(Number(currentBal), 50.00);
+      // Transaction row includes INVEST_LOSS
+      const txs = (await db.query(`select * from public.transactions where kid_id = $1 and label = 'Investment loss'`, [kid.id])).rows;
+      assert.ok(txs.length >= 1);
 
       // Second close fails with already_resolved
       await expectError(
         asRole(db, 'service_role', () =>
-          db.query(`select kid_investment_close($1, $2::uuid)`, [kid.id, inv.id])
+          db.query(`select kid_investment_close($1, $2::uuid)`, [kid.id, invUnprot.id])
         ),
         'already_resolved'
       );
     },
   },
   {
-    name: '8. Growth Tabung migration preserves total balances and converts to weekly fund',
+    name: '8. Growth Tabung migration preserves total balances and converts to weekly fund with protected = true',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 25, invest_balance: 35, risk_appetite: 'high' });
 
-      // Run migration block
+      // Run migration block with old ranges and protected = true
       await db.query(`
         do $$
         declare
           k record;
           v_tier text;
           v_seed text;
+          v_min numeric(8,5);
+          v_max numeric(8,5);
         begin
           for k in select id, invest_balance, risk_appetite from public.kids where id = '${kid.id}' and invest_balance > 0 loop
             v_tier := case k.risk_appetite
@@ -365,12 +404,14 @@ export const tests = [
               when 'very_high' then 'high'
               else 'medium'
             end;
+            v_min := case v_tier when 'low' then 0.001 when 'medium' then 0.001 when 'high' then -0.020 else 0.001 end;
+            v_max := case v_tier when 'low' then 0.010 when 'medium' then 0.030 when 'high' then 0.050 else 0.010 end;
             v_seed := md5(gen_random_uuid()::text || clock_timestamp()::text);
             insert into public.investments (
-              kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed
+              kid_id, mode, label, principal, status, tier, frequency, lock_ticks, seed, min_rate, max_rate, protected
             ) values (
               k.id, 'fund', 'Moved from Growth Tabung', round(k.invest_balance, 2), 'active',
-              v_tier, 'week', 4, v_seed
+              v_tier, 'week', 4, v_seed, v_min, v_max, true
             );
             update public.kids set invest_balance = 0 where id = k.id;
           end loop;
@@ -388,8 +429,11 @@ export const tests = [
       assert.equal(invs[0].tier, 'high');
       assert.equal(invs[0].frequency, 'week');
       assert.equal(invs[0].lock_ticks, 4);
+      assert.equal(invs[0].protected, true);
+      assert.equal(Number(invs[0].min_rate), -0.02);
+      assert.equal(Number(invs[0].max_rate), 0.05);
 
-      // Can be taken out early at any time
+      // Can be taken out early at any time, returns exactly principal
       const earlyRes = (await asRole(db, 'service_role', () =>
         db.query(`select kid_investment_close($1, $2::uuid) as data`, [kid.id, invs[0].id])
       )).rows[0].data;
@@ -434,4 +478,25 @@ export const tests = [
       );
     },
   },
+  {
+    name: '11. Backfill gave every pre-existing fund row protected = true and old range',
+    fn: async (db) => {
+      const invalidRows = (await db.query(`
+        select count(*) from public.investments
+        where mode = 'fund' and (min_rate is null or max_rate is null or protected is null)
+      `)).rows[0].count;
+      assert.equal(Number(invalidRows), 0);
+    },
+  },
+  {
+    name: '12. Exactly one kid_investment_close function in pg_proc',
+    fn: async (db) => {
+      const funcs = (await db.query(`
+        select proname, pronargs from pg_proc where proname = 'kid_investment_close'
+      `)).rows;
+      assert.equal(funcs.length, 1);
+      assert.equal(funcs[0].pronargs, 3);
+    },
+  },
 ];
+

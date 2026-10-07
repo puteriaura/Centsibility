@@ -20,7 +20,7 @@ import { sanitizeDisplayText } from "@/lib/labels";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
-function getMockEdgeResponse<T>(
+export function getMockEdgeResponse<T>(
   functionName: string,
   body: Record<string, unknown>,
 ): T {
@@ -290,6 +290,11 @@ function getMockEdgeResponse<T>(
         card_online_enabled: body.onlineEnabled ?? true,
         card_controls_locked: body.locked ?? false,
       } as T;
+    case "set-market-tracker":
+      if (typeof body.enabled === "boolean") {
+        setDemoMarketEnabled(body.enabled);
+      }
+      return { ok: true, kidId: body.kidId, enabled: body.enabled } as T;
     case "sadaqah":
       return {
         ok: true,
@@ -358,22 +363,21 @@ function getMockEdgeResponse<T>(
         tiers: {
           low: {
             name: "Low",
-            min_rate: 0.001,
-            max_rate: 0.01,
-            label: "0.10% to 1.00% per update (always grows)",
+            min_rate: -0.005,
+            max_rate: 0.005,
+            label: "Low: moves up to 0.5% each update",
           },
           medium: {
             name: "Medium",
-            min_rate: 0.001,
-            max_rate: 0.03,
-            label: "0.10% to 3.00% per update (always grows)",
+            min_rate: -0.01,
+            max_rate: 0.01,
+            label: "Medium: up to 1%",
           },
           high: {
             name: "High",
             min_rate: -0.02,
-            max_rate: 0.05,
-            label:
-              "-2.00% to 5.00% per update (never dips below what you put in)",
+            max_rate: 0.02,
+            label: "High: up to 2%",
           },
         },
         frequencies: {
@@ -410,14 +414,13 @@ function getMockEdgeResponse<T>(
       const lockTicks = Number(body.lockTicks || 5);
       const amount = Number(body.amount || 10);
       const rates: Record<string, [number, number]> = {
-        low: [0.001, 0.01],
-        medium: [0.001, 0.03],
-        high: [-0.02, 0.05],
+        low: [-0.005, 0.005],
+        medium: [-0.01, 0.01],
+        high: [-0.02, 0.02],
       };
       const [lo, hi] = rates[tier] || rates.low;
-      let minVal = amount * Math.pow(1 + lo, lockTicks);
+      const minVal = amount * Math.pow(1 + lo, lockTicks);
       const maxVal = amount * Math.pow(1 + hi, lockTicks);
-      if (tier === "high") minVal = Math.max(amount, minVal);
       const freq = String(body.frequency || "minute");
       const intervalMs =
         freq === "minute" ? 60000 : freq === "day" ? 86400000 : 7 * 86400000;
@@ -443,10 +446,9 @@ function getMockEdgeResponse<T>(
           value: principal,
         },
       ];
+      const sampleRates = [-0.004, -0.003, -0.002, -0.004, 0.001, -0.002, -0.003];
       for (let k = 1; k <= elapsed; k++) {
-        const rate =
-          0.002 +
-          0.006 * (((k * 17 + Math.floor(currentMinute / 10)) % 10) / 10);
+        const rate = sampleRates[(k - 1) % sampleRates.length];
         val = val * (1 + rate);
         path.push({
           tick: k,
@@ -467,13 +469,14 @@ function getMockEdgeResponse<T>(
       const activeFund = {
         id: "demo-fund-active-minute",
         kid_id: DEMO_IDENTITY.kidId,
-        mode: "fund",
+        mode: "fund" as const,
         label: "Centsibility Fund (Low)",
         principal,
-        status: "active",
-        tier: "low",
-        frequency: "minute",
+        status: "active" as const,
+        tier: "low" as const,
+        frequency: "minute" as const,
         lock_ticks: 10,
+        protected: false,
         created_at: new Date(createdAtMs).toISOString(),
         closed_at: null,
         payout: null,
@@ -486,20 +489,47 @@ function getMockEdgeResponse<T>(
         path,
       };
 
+      const activeProtectedFund = {
+        id: "demo-fund-active-protected",
+        kid_id: DEMO_IDENTITY.kidId,
+        mode: "fund" as const,
+        label: "Moved from Growth Tabung",
+        principal: 25.0,
+        status: "active" as const,
+        tier: "medium" as const,
+        frequency: "week" as const,
+        lock_ticks: 4,
+        protected: true,
+        created_at: new Date(now - 7 * 86400000).toISOString(),
+        closed_at: null,
+        payout: null,
+        close_reason: null,
+        currentValue: 25.5,
+        profitRm: 0.5,
+        profitPct: 2.0,
+        endsAt: new Date(now + 21 * 86400000).toISOString(),
+        nextUpdate: new Date(now + 7 * 86400000).toISOString(),
+        path: [
+          { tick: 0, tickAt: new Date(now - 7 * 86400000).toISOString(), rate: 0, value: 25.0 },
+          { tick: 1, tickAt: new Date(now).toISOString(), rate: 0.02, value: 25.5 },
+        ],
+      };
+
       const pastFund = {
         id: "demo-fund-closed-weekly",
         kid_id: DEMO_IDENTITY.kidId,
-        mode: "fund",
+        mode: "fund" as const,
         label: "Moved from Growth Tabung",
         principal: 20.0,
-        status: "closed",
-        tier: "low",
-        frequency: "week",
+        status: "closed" as const,
+        tier: "low" as const,
+        frequency: "week" as const,
         lock_ticks: 4,
+        protected: true,
         created_at: new Date(now - 30 * 86400000).toISOString(),
         closed_at: new Date(now - 2 * 86400000).toISOString(),
         payout: 20.65,
-        close_reason: "matured",
+        close_reason: "matured" as const,
         currentValue: 20.65,
         profitRm: 0.65,
         profitPct: 3.25,
@@ -626,7 +656,7 @@ function getMockEdgeResponse<T>(
       };
 
       return {
-        investments: [activeFund, marketLoss, marketClosed, pastFund],
+        investments: [activeFund, activeProtectedFund, marketLoss, marketClosed, pastFund],
       } as T;
     }
     case "invest-open":
@@ -846,6 +876,7 @@ export function clearParentPinSession(): void {
 async function invoke<T = unknown>(
   functionName: string,
   body: Record<string, unknown>,
+  isRetry = false,
 ): Promise<T> {
   const requestBody = { ...body };
   if (functionName === "parent-finance" && !requestBody.pinSession) {
@@ -872,7 +903,49 @@ async function invoke<T = unknown>(
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("centsibility:pin-required"));
         }
+        throw new Error(message);
       }
+
+      const isAuthError =
+        (error instanceof FunctionsHttpError &&
+          (error.context?.status === 401 || error.context?.status === 403)) ||
+        message.toLowerCase().includes("unauthorized") ||
+        message.toLowerCase().includes("jwt") ||
+        message.toLowerCase().includes("token") ||
+        message.toLowerCase().includes("network");
+
+      if (
+        isAuthError &&
+        !isRetry &&
+        typeof supabase?.auth?.refreshSession === "function"
+      ) {
+        try {
+          const { data: refreshData, error: refreshError } =
+            await supabase.auth.refreshSession();
+          if (!refreshError && refreshData?.session) {
+            return await invoke<T>(functionName, body, true);
+          }
+        } catch {
+          // silent refresh failed
+        }
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("centsibility:auth-expired", {
+              detail: { message: "Please sign in again" },
+            }),
+          );
+          if (
+            window.location &&
+            typeof window.location.pathname === "string" &&
+            window.location.pathname.startsWith("/parent")
+          ) {
+            window.location.href = "/login";
+          }
+        }
+        throw new Error("Please sign in again");
+      }
+
       throw new Error(message);
     }
     if (data?.error) {
@@ -888,7 +961,46 @@ async function invoke<T = unknown>(
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("centsibility:pin-required"));
         }
+        throw new Error(msg);
       }
+
+      const isAuthError =
+        msg.toLowerCase().includes("unauthorized") ||
+        msg.toLowerCase().includes("jwt") ||
+        msg.toLowerCase().includes("token");
+
+      if (
+        isAuthError &&
+        !isRetry &&
+        typeof supabase?.auth?.refreshSession === "function"
+      ) {
+        try {
+          const { data: refreshData, error: refreshError } =
+            await supabase.auth.refreshSession();
+          if (!refreshError && refreshData?.session) {
+            return await invoke<T>(functionName, body, true);
+          }
+        } catch {
+          // silent refresh failed
+        }
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("centsibility:auth-expired", {
+              detail: { message: "Please sign in again" },
+            }),
+          );
+          if (
+            window.location &&
+            typeof window.location.pathname === "string" &&
+            window.location.pathname.startsWith("/parent")
+          ) {
+            window.location.href = "/login";
+          }
+        }
+        throw new Error("Please sign in again");
+      }
+
       throw new Error(msg);
     }
     return data as T;
@@ -1121,6 +1233,16 @@ export async function edgeParentSetKidCardControls(params: {
     card_online_enabled: boolean;
     card_controls_locked: boolean;
   }>("parent-finance", { action: "set-kid-card-controls", ...params });
+}
+
+export async function edgeParentSetMarketTracker(params: {
+  kidId: string;
+  enabled: boolean;
+}) {
+  return invoke<{ ok: boolean; kidId: string; enabled: boolean }>(
+    "parent-finance",
+    { action: "set-market-tracker", ...params }
+  );
 }
 
 export async function edgeExecuteScheduledHibahs() {
@@ -1568,6 +1690,7 @@ export interface InvestmentItem {
   tier?: "low" | "medium" | "high";
   frequency?: "minute" | "day" | "week";
   lock_ticks?: number;
+  protected?: boolean;
   symbol?: string;
   entry_price?: number;
   entry_price_at?: string;

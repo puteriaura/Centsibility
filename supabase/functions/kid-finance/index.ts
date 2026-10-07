@@ -685,9 +685,9 @@ async function handleInvestPreview(admin: Admin, params: Record<string, unknown>
   }
 
   const rates: Record<string, [number, number]> = {
-    low: [0.001, 0.010],
-    medium: [0.001, 0.030],
-    high: [-0.020, 0.050],
+    low: [-0.005, 0.005],
+    medium: [-0.010, 0.010],
+    high: [-0.020, 0.020],
   };
 
   const range = rates[tier];
@@ -696,12 +696,8 @@ async function handleInvestPreview(admin: Admin, params: Record<string, unknown>
   }
 
   const [lo, hi] = range;
-  let minVal = amount * Math.pow(1 + lo, lockTicks);
+  const minVal = amount * Math.pow(1 + lo, lockTicks);
   const maxVal = amount * Math.pow(1 + hi, lockTicks);
-
-  if (tier === "high") {
-    minVal = Math.max(amount, minVal);
-  }
 
   const intervalMs = frequency === "minute" ? 60000 : frequency === "day" ? 86400000 : 7 * 86400000;
   const endsAt = new Date(Date.now() + lockTicks * intervalMs).toISOString();

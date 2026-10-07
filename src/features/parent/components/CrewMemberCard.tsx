@@ -12,7 +12,9 @@ import { toast } from "sonner";
 import {
   edgeParentSetKidCardControls,
   edgeParentResetKidPin,
+  edgeParentSetMarketTracker,
 } from "@/lib/edge";
+import { PrivacyUnlockSheet } from "@/features/privacy/PrivacyUnlockSheet";
 import { EditKidForm } from "./EditKidForm";
 import { TransferFundsSection } from "./TransferFundsSection";
 import { ScheduleHibahSection } from "./ScheduleHibahSection";
@@ -108,6 +110,68 @@ export function CrewMemberCard({
       toast.error(e instanceof Error ? e.message : "Failed to reset child PIN");
     } finally {
       setResettingPin(false);
+    }
+  };
+
+  // Market Tracker switch logic
+  const kidAgeGroup = (() => {
+    if (kid.age_group_override) {
+      return kid.age_group_override;
+    }
+    if (kid.birth_date) {
+      const bDate = new Date(kid.birth_date);
+      const age = new Date().getFullYear() - bDate.getFullYear();
+      if (age < 10) return "6-9";
+      if (age <= 12) return "10-12";
+      return "13-17";
+    }
+    return "10-12";
+  })();
+
+  const ageDefaultEnabled = kidAgeGroup === "13-17";
+  const rawMarketSetting = (kid as Record<string, unknown>).market_tracker_enabled;
+  const isMarketCustomized = rawMarketSetting !== null && rawMarketSetting !== undefined;
+  const marketTrackerEnabled = isMarketCustomized
+    ? Boolean(rawMarketSetting)
+    : ageDefaultEnabled;
+
+  const marketTrackerStatusText = (() => {
+    if (!isMarketCustomized) {
+      return ageDefaultEnabled
+        ? "On, the default for 13 to 17"
+        : "Off, the default for ages under 13";
+    }
+    return marketTrackerEnabled ? "On" : "Off";
+  })();
+
+  const [showMarketTrackerPinSheet, setShowMarketTrackerPinSheet] = useState(false);
+  const [pendingMarketEnabled, setPendingMarketEnabled] = useState(false);
+  const [savingMarketTracker, setSavingMarketTracker] = useState(false);
+
+  const handleToggleMarketTracker = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextVal = e.target.checked;
+    setPendingMarketEnabled(nextVal);
+    setShowMarketTrackerPinSheet(true);
+  };
+
+  const handleMarketTrackerPinSuccess = async () => {
+    setSavingMarketTracker(true);
+    try {
+      await edgeParentSetMarketTracker({
+        kidId: kid.id,
+        enabled: pendingMarketEnabled,
+      });
+      toast.success(
+        `Market Tracker switched ${pendingMarketEnabled ? "on" : "off"} for ${kid.name}`
+      );
+      sfx.success();
+      onRefresh();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update Market Tracker";
+      toast.error(msg);
+      sfx.error();
+    } finally {
+      setSavingMarketTracker(false);
     }
   };
 
@@ -594,6 +658,30 @@ export function CrewMemberCard({
             </div>
           )}
 
+          {/* Market Tracker row directly under Card controls */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] text-xs">
+            <div className="flex flex-col gap-0.5">
+              <label
+                htmlFor={`market-tracker-toggle-${kid.id}`}
+                className="font-semibold text-[var(--ink)] block"
+              >
+                Market Tracker
+              </label>
+              <span className="text-[11px] text-[var(--text-secondary)] block">
+                {marketTrackerStatusText}
+              </span>
+            </div>
+            <input
+              id={`market-tracker-toggle-${kid.id}`}
+              type="checkbox"
+              aria-label={`Market Tracker for ${kid.name}`}
+              checked={marketTrackerEnabled}
+              disabled={savingMarketTracker}
+              onChange={handleToggleMarketTracker}
+              className="toggle-switch accent-[var(--primary)] shrink-0 w-5 h-5 cursor-pointer"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
@@ -674,6 +762,15 @@ export function CrewMemberCard({
           {logOpen && <FlightLogSection kidTxs={kidTxs} />}
         </div>
       )}
+
+      <PrivacyUnlockSheet
+        isOpen={showMarketTrackerPinSheet}
+        onClose={() => setShowMarketTrackerPinSheet(false)}
+        onSuccess={handleMarketTrackerPinSuccess}
+        mode="parent"
+        title="Enter parent PIN"
+        description="Confirm your PIN to change Market Tracker settings."
+      />
     </Card>
   );
 }

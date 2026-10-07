@@ -39,3 +39,6 @@ supabase/functions/.env
 .vercel
 .env*
 .agents/
+*OAuth*.json
+client_secret*.json
+graphify-out/

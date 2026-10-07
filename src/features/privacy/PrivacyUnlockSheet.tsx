@@ -11,6 +11,8 @@ export interface PrivacyUnlockSheetProps {
   onClose: () => void;
   onSuccess: () => void;
   mode?: "kid" | "parent";
+  title?: string;
+  description?: string;
 }
 
 export function PrivacyUnlockSheet({
@@ -18,6 +20,8 @@ export function PrivacyUnlockSheet({
   onClose,
   onSuccess,
   mode = "kid",
+  title,
+  description,
 }: PrivacyUnlockSheetProps) {
   const [pin, setPin] = React.useState("");
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
@@ -105,8 +109,8 @@ export function PrivacyUnlockSheet({
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      title="Enter your PIN to see your money"
-      description="Keep your balance and figures private."
+      title={title ?? (mode === "parent" ? "Enter parent PIN" : "Enter your PIN to see your money")}
+      description={description ?? (mode === "parent" ? "Confirm your PIN to proceed." : "Keep your balance and figures private.")}
     >
       <div className="flex flex-col items-center py-4 px-2 space-y-4">
         {/* 6 PIN dots */}

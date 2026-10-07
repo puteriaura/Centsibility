@@ -40,16 +40,20 @@ function KidLogin() {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !pin.trim()) return;
-    if (pin.length !== 6) {
-      toast.error("PIN must be exactly 6 digits");
+  const handleLogin = async (e?: React.FormEvent, pinToUse?: string) => {
+    e?.preventDefault();
+    if (busy) return;
+    const cleanUsername = username.trim();
+    const cleanPin = (pinToUse ?? pin).trim();
+    if (!cleanUsername) {
+      toast.error("Please enter your username first");
       return;
     }
+    if (cleanPin.length !== 6) return;
+
     setBusy(true);
     try {
-      const res = await edgeKidLogin({ username: username.trim(), pin: pin.trim() });
+      const res = await edgeKidLogin({ username: cleanUsername, pin: cleanPin });
       setKidSession({ kidId: res.kidId, code: res.code || "", name: res.name });
       markJustUnlocked();
       toast.success(`Welcome back, ${res.name}!`);
@@ -57,6 +61,7 @@ function KidLogin() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Invalid username or PIN";
       toast.error(msg);
+      setPin("");
       if (msg.toLowerCase().includes("access code")) {
         setTab("code");
       }
@@ -228,8 +233,16 @@ function KidLogin() {
                     inputMode="numeric"
                     pattern="\d{6}"
                     maxLength={6}
+                    disabled={busy}
                     value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) => {
+                      if (busy) return;
+                      const next = e.target.value.replace(/\D/g, "").slice(0, 6);
+                      setPin(next);
+                      if (next.length === 6) {
+                        void handleLogin(undefined, next);
+                      }
+                    }}
                     placeholder="••••••"
                     autoComplete="current-password"
                     style={{ textAlign: "center", fontSize: "1.35rem", letterSpacing: "0.3em" }}
@@ -237,17 +250,6 @@ function KidLogin() {
                   <small style={{ display: "block", textAlign: "center", color: "var(--text-muted)", marginTop: "0.35rem" }}>
                     First time or forgot your PIN? Use a code from your parent.
                   </small>
-                </div>
-
-                <div style={{ marginTop: "0.5rem" }}>
-                  <Button
-                    disabled={busy || pin.length !== 6}
-                    type="submit"
-                    variant="primary"
-                    style={{ width: "100%", height: "48px", fontSize: "1rem" }}
-                  >
-                    {busy ? "Opening Vault…" : "Open Vault ✨"}
-                  </Button>
                 </div>
               </form>
             )}
