@@ -346,6 +346,7 @@ export const PENNY_APP_GUIDE = [
       "Giving…",
       "Trying again…",
       "Try again",
+      "Calculate without wallet",
       "Calculate Zakat",
       "Calculate Zakat Obligation",
       "Reset Calculator"

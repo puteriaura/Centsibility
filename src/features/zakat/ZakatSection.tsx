@@ -84,6 +84,8 @@ export function ZakatSection() {
     setCalculated(false);
   };
 
+  if (missingValuation) return <Card className="p-5 space-y-3"><p role="status">A market quote is missing. Your wallet total and estimated Zakat are unavailable.</p><Button type="button" onClick={() => { setUseWallet(false); setCalculated(false); }}>Calculate without wallet</Button></Card>;
+
   return (
     <div className="space-y-6 pb-12">
       <section

@@ -204,6 +204,11 @@ export function isQuoteStale(quote: MarketQuote, now: Date = new Date()): boolea
   const diffMs = nowTime - fetchedTime;
 
   if (!Number.isFinite(fetchedTime)) return true;
+  // Fetching an old provider value must not make an open-market price look fresh.
+  if (quote.is_market_open && quote.price_time) {
+    const priceTime = Date.parse(quote.price_time);
+    if (!Number.isFinite(priceTime) || nowTime - priceTime > 20 * 60 * 1000) return true;
+  }
   if (isMarketHoursWindow(now) || quote.is_market_open) {
     // In market hours window or when quote is reported open: stale after 10 minutes
     return diffMs > 10 * 60 * 1000;
@@ -311,7 +316,7 @@ export async function getQuote(
       fetched_at: nowIso,
     });
 
-    return { available: true, stale: false, fetchedAt: nowIso, quote: parsed };
+    return { available: true, stale: isQuoteStale(parsed, now), fetchedAt: nowIso, quote: parsed };
   } catch {
     if (cachedQuote) {
       return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
@@ -457,7 +462,7 @@ export async function getCuratedSymbols(admin: any): Promise<MarketSymbol[]> {
         changePct = Math.round(((price - prevClose) / prevClose) * 10000) / 100;
       }
       isOpen = Boolean(q.is_market_open);
-      lastUpdated = q.fetched_at;
+      lastUpdated = q.price_time || q.fetched_at;
     }
 
     return {

@@ -149,7 +149,7 @@ export async function formatInvestmentList(
           entryPrice,
           entryDate,
           currentPrice,
-          lastUpdated: qRow?.fetched_at || null,
+          lastUpdated: qRow?.price_time || qRow?.fetched_at || null,
           isMarketOpen: qRow ? Boolean(qRow.is_market_open) : null,
           stale: qRow ? isQuoteStale(qRow, now) : false,
           chartPoints,

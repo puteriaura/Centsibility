@@ -26,7 +26,7 @@ import {
 import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { AppIcon } from "@/components/ui/app-icon";
-import { Moon } from "lucide-react";
+import { Info, Moon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -1438,7 +1438,7 @@ function KidInvest() {
                     {filteredSymbols.map((s) => (
                       <div
                         key={s.symbol}
-                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_2rem] items-center gap-2"
+                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_3rem] items-center gap-2"
                       >
                         <button
                           type="button"
@@ -1473,7 +1473,7 @@ function KidInvest() {
 
                         <button
                           type="button"
-                          className="inline-flex shrink-0 justify-center"
+                          className="inline-flex min-h-11 min-w-11 shrink-0 justify-center items-center"
                           onClick={(e) => {
                             e.stopPropagation();
                             setHalalModalSymbol(s);
@@ -1485,6 +1485,7 @@ function KidInvest() {
                             aria-label="Shariah screened"
                           >
                             <Moon size={11} aria-hidden="true" />
+                            <Info size={11} aria-hidden="true" />
                             <span className="sr-only">Screening information</span>
                           </Badge>
                         </button>
@@ -1547,6 +1548,7 @@ function KidInvest() {
                         aria-label="Shariah screened"
                       >
                         <Moon size={11} aria-hidden="true" />
+                        <Info size={11} aria-hidden="true" />
                         <span className="sr-only">Screening information</span>
                       </Badge>
                     </button>
@@ -1561,7 +1563,7 @@ function KidInvest() {
                     <span>
                       Delayed price · updated{" "}
                       {fmtTime(
-                        symbolDetail?.quote?.fetched_at ??
+                        symbolDetail?.quote?.price_time ?? symbolDetail?.quote?.fetched_at ??
                           selectedSymbol.last_updated,
                       )}
                     </span>
