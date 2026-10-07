@@ -33,6 +33,8 @@ export function getMockEdgeResponse<T>(
       return { hasPin: false } as T;
     case "verify-pin":
       return { valid: true } as T;
+    case "pin-status":
+      return { attemptsLeft: 5, lockedUntil: null } as T;
     case "set-pin":
     case "clear-pin":
     case "unlock":
@@ -1410,9 +1412,11 @@ export async function edgeKidUnlock(params: { code: string; pin: string }) {
 
 export interface PinStatus { attemptsLeft: number; lockedUntil: string | null }
 export async function edgePinStatus(mode: "kid" | "parent") {
-  return invoke<PinStatus>(mode === "kid" ? "kid-finance" : "parent-finance", {
+  const result = await invoke<PinStatus>(mode === "kid" ? "kid-finance" : "parent-finance", {
     action: "pin-status", ...(mode === "kid" ? { code: getKidSession()?.code } : {}),
   });
+  if (!Number.isInteger(result.attemptsLeft) || result.attemptsLeft < 0 || result.attemptsLeft > 5) throw new Error("PIN status unavailable");
+  return result;
 }
 
 export async function edgeKidGetState(params: { code: string }) {

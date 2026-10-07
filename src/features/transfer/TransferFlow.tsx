@@ -227,7 +227,7 @@ export function TransferFlow({
           },
           onError: (err) => {
             setPin("");
-            setPinError(err.message || "Incorrect PIN");
+        setPinError((err.message || "Incorrect PIN").replace(/\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi, ""));
             pinSubmittingRef.current = false;
           },
         }
@@ -252,7 +252,7 @@ export function TransferFlow({
           },
           onError: (err) => {
             setPin("");
-            setPinError(err.message || "Incorrect PIN");
+        setPinError((err.message || "Incorrect PIN").replace(/\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi, ""));
             pinSubmittingRef.current = false;
           },
         }
