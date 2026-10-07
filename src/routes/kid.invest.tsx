@@ -42,6 +42,7 @@ import { Money, useMoney } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
+import { filterMarketSymbols } from "@/lib/market-search";
 
 export const Route = createFileRoute("/kid/invest")({
   head: () => ({ meta: [{ title: "Investment | Centsibility" }] }),
@@ -252,13 +253,7 @@ function KidInvest() {
 
   // Curated symbols filtered
   const filteredSymbols = useMemo(() => {
-    const list = marketData?.symbols ?? [];
-    if (!searchQuery.trim()) return list;
-    const q = searchQuery.toLowerCase().trim();
-    return list.filter(
-      (s) =>
-        s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q),
-    );
+    return filterMarketSymbols(marketData?.symbols ?? [], searchQuery);
   }, [marketData, searchQuery]);
 
   // Last update time for curated list header
@@ -1416,7 +1411,7 @@ function KidInvest() {
                 <div className="flex flex-col max-h-[calc(100dvh-12rem)] min-h-0">
                   <div className="shrink-0 space-y-2 pb-2">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
-                      <span>Curated investments</span>
+                      <span>Search our curated list only</span>
                       <span>Delayed price · updated {latestQuoteTime}</span>
                     </div>
 
@@ -1508,7 +1503,11 @@ function KidInvest() {
                     ))}
                     {filteredSymbols.length === 0 && (
                       <p className="text-xs text-[var(--text-muted)] text-center py-4">
-                        No symbols match your search.
+                        {marketError || !marketData
+                          ? "We couldn't load our investment list. Please retry."
+                          : searchQuery.trim()
+                            ? "Not in our list. Search only covers our curated, Shariah-screened investments, not every stock."
+                            : "Our investment list is unavailable. Please retry."}
                       </p>
                     )}
                   </div>
