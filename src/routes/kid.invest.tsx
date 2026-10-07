@@ -13,6 +13,7 @@ import {
   edgeKidInvestOpen,
   edgeKidInvestClose,
   edgeKidMarketSymbols,
+  edgeKidMarketQuotes,
   edgeKidMarketSymbol,
   edgeKidMarketOpen,
   edgeKidMarketSell,
@@ -158,6 +159,9 @@ function KidInvest() {
   const [marketData, setMarketData] = useState<MarketSymbolsResponse | null>(
     null,
   );
+  const pickerListRef = useRef<HTMLDivElement>(null);
+  const [visibleSymbols, setVisibleSymbols] = useState<string[]>([]);
+  const [quoteRows, setQuoteRows] = useState<Record<string, Partial<MarketSymbolItem>>>({});
 
   // Detail / Close modals
   const [selected, setSelected] = useState<InvestmentItem | null>(null);
@@ -253,17 +257,59 @@ function KidInvest() {
 
   // Curated symbols filtered
   const filteredSymbols = useMemo(() => {
-    return filterMarketSymbols(marketData?.symbols ?? [], searchQuery);
+    return filterMarketSymbols((marketData?.symbols ?? []).filter(s => s.verified), searchQuery);
   }, [marketData, searchQuery]);
+
+  useEffect(() => {
+    const root = pickerListRef.current;
+    setVisibleSymbols([]);
+    if (!root || !showStart || chosenMode !== "market" || marketStep !== "picker") return;
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        const symbol = (entry.target as HTMLElement).dataset.marketSymbol!;
+        if (entry.isIntersecting && entry.intersectionRatio > 0) visible.add(symbol);
+        else visible.delete(symbol);
+      }
+      setVisibleSymbols([...visible].sort());
+    }, { root, threshold: 0.01 });
+    root.querySelectorAll("[data-market-symbol]").forEach(row => observer.observe(row));
+    return () => observer.disconnect();
+  }, [filteredSymbols, showStart, chosenMode, marketStep, loading]);
+
+  useEffect(() => {
+    if (!visibleSymbols.length) return;
+    let cancelled = false;
+    let busy = false;
+    const refreshQuotes = async () => {
+      if (document.hidden || busy) return;
+      busy = true;
+      try {
+        const result = await edgeKidMarketQuotes({ code: code ?? undefined, symbols: visibleSymbols.slice(0, 12) });
+        if (cancelled) return;
+        setQuoteRows(previous => ({ ...previous, ...Object.fromEntries(Object.entries(result.quotes).map(([symbol, row]) => {
+          const state = row.marketState ?? (result.marketState === "open" && row.quote ? row.quote.is_market_open ? "open" : "closed" : result.marketState);
+          return [symbol, { price: row.available ? row.quote?.price ?? null : null, change_percent: row.quote?.change_percent ?? null, last_updated: row.quote?.price_time ?? row.quote?.fetched_at ?? null, stale: row.stale ?? false, is_market_open: state === "unknown" ? undefined : state === "open" }];
+        })) }));
+      } catch {
+        if (!cancelled) setQuoteRows(previous => ({ ...previous, ...Object.fromEntries(visibleSymbols.map(symbol => [symbol, { ...previous[symbol], stale: true }])) }));
+      } finally { busy = false; }
+    };
+    void refreshQuotes();
+    const timer = window.setInterval(refreshQuotes, 60000);
+    window.addEventListener("focus", refreshQuotes);
+    document.addEventListener("visibilitychange", refreshQuotes);
+    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener("focus", refreshQuotes); document.removeEventListener("visibilitychange", refreshQuotes); };
+  }, [visibleSymbols, code]);
 
   // Last update time for curated list header
   const latestQuoteTime = useMemo(() => {
-    const list = marketData?.symbols ?? [];
+    const list = Object.values(quoteRows);
     for (const s of list) {
       if (s.last_updated) return fmtTime(s.last_updated);
     }
     return "unavailable";
-  }, [marketData]);
+  }, [quoteRows]);
 
   // ── load / error states ────────────────────────────────────────────────────
   if (!data && error) return <KidLoadError onRetry={refresh} />;
@@ -288,6 +334,8 @@ function KidInvest() {
 
   // Market stats
   const activeMarketInvs = activeInvs.filter((i) => i.mode === "market");
+  const selectedPrice = symbolDetail ? symbolDetail.available ? symbolDetail.quote?.price ?? null : null : selectedSymbol?.price ?? null;
+  const selectedMarketState = symbolDetail?.marketState ?? (symbolDetail?.quote ? symbolDetail.quote.is_market_open ? "open" : "closed" : selectedSymbol?.is_market_open === undefined ? "unknown" : selectedSymbol.is_market_open ? "open" : "closed");
   const totalMarketExposure = activeMarketInvs.reduce(
     (s, i) => s + i.principal,
     0,
@@ -442,7 +490,7 @@ function KidInvest() {
   }
 
   async function confirmMarketOpen() {
-    if (!code || !selectedSymbol || !marketAmount) return;
+    if (!code || !selectedSymbol || !marketAmount || selectedPrice === null) return;
     setOpenBusy(true);
     try {
       await edgeKidMarketOpen({
@@ -1153,7 +1201,7 @@ function KidInvest() {
                       <button
                         key={t}
                         type="button"
-                        className={`w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] ${tier === t ? "border-[var(--primary)] bg-[var(--surface-pink)]" : "border-[var(--border)] hover:bg-[var(--surface-soft)]"}`}
+                        className={tier === t ? "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
                         onClick={() => {
                           setTier(t);
                           sfx.tap();
@@ -1200,7 +1248,7 @@ function KidInvest() {
                     <button
                       key={f}
                       type="button"
-                      className={`w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] ${freq === f ? "border-[var(--primary)] bg-[var(--surface-pink)]" : "border-[var(--border)] hover:bg-[var(--surface-soft)]"}`}
+                      className={freq === f ? "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
                       onClick={() => {
                         setFreq(f);
                         sfx.tap();
@@ -1247,7 +1295,7 @@ function KidInvest() {
                     <button
                       key={lt}
                       type="button"
-                      className={`w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] ${lockTicks === lt ? "border-[var(--primary)] bg-[var(--surface-pink)]" : "border-[var(--border)] hover:bg-[var(--surface-soft)]"}`}
+                      className={lockTicks === lt ? "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
                       onClick={() => {
                         setLockTicks(lt);
                         sfx.tap();
@@ -1428,11 +1476,12 @@ function KidInvest() {
                   </div>
 
                   {/* Symbol List */}
-                  <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
+                  <div ref={pickerListRef} className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
                     {marketError && <p role="alert" className="text-xs text-[var(--error-text)]">{marketError} <button type="button" onClick={fetchMarketSymbols}>Retry</button></p>}
-                    {filteredSymbols.map((s) => (
+                    {filteredSymbols.map((item) => { const s = { ...item, ...quoteRows[item.symbol] }; return (
                       <div
                         key={s.symbol}
+                        data-market-symbol={s.symbol}
                         className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_3rem] items-center gap-2"
                       >
                         <button
@@ -1489,7 +1538,7 @@ function KidInvest() {
                           <span>{s.price == null ? "Data unavailable" : `US$${s.price.toFixed(2)}`} {s.stale ? " · Stale" : ""}</span>
                           {s.change_percent != null && s.price != null ? (
                             <span
-                              className={`text-xs font-semibold tabular-nums ${profitColor(s.change_percent)}`}
+                              className={s.change_percent >= 0 ? "text-xs font-semibold tabular-nums text-[var(--success-text)]" : "text-xs font-semibold tabular-nums text-[var(--error-text)]"}
                             >
                               {pct(s.change_percent)}
                             </span>
@@ -1500,7 +1549,7 @@ function KidInvest() {
                           )}
                         </div>
                       </div>
-                    ))}
+                    ); })}
                     {filteredSymbols.length === 0 && (
                       <p className="text-xs text-[var(--text-muted)] text-center py-4">
                         {marketError || !marketData
@@ -1555,8 +1604,8 @@ function KidInvest() {
 
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
                     <span>
-                      {(symbolDetail?.quote?.price ?? selectedSymbol.price) == null ? "Data unavailable" : `US$${(symbolDetail?.quote?.price ?? selectedSymbol.price)?.toFixed(2)}`}
-                      {(symbolDetail?.quote?.is_market_open ?? selectedSymbol.is_market_open) === false ? " · Market closed" : (symbolDetail?.quote?.is_market_open ?? selectedSymbol.is_market_open) === true ? " · Market open" : ""}
+                      {selectedPrice === null ? "Data unavailable" : `US$${selectedPrice.toFixed(2)}`}
+                      {selectedMarketState === "closed" ? " · Market closed" : selectedMarketState === "open" ? " · Market open" : " · Market status unavailable"}
                       {(symbolDetail?.stale ?? selectedSymbol.stale) ? " · Stale data" : ""}
                     </span>
                     <span>
@@ -1614,7 +1663,9 @@ function KidInvest() {
                     </p>
                   </div>
 
-                  {activeMarketInvs.length >= 5 ? (
+                  {selectedPrice === null || symbolDetailLoading ? (
+                    <p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Loading quote..." : "Data unavailable. You can browse this instrument; a quote is needed to start a position."}</p>
+                  ) : activeMarketInvs.length >= 5 ? (
                     <div className="p-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)]">
                       You already have 5 open market investments (maximum). Sell
                       one before starting another.
@@ -1667,12 +1718,7 @@ function KidInvest() {
                       </strong>{" "}
                       in <strong>{selectedSymbol.symbol}</strong> at{" "}
                       <strong>
-                        US$
-                        {(
-                          symbolDetail?.quote?.price ??
-                          selectedSymbol.price ??
-                          0
-                        ).toFixed(2)}
+                        {selectedPrice === null ? "Data unavailable" : `US$${selectedPrice.toFixed(2)}`}
                       </strong>
                       .
                     </p>
@@ -1696,9 +1742,7 @@ function KidInvest() {
                     <div className="flex justify-between">
                       <span>Status</span>
                       <strong>
-                        {selectedSymbol.is_market_open === false
-                          ? "Market closed"
-                          : "Market open"}
+                        {selectedMarketState === "closed" ? "Market closed" : selectedMarketState === "open" ? "Market open" : "Market status unavailable"}
                       </strong>
                     </div>
                   </div>
@@ -1716,7 +1760,7 @@ function KidInvest() {
                       type="button"
                       variant="primary"
                       className="w-full justify-center"
-                      disabled={openBusy}
+                      disabled={openBusy || selectedPrice === null}
                       onClick={confirmMarketOpen}
                     >
                       {openBusy ? "Starting..." : "Confirm"}
@@ -1793,7 +1837,7 @@ export function FundCard({
             {(inv.profitRm ?? 0) < 0 ? "Loss" : "Profit"}
           </p>
           <p
-            className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
+            className={inv.profitRm === null ? "font-semibold tabular-nums text-[var(--text-muted)]" : inv.profitRm >= 0 ? "font-semibold tabular-nums text-[var(--success-text)]" : "font-semibold tabular-nums text-[var(--error-text)]"}
           >
             {pct(inv.profitPct)}
           </p>
@@ -1870,7 +1914,7 @@ function MarketCard({
         <div>
           <p className="text-[var(--text-muted)]">Gain or loss</p>
           <p
-            className={`font-semibold tabular-nums ${profitColor(inv.profitRm)}`}
+            className={inv.profitRm === null ? "font-semibold tabular-nums text-[var(--text-muted)]" : inv.profitRm >= 0 ? "font-semibold tabular-nums text-[var(--success-text)]" : "font-semibold tabular-nums text-[var(--error-text)]"}
           >
             {inv.profitRm === null ? "" : inv.profitRm >= 0 ? "+" : "−"}
             <Money amount={inv.profitRm === null ? null : Math.abs(inv.profitRm)} />

@@ -187,7 +187,7 @@ Deno.test("market: a fresh cache means no call", async () => {
     return new Response(JSON.stringify({}), { status: 200 });
   };
 
-  const now = new Date("2026-10-05T12:00:00Z");
+  const now = new Date("2026-10-05T15:00:00Z");
   const admin = createMockAdmin({
     quotes: {
       SPUS: {
@@ -215,9 +215,9 @@ Deno.test("market: a fresh cache means no call", async () => {
 });
 
 Deno.test("market: stale-while-open triggers refresh, closed-and-recent does not", async () => {
-  const now = new Date("2026-10-05T12:00:00Z");
+  const now = new Date("2026-10-05T15:00:00Z");
 
-  // Case A: Open and 12 minutes old -> stale, triggers fetch
+  // Case A: Open and 16 minutes old -> stale, triggers fetch
   let fetchCalledA = false;
   const mockFetchA = async () => {
     fetchCalledA = true;
@@ -239,7 +239,7 @@ Deno.test("market: stale-while-open triggers refresh, closed-and-recent does not
         price: 60.00,
         previous_close: 59.00,
         is_market_open: true,
-        fetched_at: new Date(now.getTime() - 12 * 60 * 1000).toISOString(),
+        fetched_at: new Date(now.getTime() - 16 * 60 * 1000).toISOString(),
       },
     },
   });
@@ -252,7 +252,7 @@ Deno.test("market: stale-while-open triggers refresh, closed-and-recent does not
   assertEquals(fetchCalledA, true);
   assertEquals(resA.quote?.price, 61.00);
 
-  // Case B: Closed and 45 minutes old -> NOT stale, does not trigger fetch
+  // Case B: Provider-reported closure 45 minutes old -> stale, does not trigger fetch
   let fetchCalledB = false;
   const mockFetchB = async () => {
     fetchCalledB = true;
@@ -277,7 +277,7 @@ Deno.test("market: stale-while-open triggers refresh, closed-and-recent does not
     now,
   });
   assertEquals(fetchCalledB, false);
-  assertEquals(resB.stale, false);
+  assertEquals(resB.stale, true);
   assertEquals(resB.quote?.price, 40.00);
 
   // Case C: Closed and 3.5 hours old -> stale, triggers fetch
@@ -316,7 +316,7 @@ Deno.test("market: stale-while-open triggers refresh, closed-and-recent does not
 });
 
 Deno.test("market: rate guard blocks 7th call in a minute", async () => {
-  const now = new Date("2026-10-05T12:00:00Z");
+  const now = new Date("2026-10-05T15:00:00Z");
   const calls = [];
   for (let i = 0; i < 6; i++) {
     calls.push({
@@ -358,7 +358,7 @@ Deno.test("market: rate guard blocks 7th call in a minute", async () => {
 });
 
 Deno.test("market: failure falls back to cache with stale: true", async () => {
-  const now = new Date("2026-10-05T12:00:00Z");
+  const now = new Date("2026-10-05T15:00:00Z");
   const admin = createMockAdmin({
     quotes: {
       SPUS: {
@@ -448,7 +448,7 @@ Deno.test("market: key is never logged", async () => {
   }
 });
 
-Deno.test("market: isQuoteStale enforces 10-min window on weekdays during US market hours regardless of is_market_open", () => {
+Deno.test("market: isQuoteStale enforces 15-min window during US core hours regardless of cached is_market_open", () => {
   // Tuesday 14:00 UTC: in market hours window (Mon-Fri 13:30 - 21:00 UTC)
   const tuesdayNow = new Date("2026-10-06T14:00:00Z");
   const quote20MinOldClosed: MarketQuote = {

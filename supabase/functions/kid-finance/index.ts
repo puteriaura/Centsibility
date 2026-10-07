@@ -20,6 +20,7 @@ import {
   getQuote,
   getDailyCloses,
   getCuratedSymbols,
+  getVisibleQuotes,
 } from "../_shared/market.ts";
 import {
   currentInvestmentValues,
@@ -231,6 +232,7 @@ serve(async (req: Request) => {
       case "invest-open":      return await handleInvestOpen(admin, params, requestId);
       case "invest-close":     return await handleInvestClose(admin, params, requestId);
       case "market-symbols":   return await handleMarketSymbols(admin, params, requestId);
+      case "market-quotes":    return await handleMarketQuotes(admin, params, requestId);
       case "market-symbol":    return await handleMarketSymbol(admin, params, requestId);
       case "market-open":      return await handleMarketOpen(admin, params, requestId);
       case "market-sell":      return await handleMarketSell(admin, params, requestId);
@@ -727,6 +729,8 @@ async function handleMarketSymbol(admin: Admin, params: Record<string, unknown>,
   await getKid(admin, params.code, requestId);
   const symbol = typeof params.symbol === "string" ? params.symbol.trim().toUpperCase() : "";
   if (!symbol) return jsonError("Missing symbol", 400);
+  const catalogue = await getCuratedSymbols(admin);
+  if (!catalogue.some(s => s.symbol === symbol)) return jsonError("Instrument not in our verified catalogue", 400);
 
   const quoteRes = await getQuote(admin, symbol);
   const closesRes = await getDailyCloses(admin, symbol);
@@ -736,8 +740,15 @@ async function handleMarketSymbol(admin: Admin, params: Record<string, unknown>,
     quote: quoteRes.quote,
     available: quoteRes.available,
     stale: quoteRes.stale,
+    marketState: quoteRes.marketState,
     dailyCloses: closesRes.closes,
   });
+}
+
+async function handleMarketQuotes(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  await getKid(admin, params.code, requestId);
+  try { return jsonOk(await getVisibleQuotes(admin, params.symbols)); }
+  catch { return jsonError("Could not load the requested visible quotes", 400); }
 }
 
 async function handleMarketOpen(admin: Admin, params: Record<string, unknown>, requestId: string) {

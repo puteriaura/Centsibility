@@ -1,6 +1,7 @@
 // supabase/functions/_shared/market.ts
 // T36: Market Tracker integration with Twelve Data
 import { SCREENING } from "./market-screening.ts";
+import { marketSession } from "./market-calendar.ts";
 
 export interface MarketQuote {
   symbol: string;
@@ -33,6 +34,7 @@ export interface MarketSymbol {
   last_updated?: string | null;
   stale?: boolean;
   halal_url?: string;
+  verified?: boolean;
 }
 
 export interface MarketQuoteResult {
@@ -40,6 +42,7 @@ export interface MarketQuoteResult {
   stale?: boolean;
   fetchedAt?: string;
   quote?: MarketQuote;
+  marketState?: "open" | "closed" | "unknown";
 }
 
 export interface MarketTimeSeriesResult {
@@ -190,12 +193,7 @@ export async function checkRateLimit(
 }
 
 export function isMarketHoursWindow(now: Date = new Date()): boolean {
-  // Used only for cache freshness; the provider determines open/closed, including holidays.
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
-  const part = (type: string) => parts.find(p => p.type === type)?.value;
-  if (["Sat", "Sun"].includes(part("weekday") || "")) return false;
-  const minutes = Number(part("hour")) * 60 + Number(part("minute"));
-  return minutes >= 570 && minutes < 960;
+  return marketSession(now) === "open";
 }
 
 export function isQuoteStale(quote: MarketQuote, now: Date = new Date()): boolean {
@@ -210,8 +208,7 @@ export function isQuoteStale(quote: MarketQuote, now: Date = new Date()): boolea
     if (!Number.isFinite(priceTime) || nowTime - priceTime > 20 * 60 * 1000) return true;
   }
   if (isMarketHoursWindow(now) || quote.is_market_open) {
-    // In market hours window or when quote is reported open: stale after 10 minutes
-    return diffMs > 10 * 60 * 1000;
+    return diffMs >= 15 * 60 * 1000;
   } else {
     // Market closed and outside market hours window: stale after 3 hours
     return diffMs > 3 * 3600 * 1000;
@@ -230,6 +227,7 @@ export async function getQuote(
   const apiKey = options?.apiKey !== undefined ? options.apiKey : Deno.env.get("TWELVEDATA_API_KEY");
   const fetchFn = options?.fetchFn || fetch;
   const now = options?.now || new Date();
+  if (!SCREENING[symbol]) return { available: false, marketState: marketSession(now) };
 
   // Load from cache first
   const { data: cachedRow } = await admin
@@ -239,7 +237,7 @@ export async function getQuote(
     .maybeSingle();
 
   let cachedQuote: MarketQuote | null = null;
-  if (cachedRow) {
+  if (cachedRow && Number.isFinite(Number(cachedRow.price)) && Number(cachedRow.price) > 0) {
     let changePct: number | null = null;
     if (cachedRow.previous_close && cachedRow.previous_close > 0) {
       changePct = Math.round(((cachedRow.price - cachedRow.previous_close) / cachedRow.previous_close) * 10000) / 100;
@@ -255,6 +253,16 @@ export async function getQuote(
       change_percent: changePct,
     };
   }
+
+  // A closed/unknown session never spends quote credits. Availability and age remain separate.
+  if (marketSession(now) !== "open") return cachedQuote
+    ? { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: marketSession(now) === "closed" ? { ...cachedQuote, is_market_open: false } : cachedQuote, marketState: marketSession(now) }
+    : { available: false, marketState: marketSession(now) };
+  // Stale provider timestamps do not bypass the 15-minute fetch cache.
+  if (cachedQuote && Number.isFinite(Date.parse(cachedQuote.fetched_at)) && now.getTime() - Date.parse(cachedQuote.fetched_at) < 15 * 60 * 1000) return { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: cachedQuote, marketState: cachedQuote.is_market_open ? "open" : "closed" };
+  // A provider-reported exceptional closure during today's core session lasts until next session.
+  const exchangeDate = (date: Date) => date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  if (cachedQuote && !cachedQuote.is_market_open && isMarketHoursWindow(new Date(cachedQuote.fetched_at)) && exchangeDate(now) === exchangeDate(new Date(cachedQuote.fetched_at))) return { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: cachedQuote, marketState: "closed" };
 
   // If no key at all
   if (!apiKey || apiKey.trim() === "") {
@@ -296,7 +304,7 @@ export async function getQuote(
 
     const json = await res.json();
     const parsed = parseQuotePayload(json);
-    if (!parsed) {
+    if (!parsed || parsed.symbol !== symbol) {
       if (cachedQuote) {
         return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
       }
@@ -349,6 +357,8 @@ export async function getDailyCloses(
     day: String(r.day),
     close: Number(r.close),
   }));
+
+  if (!SCREENING[symbol] || marketSession(now) !== "open") return { available: existingCloses.length > 0, stale: true, closes: existingCloses };
 
   // Check if refreshed today UTC
   const startOfDayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
@@ -433,52 +443,21 @@ export async function getCuratedSymbols(admin: any): Promise<MarketSymbol[]> {
 
   if (symbolsError) throw new Error("The instrument list is unavailable. Try again.");
   if (!symbols || symbols.length === 0) return [];
-  // Refresh serially: each request observes the existing provider budget.
-  const freshness = new Map<string, MarketQuoteResult>();
-  for (const symbol of symbols) freshness.set(symbol.symbol, await getQuote(admin, symbol.symbol));
+  // Catalogue search is independent of quote availability and provider configuration.
+  return symbols.filter((s: MarketSymbol) => SCREENING[s.symbol]).map((s: MarketSymbol) => ({
+    symbol: s.symbol, name: s.name, kind: s.kind, active: s.active,
+    halal_source: SCREENING[s.symbol].source, halal_checked_on: SCREENING[s.symbol].checked,
+    halal_url: SCREENING[s.symbol].url, verified: true,
+  }));
+}
 
-  const { data: quotes, error: quotesError } = await admin
-    .from("market_quotes")
-    .select("*");
-
-  if (quotesError) throw new Error("Quote data is unavailable. Try again.");
-  const quoteMap = new Map<string, any>();
-  for (const q of (quotes || [])) {
-    quoteMap.set(q.symbol, q);
-  }
-
-  return symbols.filter((s: any) => SCREENING[s.symbol]).map((s: any) => {
-    const q = quoteMap.get(s.symbol);
-    let changePct: number | null = null;
-    let price: number | null = null;
-    let prevClose: number | null = null;
-    let isOpen: boolean | undefined = undefined;
-    let lastUpdated: string | null = null;
-
-    if (q) {
-      price = Number(q.price);
-      prevClose = q.previous_close ? Number(q.previous_close) : null;
-      if (prevClose && prevClose > 0 && price) {
-        changePct = Math.round(((price - prevClose) / prevClose) * 10000) / 100;
-      }
-      isOpen = Boolean(q.is_market_open);
-      lastUpdated = q.price_time || q.fetched_at;
-    }
-
-    return {
-      symbol: s.symbol,
-      name: s.name,
-      kind: s.kind,
-      halal_source: SCREENING[s.symbol].source,
-      halal_checked_on: SCREENING[s.symbol].checked,
-      halal_url: SCREENING[s.symbol].url,
-      active: s.active,
-      price,
-      previous_close: prevClose,
-      change_percent: changePct,
-      is_market_open: isOpen,
-      last_updated: lastUpdated,
-      stale: q ? Boolean(freshness.get(s.symbol)?.stale) : false,
-    };
-  });
+export async function getVisibleQuotes(admin: Parameters<typeof getQuote>[0], requested: unknown, options?: Parameters<typeof getQuote>[2]) {
+  if (!Array.isArray(requested) || requested.length > 12 || requested.some(s => typeof s !== "string")) throw new Error("Request at most 12 visible symbols");
+  const catalogue = await getCuratedSymbols(admin);
+  const allowed = new Set(catalogue.map(s => s.symbol));
+  const symbols = [...new Set(requested.map(s => s.trim().toUpperCase()))];
+  if (symbols.some(s => !allowed.has(s))) throw new Error("Instrument not in our verified catalogue");
+  const quotes: Record<string, MarketQuoteResult> = {};
+  for (const symbol of symbols) quotes[symbol] = await getQuote(admin, symbol, options);
+  return { quotes, marketState: marketSession(options?.now) };
 }

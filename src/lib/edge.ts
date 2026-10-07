@@ -18,6 +18,7 @@ import {
 } from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
 import { getKidSession } from "@/lib/kid-session";
+import { SCREENING, VERIFIED_STOCK_ADDITIONS } from "../../supabase/functions/_shared/market-screening";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -681,17 +682,23 @@ export function getMockEdgeResponse<T>(
       // Default for 10-12 in demo is off unless enabled
       const effective = isEnabled !== null ? isEnabled : false;
       return {
-        symbols: CURATED_MARKET_SYMBOLS,
+        symbols: CURATED_MARKET_SYMBOLS.map(({ symbol, name, kind, active, halal_source, halal_checked_on, halal_url, verified }) => ({ symbol, name, kind, active, halal_source, halal_checked_on, halal_url, verified })),
         enabled: effective,
         ageGroup: "10-12",
       } as T;
     }
+    case "market-quotes": {
+      const requested = Array.isArray(body.symbols) ? body.symbols : [];
+      return { marketState: "closed", quotes: Object.fromEntries(requested.map(symbol => {
+        const row = CURATED_MARKET_SYMBOLS.find(s => s.symbol === symbol);
+        return [symbol, { available: row?.price != null, stale: true, marketState: "closed", quote: row?.price != null ? { symbol, price: row.price, previous_close: row.previous_close, change_percent: row.change_percent, currency: "USD", is_market_open: false, price_time: row.last_updated, fetched_at: row.last_updated } : undefined }];
+      })) } as T;
+    }
     case "market-symbol": {
       const sym = String(body.symbol || "SPUS").toUpperCase();
-      const found =
-        CURATED_MARKET_SYMBOLS.find((s) => s.symbol === sym) ||
-        CURATED_MARKET_SYMBOLS[0];
-      const basePrice = found.price || 50;
+      const found = CURATED_MARKET_SYMBOLS.find((s) => s.symbol === sym);
+      if (!found || found.price == null) return { symbol: sym, available: false, marketState: "closed", dailyCloses: [] } as T;
+      const basePrice = found.price;
       const closes: Array<{ day: string; close: number }> = [];
       for (let i = 90; i >= 0; i--) {
         const d = new Date(Date.now() - i * 86400000)
@@ -1827,6 +1834,7 @@ export interface MarketSymbolItem {
   last_updated?: string | null;
   stale?: boolean;
   halal_url?: string;
+  verified?: boolean;
 }
 
 export interface MarketSymbolsResponse {
@@ -1849,7 +1857,16 @@ export interface MarketSymbolDetailResponse {
   };
   available: boolean;
   stale?: boolean;
+  marketState?: "open" | "closed" | "unknown";
   dailyCloses: Array<{ day: string; close: number }>;
+}
+
+export interface MarketQuotesResponse {
+  marketState: "open" | "closed" | "unknown";
+  quotes: Record<string, Omit<MarketSymbolDetailResponse, "dailyCloses" | "symbol">>;
+}
+export async function edgeKidMarketQuotes(params: { code?: string; symbols: string[] }) {
+  return invoke<MarketQuotesResponse>("kid-finance", { action: "market-quotes", ...params });
 }
 
 export async function edgeKidMarketSymbols(params?: { code?: string }) {
@@ -2053,7 +2070,8 @@ export const CURATED_MARKET_SYMBOLS: MarketSymbolItem[] = [
     is_market_open: false,
     last_updated: "2026-10-05T15:05:00Z",
   },
-];
+  ...VERIFIED_STOCK_ADDITIONS.map(s => ({ ...s, kind: "stock" as const, active: true, halal_source: SCREENING[s.symbol].source, halal_checked_on: SCREENING[s.symbol].checked })),
+].map(s => ({ ...s, kind: s.kind as MarketSymbolItem["kind"], halal_source: SCREENING[s.symbol].source, halal_checked_on: SCREENING[s.symbol].checked, halal_url: SCREENING[s.symbol].url, verified: true }));
 
 let demoMarketEnabledState: boolean | null = null;
 export function setDemoMarketEnabled(enabled: boolean | null) {
