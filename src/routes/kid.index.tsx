@@ -231,10 +231,7 @@ function KidHome() {
   return (
     <>
       <div className="kid-greeting">
-        <div className="kid-greeting__profile">
-          <span className="kid-greeting__eyebrow">Assalamualaikum</span>
-          <h1 className="kid-greeting__name">{k.comfort_name ?? k.name}</h1>
-        </div>
+        <h1 className="kid-greeting__name">Home</h1>
         <StreakBadge count={k.streak} />
       </div>
 
@@ -277,10 +274,6 @@ function KidHome() {
               else toggleHidden();
             }}
             onArrowClick={() => nav({ to: "/kid/wallet" })}
-            metadata={[
-              { label: "Hibah", value: `${(Number(k.hibah_rate) * 100).toFixed(0)}%` },
-              { label: "Shariah" },
-            ]}
           />
         </div>
         <Link
