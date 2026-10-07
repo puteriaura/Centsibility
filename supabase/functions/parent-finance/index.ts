@@ -1,3 +1,4 @@
+import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/parent-finance/index.ts
 // Handles: all parent-initiated actions
 // Runs server-side with access to the Service Role Key.
@@ -879,6 +880,12 @@ async function handlePennyChat(
     return jsonError(`Message exceeds maximum length of ${MAX_MESSAGE_CHARS} characters`, 400);
   }
 
+  const safety = filterPennyInput(message);
+  if (safety) {
+    console.warn(JSON.stringify({ event: "penny-input-filtered", kind: safety.kind }));
+    return jsonOk({ reply: safety.reply, thinking: false });
+  }
+
   const rawHistory = Array.isArray(params.history) ? (params.history as PennyChatMessage[]) : undefined;
 
   const rawDailyLimit = Deno.env.get("PENNY_DAILY_LIMIT");
@@ -1003,7 +1010,7 @@ async function handlePennyChat(
     kids: kidsCoachData,
   });
 
-  const system = `${parentSystemPrompt()}\n\nFamily financial data:\n${contextLines.join("\n")}`;
+  const system = parentSystemPrompt();
 
   const isThinking = params.thinking !== false;
   let requestParams;
@@ -1014,6 +1021,7 @@ async function handlePennyChat(
       history: rawHistory,
       message,
       systemPrompt: system,
+      groundingData: contextLines,
       context: params.context as any,
       maxTokens: configuredMaxTokens,
       allowPro,

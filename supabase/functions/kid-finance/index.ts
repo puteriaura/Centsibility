@@ -1,3 +1,4 @@
+import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/kid-finance/index.ts
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1077,6 +1078,12 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     return jsonError(`Message exceeds maximum length of ${MAX_MESSAGE_CHARS} characters`, 400);
   }
 
+  const safety = filterPennyInput(message);
+  if (safety) {
+    console.warn(JSON.stringify({ event: "penny-input-filtered", kind: safety.kind }));
+    return jsonOk({ reply: safety.reply, thinking: false });
+  }
+
   const rawHistory = Array.isArray(params.history) ? (params.history as PennyChatMessage[]) : undefined;
 
   const rawDailyLimit = Deno.env.get("PENNY_DAILY_LIMIT");
@@ -1171,7 +1178,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const isThinking = params.thinking !== false;
   const contextLines = buildKidCoachContext(kidCoachInput);
-  const system = `${kidSystemPrompt(ageGroup)}\n\nChild's data:\n${contextLines.join("\n")}`;
+  const system = kidSystemPrompt(ageGroup);
 
   let requestParams;
   try {
@@ -1181,6 +1188,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
       history: rawHistory,
       message,
       systemPrompt: system,
+      groundingData: contextLines,
       context: params.context as any,
       maxTokens: configuredMaxTokens,
       allowPro,
