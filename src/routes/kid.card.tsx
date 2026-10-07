@@ -14,9 +14,11 @@ import { formatRM } from "@/lib/format";
 import { getKidSession } from "@/lib/kid-session";
 import { edgeKidSetCardControls } from "@/lib/edge";
 import { usePenny } from "@/features/penny";
+import { PrivacyUnlockSheet } from "@/features/privacy/PrivacyUnlockSheet";
+import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/card")({
-  head: () => ({ meta: [{ title: "Debit Card-i | Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Practice Card | Centsibility" }] }),
   component: KidCard,
 });
 
@@ -24,6 +26,15 @@ function KidCard() {
   const { openPenny } = usePenny();
   const { data, loading, error, refresh } = useKidData();
   const [showDetails, setShowDetails] = useState(false);
+  const [revealPinOpen, setRevealPinOpen] = useState(false);
+  const [savingFreeze, setSavingFreeze] = useState(false);
+  useEffect(() => {
+    if (!showDetails) return;
+    const hide = () => setShowDetails(false);
+    const timer = window.setTimeout(hide, 30000);
+    document.addEventListener("visibilitychange", hide);
+    return () => { window.clearTimeout(timer); document.removeEventListener("visibilitychange", hide); };
+  }, [showDetails]);
   const [isLocked, setIsLocked] = useState(() => Boolean(data?.kid?.card_frozen));
   const [showSettings, setShowSettings] = useState(false);
   const [dailyLimit, setDailyLimit] = useState(() =>
@@ -72,6 +83,7 @@ function KidCard() {
   const parentOnline = k.card_online_enabled !== undefined ? Boolean(k.card_online_enabled) : true;
 
   const toggleLock = async () => {
+    if (savingFreeze) return;
     sfx.pop();
     if (isControlsLocked && isLocked) {
       toast.error("Your parent manages these card settings. You can still make them stricter.");
@@ -83,14 +95,12 @@ function KidCard() {
 
     const code = getKidSession()?.code;
     if (!code) {
-      toast.success(
-        nextLocked
-          ? "Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it."
-          : "Card unfrozen",
-      );
+      setIsLocked(prevLocked);
+      toast.error("Session missing. Log in again to change card controls.");
       return;
     }
 
+    setSavingFreeze(true);
     try {
       await edgeKidSetCardControls({ code, frozen: nextLocked });
       toast.success(
@@ -102,6 +112,8 @@ function KidCard() {
     } catch (e: unknown) {
       setIsLocked(prevLocked);
       toast.error(e instanceof Error ? e.message : "Failed to update card status");
+    } finally {
+      setSavingFreeze(false);
     }
   };
 
@@ -237,7 +249,7 @@ function KidCard() {
           </div>
 
           <span className="text-[11px] font-bold tracking-wider uppercase text-white">
-            Kids debit
+            Practice only
           </span>
         </div>
 
@@ -257,7 +269,8 @@ function KidCard() {
           type="button"
           onClick={() => {
             sfx.tap();
-            setShowDetails(!showDetails);
+            if (showDetails) setShowDetails(false);
+            else setRevealPinOpen(true);
           }}
           aria-label={showDetails ? "Hide card details" : "View card details"}
           aria-pressed={showDetails}
@@ -288,7 +301,7 @@ function KidCard() {
         <button
           type="button"
           onClick={toggleLock}
-          disabled={isControlsLocked && isLocked}
+          disabled={savingFreeze || (isControlsLocked && isLocked)}
           aria-label={
             isLocked
               ? isControlsLocked
@@ -323,15 +336,23 @@ function KidCard() {
             sfx.tap();
             toast.info("Practice card, so no report is sent. If a real card is lost, tell your parent.");
           }}
-          aria-label="Report card issue"
+          aria-label="Practice card help"
           className="quick-btn"
         >
           <span className="quick-circle">
             <AppIcon name="recall" size={22} />
           </span>
-          <span className="quick-label">Report</span>
+          <span className="quick-label">Help</span>
         </button>
       </div>
+      <PrivacyUnlockSheet isOpen={revealPinOpen} onClose={() => setRevealPinOpen(false)} onSuccess={() => { setRevealPinOpen(false); setShowDetails(true); }} mode="kid" title="View sample details" description="Verify your account PIN to reveal the sample card number. This number cannot make payments." />
+      <Card className="p-4 space-y-2 max-w-[420px] mx-auto">
+        <h2 className="text-sm font-bold">Activity covered by these controls</h2>
+        <p className="text-xs text-[var(--text-secondary)]">Sadaqah and cash withdrawal requests use these limits. These are account activities; there are no bank-card payments.</p>
+        {data.txs.filter(t => t.type === "SADAQAH" || t.type === "WITHDRAWAL").slice(0, 10).map(t => <div key={t.id} className="flex justify-between gap-3 text-xs"><span>{t.label || (t.type === "SADAQAH" ? "Sadaqah" : "Cash withdrawal")} · {new Date(t.created_at).toLocaleDateString("en-MY")}</span><Money amount={Number(t.amount)} /></div>)}
+        {!data.txs.some(t => t.type === "SADAQAH" || t.type === "WITHDRAWAL") && <p className="text-xs">No activity yet.</p>}
+        <p className="text-xs text-[var(--text-secondary)]">To change your account PIN, ask your parent to reset it from your profile in their app. Sample card details do not have a separate PIN.</p>
+      </Card>
 
       {/* Card Settings Modal / Drawer */}
       {showSettings && (
