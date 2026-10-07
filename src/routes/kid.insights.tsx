@@ -21,6 +21,8 @@ import {
 } from "@/lib/labels";
 import { usePrivacy, Money, LogInToView, maskAmounts } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
+import { useReducedMotion } from "framer-motion";
+import { recapBackgrounds, isStoryTap } from "@/lib/recap-backgrounds";
 
 export const Route = createFileRoute("/kid/insights")({
   head: () => ({ meta: [{ title: "Insights | Centsibility" }] }),
@@ -59,6 +61,8 @@ function KidInsights() {
   const [slideProgress, setSlideProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [receiptSheetOpen, setReceiptSheetOpen] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const pointerStartedAt = useRef<number | null>(null);
 
   // Dynamically compute active months (from user's earliest transaction to current month)
   const activeMonths = useMemo(() => {
@@ -112,6 +116,7 @@ function KidInsights() {
     () => buildStorySlides(summary, Number(data?.kid?.coins ?? 0)),
     [summary, data?.kid?.coins],
   );
+  const backgrounds = useMemo(() => recapBackgrounds(data?.kid?.id || "guest", summary.rangeLabel), [data?.kid?.id, summary.rangeLabel]);
 
   // Month-filtered spending data for Monthly Expenses section (fixes May RM1.00 bug)
   const monthData = useMemo(() => {
@@ -176,7 +181,7 @@ function KidInsights() {
 
   // Instagram Stories auto-progress ticker
   useEffect(() => {
-    if (!storyOpen || isPaused || receiptSheetOpen) return;
+    if (!storyOpen || isPaused || receiptSheetOpen || reducedMotion) return;
 
     const interval = 50; // ms
     const step = (interval / 5000) * 100; // 5 seconds per slide
@@ -197,7 +202,7 @@ function KidInsights() {
     }, interval);
 
     return () => window.clearInterval(timer);
-  }, [storyOpen, isPaused, receiptSheetOpen, storyIdx, slides.length]);
+  }, [storyOpen, isPaused, receiptSheetOpen, storyIdx, slides.length, reducedMotion]);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -652,7 +657,7 @@ function KidInsights() {
                           ? `${slideProgress}%`
                           : "0%",
                     transition:
-                      i === storyIdx && !isPaused
+                      i === storyIdx && !isPaused && !reducedMotion
                         ? "width 0.05s linear"
                         : "none",
                   }}
@@ -665,7 +670,10 @@ function KidInsights() {
           <div
             className="story-card"
             style={{
-              flex: 1,
+              flex: "none",
+              width: "min(100%, calc((100dvh - 170px) * 9 / 16))",
+              aspectRatio: "9 / 16",
+              alignSelf: "center",
               borderRadius: "24px",
               padding: "20px 20px 24px",
               display: "flex",
@@ -674,16 +682,23 @@ function KidInsights() {
               cursor: "pointer",
               position: "relative",
               overflow: "hidden",
-              backgroundColor:
-                slides[storyIdx].tone === "primary"
-                  ? "var(--action)"
-                  : slides[storyIdx].tone === "lilac"
-                    ? "var(--blue-800)"
-                    : "var(--gray-800)",
+              backgroundImage: `linear-gradient(rgba(0,0,0,.3), rgba(0,0,0,.12)), url("${backgrounds[storyIdx % backgrounds.length]}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              touchAction: "manipulation",
+              userSelect: "none",
             }}
-            onPointerDown={() => setIsPaused(true)}
+            onPointerDown={(e) => {
+              if ((e.target as HTMLElement).closest("button,a")) return;
+              pointerStartedAt.current = performance.now();
+              e.currentTarget.setPointerCapture(e.pointerId);
+              setIsPaused(true);
+            }}
             onPointerUp={(e) => {
               setIsPaused(false);
+              const started = pointerStartedAt.current;
+              pointerStartedAt.current = null;
+              if (started === null || !isStoryTap(started, performance.now())) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
               if (x < rect.width * 0.35) {
@@ -692,7 +707,7 @@ function KidInsights() {
                 nextStory();
               }
             }}
-            onPointerLeave={() => setIsPaused(false)}
+            onPointerCancel={() => { pointerStartedAt.current = null; setIsPaused(false); }}
           >
             {/* Top Bar: Mascot Avatar, Title, Close Button */}
             <div className="flex items-center justify-between mb-6">
@@ -780,6 +795,11 @@ function KidInsights() {
           </div>
 
           {/* Story Footer with Receipt & Mascot AI buttons (matching Reference Screenshot 2) */}
+          <div className="flex justify-between gap-3 text-white text-xs py-2">
+            <button type="button" onClick={prevStory} disabled={storyIdx === 0}>Previous slide</button>
+            <span role="status">{storyIdx + 1} of {slides.length}{reducedMotion ? " · Tap to advance" : ""}</span>
+            <button type="button" onClick={nextStory}>{storyIdx === slides.length - 1 ? "Finish" : "Next slide"}</button>
+          </div>
           <div
             style={{
               display: "flex",
