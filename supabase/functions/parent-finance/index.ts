@@ -1,3 +1,4 @@
+import { minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/parent-finance/index.ts
 // Handles: all parent-initiated actions
@@ -15,15 +16,8 @@ import {
   callPenny,
   PennyError,
   parentSystemPrompt,
-  buildParentCoachContext,
-  getMytDateInfo,
-  isSpendingTransaction,
-  categoryKey,
-  categoryLabel,
   DEFAULT_PENNY_DAILY_LIMIT,
   MAX_MESSAGE_CHARS,
-  PennyChatMessage,
-  ParentCoachKidData,
 } from "../_shared/deepseek.ts";
 import {
   currentInvestmentValues,
@@ -882,11 +876,10 @@ async function handlePennyChat(
 
   const safety = filterPennyInput(message);
   if (safety) {
-    console.warn(JSON.stringify({ event: "penny-input-filtered", kind: safety.kind }));
+    console.log(JSON.stringify({ intent: "sensitive", fields: [] }));
     return jsonOk({ reply: safety.reply, thinking: false });
   }
 
-  const rawHistory = Array.isArray(params.history) ? (params.history as PennyChatMessage[]) : undefined;
 
   const rawDailyLimit = Deno.env.get("PENNY_DAILY_LIMIT");
   const dailyLimit = rawDailyLimit && !isNaN(Number(rawDailyLimit)) && Number(rawDailyLimit) > 0
@@ -900,116 +893,24 @@ async function handlePennyChat(
 
   const allowPro = Deno.env.get("DEEPSEEK_ALLOW_PRO") === "true";
 
+  const intent = routePennyQuestion(message);
+  let selectedKid = {};
+  if (intent !== "education" && intent !== "navigation") {
+    if (typeof params.kidId !== "string") return jsonOk({ reply: "Choose one child before asking about their account.", thinking: false });
+    const { data, error } = await admin.from("kids").select("id, name, comfort_name, balance, streak, card_frozen, card_controls_locked").eq("id", params.kidId).eq("parent_id", parentId).maybeSingle();
+    if (error || !data) return jsonError("Child not available", 404);
+    selectedKid = data;
+  }
+  const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
+  console.log(JSON.stringify(plan.audit));
+  if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false });
   // 1. Check API key (503 if not set up; do not burn quota)
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
     return jsonError("Penny AI is not set up yet", 503);
   }
 
-  // 2. Fetch up to 6 children and aggregate data
-  const { data: kidsRows, error: kidsErr } = await admin
-    .from("kids")
-    .select("id, name, comfort_name, balance, invest_balance, birth_date, birth_year, age_group_override")
-    .eq("parent_id", parentId)
-    .order("name")
-    .limit(6);
-
-  if (kidsErr) {
-    return jsonError(`Failed to load children data: ${kidsErr.message}`, 500);
-  }
-
-  const cutoff = new Date(Date.now() - 35 * 86400 * 1000).toISOString();
-  const dateInfo = getMytDateInfo();
-  const kidsCoachData: ParentCoachKidData[] = [];
-
-  for (const kid of (kidsRows || [])) {
-    const [ageGroupRes, goalsRes, txsRes, completionsRes, loansRes, approvalsRes, invsInfo] = await Promise.all([
-      admin.rpc("kid_age_group", { p_kid_id: kid.id }),
-      admin.from("goals").select("saved").eq("kid_id", kid.id),
-      admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).gte("created_at", cutoff).order("created_at", { ascending: false }).limit(300),
-      admin.from("quest_completions").select("quest_id", { count: "exact", head: true }).eq("kid_id", kid.id),
-      admin.from("loans").select("status, due_date").eq("kid_id", kid.id),
-      admin.from("approvals").select("id").eq("kid_id", kid.id).eq("status", "pending"),
-      currentInvestmentValues(admin, kid.id),
-    ]);
-
-    const ageGroup = (ageGroupRes.data as string) || "10-12";
-    const tabung = (goalsRes.data || []).reduce((acc: number, g: any) => acc + (Number(g.saved) || 0), 0);
-
-    let spentThisWeek = 0;
-    let spentLastWeek = 0;
-    let savedThisWeek = 0;
-    let sadaqahThisMonth = 0;
-    const catTotals: Record<string, number> = {};
-
-    for (const t of (txsRes.data || [])) {
-      const tMs = new Date(t.created_at).getTime();
-      const typeStr = String(t.type || "");
-      const labelStr = String(t.label || "");
-      const amt = Number(t.amount) || 0;
-
-      const inThisWeek = tMs >= dateInfo.thisWeekStartMs && tMs <= dateInfo.nowMs;
-      const inLastWeek = tMs >= dateInfo.lastWeekStartMs && tMs < dateInfo.lastWeekEndMs;
-      const inThisMonth = tMs >= dateInfo.thisMonthStartMs && tMs <= dateInfo.nowMs;
-
-      if (isSpendingTransaction(typeStr, labelStr)) {
-        if (inThisWeek) {
-          spentThisWeek += amt;
-          const cKey = categoryKey(typeStr, labelStr);
-          const cLabel = categoryLabel(cKey).replace(/_/g, " ");
-          catTotals[cLabel] = (catTotals[cLabel] || 0) + amt;
-        }
-        if (inLastWeek) {
-          spentLastWeek += amt;
-        }
-      }
-
-      if (typeStr === "GOAL_IN" && inThisWeek) {
-        savedThisWeek += amt;
-      }
-
-      if (typeStr === "SADAQAH" && inThisMonth) {
-        sadaqahThisMonth += amt;
-      }
-    }
-
-    const topCategoryEntry = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
-    const topCategoryThisWeek = topCategoryEntry ? topCategoryEntry[0] : null;
-
-    const todayDateStr = new Date().toISOString().slice(0, 10);
-    const loans = loansRes.data || [];
-    const activeLoans = loans.filter((l: any) => l.status === "active");
-    const overdueLoans = activeLoans.filter((l: any) => l.due_date && l.due_date < todayDateStr);
-
-    kidsCoachData.push({
-      comfortName: kid.comfort_name || null,
-      ageGroup,
-      spending: Number(kid.balance) || 0,
-      tabung,
-      growth: invsInfo.totalValue,
-      investments: invsInfo.totalValue,
-      investmentsList: invsInfo.investments,
-      spentThisWeek,
-      spentLastWeek,
-      topCategoryThisWeek,
-      savedThisWeek,
-      sadaqahThisMonth,
-      questsCompleted: completionsRes.count ?? 0,
-      activeLoanCount: activeLoans.length,
-      overdueLoanCount: overdueLoans.length,
-      pendingRequestsCount: (approvalsRes.data || []).length,
-    });
-  }
-
-  const parentComfortName = typeof user?.user_metadata?.comfort_name === "string" && user.user_metadata.comfort_name.trim() !== ""
-    ? user.user_metadata.comfort_name.trim()
-    : null;
-
-  const contextLines = buildParentCoachContext({
-    parentComfortName,
-    kids: kidsCoachData,
-  });
-
+  const contextLines = Object.keys(plan.fields).length ? [JSON.stringify(plan.fields)] : [];
   const system = parentSystemPrompt();
 
   const isThinking = params.thinking !== false;
@@ -1018,11 +919,11 @@ async function handlePennyChat(
     requestParams = buildPennyRequest({
       model: typeof params.model === "string" ? params.model : undefined,
       thinking: isThinking,
-      history: rawHistory,
-      message,
+      history: [],
+      message: plan.question,
       systemPrompt: system,
       groundingData: contextLines,
-      context: params.context as any,
+      context: params.context as { page: string },
       maxTokens: configuredMaxTokens,
       allowPro,
     });
@@ -1031,7 +932,6 @@ async function handlePennyChat(
     return jsonError(msg, 400);
   }
 
-  console.log(`[parent-finance] handlePennyChat parentId=${parentId} model=${requestParams.model} thinking=${isThinking}`);
 
   // 3. Consume parent quota atomically in DB AFTER request is validated
   const { data: remaining, error: quotaErr } = await admin.rpc("parent_consume_penny_quota", {

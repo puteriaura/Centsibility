@@ -1,3 +1,4 @@
+import { minimizePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/kid-finance/index.ts
 
@@ -11,10 +12,8 @@ import {
   callPenny,
   PennyError,
   kidSystemPrompt,
-  buildKidCoachContext,
   DEFAULT_PENNY_DAILY_LIMIT,
   MAX_MESSAGE_CHARS,
-  PennyChatMessage,
   validateBirthdayUpdate,
 } from "../_shared/deepseek.ts";
 import {
@@ -173,7 +172,7 @@ serve(async (req: Request) => {
   if ("message" in logBody) logBody.message = "[REDACTED]";
   if ("history" in logBody) logBody.history = "[REDACTED]";
 
-  console.log(`[kid-finance][${requestId}] action="${action ?? "MISSING"}"`, 
+  if (action !== "penny-chat") console.log(`[kid-finance][${requestId}] action="${action ?? "MISSING"}"`, 
     JSON.stringify(logBody).slice(0, 300));
 
   if (!action) return jsonError('Missing required field: "action"', 400);
@@ -277,7 +276,7 @@ async function sha256(text: string): Promise<string> {
   return encodeHex(new Uint8Array(hashBuffer));
 }
 
-async function getKid(admin: Admin, token: unknown, requestId: string) {
+async function getKid(admin: Admin, token: unknown, requestId: string, quiet = false) {
   if (!token || typeof token !== "string" || token.trim() === "") {
     throw new Error("Missing or invalid session code");
   }
@@ -289,7 +288,7 @@ async function getKid(admin: Admin, token: unknown, requestId: string) {
   }
   if (!data) throw new Error("Invalid or expired session");
 
-  console.log(`[kid-finance][${requestId}] getKid: id=${data.id} name="${data.name}"`);
+  if (!quiet) console.log(`[kid-finance][${requestId}] getKid: id=${data.id} name="${data.name}"`);
   return data;
 }
 
@@ -1068,7 +1067,7 @@ async function handleUploadAvatar(admin: Admin, params: Record<string, unknown>,
 }
 
 async function handlePennyChat(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const kid = await getKid(admin, params.code, requestId);
+  const kid = await getKid(admin, params.code, requestId, true);
 
   const message = typeof params.message === "string" ? params.message.trim() : "";
   if (!message) {
@@ -1080,11 +1079,10 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const safety = filterPennyInput(message);
   if (safety) {
-    console.warn(JSON.stringify({ event: "penny-input-filtered", kind: safety.kind }));
+    console.log(JSON.stringify({ intent: "sensitive", fields: [] }));
     return jsonOk({ reply: safety.reply, thinking: false });
   }
 
-  const rawHistory = Array.isArray(params.history) ? (params.history as PennyChatMessage[]) : undefined;
 
   const rawDailyLimit = Deno.env.get("PENNY_DAILY_LIMIT");
   const dailyLimit = rawDailyLimit && !isNaN(Number(rawDailyLimit)) && Number(rawDailyLimit) > 0
@@ -1098,98 +1096,29 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const allowPro = Deno.env.get("DEEPSEEK_ALLOW_PRO") === "true";
 
+  const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
+  console.log(JSON.stringify(plan.audit));
+  if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false });
   // 1. Check API key (503 if not set up; do not burn quota)
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
     return jsonError("Penny AI is not set up yet", 503);
   }
 
-  // 2. Fetch context data
-  // keep in sync with tests/sql/penny-context-columns.test.mjs
-  const cutoff = new Date(Date.now() - 35 * 86400 * 1000).toISOString();
-  const [ageGroupRes, goalsRes, loansRes, txsRes, completionsRes, questBoardRes, invsInfo] = await Promise.all([
-    admin.rpc("kid_age_group", { p_kid_id: kid.id }),
-    admin.from("goals").select("name, target, saved").eq("kid_id", kid.id).limit(10),
-    admin.from("loans").select("amount, repaid, status, due_date").eq("kid_id", kid.id).limit(5),
-    admin.from("transactions").select("type, amount, label, created_at").eq("kid_id", kid.id).gte("created_at", cutoff).order("created_at", { ascending: false }).limit(300),
-    admin.from("quest_completions").select("completed_at, quests(title)").eq("kid_id", kid.id).order("completed_at", { ascending: false }).limit(5),
-    admin.rpc("kid_quest_board", { p_kid_id: kid.id }),
-    currentInvestmentValues(admin, kid.id),
-  ]);
-
-  const ageGroup = (ageGroupRes.data as string) || "10-12";
-
-  const goals = (goalsRes.data ?? []).map((g: any) => ({
-    name: String(g.name || "Goal"),
-    target: Number(g.target) || 0,
-    saved: Number(g.saved) || 0,
-  }));
-
-  const loans = (loansRes.data ?? []).map((l: any) => ({
-    amount: Number(l.amount) || 0,
-    repaid: Number(l.repaid) || 0,
-    status: String(l.status || "active"),
-  }));
-
-  const txs = (txsRes.data ?? []).map((t: any) => ({
-    type: String(t.type || ""),
-    amount: Number(t.amount) || 0,
-    label: String(t.label || ""),
-    created_at: String(t.created_at || ""),
-  }));
-
-  const questCompletions = (completionsRes.data ?? []).map((c: any) => ({
-    title: String(c.quests?.title || "Quest"),
-    completedAt: String(c.completed_at || "").slice(0, 10),
-  }));
-
-  const { count: questsCompletedCount } = await admin
-    .from("quest_completions")
-    .select("quest_id", { count: "exact", head: true })
-    .eq("kid_id", kid.id);
-
-  let nextQuestTitle: string | null = null;
-  if (Array.isArray(questBoardRes.data)) {
-    const nextOpen = questBoardRes.data.find((q: any) => q.status === "open");
-    if (nextOpen?.title) nextQuestTitle = String(nextOpen.title);
-  }
-
-  // Privacy: comfort_name only
-  const pennyName = typeof kid.comfort_name === "string" && kid.comfort_name.trim() !== ""
-    ? kid.comfort_name.trim()
-    : undefined;
-
-  const kidCoachInput = {
-    ageGroup,
-    name: pennyName,
-    balance: Number(kid.balance) || 0,
-    investBalance: invsInfo.totalValue,
-    investmentsValue: invsInfo.totalValue,
-    investments: invsInfo.investments,
-    coins: Number(kid.coins) || 0,
-    streakDays: Number(kid.streak) || 0,
-    goals,
-    loans,
-    transactions: txs,
-    questCompletions,
-    questsCompletedCount: questsCompletedCount ?? 0,
-    nextQuestTitle,
-  };
-
   const isThinking = params.thinking !== false;
-  const contextLines = buildKidCoachContext(kidCoachInput);
-  const system = kidSystemPrompt(ageGroup);
+  const contextLines = Object.keys(plan.fields).length ? [JSON.stringify(plan.fields)] : [];
+  const system = kidSystemPrompt();
 
   let requestParams;
   try {
     requestParams = buildPennyRequest({
       model: typeof params.model === "string" ? params.model : undefined,
       thinking: isThinking,
-      history: rawHistory,
-      message,
+      history: [],
+      message: plan.question,
       systemPrompt: system,
       groundingData: contextLines,
-      context: params.context as any,
+      context: params.context as { page: string },
       maxTokens: configuredMaxTokens,
       allowPro,
     });
@@ -1207,7 +1136,6 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     return handleRpcError(quotaErr);
   }
 
-  console.log(`[kid-finance][${requestId}] handlePennyChat kidId=${kid.id} ageGroup=${ageGroup} model=${requestParams.model} thinking=${isThinking}`);
 
   // 4. Call DeepSeek via shared callPenny
   try {

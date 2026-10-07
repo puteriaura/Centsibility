@@ -683,7 +683,6 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
   const {
     model: requestedModel,
     thinking = true,
-    history = [],
     message,
     systemPrompt,
     groundingData,
@@ -706,21 +705,8 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
   const modelConfig = DEEPSEEK_MODELS[modelId];
   const clampedTokens = clampMaxTokens(maxTokens, modelId, thinking);
 
-  const validHistory = (history || []).filter(
-    (h) =>
-      h && typeof h === "object" &&
-      (h.role === "user" || h.role === "assistant") &&
-      typeof h.content === "string" &&
-      h.content.trim() !== "" && !filterPennyInput(h.content)
-  );
-
-  const trimmedHistory = validHistory.slice(-MAX_HISTORY_TURNS);
-
-  for (const h of trimmedHistory) {
-    if (h.content.length > MAX_MESSAGE_CHARS) {
-      throw new Error(`History message exceeds maximum length of ${MAX_MESSAGE_CHARS} characters`);
-    }
-  }
+  // Each request is independent: client history cannot prove a turn was account-free.
+  const trimmedHistory: PennyChatMessage[] = [];
 
   let system = systemPrompt || kidSystemPrompt(kidContext?.ageGroup);
 
@@ -835,8 +821,7 @@ export async function callPenny(
       console.warn("Penny AI request timed out");
       throw new PennyError("Penny timed out, try again soon", 504);
     }
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("DeepSeek call failed:", msg);
+    console.error("DeepSeek request failed");
     throw new PennyError("Penny AI service error", 500);
   }
 
