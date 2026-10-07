@@ -5,7 +5,10 @@ import { usePenny } from "./PennyProvider";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { NumericKeypad, PIN_KEYPAD_KEYS } from "@/components/ui/numeric-keypad";
-import { PennyMarkdown } from "@/components/PennyMarkdown";
+import { StreamingPennyReply } from "@/components/StreamingPennyReply";
+import { AIInputWithLoading } from "@/components/AIInputWithLoading";
+import { ShiningText } from "@/components/ShiningText";
+import { cn } from "@/lib/utils";
 import { edgeParentVerifyPin } from "@/lib/edge";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
@@ -75,7 +78,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   } = usePenny();
 
   const attemptStatus = usePinStatus("parent", parentPinRequired);
-  const [input, setInput] = React.useState("");
+  const initialMessageIds = React.useRef(new Set(messages.map(m => m.id)));
   const [pinInput, setPinInput] = React.useState("");
   const [pinProcessing, setPinProcessing] = React.useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
@@ -83,14 +86,6 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || busy) return;
-    const text = input;
-    setInput("");
-    void send(text);
-  };
 
   const handlePinKeyPress = async (key: string) => {
     if (pinProcessing || attemptStatus.locked) return;
@@ -136,7 +131,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   };
 
   return (
-    <div className={`penny-chat ${inDrawer ? "penny-chat--drawer" : ""}`}>
+    <div className={cn("penny-chat", inDrawer && "penny-chat--drawer")}>
       {/* Standalone header if not inside drawer */}
       {!inDrawer && (
         <header className="penny-chat__header">
@@ -190,11 +185,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             {[0, 1, 2, 3, 4, 5].map((idx) => (
               <span
                 key={idx}
-                className={`w-3.5 h-3.5 rounded-full border border-[var(--primary)] transition-all ${
-                  idx < pinInput.length
-                    ? "bg-[var(--primary)] scale-110"
-                    : "bg-transparent"
-                }`}
+                className={cn("w-3.5 h-3.5 rounded-full border border-[var(--primary)] transition-all", idx < pinInput.length ? "bg-[var(--primary)] scale-110" : "bg-transparent")}
               />
             ))}
           </div>
@@ -231,7 +222,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
                 </div>
               ) : (
                 <div key={m.id} className="penny-assistant">
-                  <PennyMarkdown text={m.text} />
+                  <StreamingPennyReply text={m.text} animate={m.id === messages[messages.length - 1]?.id && !initialMessageIds.current.has(m.id)} />
                   {m.offline && (
                     <p className="text-[11px] text-[var(--text-secondary)] m-0 mt-1 italic">
                       Penny is using offline answers right now
@@ -281,7 +272,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             {busy && (
               <div className="penny-assistant">
                 <p className="penny-assistant__text text-[var(--text-secondary)] italic flex items-center gap-1.5">
-                  <span>Penny is thinking…</span>
+                  <ShiningText text="Penny is thinking…" />
                 </p>
               </div>
             )}
@@ -325,32 +316,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
           </div>
 
           {/* Message Composer */}
-          <form className="penny-chat__composer" onSubmit={handleSubmit}>
-            <label htmlFor={`penny-input-${mode}`} className="sr-only">
-              Ask Penny
-            </label>
-            <input
-              id={`penny-input-${mode}`}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                mode === "kid"
-                  ? "Ask Penny"
-                  : "Ask Penny about your kids' finances..."
-              }
-              autoComplete="off"
-              disabled={busy}
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              disabled={busy || !input.trim()}
-              aria-label="Send message to Penny"
-            >
-              Send
-            </Button>
-          </form>
+          <AIInputWithLoading id={`penny-input-${mode}`} busy={busy} onSubmit={send} placeholder={mode === "kid" ? "Ask about saving, spending, or where to tap" : "Ask about your family’s money habits"} />
 
           {/* Disclaimer */}
           <p className="penny-chat__disclaimer">
