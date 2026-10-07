@@ -1,3 +1,4 @@
+import type { MarketUsage } from "../../supabase/functions/_shared/market-types";
 import type { PennyIntent } from "../../supabase/functions/_shared/penny-intents";
 // Typed helpers for invoking Supabase Edge Functions.
 // These replace the old client-side "server function" calls
@@ -1836,6 +1837,9 @@ export interface MarketSymbolItem {
   is_market_open?: boolean;
   last_updated?: string | null;
   stale?: boolean;
+  last_close?: number;
+  last_close_as_of?: string;
+  degraded_reason?: MarketSymbolDetailResponse["degradedReason"];
   halal_url?: string;
   verified?: boolean;
 }
@@ -1861,10 +1865,14 @@ export interface MarketSymbolDetailResponse {
   available: boolean;
   stale?: boolean;
   marketState?: "open" | "closed" | "unknown";
+  lastClose?: number;
+  lastCloseAsOf?: string;
+  degradedReason?: "local_quota" | "provider_quota" | "monitor_unavailable";
   dailyCloses: Array<{ day: string; close: number }>;
 }
 
 export interface MarketQuotesResponse {
+  usage?: MarketUsage;
   marketState: "open" | "closed" | "unknown";
   quotes: Record<string, Omit<MarketSymbolDetailResponse, "dailyCloses" | "symbol">>;
 }

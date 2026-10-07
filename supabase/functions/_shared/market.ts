@@ -1,3 +1,4 @@
+import type { MarketUsage } from "./market-types.ts";
 // supabase/functions/_shared/market.ts
 // T36: Market Tracker integration with Twelve Data
 import { SCREENING } from "./market-screening.ts";
@@ -43,6 +44,9 @@ export interface MarketQuoteResult {
   fetchedAt?: string;
   quote?: MarketQuote;
   marketState?: "open" | "closed" | "unknown";
+  degradedReason?: "local_quota" | "provider_quota" | "monitor_unavailable";
+  lastClose?: number;
+  lastCloseAsOf?: string;
 }
 
 export interface MarketTimeSeriesResult {
@@ -141,55 +145,28 @@ export function parseTimeSeriesPayload(data: unknown): Array<{ day: string; clos
   return result;
 }
 
-export async function checkRateLimit(
-  admin: any,
-  symbol: string,
-  endpoint: string,
-  now: Date = new Date()
-): Promise<boolean> {
-  const oneMinAgo = new Date(now.getTime() - 60 * 1000).toISOString();
-  const startOfDayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
-  const twoDaysAgo = new Date(now.getTime() - 2 * 86400 * 1000).toISOString();
-
-  // Clean old rows older than 2 days
+export async function getMarketUsage(admin: any, now = new Date()): Promise<MarketUsage> {
+  const countSince = async (since: string) => {
+    try {return await admin.from("market_api_calls").select("id",{count:"exact",head:true}).gte("called_at",since)}
+    catch {return {count:null,error:true}}
+  };
+  const minute = await countSince(new Date(now.getTime()-60000).toISOString());
+  const day = await countSince(new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate())).toISOString());
+  const monitoringAvailable = !minute.error && !day.error && Number.isInteger(minute.count) && Number.isInteger(day.count);
+  const usage = {minuteCalls: minute.error || !Number.isInteger(minute.count) ? null : minute.count, dailyCalls: day.error || !Number.isInteger(day.count) ? null : day.count, minuteLimit:6, dailyLimit:700, quotaHit: monitoringAvailable && (minute.count >= 6 || day.count >= 700), monitoringAvailable};
+  console.log(JSON.stringify({event:"market-call-count", ...usage}));
+  return usage;
+}
+export async function checkRateLimit(admin: any, symbol: string, endpoint: string, now = new Date()): Promise<boolean> {
+  // ponytail: observational counters can race across requests; an atomic budget RPC
+  // is needed if exact multi-request credit enforcement becomes a requirement.
+  try {await admin.from("market_api_calls").delete().lt("called_at", new Date(now.getTime()-2*86400000).toISOString())} catch { /* Counts below determine whether refresh is safe. */ }
+  const usage = await getMarketUsage(admin, now);
+  if (!usage.monitoringAvailable || usage.quotaHit) return false;
   try {
-    await admin.from("market_api_calls").delete().lt("called_at", twoDaysAgo);
-  } catch {
-    // Non-fatal
-  }
-
-  // Check calls in last 60 seconds (max 6)
-  const { count: countMin, error: errMin } = await admin
-    .from("market_api_calls")
-    .select("id", { count: "exact", head: true })
-    .gte("called_at", oneMinAgo);
-
-  if (!errMin && countMin !== null && countMin >= 6) {
-    return false;
-  }
-
-  // Check calls today UTC (max 700)
-  const { count: countDay, error: errDay } = await admin
-    .from("market_api_calls")
-    .select("id", { count: "exact", head: true })
-    .gte("called_at", startOfDayUtc);
-
-  if (!errDay && countDay !== null && countDay >= 700) {
-    return false;
-  }
-
-  // Record call
-  try {
-    await admin.from("market_api_calls").insert({
-      called_at: now.toISOString(),
-      symbol,
-      endpoint,
-    });
-  } catch {
-    // Non-fatal
-  }
-
-  return true;
+    const recorded = await admin.from("market_api_calls").insert({called_at:now.toISOString(),symbol,endpoint});
+    return !recorded.error;
+  } catch {return false}
 }
 
 export function isMarketHoursWindow(now: Date = new Date()): boolean {
@@ -254,15 +231,19 @@ export async function getQuote(
     };
   }
 
-  // A closed/unknown session never spends quote credits. Availability and age remain separate.
-  if (marketSession(now) !== "open") return cachedQuote
-    ? { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: marketSession(now) === "closed" ? { ...cachedQuote, is_market_open: false } : cachedQuote, marketState: marketSession(now) }
-    : { available: false, marketState: marketSession(now) };
+  // Keep the trading quote intact. Last-close presentation must never substitute
+  // an intraday cached value or entry price for a certified closing value.
+  if (marketSession(now) !== "open") {
+    const lastClose = cachedQuote ? cachedQuote.is_market_open || isMarketHoursWindow(new Date(cachedQuote.fetched_at)) ? cachedQuote.previous_close : cachedQuote.price : null;
+    return cachedQuote ? {available:true, stale:isQuoteStale(cachedQuote,now), fetchedAt:cachedQuote.fetched_at, quote:{...cachedQuote,is_market_open:false}, marketState:marketSession(now),
+      ...(Number.isFinite(lastClose) && Number(lastClose)>0 ? {lastClose:Number(lastClose),lastCloseAsOf:cachedQuote.price_time ?? cachedQuote.fetched_at} : {})}
+      : {available:false,marketState:marketSession(now)};
+  }
   // Stale provider timestamps do not bypass the 15-minute fetch cache.
-  if (cachedQuote && Number.isFinite(Date.parse(cachedQuote.fetched_at)) && now.getTime() - Date.parse(cachedQuote.fetched_at) < 15 * 60 * 1000) return { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: cachedQuote, marketState: cachedQuote.is_market_open ? "open" : "closed" };
+  if (cachedQuote && Number.isFinite(Date.parse(cachedQuote.fetched_at)) && now.getTime() - Date.parse(cachedQuote.fetched_at) < 15 * 60 * 1000) return { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: cachedQuote, marketState: cachedQuote.is_market_open ? "open" : "closed", ...(!cachedQuote.is_market_open && cachedQuote.previous_close && cachedQuote.previous_close > 0 ? {lastClose:cachedQuote.previous_close,lastCloseAsOf:cachedQuote.price_time ?? cachedQuote.fetched_at} : {}) };
   // A provider-reported exceptional closure during today's core session lasts until next session.
   const exchangeDate = (date: Date) => date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  if (cachedQuote && !cachedQuote.is_market_open && isMarketHoursWindow(new Date(cachedQuote.fetched_at)) && exchangeDate(now) === exchangeDate(new Date(cachedQuote.fetched_at))) return { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: cachedQuote, marketState: "closed" };
+  if (cachedQuote && !cachedQuote.is_market_open && isMarketHoursWindow(new Date(cachedQuote.fetched_at)) && exchangeDate(now) === exchangeDate(new Date(cachedQuote.fetched_at))) return { available: true, stale: isQuoteStale(cachedQuote, now), fetchedAt: cachedQuote.fetched_at, quote: cachedQuote, marketState: "closed", ...(cachedQuote.previous_close && cachedQuote.previous_close > 0 ? {lastClose:cachedQuote.previous_close,lastCloseAsOf:cachedQuote.price_time ?? cachedQuote.fetched_at} : {}) };
 
   // If no key at all
   if (!apiKey || apiKey.trim() === "") {
@@ -277,13 +258,13 @@ export async function getQuote(
     return { available: true, stale: false, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
   }
 
-  // Stale or not cached -> check rate limit
+  const fallback = (degradedReason?: MarketQuoteResult["degradedReason"]): MarketQuoteResult => cachedQuote
+    ? {available:true,stale:true,fetchedAt:cachedQuote.fetched_at,quote:cachedQuote,marketState:marketSession(now),degradedReason}
+    : {available:false,marketState:marketSession(now),degradedReason};
   const allowed = await checkRateLimit(admin, symbol, "quote", now);
   if (!allowed) {
-    if (cachedQuote) {
-      return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
-    }
-    return { available: false };
+    const usage = await getMarketUsage(admin,now);
+    return fallback(usage.quotaHit ? "local_quota" : "monitor_unavailable");
   }
 
   // Call Twelve Data
@@ -295,21 +276,10 @@ export async function getQuote(
       },
     });
 
-    if (!res.ok) {
-      if (cachedQuote) {
-        return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
-      }
-      return { available: false };
-    }
-
+    if (!res.ok) return fallback(res.status === 429 ? "provider_quota" : undefined);
     const json = await res.json();
     const parsed = parseQuotePayload(json);
-    if (!parsed || parsed.symbol !== symbol) {
-      if (cachedQuote) {
-        return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
-      }
-      return { available: false };
-    }
+    if (!parsed || parsed.symbol !== symbol) return fallback(Number(json?.code) === 429 ? "provider_quota" : undefined);
 
     // Upsert into market_quotes
     const nowIso = now.toISOString();
@@ -324,7 +294,7 @@ export async function getQuote(
       fetched_at: nowIso,
     });
 
-    return { available: true, stale: isQuoteStale(parsed, now), fetchedAt: nowIso, quote: parsed };
+    return { available: true, stale: isQuoteStale(parsed, now), fetchedAt: nowIso, quote: parsed, marketState: parsed.is_market_open ? "open" : "closed", ...(!parsed.is_market_open && parsed.previous_close && parsed.previous_close > 0 ? {lastClose:parsed.previous_close,lastCloseAsOf:parsed.price_time ?? nowIso} : {}) };
   } catch {
     if (cachedQuote) {
       return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
@@ -459,5 +429,6 @@ export async function getVisibleQuotes(admin: Parameters<typeof getQuote>[0], re
   if (symbols.some(s => !allowed.has(s))) throw new Error("Instrument not in our verified catalogue");
   const quotes: Record<string, MarketQuoteResult> = {};
   for (const symbol of symbols) quotes[symbol] = await getQuote(admin, symbol, options);
-  return { quotes, marketState: marketSession(options?.now) };
+  const usage = await getMarketUsage(admin, options?.now);
+  return { quotes, marketState: marketSession(options?.now), usage };
 }

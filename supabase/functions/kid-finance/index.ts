@@ -741,6 +741,9 @@ async function handleMarketSymbol(admin: Admin, params: Record<string, unknown>,
     available: quoteRes.available,
     stale: quoteRes.stale,
     marketState: quoteRes.marketState,
+    lastClose: quoteRes.lastClose,
+    lastCloseAsOf: quoteRes.lastCloseAsOf,
+    degradedReason: quoteRes.degradedReason,
     dailyCloses: closesRes.closes,
   });
 }
