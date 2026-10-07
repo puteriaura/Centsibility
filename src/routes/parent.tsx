@@ -15,6 +15,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isParentBypassed, setParentBypassed } from "@/lib/admin-bypass";
+import { usePinStatus } from "@/hooks/use-pin-status";
 
 export const Route = createFileRoute("/parent")({
   component: ParentLayout,
@@ -62,6 +63,7 @@ function ParentLayout() {
   const [isSettingPin, setIsSettingPin] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinProcessing, setPinProcessing] = useState(false);
+  const attemptStatus = usePinStatus("parent", Boolean(user) && !initialising && !pinVerified && !isSettingPin);
   const [onboardingStep, setOnboardingStep] = useState<1 | 2 | 3>(1);
   const [comfortNameInput, setComfortNameInput] = useState(() => {
     const meta = (user?.user_metadata as any);
@@ -524,9 +526,10 @@ function ParentLayout() {
           <NumericKeypad
             keys={PIN_KEYPAD_KEYS}
             onKeyPress={handleKeyPress}
-            disabled={pinProcessing}
+            disabled={pinProcessing || attemptStatus.locked}
             variant="pin"
           />
+          <p role="status" className="text-xs text-[var(--text-secondary)] text-center">{attemptStatus.message}</p>
         </div>
       </div>
     );

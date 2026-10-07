@@ -9,6 +9,7 @@ import { NumericKeypad, PIN_KEYPAD_KEYS } from "@/components/ui/numeric-keypad";
 import { SuccessState } from "@/components/SuccessState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMoneyAction } from "@/hooks/use-money-action";
+import { usePinStatus } from "@/hooks/use-pin-status";
 import { useAuth } from "@/providers/auth";
 import { getKidSession } from "@/lib/kid-session";
 import { formatRM } from "@/lib/format";
@@ -62,6 +63,7 @@ export function TransferFlow({
 
   // Wizard state: 1 = Recipient, 2 = Amount & Note, 3 = Review, 4 = PIN
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const attemptStatus = usePinStatus(mode, step === 4);
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Recipient selection state
@@ -169,7 +171,7 @@ export function TransferFlow({
 
   // PIN Keypress handler
   const handlePinPress = (key: string) => {
-    if (busy || pinSubmittingRef.current) return;
+    if (busy || pinSubmittingRef.current || attemptStatus.locked) return;
     if (pinError) setPinError(null);
 
     if (key === "delete" || key === "⌫") {
@@ -787,10 +789,11 @@ export function TransferFlow({
           )}
 
           {/* Keypad */}
+          <p role="status" className="text-xs text-[var(--text-secondary)]">{attemptStatus.message}</p>
           <NumericKeypad
             keys={PIN_KEYPAD_KEYS}
             onKeyPress={handlePinPress}
-            disabled={busy}
+            disabled={busy || attemptStatus.locked}
             variant="pin"
           />
 

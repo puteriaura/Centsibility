@@ -244,6 +244,11 @@ serve(async (req: Request) => {
       case "transfer-recipients": return await handleTransferRecipients(admin, params, requestId);
       case "transfer":         return await handleTransfer(admin, params, requestId);
       case "unlock":           return await handleUnlock(admin, params, requestId);
+      case "pin-status": {
+        const kid = await getKid(admin, params.code, requestId);
+        const { data, error } = await admin.rpc("pin_account_status", { p_mode: "kid", p_id: kid.id });
+        return error ? handleRpcError(error) : jsonOk(data);
+      }
       default:
         return jsonError(`Unknown action: "${action}"`, 400);
     }
@@ -317,28 +322,8 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
     return jsonError("Account setup incomplete. Please enter your one-time access code to set your 6-digit PIN.", 400);
   }
 
-  if (kid.locked_until && new Date() < new Date(kid.locked_until)) {
-    const mins = Math.ceil((new Date(kid.locked_until).getTime() - Date.now()) / 60000);
-    return jsonError(`Account locked. Try again in ${mins} minutes.`, 403);
-  }
-
-  let isValid = false;
-  try {
-    isValid = await bcrypt.compare(pin, kid.hashed_pin || "");
-  } catch (e) {
-    return jsonError("PIN verification failed", 500, e);
-  }
-
-  if (!isValid) {
-    const attempts = (Number(kid.failed_login_attempts) || 0) + 1;
-    const locked_until = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
-    await admin.from("kids").update({ failed_login_attempts: attempts, locked_until }).eq("id", kid.id);
-    return jsonError("Invalid username or PIN", 400);
-  }
-
-  if ((kid.failed_login_attempts && kid.failed_login_attempts > 0) || kid.locked_until) {
-    await admin.from("kids").update({ failed_login_attempts: 0, locked_until: null }).eq("id", kid.id);
-  }
+  const pinCheck = await checkKidPin(admin, kid, pin);
+  if (!pinCheck.ok) return jsonError(pinCheck.error || "Invalid username or PIN", pinCheck.status || 400);
 
   const sessionToken = randomHex(32);
   await admin.from("kids").update({ session_token: sessionToken }).eq("id", kid.id);
@@ -1345,4 +1330,4 @@ async function handleTransfer(admin: Admin, params: Record<string, unknown>, req
   } else {
     return jsonError("Invalid recipient type", 400);
   }
-}
+}

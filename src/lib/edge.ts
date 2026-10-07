@@ -17,6 +17,7 @@ import {
   DEMO_KIDS,
 } from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
+import { getKidSession } from "@/lib/kid-session";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -1404,6 +1405,13 @@ export async function edgeKidUnlock(params: { code: string; pin: string }) {
   return invoke<{ ok: boolean }>("kid-finance", {
     action: "unlock",
     ...params,
+  });
+}
+
+export interface PinStatus { attemptsLeft: number; lockedUntil: string | null }
+export async function edgePinStatus(mode: "kid" | "parent") {
+  return invoke<PinStatus>(mode === "kid" ? "kid-finance" : "parent-finance", {
+    action: "pin-status", ...(mode === "kid" ? { code: getKidSession()?.code } : {}),
   });
 }
 

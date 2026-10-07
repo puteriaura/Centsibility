@@ -1,4 +1,5 @@
 import * as React from "react";
+import { usePinStatus } from "@/hooks/use-pin-status";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { usePenny } from "./PennyProvider";
 import { AppIcon } from "@/components/ui/app-icon";
@@ -73,6 +74,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
     retryAfterParentPin,
   } = usePenny();
 
+  const attemptStatus = usePinStatus("parent", parentPinRequired);
   const [input, setInput] = React.useState("");
   const [pinInput, setPinInput] = React.useState("");
   const [pinProcessing, setPinProcessing] = React.useState(false);
@@ -91,7 +93,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   };
 
   const handlePinKeyPress = async (key: string) => {
-    if (pinProcessing) return;
+    if (pinProcessing || attemptStatus.locked) return;
     if (key === "delete" || key === "⌫") {
       setPinInput((prev) => prev.slice(0, -1));
       return;
@@ -198,10 +200,11 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
           </div>
 
           <div className="w-full max-w-xs">
+            <p role="status" className="text-xs text-[var(--text-secondary)]">{attemptStatus.message}</p>
             <NumericKeypad
               keys={PIN_KEYPAD_KEYS}
               onKeyPress={handlePinKeyPress}
-              disabled={pinProcessing}
+              disabled={pinProcessing || attemptStatus.locked}
               variant="pin"
             />
           </div>

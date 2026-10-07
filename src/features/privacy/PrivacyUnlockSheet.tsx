@@ -5,6 +5,7 @@ import { sfx } from "@/lib/sounds";
 import { edgeKidUnlock, edgeParentVerifyPin } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
+import { usePinStatus } from "@/hooks/use-pin-status";
 
 export interface PrivacyUnlockSheetProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function PrivacyUnlockSheet({
   const [pin, setPin] = React.useState("");
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const attemptStatus = usePinStatus(mode, isOpen);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -36,7 +38,7 @@ export function PrivacyUnlockSheet({
   }, [isOpen]);
 
   const handleKeyPress = async (key: string) => {
-    if (busy) return;
+    if (busy || attemptStatus.locked) return;
     setErrorMsg(null);
 
     if (key === "delete" || key === "⌫") {
@@ -83,11 +85,7 @@ export function PrivacyUnlockSheet({
               onSuccess();
               onClose();
             } else {
-              const attemptsMsg =
-                res.attemptsLeft !== undefined
-                  ? `Incorrect PIN. ${res.attemptsLeft} attempt${res.attemptsLeft === 1 ? "" : "s"} left`
-                  : "That PIN isn't right.";
-              setErrorMsg(attemptsMsg);
+              setErrorMsg("That PIN isn't right.");
               sfx.error();
               setPin("");
             }
@@ -95,7 +93,7 @@ export function PrivacyUnlockSheet({
         } catch (err: unknown) {
           const msg =
             err instanceof Error ? err.message : "PIN verification failed";
-          setErrorMsg(msg);
+          setErrorMsg(msg.replace(/\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi, ""));
           sfx.error();
           setPin("");
         } finally {
@@ -143,11 +141,12 @@ export function PrivacyUnlockSheet({
           </p>
         )}
 
+        <p role="status" className="text-xs text-[var(--text-secondary)] text-center">{attemptStatus.message}</p>
         <div className="w-full max-w-xs mx-auto">
           <NumericKeypad
             variant="pin"
             keys={PIN_KEYPAD_KEYS}
-            disabled={busy}
+            disabled={busy || attemptStatus.locked}
             onKeyPress={handleKeyPress}
           />
         </div>

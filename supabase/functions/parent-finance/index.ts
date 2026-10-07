@@ -93,6 +93,10 @@ serve(async (req: Request) => {
         return await handleSetPin(adminClient, parentId, params);
       case "get-pin":
         return await handleGetPin(adminClient, parentId);
+      case "pin-status": {
+        const { data, error } = await adminClient.rpc("pin_account_status", { p_mode: "parent", p_id: parentId });
+        return error ? jsonError("PIN status unavailable", 503) : jsonOk(data);
+      }
       case "verify-pin":
         return await handleVerifyPin(adminClient, parentId, params);
       case "clear-pin":
@@ -1090,4 +1094,3 @@ async function handleKidInvestments(
 
   return jsonOk({ investmentsByKid: byKid, byKid });
 }
-
