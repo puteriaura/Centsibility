@@ -684,7 +684,7 @@ function KidInvest() {
                 </div>
 
                 <p className="text-xs text-[var(--text-muted)]">
-                  Delayed price · updated {fmtTime(selected.lastUpdated)}
+                  {selected.isMarketOpen === false ? "Market closed · saved quote" : "Delayed price"} · updated {fmtTime(selected.lastUpdated)}
                 </p>
 
                 {/* Price chart */}

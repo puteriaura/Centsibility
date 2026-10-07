@@ -3,6 +3,7 @@
 
 import { OpenInvestmentContext } from "./deepseek.ts";
 import { isQuoteStale } from "./market.ts";
+import { marketSession } from "./market-calendar.ts";
 
 export interface InvestmentValueResult {
   totalValue: number | null;
@@ -150,7 +151,8 @@ export async function formatInvestmentList(
           entryDate,
           currentPrice,
           lastUpdated: qRow?.price_time || qRow?.fetched_at || null,
-          isMarketOpen: qRow ? Boolean(qRow.is_market_open) : null,
+          isMarketOpen: !qRow || marketSession(now) === "unknown" ? null
+            : marketSession(now) === "closed" ? false : Boolean(qRow.is_market_open),
           stale: qRow ? isQuoteStale(qRow, now) : false,
           chartPoints,
           endsAt: inv.closed_at ?? null,
