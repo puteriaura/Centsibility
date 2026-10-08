@@ -46,7 +46,8 @@ import { Money, useMoney } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
-import { filterMarketSymbols, marketCatalogueMessage } from "@/lib/market-search";
+import { filterMarketSymbols, marketCatalogueNeedsUpdate } from "@/lib/market-search";
+import { MarketCatalogueNotice } from "@/features/kid/MarketCatalogueNotice";
 
 export const Route = createFileRoute("/kid/invest")({
   head: () => ({ meta: [{ title: "Investment | Centsibility" }] }),
@@ -262,6 +263,7 @@ function KidInvest() {
 
   // Curated symbols filtered
   const filteredSymbols = useMemo(() => {
+    if (marketCatalogueNeedsUpdate(marketData?.symbols ?? [])) return [];
     return filterMarketSymbols((marketData?.symbols ?? []).filter(s => s.verified), searchQuery);
   }, [marketData, searchQuery]);
 
@@ -1489,7 +1491,7 @@ function KidInvest() {
 
                   {/* Symbol List */}
                   <div ref={pickerListRef} className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
-                    {marketError && <p role="alert" className="text-xs text-[var(--error-text)]">{marketError} <button type="button" onClick={fetchMarketSymbols}>Retry</button></p>}
+                    {marketError && filteredSymbols.length > 0 && <p role="alert" className="text-xs text-[var(--error-text)]">Catalogue failed to load. Please retry. <button type="button" onClick={fetchMarketSymbols}>Retry</button></p>}
                     {filteredSymbols.map((item) => { const s = { ...item, ...quoteRows[item.symbol] }; const presentation = marketPricePresentation(s.is_market_open === undefined ? "unknown" : s.is_market_open ? "open" : "closed", s.price, s.last_close); return (
                       <div
                         key={s.symbol}
@@ -1563,9 +1565,7 @@ function KidInvest() {
                       </div>
                     ); })}
                     {filteredSymbols.length === 0 && (
-                      <p className="text-xs text-[var(--text-muted)] text-center py-4">
-                        {marketCatalogueMessage(Boolean(marketData), Boolean(marketError), searchQuery)}
-                      </p>
+                      <MarketCatalogueNotice symbols={marketData?.symbols} failed={Boolean(marketError)} query={searchQuery} onRetry={fetchMarketSymbols} />
                     )}
                   </div>
 
