@@ -17,8 +17,8 @@ import {
 } from "./penny-ai.ts";
 
 Deno.test("penny-ai: server model defaults and conservative limits", () => {
-  assertEquals(resolveModel(), "claude-haiku-4-5-20251001");
-  assertEquals(resolveModel("claude-sonnet-4-5-20250929"), "claude-sonnet-4-5-20250929");
+  assertEquals(resolveModel(), "deepseek-flash");
+  assertEquals(resolveModel("deepseek-v4-pro"), "deepseek-v4-pro");
   assertThrows(() => resolveModel("other-provider"));
   assertEquals(clampMaxTokens(), 1024);
   assertEquals(clampMaxTokens(500_000), 8192);

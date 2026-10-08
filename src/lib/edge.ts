@@ -316,7 +316,7 @@ export function getMockEdgeResponse<T>(
         return {
           reply:
             "Salam! As your family financial coach, I can help you guide your children on budgeting, savings, and Shariah values. What would you like to discuss today?",
-          model: (body.model as string) || "claude-haiku-4-5-20251001",
+          model: (body.model as string) || "deepseek-flash",
           thinking: body.thinking !== false,
           remaining: 49,
         } as T;
@@ -324,7 +324,7 @@ export function getMockEdgeResponse<T>(
       return {
         reply:
           "Salam! I am Penny, your Islamic finance companion. Always remember to save first, spend wisely, and give Sadaqah!",
-        model: (body.model as string) || "claude-haiku-4-5-20251001",
+        model: (body.model as string) || "deepseek-flash",
         thinking: body.thinking !== false,
         remaining: 29,
       } as T;

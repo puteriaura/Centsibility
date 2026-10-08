@@ -1114,7 +1114,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
   console.log(JSON.stringify(plan.audit));
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
     return jsonError("Penny AI is not set up yet", 503);
   }
@@ -1149,7 +1149,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
   }
 
 
-  // 4. Call Anthropic via shared callPenny
+  // 4. Call DeepSeek via shared callPenny
   try {
     const result = await callPenny(apiKey, requestParams);
     return jsonOk({

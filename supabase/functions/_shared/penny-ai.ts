@@ -3,7 +3,9 @@ import Anthropic from "npm:@anthropic-ai/sdk@0.129.0";
 import { PENNY_APP_GUIDE } from "./penny-app-guide.ts";
 import { PENNY_SAFETY_PROMPT, filterPennyInput, filterPennyOutput } from "./penny-safety.ts";
 
-export const DEFAULT_AI_MODEL = "claude-haiku-4-5-20251001";
+// Restored from pre-A5 history: DeepSeek's SDK-compatible server endpoint.
+export const DEEPSEEK_BASE_URL = "https://api.deepseek.com/anthropic";
+export const DEFAULT_AI_MODEL = "deepseek-flash";
 // Conservative application limits; model selection is server-owned through AI_MODEL.
 const MAX_AI_OUTPUT_TOKENS = 8192;
 const MAX_AI_CONTEXT_TOKENS = 200_000;
@@ -25,7 +27,7 @@ export class PennyError extends Error {
 
 export function resolveModel(configured?: string | null): string {
   const model = configured?.trim() || DEFAULT_AI_MODEL;
-  if (!/^claude-[a-z0-9-]+$/.test(model)) throw new Error("AI_MODEL must identify a Claude model");
+  if (model !== "deepseek-flash" && model !== "deepseek-v4-pro") throw new Error("AI_MODEL must identify an enabled DeepSeek model");
   return model;
 }
 
@@ -725,10 +727,11 @@ export function extractReplyText(response: { content?: Array<{ type: string; tex
 
 export function createClient(apiKey: string): Anthropic {
   if (!apiKey || typeof apiKey !== "string" || apiKey.trim() === "") {
-    throw new Error("API key is required to create Anthropic client");
+    throw new Error("API key is required to create DeepSeek client");
   }
   return new Anthropic({
     apiKey: apiKey.trim(),
+    baseURL: DEEPSEEK_BASE_URL,
   });
 }
 
