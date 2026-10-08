@@ -2,13 +2,21 @@ import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("deployment runbook validation", () => {
-  const text = fs.readFileSync("analysis/DEPLOY-RUNBOOK.md", "utf8");
+  const text = fs.readFileSync("analysis/DEPLOY-RUNBOOK.md", "utf8").replace(/\r\n/g, "\n");
   it("references real immutable migration versions and the explicit release order", () => {
-    for (const version of ["20261005120000", "20261008010000", "20261008020000", "20261008030000"]) {
+    for (const version of ["20261005120000", "20261006100000", "20261008010000", "20261008020000", "20261008030000"]) {
       expect(fs.readdirSync("supabase/migrations").some(name => name.startsWith(version + "_"))).toBe(true);
       expect(text).toContain("'" + version + "'");
     }
     expect(text).toContain("migrations, then functions, then frontend");
+  });
+  it("documents the confirmed baseline, backup and Vercel release trap", () => {
+    expect(text).toContain("kid-finance version 11"); expect(text).toContain("parent-finance version 7");
+    expect(text).toContain("12 market_symbols rows, including NVDA");
+    expect(text).toContain("supabase db dump --linked"); expect(text).toContain("Dashboard CSV exports");
+    expect(text).toContain("codex/local-upgrade-rehearsal"); expect(text).toContain("Vercel auto-deploy trap");
+    expect(text).toContain("cleared after logging into the account that owns the project");
+    expect(fs.readFileSync(".gitignore", "utf8")).toContain("analysis/private/");
   });
   it("provides only read-only SQL and separates function management metadata", () => {
     const sql = [...text.matchAll(/```sql\n([\s\S]*?)```/g)].map(match => match[1]).join("\n");
