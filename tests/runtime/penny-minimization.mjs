@@ -29,7 +29,7 @@ const tables = {
   investments:[{id:'i',mode:'market',status:'active',symbol:'HLAL',principal:10,entry_price:100,created_at:'2026-10-01T00:00:00Z'}],
   market_quotes:[], quests:[{summary:'Learn about needs and wants.'}], quest_completions:[],
 };
-const admin={from(table){let filters=[]; const chain={select(cols){reads.push([table,cols]);return this},eq(k,v){filters.push([k,v]);return this},gte(){return this},lt(){return this},limit(){return this},order(){return this},maybeSingle(){return Promise.resolve({data:tables[table]?.[0]??null,error:null})},then(resolve,reject){const data=(tables[table]??[]).filter(row=>filters.every(([k,v])=>!(k in row)||row[k]===v));return Promise.resolve({data,error:null}).then(resolve,reject)}};return chain}};
+const admin={from(table){let filters=[]; const chain={select(cols){reads.push([table,cols]);return this},returns(){return this},eq(k,v){filters.push([k,v]);return this},gte(){return this},lt(){return this},limit(){return this},order(){return this},maybeSingle(){return Promise.resolve({data:tables[table]?.[0]??null,error:null})},then(resolve,reject){const data=(tables[table]??[]).filter(row=>filters.every(([k,v])=>!(k in row)||row[k]===v));return Promise.resolve({data,error:null}).then(resolve,reject)}};return chain}};
 const cases=[
   ['education','Explain saving with RM10',{},[]],
   ['navigation','Where do I freeze my card?',{page:'Card'},['screen']],
@@ -71,6 +71,8 @@ for(const [intent,message,context,keys] of cases){
   console.log('PASS allowlist',intent);
 }
 assert.equal(routePennyQuestion('What do you think?'),'education');
+tables.transactions.push({type:'WITHDRAWAL',amount:999,label:'food',created_at:'invalid'});
+assert.equal((await minimizePennyQuestion(admin,kid,'Summarise my spending this week',{},now)).fields.totalSpent,2,'invalid transaction dates cannot enter the selected period');
 assert.equal(routePennyQuestion('Explain loans'),'education');
 const unrecognizedPrivate=await minimizePennyQuestion(admin,kid,'My friend Alice Sample has RM12345.67 and wants saving help',{},now);
 assert.deepEqual(unrecognizedPrivate.fields,{});

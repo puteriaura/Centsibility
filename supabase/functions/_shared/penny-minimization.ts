@@ -4,7 +4,9 @@ import { formatInvestmentList } from "./investments.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 type PennyAccount = { id?: string; name?: string; comfort_name?: string; balance?: number | string; streak?: number; card_frozen?: boolean; card_controls_locked?: boolean };
-type ContextQuery = ReturnType<ReturnType<SupabaseClient["from"]>["select"]>;
+const contextQuery = (admin: SupabaseClient, table: string, columns: string, kidId: string | undefined) =>
+  admin.from(table).select(columns).eq("kid_id", kidId);
+type ContextQuery = ReturnType<typeof contextQuery>;
 
 import { PENNY_ALLOWLIST, type PennyIntent } from "./penny-intents.ts";
 export { PENNY_ALLOWLIST, type PennyIntent } from "./penny-intents.ts";
@@ -74,9 +76,9 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
   if (/\b(my name is|my email|my address|nama saya|alamat saya)\b/i.test(message) || /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i.test(message)) return { intent, fields, question: "", localReply: "Please leave out names, email addresses and other private details. Ask your money question without them.", audit: { intent, fields: [] } };
   if (["spending", "comparison", "frequency", "budget"].includes(intent) && /\b(last month|yesterday|year|bulan lepas|semalam)\b/i.test(message)) return { intent, fields, question: "", localReply: "I can use this week, last week or this month. For a comparison, ask for this week versus last week.", audit: { intent, fields: [] } };
   const read = async (table: string, columns: string, extra?: (query: ContextQuery) => ContextQuery) => {
-    let query = admin.from(table).select(columns).eq("kid_id", kid.id);
+    let query = contextQuery(admin, table, columns, kid.id);
     if (extra) query = extra(query);
-    const { data, error } = await query;
+    const { data, error } = await query.returns<Record<string, unknown>[]>();
     if (error) throw new Error("Penny context unavailable");
     return data ?? [];
   };
@@ -111,11 +113,12 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
       const [start, end] = periodRange(label);
       const totals: Record<string, number> = {}, counts: Record<string, number> = {};
       for (const t of transactions) {
-        const time = Date.parse(t.created_at);
-        if (time < start || time >= end || !isSpendingTransaction(t.type, t.label)) continue;
+        const time = Date.parse(String(t.created_at ?? ""));
+        const type = String(t.type ?? "");
+        const label = String(t.label ?? "");
+        if (!Number.isFinite(time) || time < start || time >= end || !isSpendingTransaction(type, label)) continue;
         // Merchant text is used locally to classify, never sent to the model.
-        const label = String(t.label || "");
-        const key = t.type === "WITHDRAWAL" && /food|snack/i.test(label) ? "FOOD" : t.type === "WITHDRAWAL" && /transport|grab/i.test(label) ? "TRANSPORT" : categoryKey(t.type, label);
+        const key = type === "WITHDRAWAL" && /food|snack/i.test(label) ? "FOOD" : type === "WITHDRAWAL" && /transport|grab/i.test(label) ? "TRANSPORT" : categoryKey(type, label);
         const category = ["FOOD", "TRANSPORT", "WITHDRAWAL", "SADAQAH", "FEE", "QARD_REPAY", "TRANSFER_OUT"].includes(key) ? key : "OTHER";
         totals[category] = (totals[category] ?? 0) + cents(t.amount);
         counts[category] = (counts[category] ?? 0) + 1;
