@@ -26,6 +26,7 @@ import { getBalanceSummary } from "@/lib/finance";
 import { Money } from "@/features/privacy";
 
 import { useMoneyAction } from "@/hooks/use-money-action";
+import { PennyMascot } from "@/components/PennyMascot";
 
 export const Route = createFileRoute("/kid/goals")({
   head: () => ({ meta: [{ title: "Tabung | Centsibility" }] }),
@@ -104,6 +105,14 @@ function KidGoals() {
     await run(() => edgeKidContributeGoal({ code, goalId, amount }), {
       success: (res) => `${formatRM(res.added)} saved to ${goalName}`, // privacy-ok: toast
       failure: "Could not save to Tabung",
+      pennyState: (res) => {
+        const goal = data.goals.find((g) => g.id === goalId);
+        return goal &&
+          Number(goal.saved) < Number(goal.target) &&
+          res.saved >= Number(goal.target)
+          ? "celebrate"
+          : "saved";
+      },
       onSuccess: () => {
         setActiveGoal(null);
       },
@@ -130,6 +139,7 @@ function KidGoals() {
       {
         success: `${name} Tabung created`,
         failure: "Failed to create Tabung",
+        pennyState: "proud",
         onSuccess: () => {
           setNewName("");
           setNewTarget("");
@@ -223,8 +233,20 @@ function KidGoals() {
             <AppIcon name="info" size={14} color="#fff" />
           </button>
         </div>
-        <div className="deposit-hero__mascot" aria-hidden="true">
-          <AppIcon name="save" size={32} color="#fff" />
+        <div
+          className="deposit-hero__mascot penny-goal-mascot"
+          aria-hidden="true"
+        >
+          <PennyMascot
+            state={
+              busy
+                ? "loading"
+                : data.goals.length === 0
+                  ? "guide"
+                  : "encouraging"
+            }
+            size={96}
+          />
         </div>
       </section>
 

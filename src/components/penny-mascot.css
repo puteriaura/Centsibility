@@ -1,0 +1,42 @@
+.penny-mascot {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.penny-mascot > span,
+.penny-mascot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.penny-mascot[data-paused="true"] * {
+  animation-play-state: paused !important;
+}
+/* The app currently has a light-only theme, even when the OS uses dark mode. */
+[data-theme="light"] .penny-mascot .shoe {
+  fill: #302046;
+}
+[data-theme="light"] .penny-mascot .limb {
+  stroke: #82602d;
+}
+.penny-chat__mascot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.penny-chat__mascot > span:last-child {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.penny-goal-mascot {
+  width: 96px;
+  height: 96px;
+  background: transparent;
+}
+[data-sonner-toast]:has(.penny-mascot) [data-icon] {
+  width: 52px;
+  height: 52px;
+  margin-right: 6px;
+}

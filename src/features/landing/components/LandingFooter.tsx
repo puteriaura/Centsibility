@@ -1,53 +1,18 @@
-import { AppIcon } from "@/components/ui/app-icon";
+import { Link } from "@tanstack/react-router";
 
 export function LandingFooter() {
   return (
-    <footer
-      style={{
-        borderTop: "1px solid var(--border)",
-        background: "var(--white)",
-        paddingTop: "2.5rem",
-        paddingBottom: "calc(2.5rem + env(safe-area-inset-bottom, 0px))",
-        paddingLeft: "max(1.5rem, env(safe-area-inset-left, 0px))",
-        paddingRight: "max(1.5rem, env(safe-area-inset-right, 0px))",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1.5rem",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <span
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "var(--primary)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-            }}
-          >
-            <AppIcon name="penny" size={16} color="#fff" />
+    <footer className="landing-footer">
+      <div className="landing-wrap">
+        <Link to="/" className="landing-brand">
+          <span className="landing-brand-mark" aria-hidden="true">
+            c.
           </span>
-          <strong style={{ fontSize: "1.1rem", color: "var(--ink)", letterSpacing: "-0.02em" }}>
-            Centsibility
-          </strong>
-        </div>
-
-        <div style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
-          © 2026 Centsibility. Shariah-Compliant Kids & Youth Digital Finance.
-        </div>
+          Centsibility
+        </Link>
+        <p>Money habits, learned together.</p>
+        <small>© 2026 Centsibility</small>
       </div>
     </footer>
   );
 }
-

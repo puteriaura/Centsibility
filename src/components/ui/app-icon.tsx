@@ -105,6 +105,7 @@ import {
   Search,
   Scale,
 } from "lucide-react";
+import { PennyFace } from "@/components/PennyFace";
 
 /** Temporary icon map — swap assets later without chasing string placeholders. */
 const ICONS: Record<string, LucideIcon> = {
@@ -179,7 +180,6 @@ const ICONS: Record<string, LucideIcon> = {
   exit: LogOut,
   logout: LogOut,
   bell: Bell,
-  penny: Cat,
   receipt: Receipt,
   filetext: FileText,
   key: KeyRound,
@@ -268,7 +268,7 @@ function normalize(name: string) {
 export function hasIcon(name: string): boolean {
   if (!name || typeof name !== "string") return false;
   const key = normalize(name);
-  return Boolean(ICONS[key]);
+  return key === "penny" || Boolean(ICONS[key]);
 }
 
 export function AppIcon({
@@ -286,6 +286,16 @@ export function AppIcon({
   className?: string;
 } & Omit<LucideProps, "size" | "color" | "ref">) {
   // Unknown names render a plain dot, so a missing mapping is visible rather than decorative
+  if (normalize(name) === "penny") {
+    return (
+      <PennyFace
+        size={size}
+        className={className}
+        aria-hidden={ariaHidden}
+        {...props}
+      />
+    );
+  }
   const Icon = ICONS[normalize(name)] ?? Circle;
   return (
     <Icon

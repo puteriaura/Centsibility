@@ -33,6 +33,7 @@ export function PennyDrawer() {
           {/* Drawer header */}
           <header className="penny-drawer__header">
             <div className="penny-drawer__title-group">
+              <AppIcon name="penny" size={32} />
               <span className="penny-drawer__title-text">Penny</span>
               <span className="penny-chat__beta">Beta</span>
             </div>

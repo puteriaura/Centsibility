@@ -1,7 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { createElement, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { sanitizeDisplayText } from "@/lib/labels";
+import { PennyMascot, type PennyState } from "@/components/PennyMascot";
 
 export interface MoneyActionOptions<T> {
   success?: string | ((res: T) => string);
@@ -10,6 +11,7 @@ export interface MoneyActionOptions<T> {
   onError?: (err: Error) => void;
   refresh?: () => void | Promise<void>;
   retry?: boolean;
+  pennyState?: PennyState | ((res: T) => PennyState);
 }
 
 export function useMoneyAction() {
@@ -19,7 +21,7 @@ export function useMoneyAction() {
   const run = useCallback(
     async <T>(
       actionFn: () => Promise<T>,
-      options: MoneyActionOptions<T> = {}
+      options: MoneyActionOptions<T> = {},
     ): Promise<T | null> => {
       if (busyRef.current) return null;
 
@@ -34,7 +36,16 @@ export function useMoneyAction() {
             typeof options.success === "function"
               ? options.success(res)
               : options.success;
-          if (text) toast.success(text);
+          if (text)
+            toast.success(text, {
+              icon: createElement(PennyMascot, {
+                state:
+                  typeof options.pennyState === "function"
+                    ? options.pennyState(res)
+                    : (options.pennyState ?? "saved"),
+                size: 52,
+              }),
+            });
         }
         if (options.onSuccess) {
           await options.onSuccess(res);
@@ -51,6 +62,7 @@ export function useMoneyAction() {
         const allowRetry = options.retry ?? true;
 
         toast.error(failTitle, {
+          icon: createElement(PennyMascot, { state: "unavailable", size: 52 }),
           description: cleanMsg,
           ...(allowRetry
             ? {
@@ -74,7 +86,7 @@ export function useMoneyAction() {
         setBusy(false);
       }
     },
-    []
+    [],
   );
 
   return { busy, run };

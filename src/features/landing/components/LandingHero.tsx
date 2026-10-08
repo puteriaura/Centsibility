@@ -1,151 +1,72 @@
 import { Link } from "@tanstack/react-router";
-import { AppIcon } from "@/components/ui/app-icon";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 
 export function LandingHero() {
   return (
-    <section
-      style={{
-        padding: "4rem clamp(1rem, 3vw, 1.5rem) 3rem",
-        background: "var(--white)",
-      }}
-    >
-      <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-        }}
+    <div className="landing-hero-scene">
+      <img
+        className="landing-hero-background"
+        src="/images/bicycle-park.webp"
+        alt=""
+        fetchPriority="high"
+        width={1774}
+        height={887}
+      />
+      <section
+        className="landing-hero landing-wrap"
+        aria-labelledby="landing-title"
       >
-        {/* Left Column: Value Prop */}
-        <div>
-          <div style={{ marginBottom: "1rem" }}>
-            <Badge variant="brand">
-              <AppIcon name="sparkles" size={14} />
-              <span>100% Shariah-Compliant Kids Banking</span>
-            </Badge>
-          </div>
-
-          <h1
-            style={{
-              fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
-              fontWeight: 800,
-              color: "var(--ink)",
-              lineHeight: 1.15,
-              letterSpacing: "-0.03em",
-              margin: "0 0 1.25rem",
-            }}
-          >
-            Let&apos;s make cents of your savings!
+        <div className="landing-hero-copy">
+          <p className="landing-kicker">Money lessons for the whole family</p>
+          <h1 id="landing-title">
+            Small savings.
+            <br />
+            Big life lessons.
           </h1>
-
-          <p
-            style={{
-              fontSize: "1.125rem",
-              color: "var(--text-secondary)",
-              lineHeight: 1.6,
-              margin: "0 0 2rem",
-              maxWidth: "520px",
-            }}
-          >
-            A friendly Islamic finance app where young savers learn through interest-free Qard, voluntary Hibah, purposeful Sadaqah, and automated Zakat, while parents guide their journey with clarity and trust.
+          <p className="landing-lead">
+            The first bicycle. A gift for someone else. A little set aside each
+            week. Help your child learn to save, borrow, and give with Islamic
+            values at the heart.
           </p>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center" }}>
-            <Link to="/kid-login" style={{ textDecoration: "none" }}>
-              <Button size="lg" variant="primary" style={{ height: "52px", padding: "0 1.75rem", fontSize: "1rem" }}>
-                <AppIcon name="penny" size={20} />
-                <span>Young Saver Access</span>
-              </Button>
+          <div className="landing-actions">
+            <Link to="/login" className="landing-button">
+              Parent sign in
             </Link>
-            <Link to="/login" style={{ textDecoration: "none" }}>
-              <Button size="lg" variant="outline" style={{ height: "52px", padding: "0 1.75rem", fontSize: "1rem" }}>
-                <AppIcon name="user" size={20} />
-                <span>Parent Sign In</span>
-              </Button>
+            <Link to="/kid-login" className="landing-text-link">
+              Young saver sign in
             </Link>
           </div>
+          <p className="landing-hero-note">
+            Their own goals. Your guidance. One family app.
+          </p>
         </div>
-
-        {/* Right Column: Hero Banking Card Showcase */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "480px", margin: "0 auto", width: "100%" }}>
-          <Card
-            variant="brand"
-            style={{
-              padding: "1.75rem",
-              borderRadius: "1.5rem",
-              position: "relative",
-              overflow: "hidden",
-            }}
+        <figure className="landing-goal">
+          <div className="landing-goal-heading">
+            <span>Aiman’s tabung</span>
+            <span className="landing-goal-tag">Saving for a bicycle</span>
+          </div>
+          <div className="landing-goal-total">
+            <strong>
+              RM261<span> / RM300</span>
+            </strong>
+            <span>87% saved</span>
+          </div>
+          <div
+            className="landing-goal-track"
+            role="progressbar"
+            aria-label="Bicycle savings goal"
+            aria-valuenow={87}
+            aria-valuemin={0}
+            aria-valuemax={100}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-              <div>
-                <small style={{ fontSize: "0.8125rem", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Aiman&apos;s Savings
-                </small>
-                <div style={{ fontSize: "2.25rem", fontWeight: 800, marginTop: "0.25rem", fontVariantNumeric: "tabular-nums" }}>
-                  RM 142.50
-                </div>
-              </div>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background: "rgba(255, 255, 255, 0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  WebkitBackdropFilter: "blur(4px)",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                <AppIcon name="penny" size={24} color="#fff" />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.75rem 1rem",
-                background: "rgba(255, 255, 255, 0.15)",
-                borderRadius: "0.875rem",
-                WebkitBackdropFilter: "blur(8px)",
-                backdropFilter: "blur(8px)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <AppIcon name="gift" size={16} />
-                <span style={{ fontSize: "0.8125rem", fontWeight: 600 }}>+RM 5.00 Monthly Hibah Gift</span>
-              </div>
-              <Badge variant="soft" style={{ background: "rgba(255,255,255,0.9)", color: "var(--primary-text)" }}>
-                Active
-              </Badge>
-            </div>
-          </Card>
-
-          {/* Quick Metrics Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
-            <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Hibah Rate</div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--primary-text)", marginTop: "0.2rem" }}>5.0%</div>
-            </Card>
-            <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Points</div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--accent-amber-text)", marginTop: "0.2rem" }}>+50 pts</div>
-            </Card>
-            <Card variant="default" style={{ padding: "0.875rem", textAlign: "center" }}>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Goal Target</div>
-              <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--success-text)", marginTop: "0.2rem" }}>87%</div>
-            </Card>
+            <span />
           </div>
-        </div>
-      </div>
-    </section>
+          <div className="landing-goal-bottom">
+            <span>Just RM39 to go.</span>
+            <span>A little closer, every deposit.</span>
+          </div>
+          <figcaption>Illustrative goal and amounts</figcaption>
+        </figure>
+      </section>
+    </div>
   );
 }
-

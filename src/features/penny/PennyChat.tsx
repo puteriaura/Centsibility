@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { edgeParentVerifyPin } from "@/lib/edge";
 import { sfx } from "@/lib/sounds";
 import { toast } from "sonner";
+import { PennyMascot } from "@/components/PennyMascot";
 
 export interface PennyChatProps {
   inDrawer?: boolean;
@@ -84,7 +85,11 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
   }, [messages, busy]);
 
   const handlePinKeyPress = async (key: string) => {
@@ -168,9 +173,10 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
       {/* Parent PIN prompt view if session expired */}
       {parentPinRequired ? (
         <div className="p-6 flex flex-col items-center justify-center flex-1 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-[var(--surface-pink)] text-[var(--primary)] flex items-center justify-center">
-            <AppIcon name="shield" size={24} />
-          </div>
+          <PennyMascot
+            state={pinProcessing ? "loading" : "attentive"}
+            size={96}
+          />
           <h2 className="text-lg font-bold text-[var(--ink)]">
             Parent Verification
           </h2>
@@ -213,6 +219,21 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
         </div>
       ) : (
         <>
+          <div className="penny-chat__mascot px-4" aria-live="off">
+            <PennyMascot
+              state={
+                busy
+                  ? "loading"
+                  : messages.at(-1)?.offline
+                    ? "reassuring"
+                    : messages.length <= 1
+                      ? "welcome"
+                      : "neutral"
+              }
+              size={88}
+            />
+            <span>{busy ? "Preparing your reply…" : "Your money buddy"}</span>
+          </div>
           {/* Messages Thread */}
           <div className="penny-chat__thread" role="log" aria-live="polite">
             {messages.map((m) =>

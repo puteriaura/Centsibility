@@ -1,135 +1,62 @@
 import { AppIcon } from "@/components/ui/app-icon";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 
 export function PhoneMockup() {
   return (
     <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "2.5rem",
-        border: "8px solid #2D3142",
-        boxShadow: "0 24px 60px rgba(22, 26, 80, 0.15), 0 4px 12px rgba(0, 0, 0, 0.05)",
-        overflow: "hidden",
-        position: "relative",
-      }}
+      className="landing-phone"
+      aria-label="Illustrative young saver home screen"
     >
-      {/* Phone Notch Bar */}
-      <div
-        style={{
-          height: "24px",
-          background: "#2D3142",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div style={{ width: "48px", height: "4px", background: "#4E546A", borderRadius: "999px" }} />
+      <div className="landing-phone-speaker" aria-hidden="true" />
+      <div className="landing-phone-top">
+        <div>
+          <span>Young saver</span>
+          <strong>Hi, Aiman.</strong>
+        </div>
+        <span className="landing-avatar">A</span>
       </div>
-
-      {/* Screen Content */}
-      <div style={{ padding: "1.5rem", background: "var(--surface-soft)" }}>
-        {/* Top Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-          <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Young Saver</div>
-            <div style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--ink)" }}>Aiman</div>
+      <div className="landing-phone-balance">
+        <span>Wallet balance</span>
+        <strong>RM142.50</strong>
+        <p>A little saved is a good start.</p>
+      </div>
+      <div className="landing-phone-actions">
+        {[
+          { icon: "deposit", label: "Deposit" },
+          { icon: "target", label: "Tabung" },
+          { icon: "quest", label: "Quests" },
+          { icon: "sadaqah", label: "Sadaqah" },
+        ].map((item) => (
+          <div key={item.label}>
+            <AppIcon name={item.icon} size={21} />
+            <span>{item.label}</span>
           </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: "var(--primary-soft)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--primary)",
-              fontWeight: 800,
-              fontSize: "0.875rem",
-            }}
-          >
-            A
-          </div>
+        ))}
+      </div>
+      <div className="landing-phone-goal">
+        <span>My tabung</span>
+        <div>
+          <AppIcon name="bicycle" size={22} />
+          <strong>New bicycle</strong>
+          <span>87%</span>
         </div>
-
-        {/* Hyperdrive Balance Card */}
-        <div
-          style={{
-            background: "var(--primary)",
-            color: "#fff",
-            padding: "1.25rem",
-            borderRadius: "1.25rem",
-            boxShadow: "0 6px 16px rgba(230, 0, 18, 0.25)",
-            marginBottom: "1.25rem",
-          }}
-        >
-          <div style={{ fontSize: "0.75rem", opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Total Savings
-          </div>
-          <div style={{ fontSize: "1.875rem", fontWeight: 800, marginTop: "0.25rem", fontVariantNumeric: "tabular-nums" }}>
-            RM 142.50
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.75rem", paddingTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.2)" }}>
-            <span style={{ fontSize: "0.75rem", opacity: 0.9 }}>+RM 5.00 Hibah Gift</span>
-            <Badge variant="soft" style={{ background: "rgba(255,255,255,0.9)", color: "var(--primary)", fontSize: "0.6875rem" }}>
-              Halal Certified
-            </Badge>
-          </div>
+        <div className="landing-mini-track">
+          <span />
         </div>
-
-        {/* 4 Quick Actions */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem", marginBottom: "1.25rem" }}>
-          {[
-            { icon: "deposit", label: "Deposit" },
-            { icon: "target", label: "Goals" },
-            { icon: "quest", label: "Quests" },
-            { icon: "sadaqah", label: "Sadaqah" },
-          ].map((a) => (
-            <div
-              key={a.label}
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "0.875rem",
-                padding: "0.625rem 0.25rem",
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "0.25rem",
-              }}
-            >
-              <div style={{ color: "var(--primary)" }}>
-                <AppIcon name={a.icon} size={18} />
-              </div>
-              <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "var(--ink)" }}>{a.label}</span>
-            </div>
-          ))}
+        <p>RM261 saved of RM300</p>
+      </div>
+      <div className="landing-phone-lesson">
+        <AppIcon name="book" size={25} />
+        <div>
+          <strong>Today’s money lesson</strong>
+          <span>What makes a gift different from a loan?</span>
         </div>
-
-        {/* Goal Card */}
-        <div
-          style={{
-            background: "var(--surface)",
-            borderRadius: "1rem",
-            padding: "1rem",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <AppIcon name="bicycle" size={18} color="var(--primary)" />
-              <strong style={{ fontSize: "0.875rem", color: "var(--ink)" }}>New Bicycle</strong>
-            </div>
-            <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "var(--primary)" }}>87%</span>
-          </div>
-          <Progress value={87} aria-label="New Bicycle savings goal progress" />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.35rem", fontSize: "0.6875rem", color: "var(--text-muted)" }}>
-            <span>RM 261 saved</span>
-            <span>RM 300 target</span>
-          </div>
-        </div>
+      </div>
+      <div className="landing-phone-dock">
+        <span>Home</span>
+        <span>Wallet</span>
+        <strong>Tabung</strong>
+        <span>Loans</span>
+        <span>Card</span>
       </div>
     </div>
   );
@@ -137,23 +64,39 @@ export function PhoneMockup() {
 
 export function LandingShowcase() {
   return (
-    <section id="showcase" style={{ padding: "5rem clamp(1rem, 3vw, 1.5rem)", background: "var(--surface-soft)" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
-        <div style={{ marginBottom: "0.75rem" }}>
-          <Badge variant="brand">Interactive Experience</Badge>
-        </div>
-        <h2 style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)", fontWeight: 800, color: "var(--ink)", margin: 0, letterSpacing: "-0.02em" }}>
-          A peek at the young saver interface.
+    <section
+      id="showcase"
+      className="landing-wrap landing-showcase"
+      aria-labelledby="showcase-title"
+    >
+      <div className="landing-showcase-copy">
+        <p className="landing-kicker">Inside the young saver view</p>
+        <h2 id="showcase-title">
+          Their money.
+          <br />
+          In their hands.
         </h2>
-        <p style={{ margin: "0.75rem auto 3rem", maxWidth: "560px", fontSize: "1rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-          Tailored with large touch targets, joyful feedback, and clean Shariah-compliant math that makes financial literacy exciting.
+        <p>
+          A balance they can understand. A goal they chose. A lesson they can
+          use today.
         </p>
-
-        <div style={{ maxWidth: "380px", margin: "0 auto" }}>
-          <PhoneMockup />
+        <p>
+          The young saver home brings those pieces together, while you keep
+          track from your own parent view.
+        </p>
+        <div className="landing-showcase-note">
+          <strong>Tabung</strong>
+          <span>
+            A place to put money aside for something worth waiting for.
+          </span>
         </div>
       </div>
+      <figure className="landing-phone-stage">
+        <PhoneMockup />
+        <figcaption>
+          Illustrative screen. Balances and goals are examples.
+        </figcaption>
+      </figure>
     </section>
   );
 }
-

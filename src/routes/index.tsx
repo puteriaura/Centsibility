@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "@/features/landing/landing.css";
 import {
   LandingNav,
   LandingHero,
@@ -17,15 +18,17 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <div>
+    <div className="landing-page">
       <LandingNav />
-      <LandingHero />
-      <LandingTrustStrip />
-      <LandingFeatures />
-      <LandingDualMode />
-      <LandingShowcase />
-      <LandingShariahPillars />
-      <LandingCTA />
+      <main id="landing-main" tabIndex={-1}>
+        <LandingHero />
+        <LandingTrustStrip />
+        <LandingFeatures />
+        <LandingDualMode />
+        <LandingShowcase />
+        <LandingShariahPillars />
+        <LandingCTA />
+      </main>
       <LandingFooter />
     </div>
   );

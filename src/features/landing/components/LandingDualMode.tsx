@@ -1,156 +1,51 @@
-import { AppIcon } from "@/components/ui/app-icon";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Link } from "@tanstack/react-router";
 
 export function LandingDualMode() {
   return (
-    <section style={{ padding: "3rem clamp(1rem, 3vw, 1.5rem) 5rem", maxWidth: "1200px", margin: "0 auto" }}>
-      <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-      >
-        {/* KID MODE CARD */}
-        <Card
-          variant="soft"
-          style={{
-            padding: "2.25rem",
-            borderRadius: "1.5rem",
-            background: "var(--surface-pink)",
-            borderColor: "var(--primary-soft)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <Badge variant="brand">Young Saver Mode</Badge>
-              <AppIcon name="sparkles" size={24} color="var(--primary)" />
-            </div>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--ink)", margin: "0 0 0.75rem", letterSpacing: "-0.01em" }}>
-              Goals, Rewards, and Real Discovery.
-            </h3>
-            <p style={{ fontSize: "0.9375rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 1.5rem" }}>
-              An interactive interface where kids learn real financial discipline through fun quests, savings goals, and daily trivia.
+    <section className="landing-family" aria-labelledby="family-title">
+      <div className="landing-wrap landing-family-inner">
+        <div className="landing-family-heading">
+          <p className="landing-kicker">A shared journey, two perspectives</p>
+          <h2 id="family-title">
+            Room to grow.
+            <br />A hand to hold.
+          </h2>
+        </div>
+        <div className="landing-family-views">
+          <article>
+            <span className="landing-view-label">For young savers</span>
+            <h3>“I’m saving for this.”</h3>
+            <p>
+              A view of their own money, goals, and progress. Quests and Penny’s
+              encouragement make the next small step feel achievable.
             </p>
-
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)" }}>
-                  <AppIcon name="target" size={14} />
-                </div>
-                <span>Visual goal progression with real deposit tracking</span>
-              </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)" }}>
-                  <AppIcon name="game" size={14} />
-                </div>
-                <span>Quests, achievement badges & Islamic finance streaks</span>
-              </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)" }}>
-                  <AppIcon name="sparkles" size={14} />
-                </div>
-                <span>Penny mascot celebrates every Halal milestone</span>
-              </li>
+            <ul>
+              <li>Track deposits and savings goals</li>
+              <li>Learn through quizzes and earn reward points</li>
+              <li>Build habits with achievement badges and streaks</li>
             </ul>
-          </div>
-
-          <div
-            style={{
-              marginTop: "2rem",
-              padding: "1rem 1.25rem",
-              background: "var(--surface)",
-              borderRadius: "1rem",
-              border: "1px solid var(--border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>Total Saved</div>
-              <strong style={{ fontSize: "1.25rem", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>RM 87.50</strong>
-            </div>
-            <Badge variant="success">+RM 2.00 Hibah Earned</Badge>
-          </div>
-        </Card>
-
-        {/* PARENT DASHBOARD */}
-        <Card
-          variant="default"
-          style={{
-            padding: "2.25rem",
-            borderRadius: "1.5rem",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-              <Badge variant="soft">Parent Guardian Dashboard</Badge>
-              <AppIcon name="users" size={24} color="var(--ink)" />
-            </div>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--ink)", margin: "0 0 0.75rem", letterSpacing: "-0.01em" }}>
-              Calm, clear, and fully in your hands.
-            </h3>
-            <p style={{ fontSize: "0.9375rem", color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 1.5rem" }}>
-              Comprehensive parental oversight without micromanagement. Approve loans, disburse allowances, and track Shariah habits.
+            <Link to="/kid-login" className="landing-text-link">
+              Young saver sign in
+            </Link>
+          </article>
+          <article>
+            <span className="landing-view-label">For parents</span>
+            <h3>“I’m here to help.”</h3>
+            <p>
+              Stay involved as they learn. Review money requests, send
+              allowances, and understand each child’s spending and saving.
             </p>
-
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success-text)" }}>
-                  <AppIcon name="check" size={14} />
-                </div>
-                <span>One-tap approval for withdrawals, loans, and rewards</span>
-              </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success-text)" }}>
-                  <AppIcon name="check" size={14} />
-                </div>
-                <span>Monthly financial analytics and spending reports per child</span>
-              </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem", color: "var(--ink)" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--success-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success-text)" }}>
-                  <AppIcon name="check" size={14} />
-                </div>
-                <span>Configure custom voluntary Hibah rates & device PIN locks</span>
-              </li>
+            <ul>
+              <li>Approve withdrawals, loans, and rewards</li>
+              <li>See transactions and monthly reports</li>
+              <li>Set voluntary Hibah gifts and device PIN locks</li>
             </ul>
-          </div>
-
-          <div
-            style={{
-              marginTop: "2rem",
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "0.5rem",
-            }}
-          >
-            {[
-              ["Aiman", "RM 142"],
-              ["Nur", "RM 89"],
-              ["Zayd", "RM 215"],
-            ].map(([n, a]) => (
-              <div
-                key={n}
-                style={{
-                  padding: "0.75rem 0.5rem",
-                  borderRadius: "0.75rem",
-                  background: "var(--surface-soft)",
-                  border: "1px solid var(--border)",
-                  textAlign: "center",
-                }}
-              >
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{n}</div>
-                <strong style={{ fontSize: "0.9375rem", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{a}</strong>
-              </div>
-            ))}
-          </div>
-        </Card>
+            <Link to="/login" className="landing-text-link">
+              Parent sign in
+            </Link>
+          </article>
+        </div>
       </div>
     </section>
   );
 }
-

@@ -1,182 +1,65 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppIcon } from "@/components/ui/app-icon";
-import { Button } from "@/components/ui/button";
 
 export function LandingNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        background: "rgba(255, 255, 255, 0.92)",
-        WebkitBackdropFilter: "blur(12px)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid var(--border)",
-        paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))",
-        paddingBottom: "0.75rem",
-        paddingLeft: "max(clamp(0.75rem, 3vw, 1.5rem), env(safe-area-inset-left, 0px))",
-        paddingRight: "max(clamp(0.75rem, 3vw, 1.5rem), env(safe-area-inset-right, 0px))",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        {/* Brand */}
-        <Link
-          to="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            textDecoration: "none",
-            color: "var(--ink)",
-            fontWeight: 800,
-            fontSize: "1.25rem",
-            letterSpacing: "-0.02em",
-            minHeight: "44px",
-          }}
-        >
-          <span
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              background: "var(--primary)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              boxShadow: "0 2px 6px rgba(230, 0, 18, 0.2)",
-            }}
-          >
-            <AppIcon name="penny" size={18} color="#fff" />
+    <header className="landing-header">
+      <a className="landing-skip" href="#landing-main">
+        Skip to content
+      </a>
+      <div className="landing-wrap landing-nav">
+        <Link to="/" className="landing-brand" aria-label="Centsibility home">
+          <span className="landing-brand-mark" aria-hidden="true">
+            c.
           </span>
-          <span>Centsibility</span>
+          Centsibility
         </Link>
-
-        {/* Desktop Navigation */}
-        <nav style={{ display: "none", gap: "2rem", alignItems: "center" }} className="desktop-nav">
-          <a
-            href="#features"
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "var(--text-secondary)",
-              textDecoration: "none",
-              transition: "color 0.15s",
-            }}
-          >
-            Features
-          </a>
-          <a
-            href="#pillars"
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "var(--text-secondary)",
-              textDecoration: "none",
-              transition: "color 0.15s",
-            }}
-          >
-            Shariah Principles
-          </a>
-          <a
-            href="#showcase"
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "var(--text-secondary)",
-              textDecoration: "none",
-              transition: "color 0.15s",
-            }}
-          >
-            Experience
-          </a>
+        <nav className="landing-desktop-nav" aria-label="Main navigation">
+          <a href="#features">How it helps</a>
+          <a href="#showcase">Inside the app</a>
+          <a href="#pillars">Our principles</a>
         </nav>
-
-        {/* Action Buttons */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Link to="/kid-login" style={{ textDecoration: "none" }} className="hidden md:inline-flex">
-            <Button size="sm" variant="outline">
-              Young Saver
-            </Button>
-          </Link>
-          <Link to="/login" style={{ textDecoration: "none" }} className="hidden sm:inline-flex">
-            <Button size="sm" variant="primary">
-              Open app
-            </Button>
-          </Link>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle navigation menu"
-            style={{ minWidth: 44, minHeight: 44, padding: "0.5rem", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-            className="mobile-nav-toggle"
-          >
-            <AppIcon name="menu" size={20} />
-          </Button>
-        </div>
+        <Link to="/login" className="landing-nav-login">
+          Parent sign in
+        </Link>
+        <button
+          type="button"
+          className="landing-menu-toggle"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-expanded={menuOpen}
+          aria-controls="landing-mobile-menu"
+          aria-label={
+            menuOpen ? "Close navigation menu" : "Open navigation menu"
+          }
+        >
+          <AppIcon name={menuOpen ? "close" : "menu"} size={23} />
+        </button>
       </div>
-
-      {/* Mobile Drawer */}
       {menuOpen && (
         <nav
-          style={{
-            marginTop: "0.75rem",
-            padding: "1rem",
-            background: "var(--surface-soft)",
-            borderRadius: "1rem",
-            border: "1px solid var(--border)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
+          id="landing-mobile-menu"
+          className="landing-mobile-menu landing-wrap"
+          aria-label="Mobile navigation"
         >
-          <a
-            href="#features"
-            onClick={() => setMenuOpen(false)}
-            style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "0.4rem" }}
-          >
-            Features
+          <a href="#features" onClick={() => setMenuOpen(false)}>
+            How it helps
           </a>
-          <a
-            href="#pillars"
-            onClick={() => setMenuOpen(false)}
-            style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "0.4rem" }}
-          >
-            Shariah Principles
+          <a href="#showcase" onClick={() => setMenuOpen(false)}>
+            Inside the app
           </a>
-          <a
-            href="#showcase"
-            onClick={() => setMenuOpen(false)}
-            style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "0.4rem" }}
-          >
-            Experience
+          <a href="#pillars" onClick={() => setMenuOpen(false)}>
+            Our principles
           </a>
-          <Link to="/kid-login" onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
-            <Button size="sm" variant="outline" style={{ width: "100%", justifyContent: "center" }}>
-              Young Saver Sign In
-            </Button>
+          <Link to="/kid-login" onClick={() => setMenuOpen(false)}>
+            Young saver sign in
           </Link>
-          <Link to="/login" onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
-            <Button size="sm" variant="primary" style={{ width: "100%", justifyContent: "center" }}>
-              Open app
-            </Button>
+          <Link to="/login" onClick={() => setMenuOpen(false)}>
+            Parent sign in
           </Link>
         </nav>
       )}
     </header>
   );
 }
-

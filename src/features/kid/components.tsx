@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
+import { PennyMascot } from "@/components/PennyMascot";
 
 export function StatChip({
   icon,
@@ -58,15 +59,24 @@ export function KidLoadError({ onRetry }: { onRetry: () => Promise<void> }) {
     }
   };
   return (
-    <div role="alert" className="ui-card p-6 flex flex-col items-center gap-3 text-center">
-      <AppIcon name="info" size={28} color="var(--primary)" />
+    <div
+      role="alert"
+      className="ui-card p-6 flex flex-col items-center gap-3 text-center"
+    >
+      <PennyMascot state={busy ? "loading" : "unavailable"} size={96} />
       <h2 className="text-base font-bold text-[var(--text-primary)] m-0">
         We couldn't load your account
       </h2>
       <p className="text-sm text-[var(--text-secondary)] m-0">
         Check your internet connection and try again.
       </p>
-      <Button type="button" variant="primary" onClick={retry} disabled={busy} className="justify-center">
+      <Button
+        type="button"
+        variant="primary"
+        onClick={retry}
+        disabled={busy}
+        className="justify-center"
+      >
         {busy ? "Trying again…" : "Try again"}
       </Button>
     </div>
@@ -113,8 +123,7 @@ export function RewardCoinPicker({
     <div className="flex flex-col gap-3">
       <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
         <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary-text)] flex items-center justify-center gap-1.5 tabular-nums">
-          {coins}{" "}
-          <AppIcon name="star" size={22} color="var(--primary)" />
+          {coins} <AppIcon name="star" size={22} color="var(--primary)" />
         </div>
         {coins > 0 && (
           <small className="text-xs text-[var(--text-secondary)] mt-1 block">
@@ -136,7 +145,12 @@ export function RewardCoinPicker({
         ))}
       </div>
       <div className="flex items-center gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1 justify-center">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          className="flex-1 justify-center"
+        >
           Cancel
         </Button>
         <Button
@@ -166,8 +180,11 @@ export const TX_ICON_MAP: Record<string, string> = {
 export function txEmoji(t: string) {
   return (
     <span className="tx-icon" aria-hidden>
-      <AppIcon name={TX_ICON_MAP[t] ?? "transaction"} size={18} color="var(--primary)" />
+      <AppIcon
+        name={TX_ICON_MAP[t] ?? "transaction"}
+        size={18}
+        color="var(--primary)"
+      />
     </span>
   );
 }
-
