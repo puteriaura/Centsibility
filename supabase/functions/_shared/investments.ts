@@ -63,6 +63,8 @@ export async function currentInvestmentValues(
         ? 60000
         : inv.frequency === "day"
         ? 86400000
+        : inv.frequency === "quarter"
+        ? 90 * 86400000
         : 7 * 86400000;
       const endsAt = inv.closed_at ?? new Date(new Date(inv.created_at).getTime() + Number(inv.lock_ticks || 0) * intervalMs).toISOString();
 
@@ -105,6 +107,10 @@ export async function formatInvestmentList(
     (invs || []).map(async (rawInv: any) => {
       const inv = { ...rawInv };
       delete inv.seed; // NEVER return seed
+      // Before the stored-terms migration, every Fund has the original principal
+      // floor and returns principal on early closure. This is response metadata
+      // only; the existing database RPC still determines every payout.
+      if (inv.mode === "fund" && inv.protected === undefined) inv.protected = true;
 
       if (inv.mode === "market") {
         const entryPrice = Number(inv.entry_price || 1);
@@ -161,7 +167,7 @@ export async function formatInvestmentList(
         };
       }
 
-      const intervalMs = inv.frequency === "minute" ? 60000 : inv.frequency === "day" ? 86400000 : 7 * 86400000;
+      const intervalMs = inv.frequency === "minute" ? 60000 : inv.frequency === "day" ? 86400000 : inv.frequency === "quarter" ? 90 * 86400000 : 7 * 86400000;
       const endsAt = inv.closed_at ?? new Date(new Date(inv.created_at).getTime() + Number(inv.lock_ticks || 0) * intervalMs).toISOString();
 
       let ticks: Array<{ tick: number; tickAt: string; rate: number; value: number }> = [];
