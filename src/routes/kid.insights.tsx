@@ -738,6 +738,7 @@ function KidInsights() {
               <button
                 type="button"
                 className="story-close"
+                autoFocus
                 aria-label="Close story"
                 onClick={(e) => {
                   e.stopPropagation();
