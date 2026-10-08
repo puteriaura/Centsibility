@@ -15,7 +15,7 @@ import {
   DEFAULT_PENNY_DAILY_LIMIT,
   MAX_MESSAGE_CHARS,
   validateBirthdayUpdate,
-} from "../_shared/deepseek.ts";
+} from "../_shared/penny-ai.ts";
 import {
   getQuote,
   getDailyCloses,
@@ -1108,13 +1108,12 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     ? Number(rawMaxTokens)
     : undefined;
 
-  const allowPro = Deno.env.get("DEEPSEEK_ALLOW_PRO") === "true";
 
   const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
   console.log(JSON.stringify(plan.audit));
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
-  const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
     return jsonError("Penny AI is not set up yet", 503);
   }
@@ -1126,7 +1125,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
   let requestParams;
   try {
     requestParams = buildPennyRequest({
-      model: typeof params.model === "string" ? params.model : undefined,
+      model: Deno.env.get("AI_MODEL"),
       thinking: isThinking,
       previousIntent: params.previousIntent,
       message: plan.question,
@@ -1134,7 +1133,6 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
       groundingData: contextLines,
       context: params.context as { page: string },
       maxTokens: configuredMaxTokens,
-      allowPro,
     });
   } catch (err: unknown) {
     return jsonError("Penny request settings are invalid", 400);
@@ -1150,7 +1148,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
   }
 
 
-  // 4. Call DeepSeek via shared callPenny
+  // 4. Call Anthropic via shared callPenny
   try {
     const result = await callPenny(apiKey, requestParams);
     return jsonOk({

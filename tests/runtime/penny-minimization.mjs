@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { sourceUrl } from './source-loader.mjs';
 globalThis.Deno = { env: { get: () => '' } };
 const { minimizePennyQuestion, routePennyQuestion, PENNY_ALLOWLIST } = await import(await sourceUrl('supabase/functions/_shared/penny-minimization.ts'));
-const { buildPennyRequest } = await import(await sourceUrl('supabase/functions/_shared/deepseek.ts'));
+const { buildPennyRequest } = await import(await sourceUrl('supabase/functions/_shared/penny-ai.ts'));
 const { canonicalPreviousIntent, previousTurnIntent } = await import(await sourceUrl('supabase/functions/_shared/penny-intents.ts'));
 for (const label of Object.keys(PENNY_ALLOWLIST)) {
   assert.equal(canonicalPreviousIntent(label), label);

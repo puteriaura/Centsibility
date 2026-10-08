@@ -3,34 +3,10 @@ import Anthropic from "npm:@anthropic-ai/sdk@0.129.0";
 import { PENNY_APP_GUIDE } from "./penny-app-guide.ts";
 import { PENNY_SAFETY_PROMPT, filterPennyInput, filterPennyOutput } from "./penny-safety.ts";
 
-export const DEEPSEEK_BASE_URL = "https://api.deepseek.com/anthropic";
-
-export type DeepSeekModelId = "deepseek-flash" | "deepseek-v4-pro";
-
-export interface DeepSeekModelConfig {
-  id: DeepSeekModelId;
-  label: string;
-  contextTokens: number;
-  maxOutputTokens: number;
-  vision: boolean;
-}
-
-export const DEEPSEEK_MODELS: Record<DeepSeekModelId, DeepSeekModelConfig> = {
-  "deepseek-flash": {
-    id: "deepseek-flash",
-    label: "DeepSeek-V4.1-Flash",
-    contextTokens: 1_000_000,
-    maxOutputTokens: 384_000,
-    vision: true,
-  },
-  "deepseek-v4-pro": {
-    id: "deepseek-v4-pro",
-    label: "DeepSeek-V4-Pro-0813",
-    contextTokens: 1_000_000,
-    maxOutputTokens: 384_000,
-    vision: false,
-  },
-};
+export const DEFAULT_AI_MODEL = "claude-haiku-4-5-20251001";
+// Conservative application limits; model selection is server-owned through AI_MODEL.
+const MAX_AI_OUTPUT_TOKENS = 8192;
+const MAX_AI_CONTEXT_TOKENS = 200_000;
 
 export const DEFAULT_PENNY_MAX_TOKENS = 1024;
 export const DEFAULT_PENNY_MAX_TOKENS_THINKING = 4096;
@@ -47,44 +23,19 @@ export class PennyError extends Error {
   }
 }
 
-export function resolveModel(requested?: string | null, allowPro = false): DeepSeekModelId {
-  const model = requested || "deepseek-flash";
-  if (model === "deepseek-flash") {
-    return "deepseek-flash";
-  }
-  if (model === "deepseek-v4-pro") {
-    if (!allowPro) {
-      throw new Error("Model 'deepseek-v4-pro' is not enabled. DEEPSEEK_ALLOW_PRO must be true.");
-    }
-    return "deepseek-v4-pro";
-  }
-  throw new Error(`Unknown model: "${model}". Only "deepseek-flash" and "deepseek-v4-pro" are supported.`);
+export function resolveModel(configured?: string | null): string {
+  const model = configured?.trim() || DEFAULT_AI_MODEL;
+  if (!/^claude-[a-z0-9-]+$/.test(model)) throw new Error("AI_MODEL must identify a Claude model");
+  return model;
 }
 
-export function clampMaxTokens(
-  tokens?: number,
-  modelId: DeepSeekModelId = "deepseek-flash",
-  thinking = true
-): number {
-  const max = DEEPSEEK_MODELS[modelId]?.maxOutputTokens ?? 384_000;
-  const defaultTokens = thinking ? DEFAULT_PENNY_MAX_TOKENS_THINKING : DEFAULT_PENNY_MAX_TOKENS;
-  const val = tokens && Number.isFinite(tokens) && tokens > 0 ? Math.floor(tokens) : defaultTokens;
-  return Math.min(Math.max(val, 1), max);
+export function clampMaxTokens(tokens?: number, _modelId = DEFAULT_AI_MODEL, _thinking = false): number {
+  const value = tokens && Number.isFinite(tokens) && tokens > 0 ? Math.floor(tokens) : DEFAULT_PENNY_MAX_TOKENS;
+  return Math.min(Math.max(value, 1), MAX_AI_OUTPUT_TOKENS);
 }
 
 export function estimateTokens(text: string): number {
   return Math.ceil((text || "").length / 4);
-}
-
-export function thinkingParams(enabled: boolean): Record<string, unknown> {
-  if (enabled) {
-    return {};
-  }
-  return {
-    thinking: {
-      type: "disabled",
-    },
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +70,9 @@ Style: no em dashes or en dashes. Never open with "Got it", "Sure", "Certainly",
     tone = "Tone: playful and upbeat with light slang (\"W move\", \"lowkey smart\"), clear steps.";
   }
 
-  return `${base}\n\n${tone}`;
+  // CONFIGURATION SLOT: operator-approved minors safety prompt, intentionally no invented default.
+  const childSafety = Deno.env.get("PENNY_CHILD_SAFETY_SYSTEM_PROMPT")?.trim();
+  return `${base}\n\n${tone}${childSafety ? `\n\n${childSafety}` : ""}`;
 }
 
 export function parentSystemPrompt(): string {
@@ -678,13 +631,11 @@ export interface BuildPennyRequestParams {
   context?: PennyPageContext | null;
   pageContext?: PennyPageContext | null;
   maxTokens?: number;
-  allowPro?: boolean;
 }
 
 export function buildPennyRequest(params: BuildPennyRequestParams) {
   const {
     model: requestedModel,
-    thinking = true,
     message,
     systemPrompt,
     groundingData,
@@ -692,7 +643,6 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
     context,
     pageContext,
     maxTokens,
-    allowPro = false,
   } = params;
 
   if (!message || typeof message !== "string" || message.trim() === "") {
@@ -703,9 +653,8 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
     throw new Error(`Message exceeds maximum length of ${MAX_MESSAGE_CHARS} characters`);
   }
 
-  const modelId = resolveModel(requestedModel, allowPro);
-  const modelConfig = DEEPSEEK_MODELS[modelId];
-  const clampedTokens = clampMaxTokens(maxTokens, modelId, thinking);
+  const modelId = resolveModel(requestedModel);
+  const clampedTokens = clampMaxTokens(maxTokens, modelId);
 
   // Raw history is ignored. Only a validated canonical label supplies topic context.
   const trimmedHistory: PennyChatMessage[] = [];
@@ -752,7 +701,7 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
     estimateTokens(system) +
     messages.reduce((sum, m) => sum + estimateTokens(m.content), 0);
 
-  if (estimatedInputTokens + clampedTokens > modelConfig.contextTokens) {
+  if (estimatedInputTokens + clampedTokens > MAX_AI_CONTEXT_TOKENS) {
     throw new Error("Input context exceeds model token limit");
   }
 
@@ -761,7 +710,6 @@ export function buildPennyRequest(params: BuildPennyRequestParams) {
     max_tokens: clampedTokens,
     system,
     messages,
-    ...thinkingParams(thinking),
   };
 }
 
@@ -777,11 +725,10 @@ export function extractReplyText(response: { content?: Array<{ type: string; tex
 
 export function createClient(apiKey: string): Anthropic {
   if (!apiKey || typeof apiKey !== "string" || apiKey.trim() === "") {
-    throw new Error("API key is required to create DeepSeek Anthropic client");
+    throw new Error("API key is required to create Anthropic client");
   }
   return new Anthropic({
     apiKey: apiKey.trim(),
-    baseURL: DEEPSEEK_BASE_URL,
   });
 }
 
@@ -836,12 +783,9 @@ export async function callPenny(
     throw new PennyError("Penny couldn't finish that answer", 502);
   }
 
-  const isThinking = requestParams.thinking === undefined ||
-    (typeof requestParams.thinking === "object" && Object.keys(requestParams.thinking as object).length === 0);
-
   return {
     reply,
     model: requestParams.model,
-    thinking: isThinking,
+    thinking: false,
   };
 }

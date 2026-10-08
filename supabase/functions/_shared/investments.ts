@@ -1,7 +1,7 @@
 // supabase/functions/_shared/investments.ts
 // Shared helper for calculating investment values and formatting investment lists
 
-import { OpenInvestmentContext } from "./deepseek.ts";
+import { OpenInvestmentContext } from "./penny-ai.ts";
 import { isQuoteStale } from "./market.ts";
 import { marketSession } from "./market-calendar.ts";
 

@@ -178,8 +178,8 @@ describe("T30 money direction — table test over all ledger types", () => {
 });
 
 describe("T30 drift guard — DEBIT_TYPES matches edge function", () => {
-  it("client DEBIT_TYPES equals edge _shared/deepseek.ts DEBIT_TYPES", () => {
-    const edgeFilePath = path.resolve(__dirname, "../../supabase/functions/_shared/deepseek.ts");
+  it("client DEBIT_TYPES equals edge _shared/penny-ai.ts DEBIT_TYPES", () => {
+    const edgeFilePath = path.resolve(__dirname, "../../supabase/functions/_shared/penny-ai.ts");
     const edgeContent = fs.readFileSync(edgeFilePath, "utf-8");
 
     const match = edgeContent.match(/const\s+DEBIT_TYPES\s*=\s*new\s+Set\(\s*\[([\s\S]*?)\]\s*\);/);

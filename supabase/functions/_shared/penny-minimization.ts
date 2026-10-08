@@ -1,5 +1,5 @@
 import { filterPennyInput } from "./penny-safety.ts";
-import { categoryKey, formatPageContext, getMytDateInfo, isSpendingTransaction } from "./deepseek.ts";
+import { categoryKey, formatPageContext, getMytDateInfo, isSpendingTransaction } from "./penny-ai.ts";
 import { formatInvestmentList } from "./investments.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 

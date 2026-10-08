@@ -279,6 +279,8 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             <div ref={bottomRef} />
           </div>
 
+          <p className="px-4 py-2 text-xs text-[var(--text-secondary)]">Penny is an AI assistant powered by Claude (made by Anthropic). Ask a parent about real money decisions.</p>
+
           {/* Quick Starters (shown when only initial welcome message) */}
           {messages.length <= 1 && mode === "kid" && (
             <div className="penny-starters" aria-label="Suggested questions">

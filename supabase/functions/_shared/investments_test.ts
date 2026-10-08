@@ -1,7 +1,7 @@
 // supabase/functions/_shared/investments_test.ts
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { currentInvestmentValues } from "./investments.ts";
-import { buildKidCoachContext } from "./deepseek.ts";
+import { buildKidCoachContext } from "./penny-ai.ts";
 
 function createStubAdmin(options: {
   investments: any[];
