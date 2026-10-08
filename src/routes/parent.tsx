@@ -225,23 +225,13 @@ function ParentLayout() {
       return;
     }
 
-    setPinInput((p) => {
-      let next = p;
-      if (key === "00") {
-        next = (p + "00").slice(0, 6);
-      } else if (/^\d$/.test(key)) {
-        if (p.length >= 6) return p;
-        next = p + key;
-      } else {
-        return p;
-      }
-
-      if (next.length === 6) {
-        void submitPin(next);
-      }
-      return next;
-    });
-  }, [pinProcessing, submitPin]);
+    if (pinInput.length >= 6) return;
+    if (key !== "00" && !/^\d$/.test(key)) return;
+    const next = (pinInput + key).slice(0, 6);
+    setPinInput(next);
+    // Event handlers are not replayed as functional state updaters are.
+    if (next.length === 6) void submitPin(next);
+  }, [pinInput, pinProcessing, submitPin]);
 
   // -----------------------------------------------------------------------
   // 4️⃣  Render
