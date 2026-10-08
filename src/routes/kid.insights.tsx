@@ -187,22 +187,23 @@ function KidInsights() {
     const step = (interval / 5000) * 100; // 5 seconds per slide
 
     const timer = window.setInterval(() => {
-      setSlideProgress((prev) => {
-        if (prev + step >= 100) {
-          if (storyIdx >= slides.length - 1) {
-            setStoryOpen(false);
-            setStoryIdx(0);
-            return 0;
-          }
-          setStoryIdx((i) => i + 1);
-          return 0;
-        }
-        return prev + step;
-      });
+      setSlideProgress((prev) => Math.min(100, prev + step));
     }, interval);
 
     return () => window.clearInterval(timer);
   }, [storyOpen, isPaused, receiptSheetOpen, storyIdx, slides.length, reducedMotion]);
+
+  useEffect(() => {
+    if (!storyOpen || slideProgress < 100) return;
+    // Updaters must stay pure: Strict Mode may call them twice.
+    if (storyIdx >= slides.length - 1) {
+      setStoryOpen(false);
+      setStoryIdx(0);
+    } else {
+      setStoryIdx((i) => i + 1);
+    }
+    setSlideProgress(0);
+  }, [storyOpen, slideProgress, storyIdx, slides.length]);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
