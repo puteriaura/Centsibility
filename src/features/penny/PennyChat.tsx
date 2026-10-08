@@ -271,7 +271,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             )}
             {busy && (
               <div className="penny-assistant">
-                <p className="penny-assistant__text text-[var(--text-secondary)] italic flex items-center gap-1.5">
+                <p className="penny-assistant__text text-[var(--text-secondary)] flex items-center gap-1.5">
                   <ShiningText text="Penny is thinking…" />
                 </p>
               </div>
