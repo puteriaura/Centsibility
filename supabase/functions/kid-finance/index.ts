@@ -167,15 +167,8 @@ serve(async (req: Request) => {
   const body = await safeParseBody(req);
   const action = typeof body.action === "string" ? body.action : undefined;
 
-  const logBody = { ...body };
-  if ("pin" in logBody) logBody.pin = "[REDACTED]";
-  if ("signature" in logBody) logBody.signature = "[TRUNCATED]";
-  if ("base64Image" in logBody) logBody.base64Image = "[TRUNCATED]";
-  if ("message" in logBody) logBody.message = "[REDACTED]";
-  if ("history" in logBody) logBody.history = "[REDACTED]";
-
-  if (action !== "penny-chat") console.log(`[kid-finance][${requestId}] action="${action ?? "MISSING"}"`, 
-    JSON.stringify(logBody).slice(0, 300));
+  // Request bodies contain account session tokens and must never be logged.
+  if (action !== "penny-chat") console.log(`[kid-finance][${requestId}] action="${action ?? "MISSING"}"`);
 
   if (!action) return jsonError('Missing required field: "action"', 400);
 
