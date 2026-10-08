@@ -9,7 +9,7 @@ const { marketSession } = await import(await sourceUrl('supabase/functions/_shar
 const { filterMarketSymbols } = await import(await sourceUrl('src/lib/market-search.ts'));
 const investment = { id:'market',mode:'market',status:'active',principal:10,entry_price:100,symbol:'HLAL',created_at:'2026-10-01T00:00:00Z' };
 const quotes={};let providerCalls=[];let quoteReads=0;
-const catalogue=Object.keys(SCREENING).map(symbol=>({symbol,name:VERIFIED_STOCK_ADDITIONS.find(s=>s.symbol===symbol)?.name??symbol,kind:'stock',active:true}));
+const catalogue=Object.keys(SCREENING).map(symbol=>({symbol,name:symbol==='NVDA'?'NVIDIA Corporation':symbol==='AAPL'?'Apple Inc.':VERIFIED_STOCK_ADDITIONS.find(s=>s.symbol===symbol)?.name??symbol,kind:'stock',active:true}));
 const admin={from(table){let symbol;const result=()=>({data:table==='investments'?[investment]:table==='market_symbols'?[...catalogue,{symbol:'UNVERIFIED',name:'Unscreened',kind:'stock',active:true}]:table==='market_quotes'?Object.values(quotes):[],count:0,error:null});return {select(){if(table==='market_quotes')quoteReads++;return this},eq(k,v){if(k==='symbol')symbol=v;return this},gte(){return this},lt(){return this},delete(){return this},order(){return this},insert(){return Promise.resolve({error:null})},upsert(row){if(table==='market_quotes')quotes[row.symbol]=row;return Promise.resolve({error:null})},maybeSingle(){return Promise.resolve({data:quotes[symbol]??null,error:null})},then(resolve,reject){return Promise.resolve(result()).then(resolve,reject)}}}};
 const [missing]=await formatInvestmentList(admin,[investment]);
 assert.equal(missing.currentPrice,null);assert.equal(missing.currentValue,null);assert.equal(missing.profitRm,null);assert.equal(missing.isMarketOpen,null);
@@ -20,6 +20,10 @@ assert.equal(list.length,27);assert.equal(quoteReads,0);assert.equal(providerCal
 assert.ok(list.every(s=>s.verified&&s.halal_url&&s.halal_checked_on));
 assert.equal(filterMarketSymbols(list,'Advanced Micro')[0].symbol,'AMD');
 assert.equal(filterMarketSymbols(list,'crwd')[0].symbol,'CRWD');
+for(const query of ['nvda','NVDA','Nvda','NVIDIA','nvidia corporation']) assert.equal(filterMarketSymbols(list,query)[0].symbol,'NVDA');
+assert.equal(filterMarketSymbols(list,'apple inc.')[0].symbol,'AAPL');
+assert.equal(filterMarketSymbols(list,'').length,27);
+assert.equal(filterMarketSymbols(list,'   ').length,27);
 assert.equal(filterMarketSymbols(list,'bank not in catalogue').length,0);
 const open=new Date('2026-10-08T15:00:00Z');
 const fetchFn=async url=>{const symbol=new URL(url).searchParams.get('symbol');providerCalls.push(symbol);return new Response(JSON.stringify({symbol,close:'110',previous_close:'100',is_market_open:true,currency:'USD',timestamp:open.getTime()/1000}),{status:200})};

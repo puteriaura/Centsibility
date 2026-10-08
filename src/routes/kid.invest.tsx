@@ -46,7 +46,7 @@ import { Money, useMoney } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
-import { filterMarketSymbols } from "@/lib/market-search";
+import { filterMarketSymbols, marketCatalogueMessage } from "@/lib/market-search";
 
 export const Route = createFileRoute("/kid/invest")({
   head: () => ({ meta: [{ title: "Investment | Centsibility" }] }),
@@ -315,7 +315,7 @@ function KidInvest() {
     for (const s of list) {
       if (s.last_updated) return fmtTime(s.last_updated);
     }
-    return "unavailable";
+    return null;
   }, [quoteRows]);
 
   // ── load / error states ────────────────────────────────────────────────────
@@ -1564,11 +1564,7 @@ function KidInvest() {
                     ); })}
                     {filteredSymbols.length === 0 && (
                       <p className="text-xs text-[var(--text-muted)] text-center py-4">
-                        {marketError || !marketData
-                          ? "We couldn't load our investment list. Please retry."
-                          : searchQuery.trim()
-                            ? "Not in our list. Search only covers our curated, Shariah-screened investments, not every stock."
-                            : "Our investment list is unavailable. Please retry."}
+                        {marketCatalogueMessage(Boolean(marketData), Boolean(marketError), searchQuery)}
                       </p>
                     )}
                   </div>
