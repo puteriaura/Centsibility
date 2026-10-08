@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { setParentBypassed, setKidBypassed } from "@/lib/admin-bypass";
+import { PracticeCardHeader } from "@/features/kid/PracticeCard";
 import { usePenny } from "@/features/penny";
 import {
   NAV,
@@ -246,6 +247,10 @@ function TopBar({
       nav({ to: "/login" });
     }
   };
+
+  if (isKid && trimSlash(currentPath) === "/kid/card") {
+    return <PracticeCardHeader onHelp={() => openPenny({ context: { page: "Card" } })} />;
+  }
 
   if (kind === "home") {
     const closeThen = (fn: () => void) => () => {

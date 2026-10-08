@@ -1,6 +1,6 @@
 // The card face uses embossed-style capitals like a real debit card.
 // avoid-ai-design-ignore-file: SD4
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { sfx } from "@/lib/sounds";
 import { formatRM } from "@/lib/format";
 import { getKidSession } from "@/lib/kid-session";
 import { edgeKidSetCardControls } from "@/lib/edge";
-import { usePenny } from "@/features/penny";
+import { PracticeCardHero, PracticeCardTips, PracticeCardHelp } from "@/features/kid/PracticeCard";
 import { PrivacyUnlockSheet } from "@/features/privacy/PrivacyUnlockSheet";
 import { Money } from "@/features/privacy";
 
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/kid/card")({
 });
 
 function KidCard() {
-  const { openPenny } = usePenny();
+  const [lockFeedback, setLockFeedback] = useState<{ error: boolean; text: string } | null>(null);
   const { data, loading, error, refresh } = useKidData();
   const [showDetails, setShowDetails] = useState(false);
   const [revealPinOpen, setRevealPinOpen] = useState(false);
@@ -86,6 +86,7 @@ function KidCard() {
     if (savingFreeze) return;
     sfx.pop();
     if (isControlsLocked && isLocked) {
+      setLockFeedback({ error: true, text: "Your parent manages these settings. Ask them to unlock." });
       toast.error("Your parent manages these card settings. You can still make them stricter.");
       return;
     }
@@ -96,6 +97,7 @@ function KidCard() {
     const code = getKidSession()?.code;
     if (!code) {
       setIsLocked(prevLocked);
+      setLockFeedback({ error: true, text: "Session missing. Log in again to change card controls." });
       toast.error("Session missing. Log in again to change card controls.");
       return;
     }
@@ -103,6 +105,7 @@ function KidCard() {
     setSavingFreeze(true);
     try {
       await edgeKidSetCardControls({ code, frozen: nextLocked });
+      setLockFeedback({ error: false, text: nextLocked ? "Practice card locked. Sadaqah and cash requests are blocked." : "Practice card unlocked." });
       toast.success(
         nextLocked
           ? "Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it."
@@ -111,7 +114,9 @@ function KidCard() {
       refresh();
     } catch (e: unknown) {
       setIsLocked(prevLocked);
-      toast.error(e instanceof Error ? e.message : "Failed to update card status");
+      const message = e instanceof Error ? e.message : "Failed to update card status";
+      setLockFeedback({ error: true, text: message });
+      toast.error(message);
     } finally {
       setSavingFreeze(false);
     }
@@ -161,109 +166,18 @@ function KidCard() {
     }
   };
 
+  function showHelp() {
+    const help = document.getElementById("practice-card-help");
+    help?.focus({ preventScroll: true });
+    help?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
+  }
+
   return (
-    <div className="space-y-6 pb-12">
-      <div className="flex items-center justify-between gap-3 -mt-2">
-        <p className="text-xs font-semibold text-[var(--text-secondary)] m-0">
-          Practice card for learning. It is not a real bank card.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            sfx.tap();
-            openPenny({ context: { page: "Card", detail: "Kid practice card controls" } });
-          }}
-          className="p-2 rounded-full hover:bg-[var(--surface-soft)] text-[var(--ink)] transition-colors shrink-0 bg-transparent border-none cursor-pointer"
-          aria-label="Ask Penny about cards"
-        >
-          <AppIcon name="messagecircle" size={22} />
-        </button>
-      </div>
-
-      {isLocked && (
-        <div
-          role="status"
-          className="p-3.5 rounded-xl border border-[var(--error)]/30 text-xs flex items-start gap-2.5 max-w-[420px] mx-auto bg-[var(--error-soft)] text-[var(--ink)]"
-        >
-          <AppIcon name="info" size={18} color="var(--error-strong)" className="shrink-0 mt-0.5" />
-          <p className="m-0 leading-relaxed font-medium">
-            Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it.
-          </p>
-        </div>
-      )}
-
-      <div
-        className="relative rounded-3xl p-6 text-white shadow-xl transition-all flex flex-col justify-between"
-        style={{
-          background: isLocked ? "var(--text-secondary)" : "var(--navy-dark)",
-          // No overflow clipping, so on narrow phones the card grows to fit its
-          // content instead of cutting off the cardholder row.
-          aspectRatio: "1.586",
-          maxWidth: "420px",
-          // Inline-only margin keeps the space-y gap below the card.
-          marginInline: "auto",
-        }}
-      >
-        {/* Top: brand + CVV/EXP */}
-        <div className="flex items-center justify-between relative z-10 text-xs font-semibold">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="w-2.5 h-2.5 rounded-full bg-[var(--primary)]" />
-            </span>
-            <span className="text-sm font-black tracking-wider uppercase">Centsibility</span>
-          </div>
-
-          <div className="flex items-center gap-4 tabular-nums text-white">
-            <div>
-              <span className="text-[11px] block">CVV</span>
-              <strong className="text-white">{showDetails ? "428" : "•••"}</strong>
-            </div>
-            <div>
-              <span className="text-[11px] block">EXP</span>
-              <strong className="text-white">10/29</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Mascot Center Graphic */}
-        <div className="my-auto py-4 text-center relative z-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/10 mb-2">
-            <AppIcon name="penny" size={28} color="#fff" />
-          </div>
-
-          {/* Card Number */}
-          <div className="text-xl sm:text-2xl font-mono tracking-widest font-bold tabular-nums">
-            {showDetails ? "4556  7812  9034  6553" : "••••  ••••  ••••  6553"}
-          </div>
-        </div>
-
-        {/* Bottom: cardholder and card type (no third-party card network marks) */}
-        <div className="flex items-end justify-between relative z-10 text-xs font-bold">
-          <div>
-            <span className="text-[11px] uppercase tracking-wider block font-normal">
-              Cardholder
-            </span>
-            <span className="text-sm font-semibold tracking-wide">
-              {k.name}
-            </span>
-          </div>
-
-          <span className="text-[11px] font-bold tracking-wider uppercase text-white">
-            Practice only
-          </span>
-        </div>
-
-        {/* Locked Overlay */}
-        {isLocked && (
-          <div className="absolute inset-0 rounded-[inherit] flex flex-col items-center justify-center gap-2 z-20" style={{ background: "rgba(17, 17, 17, 0.72)" }}>
-            <AppIcon name="lock" size={36} color="#fff" />
-            <strong className="text-sm font-bold text-white uppercase tracking-wider">
-              Card Frozen
-            </strong>
-          </div>
-        )}
-      </div>
-
+    <div className="space-y-6 pb-12 max-w-[420px] mx-auto">
+      <PracticeCardHero name={k.name} revealed={showDetails} locked={isLocked} />
+      <p className="text-xs text-center text-[var(--text-secondary)]">For learning only. Cannot make bank-card payments.</p>
+      {isControlsLocked && <p role="status" className="text-xs text-center">Parent-managed controls: you can make them stricter, but ask a parent to unlock.</p>}
+      {lockFeedback && <p role={lockFeedback.error ? "alert" : "status"} className="rounded-xl bg-[var(--surface-soft)] p-3 text-sm">{lockFeedback.text}</p>}
       <div className="grid grid-cols-4 gap-2 max-w-[420px] mx-auto text-center">
         <button
           type="button"
@@ -310,7 +224,7 @@ function KidCard() {
               : "Freeze card"
           }
           aria-pressed={isLocked}
-          className={`quick-btn ${isControlsLocked && isLocked ? "opacity-60 cursor-not-allowed" : ""}`}
+          className={isControlsLocked && isLocked ? "quick-btn opacity-60 cursor-not-allowed" : "quick-btn"}
         >
           <span
             className="quick-circle"
@@ -326,15 +240,14 @@ function KidCard() {
             className="quick-label"
             style={isLocked ? { color: "var(--error-text)", fontWeight: 700 } : undefined}
           >
-            {isLocked ? "Unfreeze" : "Freeze"}
+            {isLocked ? "Unlock" : "Lock"}
           </span>
         </button>
 
         <button
           type="button"
           onClick={() => {
-            sfx.tap();
-            toast.info("Practice card, so no report is sent. If a real card is lost, tell your parent.");
+            showHelp();
           }}
           aria-label="Practice card help"
           className="quick-btn"
@@ -346,6 +259,7 @@ function KidCard() {
         </button>
       </div>
       <PrivacyUnlockSheet isOpen={revealPinOpen} onClose={() => setRevealPinOpen(false)} onSuccess={() => { setRevealPinOpen(false); setShowDetails(true); }} mode="kid" title="View sample details" description="Verify your account PIN to reveal the sample card number. This number cannot make payments." />
+      <PracticeCardTips onSettings={() => setShowSettings(true)} onHelp={showHelp} />
       <Card className="p-4 space-y-2 max-w-[420px] mx-auto">
         <h2 className="text-sm font-bold">Activity covered by these controls</h2>
         <p className="text-xs text-[var(--text-secondary)]">Sadaqah and cash withdrawal requests use these limits. These are account activities; there are no bank-card payments.</p>
@@ -400,7 +314,7 @@ function KidCard() {
               <input
                 id="daily-limit-slider"
                 type="range"
-                min={10}
+                min={Math.min(10, sliderMax)}
                 max={sliderMax}
                 step={10}
                 value={dailyLimit}
@@ -472,33 +386,7 @@ function KidCard() {
         </Card>
       )}
 
-      <div className="max-w-[420px] mx-auto">
-        <div className="section-tag">
-          <span>Spend smart</span>
-        </div>
-
-        <div className="promo-banner promo-banner--amber">
-          <div className="max-w-[70%]">
-            <h3 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
-              Set a daily limit your parent can see
-            </h3>
-            <button
-              type="button"
-              onClick={() => {
-                sfx.pop();
-                setShowSettings(true);
-              }}
-              className="promo-banner__btn"
-              aria-label="Open card settings to set daily limit"
-            >
-              Set limit
-            </button>
-          </div>
-          <div className="w-16 h-16 rounded-full bg-white/60 flex items-center justify-center text-[var(--ink)] shrink-0">
-            <AppIcon name="creditcard" size={30} />
-          </div>
-        </div>
-      </div>
+      <PracticeCardHelp />
     </div>
   );
 }
