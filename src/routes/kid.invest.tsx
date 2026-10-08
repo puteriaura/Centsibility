@@ -47,6 +47,7 @@ import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
 import { filterMarketSymbols, marketCatalogueNeedsUpdate } from "@/lib/market-search";
+import { MarketPickerStatus } from "@/features/kid/MarketPickerStatus";
 import { MarketCatalogueNotice } from "@/features/kid/MarketCatalogueNotice";
 
 export const Route = createFileRoute("/kid/invest")({
@@ -1471,7 +1472,7 @@ function KidInvest() {
                   <div className="shrink-0 space-y-2 pb-2">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
                       <span>Search our curated list only</span>
-                      <span>{catalogueMarketState === "closed" ? "Market closed, showing last close where available" : catalogueMarketState === "unknown" ? "Market status unavailable" : "Delayed price"} · updated {latestQuoteTime}</span>
+                      <MarketPickerStatus state={catalogueMarketState} updatedAt={latestQuoteTime} />
                     </div>
 
                     {(quotaDegraded || marketUsage?.monitoringAvailable === false) && <p role="status" className="text-xs text-[var(--text-muted)]">{quotaDegraded ? "Quote limit reached. Showing saved prices; affected rows are marked stale. Missing data stays unavailable." : "Quote monitoring unavailable. Refreshes needing a new quote are paused; affected saved prices are marked stale."}</p>}
