@@ -1,5 +1,6 @@
 import { minimizePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
+import { isKidSessionToken } from "../_shared/kid-session-token.ts";
 // supabase/functions/kid-finance/index.ts
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -185,7 +186,7 @@ serve(async (req: Request) => {
   // ── Security gate ────────────────────────────────────────────────────────
   if (!PRE_AUTH_ACTIONS.has(action)) {
     const token = typeof params.code === "string" ? params.code.trim() : "";
-    if (!token) {
+    if (!isKidSessionToken(token)) {
       console.warn(`[kid-finance][${requestId}] Rejected action="${action}": missing session token`);
       return jsonError("Unauthorized: missing session token", 401);
     }
@@ -279,7 +280,7 @@ async function sha256(text: string): Promise<string> {
 }
 
 async function getKid(admin: Admin, token: unknown, requestId: string, quiet = false) {
-  if (!token || typeof token !== "string" || token.trim() === "") {
+  if (!isKidSessionToken(token)) {
     throw new Error("Missing or invalid session code");
   }
   const { data, error } = await admin

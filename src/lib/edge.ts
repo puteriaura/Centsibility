@@ -28,6 +28,7 @@ export function getMockEdgeResponse<T>(
   functionName: string,
   body: Record<string, unknown>,
 ): T {
+  if (!import.meta.env.DEV) throw new Error("Demo responses are unavailable in production");
   const action = String(body.action || "");
   switch (action) {
     case "get-profile":
