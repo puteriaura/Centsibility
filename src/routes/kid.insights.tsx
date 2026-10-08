@@ -618,6 +618,11 @@ function KidInsights() {
           role="dialog"
           aria-modal="true"
           aria-label="Daily wrap"
+          onKeyDown={(e) => {
+            if (receiptSheetOpen) return;
+            if (e.key === "ArrowLeft") { e.preventDefault(); prevStory(); }
+            if (e.key === "ArrowRight") { e.preventDefault(); nextStory(); }
+          }}
           style={{
             position: "fixed",
             inset: 0,
@@ -689,7 +694,7 @@ function KidInsights() {
               userSelect: "none",
             }}
             onPointerDown={(e) => {
-              if ((e.target as HTMLElement).closest("button,a")) return;
+              if ((e.target as HTMLElement).closest("button,a") && !(e.target as HTMLElement).closest("[data-story-zone]")) return;
               pointerStartedAt.current = performance.now();
               e.currentTarget.setPointerCapture(e.pointerId);
               setIsPaused(true);
@@ -765,41 +770,10 @@ function KidInsights() {
               {maskAmounts(slides[storyIdx].body, locked)}
             </p>
 
-            {/* Mascot Illustration at Bottom (matching Reference Screenshot 2) */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                justifyContent: "space-between",
-                paddingTop: "16px",
-                opacity: 0.95,
-              }}
-              aria-hidden="true"
-            >
-              <div
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  background:
-                    "radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <AppIcon name="penny" size={54} color="#ffffff" />
-              </div>
-
-            </div>
+            <button type="button" data-story-zone aria-label="Previous slide" className="absolute left-0 top-20 bottom-0 w-[35%] border-0 bg-transparent" onClick={(e) => { if (e.detail === 0) prevStory(); }} />
+            <button type="button" data-story-zone aria-label="Next slide" className="absolute right-0 top-20 bottom-0 w-[65%] border-0 bg-transparent" onClick={(e) => { if (e.detail === 0) nextStory(); }} />
           </div>
-
-          {/* Story Footer with Receipt & Mascot AI buttons (matching Reference Screenshot 2) */}
-          <div className="flex justify-between gap-3 text-white text-xs py-2">
-            <button type="button" onClick={prevStory} disabled={storyIdx === 0}>Previous slide</button>
-            <span role="status">{storyIdx + 1} of {slides.length}{reducedMotion ? " · Tap to advance" : ""}</span>
-            <button type="button" onClick={nextStory}>{storyIdx === slides.length - 1 ? "Finish" : "Next slide"}</button>
-          </div>
+          <span className="sr-only" role="status">Slide {storyIdx + 1} of {slides.length}</span>
           <div
             style={{
               display: "flex",
