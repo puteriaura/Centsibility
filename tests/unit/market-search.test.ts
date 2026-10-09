@@ -15,6 +15,7 @@ describe("quote-independent catalogue search", () => {
     expect(marketCatalogueMessage(false, true, "nvda")).toContain("failed to load");
     expect(marketCatalogueMessage(false, false, "nvda")).toContain("Loading");
     expect(marketCatalogueMessage(true, false, "")).toContain("No verified instruments");
-    expect(marketCatalogueMessage(true, false, "unknown")).toContain("Not in our list");
+    expect(marketCatalogueMessage(true, false, "SNDK")).toContain("Not included in our learning catalogue");
+    expect(marketCatalogueMessage(true, false, "SNDK")).toContain("does not mean the stock is not Shariah-compliant");
   });
 });

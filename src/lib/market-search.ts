@@ -21,6 +21,6 @@ export function marketCatalogueMessage(loaded: boolean, failed: boolean, query: 
   if (failed) return "Catalogue failed to load. Please retry.";
   if (!loaded) return "Loading investment catalogue…";
   return query.trim()
-    ? "Not in our list. Search only covers our curated, Shariah-screened investments, not every stock."
+    ? "Not included in our learning catalogue. This does not mean the stock is not Shariah-compliant. Search our selected stocks and ETFs."
     : "No verified instruments are available in this catalogue. Please retry.";
 }

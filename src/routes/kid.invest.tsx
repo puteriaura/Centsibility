@@ -1,3 +1,4 @@
+import { MarketQuoteLine } from "@/features/kid/MarketQuoteLine";
 import { marketPricePresentation } from "@/lib/market-presentation";
 import { marketSession } from "../../supabase/functions/_shared/market-calendar";
 import type { MarketUsage } from "../../supabase/functions/_shared/market-types";
@@ -1471,12 +1472,11 @@ function KidInvest() {
                 <div className="market-picker">
                   <div className="shrink-0 space-y-2 pb-2">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
-                      <span>Search our curated list only</span>
+                      <span>Search our selected stocks and ETFs</span>
                       <MarketPickerStatus state={catalogueMarketState} updatedAt={latestQuoteTime} />
                     </div>
 
                     {(quotaDegraded || marketUsage?.monitoringAvailable === false) && <p role="status" className="text-xs text-[var(--text-muted)]">{quotaDegraded ? "Quote limit reached. Showing saved prices; affected rows are marked stale. Missing data stays unavailable." : "Quote monitoring unavailable. Refreshes needing a new quote are paused; affected saved prices are marked stale."}</p>}
-                    {marketUsage?.monitoringAvailable && <p className="text-xs text-[var(--text-muted)]">Provider attempts: {marketUsage.minuteCalls}/{marketUsage.minuteLimit} in 60 seconds · {marketUsage.dailyCalls}/{marketUsage.dailyLimit} today (UTC).</p>}
 
                     {/* Search box */}
                     <div className="bg-[var(--surface)]">
@@ -1493,7 +1493,7 @@ function KidInvest() {
                   {/* Symbol List */}
                   <div ref={pickerListRef} className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
                     {marketError && filteredSymbols.length > 0 && <p role="alert" className="text-xs text-[var(--error-text)]">Catalogue failed to load. Please retry. <button type="button" onClick={fetchMarketSymbols}>Retry</button></p>}
-                    {filteredSymbols.map((item) => { const s = { ...item, ...quoteRows[item.symbol] }; const presentation = marketPricePresentation(s.is_market_open === undefined ? "unknown" : s.is_market_open ? "open" : "closed", s.price, s.last_close); return (
+                    {filteredSymbols.map((item) => { const s = { ...item, ...quoteRows[item.symbol] }; return (
                       <div
                         key={s.symbol}
                         data-market-symbol={s.symbol}
@@ -1522,7 +1522,7 @@ function KidInvest() {
                           onClick={() => pickMarketSymbol(s)}
                         >
                           <span
-                            className="block truncate text-xs text-[var(--text-muted)]"
+                            className="block text-sm text-[var(--text-secondary)]"
                             aria-hidden="true"
                           >
                             {s.name}
@@ -1550,18 +1550,15 @@ function KidInvest() {
                         </button>
 
                         <div className="col-span-3 flex flex-wrap justify-between gap-2 text-xs">
-                          <span>{presentation.price == null ? "Data unavailable" : `US$${presentation.price.toFixed(2)}`} · {presentation.label}{s.stale ? " · Stale" : ""}{s.last_close_as_of ? ` · close known as of ${fmtTime(s.last_close_as_of)}` : ""}</span>
+                          <MarketQuoteLine state={s.is_market_open === undefined ? "unknown" : s.is_market_open ? "open" : "closed"} price={s.price} lastClose={s.last_close} stale={s.stale} />
                           {s.change_percent != null && s.price != null && s.is_market_open !== false ? (
                             <span
                               className={s.change_percent >= 0 ? "text-xs font-semibold tabular-nums text-[var(--success-text)]" : "text-xs font-semibold tabular-nums text-[var(--error-text)]"}
                             >
                               {pct(s.change_percent)}
                             </span>
-                          ) : (
-                            <span className="text-xs text-[var(--text-muted)]">
-                              Data unavailable
-                            </span>
-                          )}
+                          ) : null
+                          }
                         </div>
                       </div>
                     ); })}
