@@ -35,13 +35,11 @@ describe("practice card components", () => {
     const html = renderToStaticMarkup(<PracticeCardHero name="Synthetic Child" revealed locked />);
     expect(html).toContain("4556 7812 9034 6553"); expect(html).toContain("428"); expect(html).toContain("10/29"); expect(html).toContain("Locked"); expect(html).toContain("Synthetic Child");
   });
-  it("has the centered heading, accessible help, three slides and native pagination buttons", () => {
+  it("has accessible help and one compact tip without a carousel", () => {
     expect(renderToStaticMarkup(<PracticeCardHeader onHelp={vi.fn()} />)).toContain('aria-label="Ask Penny about practice cards"');
     const html = renderToStaticMarkup(<PracticeCardTips onSettings={vi.fn()} onHelp={vi.fn()} />);
-    expect(html.match(/aria-roledescription="slide"/g)).toHaveLength(3);
-    expect(html.match(/aria-label="Show tip /g)).toHaveLength(3);
-    expect(html).toContain('tabindex="0"'); expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain("Ask a parent to unlock");
+    expect(html).toContain("Set a daily limit"); expect(html).toContain("Open settings");
+    expect(html).not.toContain("carousel"); expect(html).not.toContain("slide"); expect(html).not.toContain("overflow-x-auto");
   });
   it("plainly discloses unsupported payments and existing account controls", () => {
     const html = renderToStaticMarkup(<PracticeCardHelp />);
@@ -80,23 +78,6 @@ describe("practice card components", () => {
       add.mock.calls[0][1](); expect(setShowDetails).toHaveBeenCalledTimes(2);
       cleanup(); expect(remove).toHaveBeenCalledWith("visibilitychange", add.mock.calls[0][1]);
     } finally { vi.useRealTimers(); }
-  });
-
-  it("moves pagination without animation for reduced motion and clamps the target slide", () => {
-    const text = fs.readFileSync("src/features/kid/PracticeCard.tsx", "utf8");
-    const root = ts.createSourceFile("tips.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-    let expression = "";
-    function visit(node: ts.Node) {
-      if (ts.isFunctionDeclaration(node) && node.name?.text === "goTo") expression = node.getText(root);
-      ts.forEachChild(node, visit);
-    }
-    visit(root); expect(expression).not.toBe("");
-    const scrollTo = vi.fn();
-    const js = ts.transpile(expression, { target: ts.ScriptTarget.ES2022 });
-    const goTo = new Function("list", "window", "TIPS", `${js}; return goTo;`)({ current: { firstElementChild: { clientWidth: 250 }, scrollTo } }, { matchMedia: () => ({ matches: true }) }, [1, 2, 3]);
-    goTo(1); expect(scrollTo).toHaveBeenLastCalledWith({ left: 262, behavior: "instant" });
-    goTo(100); expect(scrollTo).toHaveBeenLastCalledWith({ left: 524, behavior: "instant" });
-    goTo(-1); expect(scrollTo).toHaveBeenLastCalledWith({ left: 0, behavior: "instant" });
   });
 
 });
