@@ -3076,3 +3076,5 @@ button[data-variant]:active:not(:disabled), .quick-btn:active .quick-circle, .sh
 :root[data-theme="dark"] .penny-chat__header { background: rgb(24 34 49 / .92); }
 :root[data-theme="dark"] .penny-chat__composer { background: var(--surface); }
 :root[data-motion="reduced"] .app-dialog, :root[data-motion="reduced"] .app-dialog-overlay, :root[data-motion="reduced"] .story-card { animation: none !important; transition: none !important; }
+
+:root[data-theme="dark"] .quick-circle { color: var(--action-text); }
