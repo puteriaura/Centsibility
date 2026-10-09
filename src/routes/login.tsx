@@ -60,7 +60,7 @@ function Login() {
         alignItems: "center",
         justifyContent: "center",
         padding: "2rem 1rem",
-        background: "var(--white)",
+        background: "var(--canvas)",
       }}
     >
       <div style={{ width: "100%", maxWidth: "440px" }}>
@@ -166,7 +166,7 @@ function Login() {
                   alignItems: "center",
                   gap: "0.4rem",
                   fontSize: "0.875rem",
-                  color: "var(--primary)",
+                  color: "var(--action-text)",
                   fontWeight: 600,
                   textDecoration: "none",
                   minHeight: "44px",
