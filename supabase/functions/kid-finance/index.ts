@@ -726,7 +726,7 @@ async function handleMarketSymbol(admin: Admin, params: Record<string, unknown>,
   const catalogue = await getCuratedSymbols(admin);
   if (!catalogue.some(s => s.symbol === symbol)) return jsonError("Instrument not in our verified catalogue", 400);
 
-  const quoteRes = await getQuote(admin, symbol);
+  const quoteRes = await getQuote(admin, symbol, { allowClosedBootstrap: true });
   const closesRes = await getDailyCloses(admin, symbol);
 
   return jsonOk({

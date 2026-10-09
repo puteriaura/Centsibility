@@ -26,3 +26,11 @@ assert.match(marketPricePresentation('closed',null).label,/data unavailable/);
 assert.equal(marketPricePresentation('unknown',110).label,'Market status unavailable');
 assert.equal(marketPricePresentation('closed',110,NaN).price,110);
 console.log('PASS minute/day quota, HTTP/body 429, monitor failure, stale fallback, absent quote, Malaysian closed/open hours and truthful closing display');
+
+cached=null;
+const closedCalls=calls;
+const noCacheClosed=await getQuote(admin,'AMD',{...options,now:new Date('2026-10-09T10:00:00+08:00')});
+assert.equal(noCacheClosed.available,false);
+assert.equal(noCacheClosed.marketState,'closed');
+assert.equal(calls,closedCalls,'missing AMD cache does not fetch outside market hours');
+console.log('CONFIRMED: uncached AMD stays unavailable while closed without a provider request');

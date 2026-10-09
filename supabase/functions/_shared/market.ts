@@ -199,6 +199,7 @@ export async function getQuote(
     apiKey?: string | null;
     fetchFn?: typeof fetch;
     now?: Date;
+    allowClosedBootstrap?: boolean;
   }
 ): Promise<MarketQuoteResult> {
   const apiKey = options?.apiKey !== undefined ? options.apiKey : Deno.env.get("TWELVEDATA_API_KEY");
@@ -233,7 +234,10 @@ export async function getQuote(
 
   // Keep the trading quote intact. Last-close presentation must never substitute
   // an intraday cached value or entry price for a certified closing value.
-  if (marketSession(now) !== "open") {
+  const closedBootstrap = options?.allowClosedBootstrap === true && !cachedQuote && marketSession(now) === "closed";
+  // Only a selected instrument may fill an empty cache while closed. Existing
+  // quotes and list browsing never refresh outside the regular session.
+  if (marketSession(now) !== "open" && !closedBootstrap) {
     const lastClose = cachedQuote ? cachedQuote.is_market_open || isMarketHoursWindow(new Date(cachedQuote.fetched_at)) ? cachedQuote.previous_close : cachedQuote.price : null;
     return cachedQuote ? {available:true, stale:isQuoteStale(cachedQuote,now), fetchedAt:cachedQuote.fetched_at, quote:{...cachedQuote,is_market_open:false}, marketState:marketSession(now),
       ...(Number.isFinite(lastClose) && Number(lastClose)>0 ? {lastClose:Number(lastClose),lastCloseAsOf:cachedQuote.price_time ?? cachedQuote.fetched_at} : {})}
@@ -294,7 +298,8 @@ export async function getQuote(
       fetched_at: nowIso,
     });
 
-    return { available: true, stale: isQuoteStale(parsed, now), fetchedAt: nowIso, quote: parsed, marketState: parsed.is_market_open ? "open" : "closed", ...(!parsed.is_market_open && parsed.previous_close && parsed.previous_close > 0 ? {lastClose:parsed.previous_close,lastCloseAsOf:parsed.price_time ?? nowIso} : {}) };
+    const lastClose = closedBootstrap && !parsed.is_market_open ? parsed.price : parsed.previous_close;
+    return { available: true, stale: isQuoteStale(parsed, now), fetchedAt: nowIso, quote: parsed, marketState: closedBootstrap ? "closed" : parsed.is_market_open ? "open" : "closed", ...(!parsed.is_market_open && lastClose && lastClose > 0 ? {lastClose,lastCloseAsOf:parsed.price_time ?? nowIso} : {}) };
   } catch {
     if (cachedQuote) {
       return { available: true, stale: true, fetchedAt: cachedQuote.fetched_at, quote: cachedQuote };
