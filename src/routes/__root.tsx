@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, useRouter } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { AuthProvider } from "@/providers/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect } from "react";
@@ -36,7 +36,7 @@ function NotFoundComponent() {
   );
 }
 
-export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: () => void }) {
+export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   return (
     <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
@@ -46,7 +46,7 @@ export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: 
         </div>
         <h1 className="text-2xl font-bold text-[var(--ink)]">Something went wrong</h1>
         <p className="text-sm text-[var(--text-2)] mt-2 leading-relaxed">
-          {error?.message || "An unexpected error occurred. Please try again."}
+          {error instanceof Error && error.message ? error.message : "An unexpected error occurred. Please try again."}
         </p>
         <div className="mt-6 flex items-center gap-3">
           <Button
@@ -70,7 +70,7 @@ export function DefaultErrorComponent({ error, reset }: { error: Error; reset?: 
 export const Route = createRootRoute({
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
-  errorComponent: DefaultErrorComponent as any,
+  errorComponent: DefaultErrorComponent,
 });
 
 function RootComponent() {
