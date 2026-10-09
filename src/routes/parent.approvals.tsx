@@ -229,7 +229,7 @@ function Approvals() {
                       <span className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1.5">
                         Child&apos;s Digital Signature:
                       </span>
-                      <div className="bg-white p-2 rounded-lg border border-[var(--border)] inline-block max-w-[240px]">
+                      <div className="bg-[var(--surface)] p-2 rounded-lg border border-[var(--border)] inline-block max-w-[240px]">
                         <img
                           src={parsed.signature}
                           alt="Signature"

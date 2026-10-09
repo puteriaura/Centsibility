@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { AvatarBubble, AvatarPicker } from "@/components/AvatarBubble";
 import { DEFAULT_PARENT_AVATAR, resolveAvatar } from "@/lib/avatar";
 import { sfx, isMuted, toggleMute } from "@/lib/sounds";
-import { useTheme } from "@/lib/theme";
+import { AppearanceSettings } from "@/components/AppearanceSettings";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,6 @@ export const Route = createFileRoute("/parent/settings")({
 function Settings() {
   const { user } = useAuth();
   const { kids, loading, error, hasLoaded, lastLoadedAt, refresh } = useParentData();
-  const { theme, toggle } = useTheme();
   const [editing, setEditing] = useState<string | null>(null);
   const [custom, setCustom] = useState(5);
   const [pin, setPin] = useState("");
@@ -216,7 +215,7 @@ function Settings() {
               { id: "profile" as const, label: "My profile", icon: "user" },
               { id: "kids" as const, label: "Children avatars", icon: "users" },
               { id: "pin" as const, label: "Dashboard PIN", icon: "lock" },
-              { id: "prefs" as const, label: "Sound & theme", icon: "settings" },
+              { id: "prefs" as const, label: "Sound & appearance", icon: "settings" },
               { id: "hibah" as const, label: "Hibah preferences", icon: "sparkles" },
             ] as const
           ).map((item) => (
@@ -443,20 +442,7 @@ function Settings() {
               </span>
               {muted ? "Unmute sounds" : "Mute sounds"}
             </button>
-            <button
-              type="button"
-              className="settings-list__item"
-              style={{ border: "1px solid var(--border)", borderRadius: 12 }}
-              onClick={() => {
-                sfx.tap();
-                toggle();
-              }}
-            >
-              <span className="settings-list__icon">
-                <AppIcon name={theme === "dark" ? "light" : "dark"} size={18} />
-              </span>
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </button>
+            <AppearanceSettings />
           </CardContent>
         </Card>
       </div>

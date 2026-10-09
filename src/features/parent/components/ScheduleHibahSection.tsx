@@ -121,7 +121,7 @@ export function ScheduleHibahSection({
                     | "annually",
                 })
               }
-              className="w-full min-h-[48px] px-3 rounded-xl border border-[var(--border)] bg-white text-base font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
+              className="w-full min-h-[48px] px-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-base font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -147,7 +147,7 @@ export function ScheduleHibahSection({
                 startDate: e.target.value ? new Date(e.target.value) : undefined,
               })
             }
-            className="w-full min-h-[48px] px-3 rounded-xl border border-[var(--border)] bg-white text-base font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
+            className="w-full min-h-[48px] px-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-base font-medium text-[var(--ink)] focus:border-[var(--primary)] outline-none"
           />
         </div>
 

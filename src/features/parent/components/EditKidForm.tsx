@@ -121,7 +121,7 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
           onChange={(e) =>
             setEditData({ ...editData, ageGroupOverride: e.target.value })
           }
-          className="h-10 px-3 rounded-xl border border-[var(--border)] bg-white text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+          className="h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
         >
           <option value="">Auto by age</option>
           <option value="6-9">Ages 6-9 (Junior)</option>
@@ -130,7 +130,7 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
         </select>
       </div>
 
-      <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-[var(--border)]">
+      <div className="flex items-center justify-between p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
         <div className="flex flex-col gap-0.5">
           <label
             htmlFor={`edit-market-tracker-${kid.id}`}

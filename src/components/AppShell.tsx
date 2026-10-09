@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { setParentBypassed, setKidBypassed } from "@/lib/admin-bypass";
+import { AppearanceDialog } from "@/components/AppearanceSettings";
 import { PracticeCardHeader } from "@/features/kid/PracticeCard";
 import { usePenny } from "@/features/penny";
 import {
@@ -134,11 +135,12 @@ export function AppShell({
         />
       )}
       <main
-        className={`app-shell__main${immersive ? " app-shell__main--flush" : ""}`}
+        className={immersive ? "app-shell__main app-shell__main--flush" : "app-shell__main"}
       >
         {children}
       </main>
       {showDock && <BottomNav mode={mode} unread={unread} />}
+      <AppearanceDialog />
     </div>
   );
 }
@@ -310,6 +312,7 @@ function TopBar({
                   Settings
                 </Link>
               )}
+              {isKid && <button type="button" role="menuitem" className="shell-menu__item" onClick={closeThen(() => window.dispatchEvent(new Event("centsibility:open-appearance")))}><AppIcon name="settings" size={18} />Settings</button>}
               <button
                 type="button"
                 role="menuitem"

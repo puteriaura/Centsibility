@@ -312,7 +312,7 @@ function KidQuestRunnerPage() {
             const hasGraded = answerResult !== null;
             const isCorrectIndex = answerResult?.correctIndex === idx;
 
-            let buttonStyle = "bg-white border-[var(--border)] hover:border-[var(--primary)] text-[var(--ink)]";
+            let buttonStyle = "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--primary)] text-[var(--ink)]";
 
             if (hasGraded) {
               if (isCorrectIndex) {

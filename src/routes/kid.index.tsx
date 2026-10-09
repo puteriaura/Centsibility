@@ -524,7 +524,7 @@ function KidHome() {
                       maxLength={150}
                       rows={3}
                       placeholder="I love to learn and save money!"
-                      className="w-full px-3.5 py-2.5 text-sm text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none resize-none"
+                      className="w-full px-3.5 py-2.5 text-sm text-[var(--ink)] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none resize-none"
                     />
                     <small className="text-[11px] text-[var(--text-muted)] block text-right mt-0.5">
                       {pBio.length}/150

@@ -692,7 +692,7 @@ function IconPicker({
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer min-h-[44px] ${
               selected
                 ? "bg-[var(--primary)] text-white shadow-sm scale-105"
-                : "bg-white text-[var(--text-secondary)] hover:text-[var(--primary-text)] hover:bg-[var(--primary-soft)] border border-[var(--border)]"
+                : "bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--primary-text)] hover:bg-[var(--primary-soft)] border border-[var(--border)]"
             }`}
           >
             <AppIcon name={iconName(e)} size={20} />

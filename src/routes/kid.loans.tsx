@@ -332,7 +332,7 @@ function KidLoans() {
                 <label className="block text-xs font-semibold text-[var(--ink)] mb-2">
                   Sign Digitally Below
                 </label>
-                <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-white p-2">
+                <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-[var(--surface)] p-2">
                   <SignaturePad onChange={setSignature} />
                 </div>
               </div>

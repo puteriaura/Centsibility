@@ -371,7 +371,7 @@ export function TransferFlow({
                     className={`w-full text-left p-4 rounded-2xl cursor-pointer transition-all border ${
                       recipientKind === "parent" && recipientId === parentRecipient.id
                         ? "border-[var(--primary)] bg-[var(--surface-pink)]"
-                        : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
+                        : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -437,7 +437,7 @@ export function TransferFlow({
                             className={`w-full text-left p-4 rounded-2xl cursor-pointer transition-all border ${
                               isSelected
                                 ? "border-[var(--primary)] bg-[var(--surface-pink)]"
-                                : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
+                                : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -494,7 +494,7 @@ export function TransferFlow({
                     className={`w-full text-left p-4 rounded-2xl cursor-pointer transition-all border ${
                       isSelected
                         ? "border-[var(--primary)] bg-[var(--surface-pink)]"
-                        : "border-[var(--border)] bg-white hover:bg-[var(--surface-soft)]"
+                        : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -580,7 +580,7 @@ export function TransferFlow({
                   key={amt}
                   type="button"
                   onClick={() => addAmount(amt)}
-                  className="px-3 py-1 text-xs font-bold rounded-full bg-white border border-[var(--border)] text-[var(--ink)] hover:border-[var(--primary)] hover:bg-[var(--surface-pink)] transition-colors"
+                  className="px-3 py-1 text-xs font-bold rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:border-[var(--primary)] hover:bg-[var(--surface-pink)] transition-colors"
                 >
                   +RM{amt}
                 </button>
@@ -623,7 +623,7 @@ export function TransferFlow({
                   className={`px-3 py-1 text-xs rounded-full border transition-colors ${
                     note === preset
                       ? "bg-[var(--primary)] text-white border-[var(--primary)]"
-                      : "bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-soft)]"
+                      : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-soft)]"
                   }`}
                 >
                   {preset}
@@ -637,7 +637,7 @@ export function TransferFlow({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="E.g. Lunch money, treat, homework helper…"
-              className="w-full text-xs p-3 rounded-xl border border-[var(--border)] bg-white text-[var(--ink)] outline-hidden focus:border-[var(--primary)]"
+              className="w-full text-xs p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] outline-hidden focus:border-[var(--primary)]"
             />
             {!noteValidation.valid && (
               <p className="text-xs text-[var(--error-text)] font-medium mt-1">
@@ -765,7 +765,7 @@ export function TransferFlow({
                   className={`flex items-center justify-center font-bold border transition-all ${
                     filled
                       ? "border-[var(--primary)] bg-[var(--surface-pink)] text-[var(--primary-text)] shadow-xs"
-                      : "border-[var(--border)] bg-white text-[var(--text-muted)]"
+                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]"
                   }`}
                   style={{
                     width: "44px",

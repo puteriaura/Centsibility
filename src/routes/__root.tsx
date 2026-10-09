@@ -2,7 +2,7 @@ import { Outlet, Link, createRootRoute, useRouter } from "@tanstack/react-router
 import { AuthProvider } from "@/providers/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect } from "react";
-import { applyTheme, getTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { purgeStoredCredentials } from "@/lib/quick-login";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { observeViewport } from "@/lib/viewport";
@@ -74,9 +74,9 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  useTheme();
   useEffect(observeViewport, []);
   useEffect(() => {
-    applyTheme(getTheme());
     purgeStoredCredentials();
   }, []);
 

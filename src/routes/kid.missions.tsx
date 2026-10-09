@@ -128,7 +128,7 @@ function KidMissionsPage() {
           onClick={() => setTab("quests")}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer border-0 ${
             tab === "quests"
-              ? "bg-white text-[var(--ink)] shadow-sm"
+              ? "bg-[var(--surface)] text-[var(--ink)] shadow-sm"
               : "bg-transparent text-[var(--text-secondary)] hover:text-[var(--ink)]"
           }`}
           aria-selected={tab === "quests"}
@@ -149,7 +149,7 @@ function KidMissionsPage() {
           onClick={() => setTab("rewards")}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer border-0 ${
             tab === "rewards"
-              ? "bg-white text-[var(--ink)] shadow-sm"
+              ? "bg-[var(--surface)] text-[var(--ink)] shadow-sm"
               : "bg-transparent text-[var(--text-secondary)] hover:text-[var(--ink)]"
           }`}
           aria-selected={tab === "rewards"}

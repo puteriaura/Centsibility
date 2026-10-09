@@ -194,7 +194,7 @@ export function AvatarPicker({
                       className={`p-2.5 rounded-xl flex items-center justify-center transition-all cursor-pointer border min-h-[44px] ${
                         selected
                           ? "bg-[var(--surface-pink)] border-[var(--primary)] text-[var(--primary-text)] shadow-xs"
-                          : "bg-white border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-soft)]"
+                          : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-soft)]"
                       }`}
                     >
                       <AppIcon

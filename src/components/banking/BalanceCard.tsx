@@ -122,7 +122,7 @@ export function BalanceCard({
               type="button"
               onClick={onArrowClick}
               className={`h-11 w-11 shrink-0 rounded-full ${
-                isDark ? "bg-white text-[var(--action)] hover:bg-[var(--blue-50)]" : "bg-[var(--action)] text-white"
+                isDark ? "bg-[var(--surface)] text-[var(--action)] hover:bg-[var(--blue-50)]" : "bg-[var(--action)] text-white"
               }`}
               aria-label="Open wallet"
             >

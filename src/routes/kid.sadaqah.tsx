@@ -379,7 +379,7 @@ function KidSadaqah() {
             This amount will be deducted from your active wallet balance.
           </p>
           {modalError && (
-            <div className="p-2.5 rounded-lg bg-white text-[var(--error-text)] text-xs font-semibold text-center border border-[var(--error)]">
+            <div className="p-2.5 rounded-lg bg-[var(--surface)] text-[var(--error-text)] text-xs font-semibold text-center border border-[var(--error)]">
               {modalError}
             </div>
           )}

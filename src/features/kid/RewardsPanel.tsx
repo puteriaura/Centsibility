@@ -149,7 +149,7 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
                   !rewardsUnlocked
                     ? "bg-white/80 border-transparent opacity-75"
                     : hasEnough
-                      ? "bg-white border-transparent hover:border-[var(--primary)] shadow-sm"
+                      ? "bg-[var(--surface)] border-transparent hover:border-[var(--primary)] shadow-sm"
                       : "bg-white/90 border-dashed border-[var(--border)] opacity-85 hover:border-[var(--primary-soft)]"
                 }`}
               >

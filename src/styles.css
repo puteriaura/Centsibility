@@ -3032,3 +3032,14 @@
 .app-shell__main { overflow-wrap: anywhere; }
 
 :root[data-keyboard="open"] .shell-bottomnav { display: none; }
+
+/* Appearance changes role colors, preserving white-on-action and card artwork. */
+:root[data-theme="dark"] {
+  --gray-0: #182231; --gray-50: #202d40; --gray-100: #101824; --gray-150: #243247; --gray-200: #37465b; --gray-400: #71839d;
+  --gray-500: #b0bed1; --gray-600: #c5cfde; --gray-800: #e1e7f0; --gray-900: #f4f7fc;
+  --blue-50: #1c2e53; --blue-100: #283f71; --action-text: #a9c2ff;
+  --green-50: #14382c; --green-700: #78dbad; --red-50: #46262b; --red-700: #ffa5a0; --amber-50: #44331b; --amber-700: #f4c47b;
+  --focus: #a9c2ff; --navy-dark: #0e1726; --color-bg: var(--canvas);
+  --chart-1: #91afff; --chart-2: #6cd7c9; --chart-3: #f3bb78; --chart-4: #c1a4ff; --chart-5: #b0bed1; --chart-6: #f49cc6;
+}
+:root[data-theme="dark"] body { background-color: var(--canvas); }

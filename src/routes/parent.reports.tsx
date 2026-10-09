@@ -222,7 +222,7 @@ function Reports() {
           <select
             value={kidId}
             onChange={(e) => setKidId(e.target.value)}
-            className="h-10 px-3 text-xs sm:text-sm bg-white border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
+            className="h-10 px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
           >
             <option value="">Select Child</option>
             {kids.map((k) => (
@@ -239,7 +239,7 @@ function Reports() {
               if (e.target.value)
                 setMonth(startOfMonth(new Date(e.target.value + "-01")));
             }}
-            className="h-10 px-3 text-xs sm:text-sm bg-white border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
+            className="h-10 px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
           />
         </div>
       </div>
@@ -608,7 +608,7 @@ function Reports() {
                           "EEEE, d MMMM yyyy",
                         )}
                       </span>
-                      <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-white overflow-hidden">
+                      <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
                         {grouped[date].map((tx) => {
                           const debit = isDebit(tx.type, tx.label);
                           const runBal = balanceMap.get(tx.id);

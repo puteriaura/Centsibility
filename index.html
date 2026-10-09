@@ -11,6 +11,16 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
     />
+    <script>
+      (() => {
+        const read = key => { try { return localStorage.getItem(key); } catch { return null; } };
+        const preference = read("centsibility.appearance");
+        const theme = preference === "dark" || (preference !== "light" && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.documentElement.dataset.motion = read("centsibility.reduce-animations") === "true" || matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full";
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

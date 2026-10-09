@@ -194,7 +194,7 @@ export function ZakatSection() {
                   updateRow(assets, setAssets, i, e.target.value)
                 }
                 aria-label={a.label}
-                className="w-full min-h-[48px] px-3.5 py-2 text-base text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
+                className="w-full min-h-[48px] px-3.5 py-2 text-base text-[var(--ink)] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
               />
             </div>
           ))}
@@ -224,7 +224,7 @@ export function ZakatSection() {
                   updateRow(deductions, setDeductions, i, e.target.value)
                 }
                 aria-label={d.label}
-                className="w-full min-h-[48px] px-3.5 py-2 text-base text-[var(--ink)] bg-white border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
+                className="w-full min-h-[48px] px-3.5 py-2 text-base text-[var(--ink)] bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-sm)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
               />
             </div>
           ))}
@@ -309,7 +309,7 @@ export function ZakatSection() {
                 ].map((cat) => (
                   <div
                     key={cat.name}
-                    className="p-2.5 rounded-xl bg-white border border-[var(--border)] text-xs"
+                    className="p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <AppIcon
