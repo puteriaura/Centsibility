@@ -12,6 +12,10 @@ export function observeViewport() {
     root.style.setProperty("--keyboard-inset", `${geometry.inset}px`);
     root.dataset.keyboard = geometry.inset > 80 && Boolean(document.activeElement?.matches("input, textarea, [contenteditable=true]")) ? "open" : "closed";
   };
+  const keyboard = () => { document.documentElement.dataset.input = "keyboard"; };
+  const pointer = () => { document.documentElement.dataset.input = "pointer"; };
+  document.addEventListener("keydown", keyboard);
+  document.addEventListener("pointerdown", pointer);
   update();
   viewport?.addEventListener("resize", update);
   viewport?.addEventListener("scroll", update);
@@ -19,6 +23,8 @@ export function observeViewport() {
   document.addEventListener("focusin", update);
   document.addEventListener("focusout", update);
   return () => {
+    document.removeEventListener("keydown", keyboard);
+    document.removeEventListener("pointerdown", pointer);
     viewport?.removeEventListener("resize", update);
     viewport?.removeEventListener("scroll", update);
     window.removeEventListener("resize", update);

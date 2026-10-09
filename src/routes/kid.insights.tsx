@@ -21,7 +21,7 @@ import {
 } from "@/lib/labels";
 import { usePrivacy, Money, LogInToView, maskAmounts } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
-import { useReducedMotion } from "framer-motion";
+import { useTheme } from "@/lib/theme";
 import { recapBackgrounds, isStoryTap } from "@/lib/recap-backgrounds";
 
 export const Route = createFileRoute("/kid/insights")({
@@ -61,7 +61,7 @@ function KidInsights() {
   const [slideProgress, setSlideProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [receiptSheetOpen, setReceiptSheetOpen] = useState(false);
-  const reducedMotion = useReducedMotion();
+  const { reduced: reducedMotion } = useTheme();
   const pointerStartedAt = useRef<number | null>(null);
 
   // Dynamically compute active months (from user's earliest transaction to current month)
@@ -656,15 +656,12 @@ function KidInsights() {
                     height: "100%",
                     borderRadius: "999px",
                     background: "#ffffff",
-                    width:
-                      i < storyIdx
-                        ? "100%"
-                        : i === storyIdx
-                          ? `${slideProgress}%`
-                          : "0%",
+                    width: "100%",
+                    transformOrigin: "left",
+                    transform: `scaleX(${i < storyIdx ? 1 : i === storyIdx ? slideProgress / 100 : 0})`,
                     transition:
                       i === storyIdx && !isPaused && !reducedMotion
-                        ? "width 0.05s linear"
+                        ? "transform 0.05s linear"
                         : "none",
                   }}
                 />
@@ -674,6 +671,7 @@ function KidInsights() {
 
           {/* Main Story Card (matches reference screenshot gradient & layout) */}
           <div
+            key={storyIdx}
             className="story-card"
             style={{
               flex: "none",

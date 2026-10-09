@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTheme } from "@/lib/theme";
 import { usePinStatus } from "@/hooks/use-pin-status";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { usePenny } from "./PennyProvider";
@@ -68,6 +69,7 @@ const PARENT_COACH_CHIPS = [
 
 export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   const nav = useNavigate();
+  const { reduced } = useTheme();
   const {
     messages,
     busy,
@@ -86,11 +88,11 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      behavior: reduced
         ? "instant"
         : "smooth",
     });
-  }, [messages, busy]);
+  }, [messages, busy, reduced]);
 
   const handlePinKeyPress = async (key: string) => {
     if (pinProcessing || attemptStatus.locked) return;
@@ -238,11 +240,11 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
           <div className="penny-chat__thread" role="log" aria-live="polite">
             {messages.map((m) =>
               m.role === "user" ? (
-                <div key={m.id} className="penny-bubble penny-bubble--user">
+                <div key={m.id} data-new={!initialMessageIds.current.has(m.id) || undefined} className="penny-bubble penny-bubble--user">
                   {m.text}
                 </div>
               ) : (
-                <div key={m.id} className="penny-assistant">
+                <div key={m.id} data-new={!initialMessageIds.current.has(m.id) || undefined} className="penny-assistant">
                   <StreamingPennyReply text={m.text} animate={m.id === messages[messages.length - 1]?.id && !initialMessageIds.current.has(m.id)} />
                   {m.offline && (
                     <p className="text-[11px] text-[var(--text-secondary)] m-0 mt-1 italic">

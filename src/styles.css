@@ -2938,7 +2938,7 @@
 
   @keyframes success-pop {
     from {
-      transform: scale(0.7);
+      transform: scale(0.97);
       opacity: 0;
     }
     to {
@@ -3043,3 +3043,36 @@
   --chart-1: #91afff; --chart-2: #6cd7c9; --chart-3: #f3bb78; --chart-4: #c1a4ff; --chart-5: #b0bed1; --chart-6: #f49cc6;
 }
 :root[data-theme="dark"] body { background-color: var(--canvas); }
+
+/* Short motion communicates state; money values and navigation remain stationary. */
+.app-shell__main { animation: content-arrive var(--motion-standard) var(--ease-standard); }
+@keyframes content-arrive { from { opacity: .75; } to { opacity: 1; } }
+.app-dialog, .app-dialog-overlay { transition: opacity var(--motion-standard) var(--ease-standard), transform var(--motion-standard) var(--ease-standard); }
+@starting-style {
+  .app-dialog[data-state="open"] { opacity: 0; transform: translate(-50%, -50%) scale(.97); }
+  .app-dialog--sheet[data-state="open"] { transform: translate(-50%, 8%); }
+  .app-dialog-overlay[data-state="open"] { opacity: 0; }
+}
+.app-dialog[data-state="closed"], .app-dialog-overlay[data-state="closed"] { animation: overlay-leave var(--motion-fast) var(--ease-standard); }
+@keyframes overlay-leave { to { opacity: 0; } }
+button[data-variant], .quick-circle, .shell-icon-btn { transition: transform var(--motion-fast) var(--ease-standard), background-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard); }
+button[data-variant]:active:not(:disabled), .quick-btn:active .quick-circle, .shell-icon-btn:active { transform: scale(.97); }
+.app-shell, .shell-topbar, .shell-bottomnav, .app-dialog, input, textarea { transition-property: background-color, color, border-color; transition-duration: var(--motion-standard); transition-timing-function: var(--ease-standard); }
+.app-dialog { transition-property: opacity, transform, background-color, color; }
+.penny-bubble[data-new], .penny-assistant[data-new], .story-card { animation: quiet-arrive var(--motion-standard) var(--ease-standard); }
+@keyframes quiet-arrive { from { opacity: .6; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.penny-drawer__overlay { z-index: 200; }
+.penny-drawer__content { z-index: 201; height: min(85dvh, var(--viewport-height, 85dvh)); max-height: var(--viewport-height, 85dvh); }
+:root[data-theme="dark"] button[data-variant="danger"] { background: #9d2824; color: #fff; }
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after {
+  animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important;
+}
+:root[data-motion="reduced"] .penny-mascot * { animation: none !important; }
+:root[data-input="keyboard"] .app-shell__main, :root[data-input="keyboard"] .app-dialog, :root[data-input="keyboard"] .app-dialog-overlay { animation: none; transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog, .app-dialog-overlay, .penny-bubble, .penny-assistant, .story-card { animation: none !important; transition: none !important; }
+}
+
+:root[data-theme="dark"] .penny-chat__header { background: rgb(24 34 49 / .92); }
+:root[data-theme="dark"] .penny-chat__composer { background: var(--surface); }
+:root[data-motion="reduced"] .app-dialog, :root[data-motion="reduced"] .app-dialog-overlay, :root[data-motion="reduced"] .story-card { animation: none !important; transition: none !important; }

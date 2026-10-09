@@ -52,6 +52,15 @@ describe("practice card components", () => {
       expect(test.setLockFeedback).toHaveBeenCalledWith(expect.objectContaining({ error: false })); expect(test.refresh).toHaveBeenCalledOnce();
     }
   });
+  it("does not show the new lock state before the server confirms it", async () => {
+    const test = lockControl();
+    let complete!: () => void;
+    test.edgeKidSetCardControls.mockImplementation(() => new Promise<void>(resolve => { complete = resolve; }));
+    const pending = test.handler();
+    expect(test.setIsLocked).not.toHaveBeenCalled();
+    complete(); await pending;
+    expect(test.setIsLocked).toHaveBeenCalledExactlyOnceWith(true);
+  });
   it("restores the prior state on failure and prevents parent-managed unlocking", async () => {
     const failed = lockControl({ fail: true }); await failed.handler();
     expect(failed.setIsLocked).toHaveBeenLastCalledWith(false);

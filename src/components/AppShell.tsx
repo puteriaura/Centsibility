@@ -134,7 +134,7 @@ export function AppShell({
           unread={unread}
         />
       )}
-      <main
+      <main key={pathname}
         className={immersive ? "app-shell__main app-shell__main--flush" : "app-shell__main"}
       >
         {children}

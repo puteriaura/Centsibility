@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useTheme } from "@/lib/theme";
 import { PennyMarkdown } from "@/components/PennyMarkdown";
 // Reveal the complete, server-checked reply. This is presentation, not network streaming.
 export function StreamingPennyReply({ text, animate }: { text: string; animate: boolean }) {
-  const reducedMotion = useReducedMotion();
+  const { reduced: reducedMotion } = useTheme();
   const words = useMemo(() => text.match(/\S+\s*/g) || [text], [text]);
   const [shown, setShown] = useState(animate ? 0 : words.length);
   useEffect(() => {

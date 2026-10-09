@@ -15,6 +15,7 @@ import { getKidSession } from "@/lib/kid-session";
 import { edgeKidSetCardControls } from "@/lib/edge";
 import { PracticeCardHero, PracticeCardTips, PracticeCardHelp } from "@/features/kid/PracticeCard";
 import { PrivacyUnlockSheet } from "@/features/privacy/PrivacyUnlockSheet";
+import { reduceAnimations } from "@/lib/theme";
 import { Money } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/card")({
@@ -92,7 +93,6 @@ function KidCard() {
     }
     const prevLocked = isLocked;
     const nextLocked = !prevLocked;
-    setIsLocked(nextLocked);
 
     const code = getKidSession()?.code;
     if (!code) {
@@ -105,6 +105,7 @@ function KidCard() {
     setSavingFreeze(true);
     try {
       await edgeKidSetCardControls({ code, frozen: nextLocked });
+      setIsLocked(nextLocked);
       setLockFeedback({ error: false, text: nextLocked ? "Practice card locked. Sadaqah and cash requests are blocked." : "Practice card unlocked." });
       toast.success(
         nextLocked
@@ -169,7 +170,7 @@ function KidCard() {
   function showHelp() {
     const help = document.getElementById("practice-card-help");
     help?.focus({ preventScroll: true });
-    help?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center" });
+    help?.scrollIntoView({ behavior: reduceAnimations() ? "instant" : "smooth", block: "center" });
   }
 
   return (
