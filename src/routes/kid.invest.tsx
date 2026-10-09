@@ -1,5 +1,4 @@
 import { MarketQuoteLine } from "@/features/kid/MarketQuoteLine";
-import { marketPricePresentation } from "@/lib/market-presentation";
 import { marketSession } from "../../supabase/functions/_shared/market-calendar";
 import type { MarketUsage } from "../../supabase/functions/_shared/market-types";
 import { createFileRoute } from "@tanstack/react-router";
@@ -349,7 +348,6 @@ function KidInvest() {
   const activeMarketInvs = activeInvs.filter((i) => i.mode === "market");
   const selectedPrice = symbolDetail ? symbolDetail.available ? symbolDetail.quote?.price ?? null : null : selectedSymbol?.price ?? null;
   const selectedMarketState = symbolDetail?.marketState ?? (symbolDetail?.quote ? symbolDetail.quote.is_market_open ? "open" : "closed" : selectedSymbol?.is_market_open === undefined ? "unknown" : selectedSymbol.is_market_open ? "open" : "closed");
-  const selectedPresentation = marketPricePresentation(selectedMarketState, selectedPrice, symbolDetail ? symbolDetail.lastClose : selectedSymbol?.last_close);
   const quotaDegraded = marketUsage?.quotaHit || Object.values(quoteRows).some(row => row.degraded_reason === "local_quota" || row.degraded_reason === "provider_quota");
   const totalMarketExposure = activeMarketInvs.reduce(
     (s, i) => s + i.principal,
@@ -1611,17 +1609,7 @@ function KidInvest() {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
-                    <span>
-                      {selectedPresentation.price === null ? "Data unavailable" : `US$${selectedPresentation.price.toFixed(2)}`} · {selectedPresentation.label}
-                      {(symbolDetail?.stale ?? selectedSymbol.stale) ? " · Stale data" : ""}
-                    </span>
-                    <span>
-                      Delayed price · updated{" "}
-                      {fmtTime(
-                        symbolDetail?.quote?.price_time ?? symbolDetail?.quote?.fetched_at ??
-                          selectedSymbol.last_updated,
-                      )}
-                    </span>
+                    <MarketQuoteLine state={selectedMarketState} price={selectedPrice} lastClose={symbolDetail ? symbolDetail.lastClose : selectedSymbol.last_close} stale={symbolDetail?.stale ?? selectedSymbol.stale} updatedAt={symbolDetail?.quote?.price_time ?? symbolDetail?.quote?.fetched_at ?? selectedSymbol.last_updated} />
                   </div>
 
                   {symbolDetail?.lastCloseAsOf && <p className="text-xs text-[var(--text-muted)]">Close known as of {fmtTime(symbolDetail.lastCloseAsOf)}. Entry uses the saved trading quote shown at confirmation.</p>}
@@ -1674,7 +1662,7 @@ function KidInvest() {
                   </div>
 
                   {selectedPrice === null || symbolDetailLoading ? (
-                    <p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Loading quote..." : "Data unavailable. You can browse this instrument; a quote is needed to start a position."}</p>
+                    <p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Loading quote..." : selectedMarketState === "closed" ? "No saved price is available yet. A price is needed to start a position. Try this stock again shortly." : "No quote is available yet. Try again shortly; a quote is needed to start a position."}</p>
                   ) : activeMarketInvs.length >= 5 ? (
                     <div className="p-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)]">
                       You already have 5 open market investments (maximum). Sell
