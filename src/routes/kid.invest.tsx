@@ -269,6 +269,8 @@ function KidInvest() {
     return filterMarketSymbols((marketData?.symbols ?? []).filter(s => s.verified), searchQuery);
   }, [marketData, searchQuery]);
 
+  useEffect(() => { pickerListRef.current?.scrollTo({ top: 0, behavior: "instant" }); }, [searchQuery]);
+
   useEffect(() => {
     const root = pickerListRef.current;
     setVisibleSymbols([]);
