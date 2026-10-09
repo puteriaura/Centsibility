@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { applyTheme, getTheme } from "@/lib/theme";
 import { purgeStoredCredentials } from "@/lib/quick-login";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { observeViewport } from "@/lib/viewport";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  useEffect(observeViewport, []);
   useEffect(() => {
     applyTheme(getTheme());
     purgeStoredCredentials();

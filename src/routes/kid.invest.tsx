@@ -1468,7 +1468,7 @@ function KidInvest() {
 
               {/* Picker Step */}
               {marketStep === "picker" && (
-                <div className="flex flex-col max-h-[calc(100dvh-12rem)] min-h-0">
+                <div className="market-picker">
                   <div className="shrink-0 space-y-2 pb-2">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
                       <span>Search our curated list only</span>
@@ -1479,7 +1479,7 @@ function KidInvest() {
                     {marketUsage?.monitoringAvailable && <p className="text-xs text-[var(--text-muted)]">Provider attempts: {marketUsage.minuteCalls}/{marketUsage.minuteLimit} in 60 seconds · {marketUsage.dailyCalls}/{marketUsage.dailyLimit} today (UTC).</p>}
 
                     {/* Search box */}
-                    <div className="sticky top-0 z-10 bg-white">
+                    <div className="bg-[var(--surface)]">
                       <input
                         type="text"
                         placeholder="Search symbols or names..."
@@ -1570,7 +1570,7 @@ function KidInvest() {
                     )}
                   </div>
 
-                  <div className="shrink-0 pt-3 pb-[calc(4.5rem+env(safe-area-inset-bottom,16px))]">
+                  <div className="shrink-0 pt-3 pb-[env(safe-area-inset-bottom,0px)]">
                     <Button
                       type="button"
                       variant="outline"

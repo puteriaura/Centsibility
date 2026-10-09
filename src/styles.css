@@ -3018,3 +3018,17 @@
     opacity: 0.7;
   }
 }
+
+/* Shared overlays stay above the sticky shell and use the visible viewport. */
+.app-dialog-overlay { position: fixed; inset: 0; z-index: 200; background: rgb(14 23 38 / .55); }
+.app-dialog { position: fixed; z-index: 201; top: calc(var(--viewport-top, 0px) + var(--viewport-height, 100dvh) / 2); left: 50%; transform: translate(-50%, -50%); width: calc(100% - 2rem); max-height: calc(var(--viewport-height, 100dvh) - 2rem); display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-sheet); background: var(--surface); color: var(--text); box-shadow: 0 12px 40px rgb(0 0 0 / .2); }
+.app-dialog--sheet { top: auto; bottom: var(--keyboard-inset, 0px); transform: translateX(-50%); width: 100%; border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.app-dialog__header { flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; }
+.app-dialog__body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px 20px; }
+.app-dialog__body:has(.market-picker) { overflow: hidden; }
+.app-dialog__footer { flex-shrink: 0; display: flex; justify-content: flex-end; gap: 12px; padding: 16px 20px; border-top: 1px solid var(--line); }
+.market-picker { display: flex; flex-direction: column; min-height: 0; height: min(36rem, calc(var(--viewport-height, 100dvh) - 10rem)); }
+.app-shell__main > * { min-width: 0; }
+.app-shell__main { overflow-wrap: anywhere; }
+
+:root[data-keyboard="open"] .shell-bottomnav { display: none; }
