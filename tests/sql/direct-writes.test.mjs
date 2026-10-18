@@ -137,7 +137,7 @@ export const tests = [
 
       await asRole(db, 'authenticated', async () => {
         // Can see own kid
-        const kids = (await db.query(`select * from public.kids`)).rows;
+        const kids = (await db.query(`select id, name, has_pin from public.kids`)).rows;
         assert.equal(kids.length, 1);
         assert.equal(kids[0].id, kid1.id);
 
@@ -156,7 +156,7 @@ export const tests = [
       await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [parent2]);
 
       await asRole(db, 'authenticated', async () => {
-        const kids = (await db.query(`select * from public.kids`)).rows;
+        const kids = (await db.query(`select id, name, has_pin from public.kids`)).rows;
         assert.equal(kids.length, 1);
         assert.equal(kids[0].id, kid2.id);
 
@@ -180,15 +180,10 @@ export const tests = [
       await db.query(`select set_config('request.jwt.claim.sub', '', false)`);
 
       await asRole(db, 'anon', async () => {
-        // SELECT returns empty under RLS
-        const kids = (await db.query(`select * from public.kids`)).rows;
-        assert.equal(kids.length, 0);
-
-        const goals = (await db.query(`select * from public.goals`)).rows;
-        assert.equal(goals.length, 0);
-
-        const hibahs = (await db.query(`select * from public.scheduled_hibahs`)).rows;
-        assert.equal(hibahs.length, 0);
+        // Table privileges now deny reads before row-level policies are reached.
+        for (const table of ['kids', 'goals', 'scheduled_hibahs']) {
+          await expectError(db.query(`select * from public.${table}`), 'permission denied');
+        }
 
         // Direct writes fail with permission denied
         await expectError(

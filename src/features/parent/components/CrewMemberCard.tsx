@@ -129,8 +129,10 @@ export function CrewMemberCard({
   })();
 
   const ageDefaultEnabled = kidAgeGroup === "13-17";
-  const rawMarketSetting = (kid as Record<string, unknown>).market_tracker_enabled;
-  const isMarketCustomized = rawMarketSetting !== null && rawMarketSetting !== undefined;
+  const rawMarketSetting = (kid as Record<string, unknown>)
+    .market_tracker_enabled;
+  const isMarketCustomized =
+    rawMarketSetting !== null && rawMarketSetting !== undefined;
   const marketTrackerEnabled = isMarketCustomized
     ? Boolean(rawMarketSetting)
     : ageDefaultEnabled;
@@ -144,11 +146,14 @@ export function CrewMemberCard({
     return marketTrackerEnabled ? "On" : "Off";
   })();
 
-  const [showMarketTrackerPinSheet, setShowMarketTrackerPinSheet] = useState(false);
+  const [showMarketTrackerPinSheet, setShowMarketTrackerPinSheet] =
+    useState(false);
   const [pendingMarketEnabled, setPendingMarketEnabled] = useState(false);
   const [savingMarketTracker, setSavingMarketTracker] = useState(false);
 
-  const handleToggleMarketTracker = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleToggleMarketTracker = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const nextVal = e.target.checked;
     setPendingMarketEnabled(nextVal);
     setShowMarketTrackerPinSheet(true);
@@ -162,12 +167,13 @@ export function CrewMemberCard({
         enabled: pendingMarketEnabled,
       });
       toast.success(
-        `Market Tracker switched ${pendingMarketEnabled ? "on" : "off"} for ${kid.name}`
+        `Market Tracker switched ${pendingMarketEnabled ? "on" : "off"} for ${kid.name}`,
       );
       sfx.success();
       onRefresh();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to update Market Tracker";
+      const msg =
+        err instanceof Error ? err.message : "Failed to update Market Tracker";
       toast.error(msg);
       sfx.error();
     } finally {
@@ -282,7 +288,7 @@ export function CrewMemberCard({
   const summary = getBalanceSummary(kid, kidGoals, kidLoans, investmentsValue);
   const total = summary.total;
   const avatar = resolveAvatar(kid.avatar, "kid");
-  const activeCode = resetCode || (!kid.hashed_pin ? kid.login_code : null);
+  const activeCode = resetCode || (!kid.has_pin ? kid.login_code : null);
 
   return (
     <Card
@@ -307,7 +313,9 @@ export function CrewMemberCard({
               className="text-[11px] px-2 py-0.5 font-medium"
             >
               {cardFrozen ? "Card frozen" : `Card limit RM${dailyLimit}/day`}
-              {controlsLocked && <AppIcon name="lock" size={12} aria-label="Locked" />}
+              {controlsLocked && (
+                <AppIcon name="lock" size={12} aria-label="Locked" />
+              )}
             </Badge>
           </div>
           <span className="crew-card__sub truncate">

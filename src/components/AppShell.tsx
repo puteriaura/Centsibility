@@ -14,7 +14,11 @@ import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AvatarBubble } from "@/components/AvatarBubble";
-import { setParentBypassed, setKidBypassed } from "@/lib/admin-bypass";
+import {
+  isParentBypassed,
+  setParentBypassed,
+  setKidBypassed,
+} from "@/lib/admin-bypass";
 import { AppearanceDialog } from "@/components/AppearanceSettings";
 import { PracticeCardHeader } from "@/features/kid/PracticeCard";
 import { usePenny } from "@/features/penny";
@@ -70,8 +74,7 @@ export function AppShell({
   useEffect(() => {
     if (mode === "parent") {
       const meta = session?.user?.user_metadata as
-        | { avatar?: string }
-        | undefined;
+        { avatar?: string } | undefined;
       setParentAvatar(meta?.avatar || "phosphor:User");
     } else {
       const handleAvatar = (e: Event) => {
@@ -85,7 +88,7 @@ export function AppShell({
   }, [mode, session]);
 
   useEffect(() => {
-    if (mode === "parent" && session) {
+    if (mode === "parent" && session && !isParentBypassed()) {
       const fetchCount = async () => {
         const { count } = await supabase
           .from("notifications")
@@ -149,8 +152,13 @@ export function AppShell({
           unread={unread}
         />
       )}
-      <main key={pathname}
-        className={immersive ? "app-shell__main app-shell__main--flush" : "app-shell__main"}
+      <main
+        key={pathname}
+        className={
+          immersive
+            ? "app-shell__main app-shell__main--flush"
+            : "app-shell__main"
+        }
       >
         {children}
       </main>
@@ -164,19 +172,25 @@ function FullPageLoader() {
   return (
     <div className="app-shell app-shell--loading space-y-4" aria-busy="true">
       <div className="flex items-center gap-3">
-        <Skeleton style={{ width: "44px", height: "44px", borderRadius: "999px" }} />
+        <Skeleton
+          style={{ width: "44px", height: "44px", borderRadius: "999px" }}
+        />
         <div style={{ flex: 1 }} className="space-y-2">
           <Skeleton style={{ height: "16px", width: "120px" }} />
           <Skeleton style={{ height: "12px", width: "80px" }} />
         </div>
       </div>
-      <Skeleton style={{ height: "132px", width: "100%", borderRadius: "20px" }} />
+      <Skeleton
+        style={{ height: "132px", width: "100%", borderRadius: "20px" }}
+      />
       <div className="grid grid-cols-4 gap-3">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} style={{ height: "64px", borderRadius: "16px" }} />
         ))}
       </div>
-      <Skeleton style={{ height: "160px", width: "100%", borderRadius: "16px" }} />
+      <Skeleton
+        style={{ height: "160px", width: "100%", borderRadius: "16px" }}
+      />
     </div>
   );
 }
@@ -266,7 +280,11 @@ function TopBar({
   };
 
   if (isKid && trimSlash(currentPath) === "/kid/card") {
-    return <PracticeCardHeader onHelp={() => openPenny({ context: { page: "Card" } })} />;
+    return (
+      <PracticeCardHeader
+        onHelp={() => openPenny({ context: { page: "Card" } })}
+      />
+    );
   }
 
   if (kind === "home") {
@@ -293,7 +311,9 @@ function TopBar({
               emoji={
                 isKid
                   ? kidAvatar ||
-                    (kidName ? (kidName[0] || "C").toUpperCase() : "phosphor:Smiley")
+                    (kidName
+                      ? (kidName[0] || "C").toUpperCase()
+                      : "phosphor:Smiley")
                   : parentAvatar || "phosphor:User"
               }
               size={36}
@@ -310,7 +330,9 @@ function TopBar({
                   role="menuitem"
                   className="shell-menu__item"
                   onClick={closeThen(() =>
-                    window.dispatchEvent(new CustomEvent("centsibility:open-profile")),
+                    window.dispatchEvent(
+                      new CustomEvent("centsibility:open-profile"),
+                    ),
                   )}
                 >
                   <AppIcon name="user" size={18} />
@@ -327,7 +349,21 @@ function TopBar({
                   Settings
                 </Link>
               )}
-              {isKid && <button type="button" role="menuitem" className="shell-menu__item" onClick={closeThen(() => window.dispatchEvent(new Event("centsibility:open-appearance")))}><AppIcon name="settings" size={18} />Settings</button>}
+              {isKid && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="shell-menu__item"
+                  onClick={closeThen(() =>
+                    window.dispatchEvent(
+                      new Event("centsibility:open-appearance"),
+                    ),
+                  )}
+                >
+                  <AppIcon name="settings" size={18} />
+                  Settings
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"
@@ -491,7 +527,9 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
                   </span>
                   <span className="shell-navitem__label">
                     {it.label}
-                    {badge > 0 && <span className="sr-only">, {badge} new</span>}
+                    {badge > 0 && (
+                      <span className="sr-only">, {badge} new</span>
+                    )}
                   </span>
                 </>
               )}
