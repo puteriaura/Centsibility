@@ -107,7 +107,7 @@ describe("parent pin session storage", () => {
     });
 
     // Call kid-finance
-    await edgeKidSadaqah({ code: "AIMAN1", amount: 5 });
+    await edgeKidSadaqah({ code: "DEMO01", amount: 5 });
     expect(mockInvoke).toHaveBeenCalledWith("kid-finance", {
       body: expect.not.objectContaining({
         pinSession: expect.anything(),

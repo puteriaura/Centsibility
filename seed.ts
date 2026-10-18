@@ -1,12 +1,25 @@
 import * as dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 import { supabaseAdmin } from "./scripts/lib/supabase-admin.ts";
 import bcrypt from "bcryptjs";
+import { randomBytes, randomInt } from "node:crypto";
+
+export function assertSeedTarget(rawUrl: string, stagingUrl?: string): void {
+  const url = new URL(rawUrl);
+  if ((rawUrl.includes("uoghvqciodboxhfopuip") || url.hostname.includes("uoghvqciodboxhfopuip")) ||
+      url.username || url.password ||
+      !["http:", "https:"].includes(url.protocol) ||
+      (!["localhost", "127.0.0.1"].includes(url.hostname) &&
+       (!stagingUrl || rawUrl !== stagingUrl))) {
+    throw new Error("Seeding requires localhost or an explicitly selected staging project; production is forbidden.");
+  }
+}
 
 async function seed() {
+  assertSeedTarget(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "", process.env.STAGING_SUPABASE_URL);
   const email = "test@centsibility.com";
-  const password = "password123";
+  const password = randomBytes(24).toString("base64url");
   const name = "Test Parent";
 
   console.log("Checking if user exists...");
@@ -47,14 +60,16 @@ async function seed() {
 
   if (!existingKid) {
     console.log("Creating kid Aiman...");
-    const hashedPin = await bcrypt.hash("123456", 10);
+    let pin: string;
+    do { pin = String(randomInt(0, 1_000_000)).padStart(6, "0"); } while (pin === "123456");
+    const hashedPin = await bcrypt.hash(pin, 10);
     const { data: kid, error: kidError } = await supabaseAdmin
       .from("kids")
       .insert({
         parent_id: user.id,
         name: "Aiman",
         username: "aiman",
-        login_code: "AIMAN1",
+        login_code: null,
         hashed_pin: hashedPin,
         balance: 100,
         coins: 500
@@ -71,8 +86,6 @@ async function seed() {
   }
 
   console.log("Seed complete!");
-  console.log("Parent Login: test@centsibility.com / password123");
-  console.log("Kid Login: aiman / 123456");
 }
 
-seed();
+if (import.meta.main) seed();

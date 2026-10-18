@@ -33,7 +33,7 @@ describe("production bypass boundary", () => {
     expect(storage.getItem).not.toHaveBeenCalled();
     expect(storage.setItem).not.toHaveBeenCalled();
   });
-  it.each(["demo-token-aiman", "demo-token-demo", "demo-bypass-access-token", "AIMAN1", "", "f".repeat(63), "g".repeat(64)])("server rejects %s", token => {
+  it.each(["demo-token-aiman", "demo-token-demo", "demo-bypass-access-token", "invalid-access-code", "", "f".repeat(63), "g".repeat(64)])("server rejects %s", token => {
     expect(isKidSessionToken(token)).toBe(false);
   });
   it("accepts only the issued randomHex(32) shape", () => {

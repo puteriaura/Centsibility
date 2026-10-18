@@ -14,7 +14,7 @@ export const DEMO_IDENTITY = import.meta.env.DEV
   ? {
       parentEmail: "test@centsibility.com",
       kidUsername: "aiman",
-      kidCode: "AIMAN1",
+      kidCode: "DEMO01",
       kidId: "demo-kid-aiman",
       sessionToken: "demo-token-aiman",
     }

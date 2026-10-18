@@ -7,13 +7,13 @@ import type { Session, User } from "@supabase/supabase-js";
 export const ADMIN_BYPASS = import.meta.env.DEV
   ? ({
       parent: {
-        email: "test@centsibility.com",
-        password: "password123",
+        email: import.meta.env.VITE_DEMO_PARENT_EMAIL || "",
+        password: import.meta.env.VITE_DEMO_PARENT_PASSWORD || "",
       },
       kid: {
-        username: "aiman",
-        pin: "123456",
-        code: "AIMAN1",
+        username: import.meta.env.VITE_DEMO_KID_USERNAME || "",
+        pin: import.meta.env.VITE_DEMO_KID_PIN || "",
+        code: "",
       },
     } as const)
   : {
