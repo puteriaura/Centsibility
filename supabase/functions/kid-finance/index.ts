@@ -1,3 +1,4 @@
+import { logEvent } from "../_shared/log.ts";
 import { minimizePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 import { isKidSessionToken } from "../_shared/kid-session-token.ts";
@@ -52,7 +53,7 @@ function jsonError(message: string, status = 400, detail?: unknown): Response {
   const body: Record<string, unknown> = { error: message };
   if (detail !== undefined) body.detail = String(detail);
 
-  console.error(`[kid-finance] ${status}: ${message}`, detail ?? "");
+  console.error(`[kid-finance] ${status}: ${message}`);
 
   return new Response(JSON.stringify(body), {
     status,
@@ -168,7 +169,7 @@ serve(async (req: Request) => {
   const action = typeof body.action === "string" ? body.action : undefined;
 
   // Request bodies contain account session tokens and must never be logged.
-  if (action !== "penny-chat") console.log(`[kid-finance][${requestId}] action="${action ?? "MISSING"}"`);
+  logEvent({ fn: "kid-finance", requestId, action });
 
   if (!action) return jsonError('Missing required field: "action"', 400);
 
@@ -284,7 +285,7 @@ async function getKid(admin: Admin, token: unknown, requestId: string, quiet = f
   }
   if (!data) throw new Error("Invalid or expired session");
 
-  if (!quiet) console.log(`[kid-finance][${requestId}] getKid: id=${data.id} name="${data.name}"`);
+  if (!quiet) logEvent({ fn: "kid-finance", requestId, kidId: data.id });
   return data;
 }
 
@@ -308,7 +309,6 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
   if (pin.length < 6 || !/^\d{6}$/.test(pin)) {
     return jsonError("PINs are now 6 digits. Ask your parent to tap Reset PIN for a new access code.", 400);
   }
-  console.log(`[kid-finance][${requestId}] handleLogin username="${username}"`);
 
   const { data: kid, error: kidErr } = await admin.from("kids").select("*").eq("username", username).maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
@@ -470,7 +470,6 @@ async function handleRegister(admin: Admin, params: Record<string, unknown>, req
   const pin = typeof params.pin === "string" ? params.pin : "";
   if (!setupCode || !name || !username || !pin) return jsonError("Missing required fields: setupCode, name, username, pin", 400);
   if (!/^\d{6}$/.test(pin)) return jsonError("PIN must be exactly 6 digits", 400);
-  console.log(`[kid-finance][${requestId}] handleRegister username="${username}"`);
 
   const parts = setupCode.split("_");
   if (parts.length !== 2) return jsonError("Invalid setup code format", 400);
@@ -1087,7 +1086,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const safety = filterPennyInput(message);
   if (safety) {
-    console.log(JSON.stringify({ intent: "sensitive", fields: [] }));
+    logEvent({ intent: "sensitive", fields: [] });
     return jsonOk({ reply: safety.reply, thinking: false, intent: "sensitive" });
   }
 
@@ -1104,7 +1103,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
 
   const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
-  console.log(JSON.stringify(plan.audit));
+  logEvent(plan.audit);
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");

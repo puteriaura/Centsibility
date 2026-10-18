@@ -1,3 +1,4 @@
+import { logEvent } from "../_shared/log.ts";
 import { minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/parent-finance/index.ts
@@ -876,7 +877,7 @@ async function handlePennyChat(
 
   const safety = filterPennyInput(message);
   if (safety) {
-    console.log(JSON.stringify({ intent: "sensitive", fields: [] }));
+    logEvent({ intent: "sensitive", fields: [] });
     return jsonOk({ reply: safety.reply, thinking: false, intent: "sensitive" });
   }
 
@@ -901,7 +902,7 @@ async function handlePennyChat(
     selectedKid = data;
   }
   const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
-  console.log(JSON.stringify(plan.audit));
+  logEvent(plan.audit);
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
