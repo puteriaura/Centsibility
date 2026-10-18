@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   type CSSProperties,
@@ -46,6 +47,20 @@ export function AppShell({
   useEffect(() => {
     if (mode === "kid") setKid(getKidSession());
   }, [mode, pathname]);
+
+  useEffect(() => {
+    if (mode !== "kid") return;
+    const signedOut = () => {
+      setKid(null);
+      toast.error("You were signed out. Please sign in again.", {
+        id: "kid-signed-out",
+      });
+      nav({ to: "/kid-login" });
+    };
+    window.addEventListener("centsibility:kid-signed-out", signedOut);
+    return () =>
+      window.removeEventListener("centsibility:kid-signed-out", signedOut);
+  }, [mode, nav]);
 
   useEffect(() => {
     if (mode === "parent" && !loading && !session) nav({ to: "/login" });

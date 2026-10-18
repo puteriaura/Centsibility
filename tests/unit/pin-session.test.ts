@@ -99,6 +99,7 @@ describe("parent pin session storage", () => {
     // Call parent-finance
     await edgeParentDeposit({ kidId: "kid1", amount: 10, type: "DEPOSIT" });
     expect(mockInvoke).toHaveBeenCalledWith("parent-finance", {
+      signal: expect.any(AbortSignal),
       body: expect.objectContaining({
         action: "deposit",
         kidId: "kid1",
@@ -109,6 +110,7 @@ describe("parent pin session storage", () => {
     // Call kid-finance
     await edgeKidSadaqah({ code: "DEMO01", amount: 5 });
     expect(mockInvoke).toHaveBeenCalledWith("kid-finance", {
+      signal: expect.any(AbortSignal),
       body: expect.not.objectContaining({
         pinSession: expect.anything(),
       }),

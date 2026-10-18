@@ -39,6 +39,13 @@ const corsHeaders = {
 // ---------------------------------------------------------------------------
 // Response helpers (Fixed - always include CORS headers)
 // ---------------------------------------------------------------------------
+function sessionInvalid(): Response {
+  return new Response(JSON.stringify({
+    error: "You were signed out. Please sign in again.",
+    code: "session_invalid",
+  }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
 function jsonOk(data: unknown): Response {
   return new Response(JSON.stringify(data), {
     status: 200,
@@ -182,7 +189,7 @@ Deno.serve(async (req: Request) => {
     const token = typeof params.code === "string" ? params.code.trim() : "";
     if (!isKidSessionToken(token)) {
       console.warn(`[kid-finance][${requestId}] Rejected action="${action}": missing session token`);
-      return jsonError("Unauthorized: missing session token", 401);
+      return sessionInvalid();
     }
 
     const { data: exists, error: gateErr } = await admin
@@ -197,7 +204,7 @@ Deno.serve(async (req: Request) => {
 
     if (!exists) {
       console.warn(`[kid-finance][${requestId}] Rejected action="${action}": invalid token`);
-      return jsonError("Unauthorized: invalid or expired session", 401);
+      return sessionInvalid();
     }
   }
 
@@ -250,6 +257,7 @@ Deno.serve(async (req: Request) => {
         return jsonError(`Unknown action: "${action}"`, 400);
     }
   } catch (err: unknown) {
+    if (err instanceof Response) return err;
     const msg = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error(`[kid-finance][${requestId}] Unhandled error in action="${action}":`, msg, stack ?? "");
@@ -275,7 +283,7 @@ async function sha256(text: string): Promise<string> {
 
 async function getKid(admin: Admin, token: unknown, requestId: string, quiet = false) {
   if (!isKidSessionToken(token)) {
-    throw new Error("Missing or invalid session code");
+    throw sessionInvalid();
   }
   const { data, error } = await admin
     .from("kids").select("*").eq("session_token", token).maybeSingle();
@@ -283,7 +291,7 @@ async function getKid(admin: Admin, token: unknown, requestId: string, quiet = f
   if (error) {
     throw new Error(`DB error: ${error.message}`);
   }
-  if (!data) throw new Error("Invalid or expired session");
+  if (!data) throw sessionInvalid();
 
   if (!quiet) logEvent({ fn: "kid-finance", requestId, kidId: data.id });
   return data;

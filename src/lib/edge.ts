@@ -5,7 +5,7 @@ import type { PennyIntent } from "../../supabase/functions/_shared/penny-intents
 // for financial operations that must run server-side.
 
 import { supabase } from "@/integrations/supabase/client";
-import { FunctionsHttpError } from "@supabase/supabase-js";
+import { FunctionsHttpError, FunctionsFetchError } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import {
   isParentBypassed,
@@ -19,7 +19,7 @@ import {
   DEMO_KIDS,
 } from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
-import { getKidSession } from "@/lib/kid-session";
+import { getKidSession, clearKidSession } from "@/lib/kid-session";
 import { SCREENING, VERIFIED_STOCK_ADDITIONS } from "../../supabase/functions/_shared/market-screening";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
@@ -886,6 +886,13 @@ export function clearParentPinSession(): void {
   window.sessionStorage.removeItem(PIN_SESSION_KEY);
 }
 
+export function isAuthError(error: unknown, status?: number): boolean {
+  const httpStatus =
+    status ??
+    (error instanceof FunctionsHttpError ? error.context?.status : undefined);
+  return httpStatus === 401 || httpStatus === 403;
+}
+
 async function invoke<T = unknown>(
   functionName: string,
   body: Record<string, unknown>,
@@ -894,136 +901,91 @@ async function invoke<T = unknown>(
   const requestBody = { ...body };
   if (functionName === "parent-finance" && !requestBody.pinSession) {
     const session = getParentPinSession();
-    if (session?.token) {
-      requestBody.pinSession = session.token;
-    }
+    if (session?.token) requestBody.pinSession = session.token;
   }
-
+  const signal = AbortSignal.timeout(
+    body.action === "penny-chat" ? 45_000 : 15_000,
+  );
   try {
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: requestBody,
-    });
-    if (error) {
-      if (isParentBypassed() || isKidBypassed()) {
-        console.warn(
-          `Edge function [${functionName}:${body.action}] failed, using mock response`,
-        );
+    const { data, error, response } = await supabase.functions.invoke(
+      functionName,
+      {
+        body: requestBody,
+        signal,
+      },
+    );
+    if (error || data?.error || data?.code === "session_invalid") {
+      if (isParentBypassed() || isKidBypassed())
         return getMockEdgeResponse<T>(functionName, body);
-      }
-      const message = await extractEdgeErrorMessage(error);
-      if (message === "PIN required") {
-        clearParentPinSession();
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("centsibility:pin-required"));
-        }
-        throw new Error(message);
-      }
-
-      const isAuthError =
-        (error instanceof FunctionsHttpError &&
-          (error.context?.status === 401 || error.context?.status === 403)) ||
-        message.toLowerCase().includes("unauthorized") ||
-        message.toLowerCase().includes("jwt") ||
-        message.toLowerCase().includes("token") ||
-        message.toLowerCase().includes("network");
-
-      if (
-        isAuthError &&
-        !isRetry &&
-        typeof supabase?.auth?.refreshSession === "function"
-      ) {
+      const status =
+        response?.status ??
+        (error instanceof FunctionsHttpError
+          ? error.context?.status
+          : undefined);
+      let code = data?.code;
+      if (error instanceof FunctionsHttpError) {
         try {
-          const { data: refreshData, error: refreshError } =
-            await supabase.auth.refreshSession();
-          if (!refreshError && refreshData?.session) {
-            return await invoke<T>(functionName, body, true);
-          }
+          code = (await error.context.clone().json())?.code;
         } catch {
-          // silent refresh failed
+          /* Non-JSON error response. */
         }
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("centsibility:auth-expired", {
-              detail: { message: "Please sign in again" },
-            }),
-          );
-          if (
-            window.location &&
-            typeof window.location.pathname === "string" &&
-            window.location.pathname.startsWith("/parent")
-          ) {
-            window.location.href = "/login";
-          }
-        }
-        throw new Error("Please sign in again");
       }
-
-      throw new Error(message);
-    }
-    if (data?.error) {
-      if (isParentBypassed() || isKidBypassed()) {
-        return getMockEdgeResponse<T>(functionName, body);
+      if (
+        functionName === "kid-finance" &&
+        (status === 401 || code === "session_invalid")
+      ) {
+        clearKidSession();
+        if (typeof window !== "undefined")
+          window.dispatchEvent(new CustomEvent("centsibility:kid-signed-out"));
+        throw new Error("You were signed out. Please sign in again.");
       }
-      const msg =
-        typeof data.error === "string"
+      if (error instanceof FunctionsFetchError) throw error;
+      const message = error
+        ? await extractEdgeErrorMessage(error)
+        : typeof data.error === "string"
           ? data.error
           : "Edge function returned error";
-      if (msg === "PIN required") {
+      if (message === "PIN required") {
         clearParentPinSession();
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined")
           window.dispatchEvent(new CustomEvent("centsibility:pin-required"));
-        }
-        throw new Error(msg);
+        throw new Error(message);
       }
-
-      const isAuthError =
-        msg.toLowerCase().includes("unauthorized") ||
-        msg.toLowerCase().includes("jwt") ||
-        msg.toLowerCase().includes("token");
-
-      if (
-        isAuthError &&
-        !isRetry &&
-        typeof supabase?.auth?.refreshSession === "function"
-      ) {
-        try {
-          const { data: refreshData, error: refreshError } =
-            await supabase.auth.refreshSession();
-          if (!refreshError && refreshData?.session) {
-            return await invoke<T>(functionName, body, true);
+      if (functionName === "parent-finance" && isAuthError(error, status)) {
+        if (!isRetry && typeof supabase.auth.refreshSession === "function") {
+          let refreshed = false;
+          try {
+            const { data: refreshData, error: refreshError } =
+              await supabase.auth.refreshSession();
+            refreshed = !refreshError && !!refreshData?.session;
+          } catch {
+            /* Refresh failed; show the sign-in prompt below. */
           }
-        } catch {
-          // silent refresh failed
+          if (refreshed) return invoke<T>(functionName, body, true);
         }
-
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("centsibility:auth-expired", {
               detail: { message: "Please sign in again" },
             }),
           );
-          if (
-            window.location &&
-            typeof window.location.pathname === "string" &&
-            window.location.pathname.startsWith("/parent")
-          ) {
+          if (window.location?.pathname.startsWith("/parent"))
             window.location.href = "/login";
-          }
         }
         throw new Error("Please sign in again");
       }
-
-      throw new Error(msg);
+      throw new Error(message);
     }
     return data as T;
   } catch (err) {
-    if (isParentBypassed() || isKidBypassed()) {
-      console.warn(
-        `Edge function [${functionName}:${body.action}] threw error, using mock response:`,
-        err,
-      );
+    if (isParentBypassed() || isKidBypassed())
       return getMockEdgeResponse<T>(functionName, body);
+    if (signal.aborted)
+      throw new Error("That took too long. Please try again.");
+    if (err instanceof FunctionsFetchError || err instanceof TypeError) {
+      throw new Error(
+        "You seem to be offline. Check your connection and try again.",
+      );
     }
     throw err;
   }
