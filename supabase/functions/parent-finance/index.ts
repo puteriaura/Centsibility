@@ -1,3 +1,5 @@
+import { actorLimit, hit, tooMany } from "../_shared/rate-limit.ts";
+import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
 import { minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
@@ -46,6 +48,8 @@ Deno.serve(async (req: Request) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     if (action === "execute-scheduled-hibahs") {
+      const limited = await hit(adminClient, "scheduled-hibahs-global", "all", 120, 60);
+      if (!limited.allowed) return tooMany(limited.retryAfter, corsHeaders);
       return await handleExecuteScheduledHibahs(adminClient);
     }
 
@@ -59,6 +63,8 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) return jsonError("Unauthorized", 401);
     const parentId = user.id;
+    const limited = await actorLimit(adminClient, "parent", parentId, action, corsHeaders);
+    if (limited) return limited;
 
     if (PIN_GATED_ACTIONS.has(action)) {
       const pinGateError = await requirePinSession(adminClient, parentId, params.pinSession);
@@ -149,8 +155,8 @@ type Admin = ReturnType<typeof makeAdmin>;
 function jsonOk(data: unknown) {
   return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
 }
-function jsonError(message: string, status = 400) {
-  return new Response(JSON.stringify({ error: message }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
+function jsonError(message: string, status = 400, code?: string) {
+  return new Response(JSON.stringify({ error: message, ...(code ? { code } : {}) }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
 }
 
 const PIN_GATED_ACTIONS = new Set([
@@ -247,6 +253,8 @@ async function handleGetProfile(admin: Admin, parentId: string) {
 }
 
 async function handleCreateKid(admin: Admin, parentId: string, params: { name: string; username: string; birth_date?: string }) {
+  const capacity = await enforceKidLimit(admin, parentId, corsHeaders);
+  if (capacity) return capacity;
   const { data: existingName } = await admin.from("kids").select("id").eq("parent_id", parentId).ilike("name", params.name.trim()).maybeSingle();
   if (existingName) return jsonError("A child with this name already exists", 400);
 
@@ -296,6 +304,7 @@ async function handleCreateKid(admin: Admin, parentId: string, params: { name: s
   }
 
   const { data: kid, error } = await admin.from("kids").insert(insertData).select().single();
+  if (error?.message.includes("kid_limit")) return jsonError("You can have up to 10 children.", 400, "kid_limit");
   if (error) return jsonError(error.message, 500);
 
   await admin.from("goals").insert({ kid_id: kid.id, name: "My first Tabung", emoji: "🎯", target: 100 });

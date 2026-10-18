@@ -1,3 +1,4 @@
+import { preAuthLimit, actorLimit, hit, hashKey, tooMany } from "../_shared/rate-limit.ts";
 import { validateAvatarImage } from "../_shared/image.ts";
 import { logEvent } from "../_shared/log.ts";
 import { minimizePennyQuestion } from "../_shared/penny-minimization.ts";
@@ -184,6 +185,11 @@ Deno.serve(async (req: Request) => {
   const params = { ...body } as Record<string, unknown>;
   delete params.action;
 
+  if (PRE_AUTH_ACTIONS.has(action)) {
+    const limited = await preAuthLimit(admin, req, action, params.username, corsHeaders);
+    if (limited) return limited;
+  }
+
   // ── Security gate ────────────────────────────────────────────────────────
   if (!PRE_AUTH_ACTIONS.has(action)) {
     const token = typeof params.code === "string" ? params.code.trim() : "";
@@ -192,6 +198,8 @@ Deno.serve(async (req: Request) => {
       return sessionInvalid();
     }
 
+    const sessionLimit = await hit(admin, "kid-session", await hashKey(token), 120, 60);
+    if (!sessionLimit.allowed) return tooMany(sessionLimit.retryAfter, corsHeaders);
     const { data: exists, error: gateErr } = await admin
       .from("kids")
       .select("id")
@@ -206,6 +214,8 @@ Deno.serve(async (req: Request) => {
       console.warn(`[kid-finance][${requestId}] Rejected action="${action}": invalid token`);
       return sessionInvalid();
     }
+    const limited = await actorLimit(admin, "kid", exists.id, action, corsHeaders);
+    if (limited) return limited;
   }
 
   try {
