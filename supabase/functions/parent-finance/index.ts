@@ -1,7 +1,7 @@
 import { normalizeUsername, isValidNewUsername } from "../_shared/username.ts";
 import { revokeAllKidSessions } from "../_shared/kid-session.ts";
 import { genCode } from "../_shared/access-code.ts";
-import { actorLimit, hit, tooMany } from "../_shared/rate-limit.ts";
+import { actorLimit, pennyGlobalLimit, hit, tooMany } from "../_shared/rate-limit.ts";
 import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
 import { minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
@@ -937,6 +937,8 @@ async function handlePennyChat(
 
   // 4. Call DeepSeek via shared callPenny
   try {
+    const limited = await pennyGlobalLimit(admin, corsHeaders);
+    if (limited) return limited;
     const result = await callPenny(apiKey, requestParams);
     return jsonOk({
       reply: result.reply,

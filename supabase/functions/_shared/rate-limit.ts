@@ -40,8 +40,6 @@ export function tooMany(retryAfter: number, corsHeaders: Record<string, string>)
 export async function preAuthLimit(admin: Admin, req: Request, action: string, username: unknown, cors: Record<string, string>) {
   const login = action === "login";
   const group = login ? "login" : "onboarding";
-  const global = await hit(admin, `${group}-global`, "all", login ? 5000 : 3000, 3600);
-  if (!global.allowed) return tooMany(global.retryAfter, cors);
   const ip = await clientIpKey(req);
   if (ip) {
     const result = await hit(admin, `${group}-ip`, ip, login ? 30 : 10, 3600);
@@ -51,6 +49,8 @@ export async function preAuthLimit(admin: Admin, req: Request, action: string, u
     const result = await hit(admin, "login-username", await hashKey(String(username ?? "").trim().toLowerCase()), 20, 3600);
     if (!result.allowed) return tooMany(result.retryAfter, cors);
   }
+  const global = await hit(admin, `${group}-global`, "all", login ? 5000 : 3000, 3600);
+  if (!global.allowed) return tooMany(global.retryAfter, cors);
   return null;
 }
 
@@ -64,11 +64,15 @@ export async function actorLimit(admin: Admin, actor: "kid" | "parent", id: stri
   if (action === "penny-chat") {
     const perActor = await hit(admin, `${actor}-penny`, id, 10, 60);
     if (!perActor.allowed) return tooMany(perActor.retryAfter, cors);
-    const configured = Number(Deno.env.get("PENNY_GLOBAL_DAILY_LIMIT") ?? 2000);
-    const ceiling = Number.isSafeInteger(configured) && configured > 0 ? configured : 2000;
-    const daily = await hit(admin, "penny-global", "all", ceiling, 86400);
-    if (daily.hits === Math.ceil(ceiling * 0.8)) logEvent({ event: "ALERT_AI_BUDGET_80" });
-    if (!daily.allowed) return tooMany(daily.retryAfter, cors);
   }
+  return null;
+}
+
+export async function pennyGlobalLimit(admin: Admin, cors: Record<string, string>) {
+  const configured = Number(Deno.env.get("PENNY_GLOBAL_DAILY_LIMIT") ?? 2000);
+  const ceiling = Number.isSafeInteger(configured) && configured > 0 ? configured : 2000;
+  const daily = await hit(admin, "penny-global", "all", ceiling, 86400);
+  if (daily.hits === Math.ceil(ceiling * 0.8)) logEvent({ event: "ALERT_AI_BUDGET_80" });
+  if (!daily.allowed) return tooMany(daily.retryAfter, cors);
   return null;
 }
