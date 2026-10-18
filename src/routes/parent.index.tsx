@@ -97,7 +97,7 @@ function ParentHome() {
     try {
       const res = await edgeParentCreateKid({
         name: newKidName.trim(),
-        username: newKidUsername.trim(),
+        username: newKidUsername.trim().toLowerCase(),
         birth_date: newKidBirthDate.trim() || undefined,
       });
       setSetupCode(res.kid.login_code);
@@ -436,15 +436,18 @@ function ParentHome() {
             <Input
               label="Username (@handle)"
               id="recruit-username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={newKidUsername}
               onChange={(e) =>
                 setNewKidUsername(
-                  e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+                  e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""),
                 )
               }
               placeholder="e.g. aiman123"
-              maxLength={20}
-              helperText="Lowercase letters, numbers, and underscores only."
+              maxLength={24}
+              helperText="3-24 lowercase letters, numbers, dots, underscores or hyphens."
             />
 
             <Input

@@ -1,3 +1,4 @@
+import { normalizeUsername, isValidNewUsername } from "../_shared/username.ts";
 import { revokeAllKidSessions } from "../_shared/kid-session.ts";
 import { genCode } from "../_shared/access-code.ts";
 import { actorLimit, hit, tooMany } from "../_shared/rate-limit.ts";
@@ -244,6 +245,8 @@ async function handleGetProfile(admin: Admin, parentId: string) {
 }
 
 async function handleCreateKid(admin: Admin, parentId: string, params: { name: string; username: string; birth_date?: string }) {
+  const username = typeof params.username === "string" ? normalizeUsername(params.username) : "";
+  if (!isValidNewUsername(username)) return jsonError("Username must be 3-24 lowercase letters, numbers, dots, underscores or hyphens.", 400);
   const capacity = await enforceKidLimit(admin, parentId, corsHeaders);
   if (capacity) return capacity;
   const { data: existingName } = await admin.from("kids").select("id").eq("parent_id", parentId).ilike("name", params.name.trim()).maybeSingle();
@@ -280,13 +283,13 @@ async function handleCreateKid(admin: Admin, parentId: string, params: { name: s
     code = genCode();
   }
 
-  const { data: existingUser } = await admin.from("kids").select("id").eq("username", params.username.trim().toLowerCase()).maybeSingle();
+  const { data: existingUser } = await admin.from("kids").select("id").eq("username", username).maybeSingle();
   if (existingUser) return jsonError("Username already taken", 400);
 
   const insertData: Record<string, unknown> = {
     parent_id: parentId,
     name: params.name.trim(),
-    username: params.username.trim().toLowerCase(),
+    username: username,
     login_code: code,
       login_code_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
   };
@@ -329,14 +332,18 @@ async function handleUpdateKid(
   }
 ) {
   const kid = await verifyKidOwnership(admin, params.kidId, parentId, "username");
-  if (params.username && params.username !== kid.username) {
-    const { data: existing } = await admin.from("kids").select("id").eq("username", params.username).maybeSingle();
+  const username = typeof params.username === "string" ? normalizeUsername(params.username) : undefined;
+  if (params.username !== undefined && username === undefined) return jsonError("Invalid username", 400);
+  if (username !== undefined && username !== normalizeUsername(String(kid.username ?? ""))) {
+    if (!isValidNewUsername(username)) return jsonError("Username must be 3-24 lowercase letters, numbers, dots, underscores or hyphens.", 400);
+    const { data: existing, error } = await admin.from("kids").select("id").eq("username", username).neq("id", params.kidId).maybeSingle();
+    if (error) return jsonError("Username check unavailable", 503);
     if (existing) return jsonError("Username already taken", 400);
   }
 
   const updates: Record<string, unknown> = {
     name: params.name,
-    username: params.username,
+    username,
     birth_date: params.birth_date,
     birth_year: params.birth_year,
   };

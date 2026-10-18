@@ -43,7 +43,7 @@ function KidLogin() {
   const handleLogin = async (e?: React.FormEvent, pinToUse?: string) => {
     e?.preventDefault();
     if (busy) return;
-    const cleanUsername = username.trim();
+    const cleanUsername = username.trim().toLowerCase();
     const cleanPin = (pinToUse ?? pin).trim();
     if (!cleanUsername) {
       toast.error("Please enter your username first");
@@ -215,6 +215,9 @@ function KidLogin() {
                   </label>
                   <Input
                     id="kid-username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}

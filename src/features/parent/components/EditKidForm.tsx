@@ -57,7 +57,7 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
       await edgeParentUpdateKid({
         kidId: kid.id,
         name: editData.name.trim(),
-        username: editData.username.trim() || undefined,
+        username: editData.username.trim().toLowerCase() || undefined,
         birth_date: editData.birthDate || undefined,
         birth_year: editData.birthYear
           ? parseInt(editData.birthYear)
@@ -85,6 +85,10 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
       />
       <Input
         label="Username (@handle)"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        maxLength={24}
         value={editData.username}
         onChange={(e) => setEditData({ ...editData, username: e.target.value })}
         placeholder="Username"

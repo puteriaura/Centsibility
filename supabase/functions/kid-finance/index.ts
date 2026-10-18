@@ -1,3 +1,4 @@
+import { normalizeUsername } from "../_shared/username.ts";
 import { issueKidSession, resolveKidSession, revokeKidSession } from "../_shared/kid-session.ts";
 import { isCodeUsable, INVALID_ACCESS_CODE } from "../_shared/access-code.ts";
 import { preAuthLimit, actorLimit, hit, hashKey, tooMany } from "../_shared/rate-limit.ts";
@@ -298,7 +299,7 @@ async function notifyParent(
 // ---------------------------------------------------------------------------
 
 async function handleLogin(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const username = typeof params.username === "string" ? params.username.trim() : "";
+  const username = typeof params.username === "string" ? normalizeUsername(params.username) : "";
   const pin = typeof params.pin === "string" ? params.pin.trim() : "";
   if (!username || !pin) return jsonError("Missing username or PIN", 400);
   if (pin.length < 6 || !/^\d{6}$/.test(pin)) {
