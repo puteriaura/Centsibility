@@ -120,7 +120,7 @@ export function AvatarPicker({
       const path = `${u.user.id}/${kind}-${Date.now()}.webp`;
       const { error } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       sfx.pop();

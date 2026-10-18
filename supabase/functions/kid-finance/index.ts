@@ -1,3 +1,4 @@
+import { validateAvatarImage } from "../_shared/image.ts";
 import { logEvent } from "../_shared/log.ts";
 import { minimizePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
@@ -1052,7 +1053,6 @@ async function handleUploadAvatar(admin: Admin, params: Record<string, unknown>,
   const kid = await getKid(admin, params.code, requestId);
   const matches = base64Image.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
   if (!matches || matches.length !== 3) return jsonError("Invalid base64 image format", 400);
-  const contentType = matches[1];
   const base64Data = matches[2];
   let bytes: Uint8Array;
   try {
@@ -1060,15 +1060,39 @@ async function handleUploadAvatar(admin: Admin, params: Record<string, unknown>,
     bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
   } catch (e) { return jsonError("Failed to decode base64 image", 400, e); }
-  const path = `${kid.id}-${Date.now()}.webp`;
-  const { error: uploadError } = await admin.storage.from("avatars").upload(path, bytes, { contentType, upsert: true });
+  const image = validateAvatarImage(bytes);
+  if (image.error) return jsonError(image.error, image.status);
+  const contentType = image.contentType;
+  const path = `kids/${kid.id}/${crypto.randomUUID()}.${image.extension}`;
+  const { error: uploadError } = await admin.storage.from("avatars").upload(path, bytes, { contentType, upsert: false });
   if (uploadError) return jsonError(`Storage upload failed: ${uploadError.message}`, 500);
   const { data: publicUrlData } = admin.storage.from("avatars").getPublicUrl(path);
   const avatarUrl = publicUrlData?.publicUrl;
   if (!avatarUrl) return jsonError("Failed to get public URL after upload", 500);
   const { error: updateErr } = await admin.from("kids").update({ avatar: avatarUrl }).eq("id", kid.id);
   if (updateErr) return jsonError(`Failed to save avatar URL: ${updateErr.message}`, 500);
-  console.log(`[kid-finance][${requestId}] handleUploadAvatar success url=${avatarUrl}`);
+  if (typeof kid.avatar === "string") {
+    let oldPath: string | undefined;
+    try {
+      const previous = new URL(kid.avatar);
+      const current = new URL(avatarUrl);
+      const prefix = "/storage/v1/object/public/avatars/";
+      if (previous.origin === current.origin && previous.pathname.startsWith(prefix)) {
+        const candidate = decodeURIComponent(previous.pathname.slice(prefix.length));
+        if ((candidate.startsWith(`kids/${kid.id}/`) || candidate.startsWith(`${kid.id}-`)) &&
+            !candidate.split("/").some(part => part === ".." || part === ".")) oldPath = candidate;
+      }
+    } catch { /* Previous avatar may be an emoji or an icon. */ }
+    if (oldPath) {
+      try {
+        const { error } = await admin.storage.from("avatars").remove([oldPath]);
+        if (error) logEvent({ event: "avatar-cleanup-failed", requestId, kidId: kid.id, status: 500 });
+      } catch {
+        logEvent({ event: "avatar-cleanup-failed", requestId, kidId: kid.id, status: 500 });
+      }
+    }
+  }
+  logEvent({ event: "avatar-saved", requestId, kidId: kid.id, status: 200 });
   return jsonOk({ avatarUrl });
 }
 
