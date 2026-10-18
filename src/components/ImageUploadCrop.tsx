@@ -68,7 +68,7 @@ export function ImageUploadCrop({
         const compressedFile = await imageCompression(file, {
           maxSizeMB: 1,
           maxWidthOrHeight: 1024,
-          useWebWorker: true,
+          useWebWorker: false,
         });
         const imageDataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
         setImageSrc(imageDataUrl);
