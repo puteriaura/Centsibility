@@ -1,7 +1,7 @@
 import { filterPennyInput } from "./penny-safety.ts";
 import { categoryKey, formatPageContext, getMytDateInfo, isSpendingTransaction } from "./penny-ai.ts";
 import { formatInvestmentList } from "./investments.ts";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.105.3";
 
 type PennyAccount = { id?: string; name?: string; comfort_name?: string; balance?: number | string; streak?: number; card_frozen?: boolean; card_controls_locked?: boolean };
 const contextQuery = (admin: SupabaseClient, table: string, columns: string, kidId: string | undefined) =>

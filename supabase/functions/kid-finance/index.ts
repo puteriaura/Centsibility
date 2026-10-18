@@ -4,9 +4,8 @@ import { filterPennyInput } from "../_shared/penny-safety.ts";
 import { isKidSessionToken } from "../_shared/kid-session-token.ts";
 // supabase/functions/kid-finance/index.ts
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import bcrypt from "npm:bcryptjs";
+import { createClient } from "npm:@supabase/supabase-js@2.105.3";
+import bcrypt from "npm:bcryptjs@3.0.3";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import { checkKidPin } from "./pin.ts";
 import {
@@ -136,7 +135,7 @@ const PRE_AUTH_ACTIONS = new Set(["login", "login-by-code", "register", "verify-
 // ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID().slice(0, 8);
 
   // ✅ ALWAYS handle CORS preflight first

@@ -1,4 +1,4 @@
-import bcrypt from "npm:bcryptjs";
+import bcrypt from "npm:bcryptjs@3.0.3";
 
 export function isValidPinFormat(pin: unknown): boolean {
   return typeof pin === "string" && /^\d{6}$/.test(pin.trim());
