@@ -890,7 +890,7 @@ export function isAuthError(error: unknown, status?: number): boolean {
   const httpStatus =
     status ??
     (error instanceof FunctionsHttpError ? error.context?.status : undefined);
-  return httpStatus === 401 || httpStatus === 403;
+  return httpStatus === 401;
 }
 
 async function invoke<T = unknown>(

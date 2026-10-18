@@ -3,10 +3,14 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import { extractEdgeErrorMessage, isAuthError } from "../../src/lib/edge";
 
 describe("auth error classifier", () => {
-  it.each([401, 403])("recognises HTTP %s", (status) => {
+  it.each([
+    [401, true],
+    [403, false],
+  ] as const)("classifies HTTP %s", (status, expected) => {
     expect(
       isAuthError(new FunctionsHttpError(new Response(null, { status }))),
-    ).toBe(true);
+    ).toBe(expected);
+    expect(isAuthError(new Error("Business error"), status)).toBe(expected);
   });
 
   it("does not treat network failures, token text or HTTP 400 as auth failures", () => {

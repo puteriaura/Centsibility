@@ -106,7 +106,7 @@ it("uses 15-second request and 45-second Penny abort signals", async () => {
   expect(mocks.refresh).not.toHaveBeenCalled();
 });
 
-it("refreshes parent HTTP auth failures once and preserves PIN gates", async () => {
+it("refreshes parent HTTP 401 once, retries once and preserves PIN gates", async () => {
   const unauthorized = new FunctionsHttpError(
     new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
   );
@@ -116,6 +116,10 @@ it("refreshes parent HTTP auth failures once and preserves PIN gates", async () 
   mocks.refresh.mockResolvedValue({ data: { session: {} }, error: null });
   await expect(edgeParentGetProfile()).resolves.toEqual({ ok: true });
   expect(mocks.refresh).toHaveBeenCalledOnce();
+  expect(mocks.invoke).toHaveBeenCalledTimes(2);
+  expect(mocks.invoke.mock.calls[1][1].body).toEqual(
+    mocks.invoke.mock.calls[0][1].body,
+  );
   mocks.invoke.mockResolvedValue({
     data: null,
     error: new FunctionsHttpError(
@@ -127,4 +131,21 @@ it("refreshes parent HTTP auth failures once and preserves PIN gates", async () 
   expect(mocks.dispatch.mock.calls.at(-1)[0].type).toBe(
     "centsibility:pin-required",
   );
+});
+
+it("preserves parent HTTP 403 PIN errors without refresh, retry or sign-out", async () => {
+  const message = "Incorrect PIN. 4 attempts remaining.";
+  const response = new Response(JSON.stringify({ error: message }), {
+    status: 403,
+  });
+  mocks.invoke.mockResolvedValue({
+    data: null,
+    error: new FunctionsHttpError(response),
+    response,
+  });
+  await expect(edgeParentGetProfile()).rejects.toEqual(new Error(message));
+  expect(mocks.refresh).not.toHaveBeenCalled();
+  expect(mocks.invoke).toHaveBeenCalledOnce();
+  expect(mocks.dispatch).not.toHaveBeenCalled();
+  expect(window.location.href).toBe("/parent");
 });
