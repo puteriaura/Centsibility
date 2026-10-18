@@ -18,11 +18,7 @@ export function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-async function sha256Hex(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  const arr = Array.from(new Uint8Array(buf));
-  return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+
 
 export async function verifyStoredPin(
   pin: string,
@@ -32,10 +28,6 @@ export async function verifyStoredPin(
     const valid = await bcrypt.compare(pin, stored);
     return { valid, needsRehash: false };
   }
-  if (/^[0-9a-f]{64}$/i.test(stored)) {
-    const hashed = await sha256Hex(pin);
-    const valid = constantTimeEqual(hashed.toLowerCase(), stored.toLowerCase());
-    return { valid, needsRehash: valid };
-  }
+
   return { valid: false, needsRehash: false };
 }

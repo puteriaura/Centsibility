@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { isKidSessionToken } from "../../supabase/functions/_shared/kid-session-token";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
-vi.mock("@/lib/edge", () => ({ edgeKidLogin: vi.fn(), edgeKidLoginByCode: vi.fn() }));
+vi.mock("@/lib/edge", () => ({ edgeKidLogin: vi.fn() }));
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetModules(); });
 

@@ -344,7 +344,7 @@ export function CrewMemberCard({
                 >
                   {isMasked ? "••••••" : activeCode}
                 </strong>{" "}
-                · give this to your child once
+                · valid for 3 days · give this to your child once
               </span>
             ) : (
               <span className="text-[var(--success-text)] font-medium">

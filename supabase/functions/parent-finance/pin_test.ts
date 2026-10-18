@@ -37,17 +37,6 @@ Deno.test("verifyStoredPin matches bcrypt hash and reports no rehash needed", as
   assertEquals(mismatch, { valid: false, needsRehash: false });
 });
 
-Deno.test("verifyStoredPin matches legacy SHA-256 hash and reports rehash needed", async () => {
-  const pin = "1234";
-  // echo -n 1234 | sha256sum -> 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4
-  const legacyHash = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
-
-  const match = await verifyStoredPin(pin, legacyHash);
-  assertEquals(match, { valid: true, needsRehash: true });
-
-  const mismatch = await verifyStoredPin("9999", legacyHash);
-  assertEquals(mismatch, { valid: false, needsRehash: false });
-});
 
 Deno.test("verifyStoredPin rejects malformed stored values", async () => {
   const res1 = await verifyStoredPin("1234", "not-a-valid-hash");

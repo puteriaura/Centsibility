@@ -1,3 +1,4 @@
+import { genCode } from "../_shared/access-code.ts";
 import { actorLimit, hit, tooMany } from "../_shared/rate-limit.ts";
 import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
@@ -80,8 +81,6 @@ Deno.serve(async (req: Request) => {
         return await handleGetProfile(adminClient, parentId);
       case "create-kid":
         return await handleCreateKid(adminClient, parentId, params);
-      case "generate-creation-key":
-        return await handleGenerateCreationKey(adminClient, parentId);
       case "delete-kid":
         return await handleDeleteKid(adminClient, parentId, params);
       case "update-kid":
@@ -104,8 +103,6 @@ Deno.serve(async (req: Request) => {
         return await handleClearPin(adminClient, parentId, params);
       case "set-hibah":
         return await handleSetHibah(adminClient, parentId, params);
-      case "set-invest-rate":
-        return await handleSetInvestRate(adminClient, parentId, params);
       case "mark-notifications-read":
         return await handleMarkNotificationsRead(adminClient, parentId);
       case "set-avatar":
@@ -166,9 +163,7 @@ const PIN_GATED_ACTIONS = new Set([
   "delete-kid",
   "create-kid",
   "update-kid",
-  "generate-creation-key",
   "set-hibah",
-  "set-invest-rate",
   "create-scheduled-hibah",
   "deactivate-scheduled-hibah",
   "set-kid-card-controls",
@@ -226,12 +221,7 @@ async function requirePinSession(admin: Admin, parentId: string, token: unknown)
   return null;
 }
 
-function genCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
+
 function randomHex(bytes: number) {
   const array = new Uint8Array(bytes);
   crypto.getRandomValues(array);
@@ -297,6 +287,7 @@ async function handleCreateKid(admin: Admin, parentId: string, params: { name: s
     name: params.name.trim(),
     username: params.username.trim().toLowerCase(),
     login_code: code,
+      login_code_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
   };
   if (birthDate) {
     insertData.birth_date = birthDate;
@@ -311,19 +302,7 @@ async function handleCreateKid(admin: Admin, parentId: string, params: { name: s
   return jsonOk({ kid });
 }
 
-async function handleGenerateCreationKey(admin: Admin, parentId: string) {
-  const rawKey = randomHex(4);
-  const salt = randomHex(4);
-  const hashedKey = await sha256(rawKey + salt);
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await admin.from("child_creation_keys").insert({
-    parent_id: parentId, hashed_key: hashedKey, salt, expires_at: expiresAt,
-  }).select("id").single();
-  
-  if (error) return jsonError(error.message, 500);
-  return jsonOk({ setupCode: `${data.id}_${rawKey}` });
-}
 
 async function handleDeleteKid(admin: Admin, parentId: string, params: { kidId: string }) {
   if (!params.kidId) return jsonError("kidId is required", 400);
@@ -412,6 +391,7 @@ async function handleResetKidPin(admin: Admin, parentId: string, params: { kidId
     .from("kids")
     .update({
       login_code: code,
+      login_code_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
       hashed_pin: null,
       session_token: null,
       failed_login_attempts: 0,
@@ -611,11 +591,7 @@ async function handleSetHibah(admin: Admin, parentId: string, params: { kidId: s
   return jsonOk({ ok: true });
 }
 
-async function handleSetInvestRate(admin: Admin, parentId: string, params: { kidId: string; rate: number }) {
-  await verifyKidOwnership(admin, params.kidId, parentId, "id");
-  await admin.from("kids").update({ invest_rate: params.rate }).eq("id", params.kidId);
-  return jsonOk({ ok: true });
-}
+
 
 async function handleMarkNotificationsRead(admin: Admin, parentId: string) {
   await admin.from("notifications").update({ read: true }).eq("parent_id", parentId).eq("read", false);

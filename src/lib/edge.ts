@@ -20,7 +20,10 @@ import {
 } from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
 import { getKidSession, clearKidSession } from "@/lib/kid-session";
-import { SCREENING, VERIFIED_STOCK_ADDITIONS } from "../../supabase/functions/_shared/market-screening";
+import {
+  SCREENING,
+  VERIFIED_STOCK_ADDITIONS,
+} from "../../supabase/functions/_shared/market-screening";
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -28,7 +31,8 @@ export function getMockEdgeResponse<T>(
   functionName: string,
   body: Record<string, unknown>,
 ): T {
-  if (!import.meta.env.DEV) throw new Error("Demo responses are unavailable in production");
+  if (!import.meta.env.DEV)
+    throw new Error("Demo responses are unavailable in production");
   const action = String(body.action || "");
   switch (action) {
     case "get-profile":
@@ -44,7 +48,6 @@ export function getMockEdgeResponse<T>(
     case "unlock":
       return { ok: true } as T;
     case "login":
-    case "login-by-code":
       return {
         kidId: DEMO_IDENTITY.kidId,
         name: "Aiman",
@@ -453,7 +456,9 @@ export function getMockEdgeResponse<T>(
           value: principal,
         },
       ];
-      const sampleRates = [-0.004, -0.003, -0.002, -0.004, 0.001, -0.002, -0.003];
+      const sampleRates = [
+        -0.004, -0.003, -0.002, -0.004, 0.001, -0.002, -0.003,
+      ];
       for (let k = 1; k <= elapsed; k++) {
         const rate = sampleRates[(k - 1) % sampleRates.length];
         val = val * (1 + rate);
@@ -517,8 +522,18 @@ export function getMockEdgeResponse<T>(
         endsAt: new Date(now + 21 * 86400000).toISOString(),
         nextUpdate: new Date(now + 7 * 86400000).toISOString(),
         path: [
-          { tick: 0, tickAt: new Date(now - 7 * 86400000).toISOString(), rate: 0, value: 25.0 },
-          { tick: 1, tickAt: new Date(now).toISOString(), rate: 0.02, value: 25.5 },
+          {
+            tick: 0,
+            tickAt: new Date(now - 7 * 86400000).toISOString(),
+            rate: 0,
+            value: 25.0,
+          },
+          {
+            tick: 1,
+            tickAt: new Date(now).toISOString(),
+            rate: 0.02,
+            value: 25.5,
+          },
         ],
       };
 
@@ -663,7 +678,13 @@ export function getMockEdgeResponse<T>(
       };
 
       return {
-        investments: [activeFund, activeProtectedFund, marketLoss, marketClosed, pastFund],
+        investments: [
+          activeFund,
+          activeProtectedFund,
+          marketLoss,
+          marketClosed,
+          pastFund,
+        ],
       } as T;
     }
     case "invest-open":
@@ -685,22 +706,73 @@ export function getMockEdgeResponse<T>(
       // Default for 10-12 in demo is off unless enabled
       const effective = isEnabled !== null ? isEnabled : false;
       return {
-        symbols: CURATED_MARKET_SYMBOLS.map(({ symbol, name, kind, active, halal_source, halal_checked_on, halal_url, verified }) => ({ symbol, name, kind, active, halal_source, halal_checked_on, halal_url, verified })),
+        symbols: CURATED_MARKET_SYMBOLS.map(
+          ({
+            symbol,
+            name,
+            kind,
+            active,
+            halal_source,
+            halal_checked_on,
+            halal_url,
+            verified,
+          }) => ({
+            symbol,
+            name,
+            kind,
+            active,
+            halal_source,
+            halal_checked_on,
+            halal_url,
+            verified,
+          }),
+        ),
         enabled: effective,
         ageGroup: "10-12",
       } as T;
     }
     case "market-quotes": {
       const requested = Array.isArray(body.symbols) ? body.symbols : [];
-      return { marketState: "closed", quotes: Object.fromEntries(requested.map(symbol => {
-        const row = CURATED_MARKET_SYMBOLS.find(s => s.symbol === symbol);
-        return [symbol, { available: row?.price != null, stale: true, marketState: "closed", quote: row?.price != null ? { symbol, price: row.price, previous_close: row.previous_close, change_percent: row.change_percent, currency: "USD", is_market_open: false, price_time: row.last_updated, fetched_at: row.last_updated } : undefined }];
-      })) } as T;
+      return {
+        marketState: "closed",
+        quotes: Object.fromEntries(
+          requested.map((symbol) => {
+            const row = CURATED_MARKET_SYMBOLS.find((s) => s.symbol === symbol);
+            return [
+              symbol,
+              {
+                available: row?.price != null,
+                stale: true,
+                marketState: "closed",
+                quote:
+                  row?.price != null
+                    ? {
+                        symbol,
+                        price: row.price,
+                        previous_close: row.previous_close,
+                        change_percent: row.change_percent,
+                        currency: "USD",
+                        is_market_open: false,
+                        price_time: row.last_updated,
+                        fetched_at: row.last_updated,
+                      }
+                    : undefined,
+              },
+            ];
+          }),
+        ),
+      } as T;
     }
     case "market-symbol": {
       const sym = String(body.symbol || "SPUS").toUpperCase();
       const found = CURATED_MARKET_SYMBOLS.find((s) => s.symbol === sym);
-      if (!found || found.price == null) return { symbol: sym, available: false, marketState: "closed", dailyCloses: [] } as T;
+      if (!found || found.price == null)
+        return {
+          symbol: sym,
+          available: false,
+          marketState: "closed",
+          dailyCloses: [],
+        } as T;
       const basePrice = found.price;
       const closes: Array<{ day: string; close: number }> = [];
       for (let i = 90; i >= 0; i--) {
@@ -1216,7 +1288,7 @@ export async function edgeParentSetMarketTracker(params: {
 }) {
   return invoke<{ ok: boolean; kidId: string; enabled: boolean }>(
     "parent-finance",
-    { action: "set-market-tracker", ...params }
+    { action: "set-market-tracker", ...params },
   );
 }
 
@@ -1331,16 +1403,6 @@ export async function edgeKidLogin(params: { username: string; pin: string }) {
   });
 }
 
-export async function edgeKidLoginByCode(params: { loginCode: string }) {
-  return invoke<{
-    kidId: string;
-    name: string;
-    code?: string;
-    needsPinSetup?: boolean;
-    username?: string;
-  }>("kid-finance", { action: "login-by-code", ...params });
-}
-
 export async function edgeKidVerifyAccessCode(params: { loginCode: string }) {
   return invoke<{
     ok: boolean;
@@ -1363,18 +1425,6 @@ export async function edgeKidSetInitialPin(params: {
   );
 }
 
-export async function edgeKidRegister(params: {
-  setupCode: string;
-  name: string;
-  username: string;
-  pin: string;
-}) {
-  return invoke<{ ok: boolean; kidId: string; code: string }>("kid-finance", {
-    action: "register",
-    ...params,
-  });
-}
-
 export async function edgeKidUnlock(params: { code: string; pin: string }) {
   return invoke<{ ok: boolean }>("kid-finance", {
     action: "unlock",
@@ -1382,12 +1432,24 @@ export async function edgeKidUnlock(params: { code: string; pin: string }) {
   });
 }
 
-export interface PinStatus { attemptsLeft: number; lockedUntil: string | null }
+export interface PinStatus {
+  attemptsLeft: number;
+  lockedUntil: string | null;
+}
 export async function edgePinStatus(mode: "kid" | "parent") {
-  const result = await invoke<PinStatus>(mode === "kid" ? "kid-finance" : "parent-finance", {
-    action: "pin-status", ...(mode === "kid" ? { code: getKidSession()?.code } : {}),
-  });
-  if (!Number.isInteger(result.attemptsLeft) || result.attemptsLeft < 0 || result.attemptsLeft > 5) throw new Error("PIN status unavailable");
+  const result = await invoke<PinStatus>(
+    mode === "kid" ? "kid-finance" : "parent-finance",
+    {
+      action: "pin-status",
+      ...(mode === "kid" ? { code: getKidSession()?.code } : {}),
+    },
+  );
+  if (
+    !Number.isInteger(result.attemptsLeft) ||
+    result.attemptsLeft < 0 ||
+    result.attemptsLeft > 5
+  )
+    throw new Error("PIN status unavailable");
   return result;
 }
 
@@ -1837,10 +1899,19 @@ export interface MarketSymbolDetailResponse {
 export interface MarketQuotesResponse {
   usage?: MarketUsage;
   marketState: "open" | "closed" | "unknown";
-  quotes: Record<string, Omit<MarketSymbolDetailResponse, "dailyCloses" | "symbol">>;
+  quotes: Record<
+    string,
+    Omit<MarketSymbolDetailResponse, "dailyCloses" | "symbol">
+  >;
 }
-export async function edgeKidMarketQuotes(params: { code?: string; symbols: string[] }) {
-  return invoke<MarketQuotesResponse>("kid-finance", { action: "market-quotes", ...params });
+export async function edgeKidMarketQuotes(params: {
+  code?: string;
+  symbols: string[];
+}) {
+  return invoke<MarketQuotesResponse>("kid-finance", {
+    action: "market-quotes",
+    ...params,
+  });
 }
 
 export async function edgeKidMarketSymbols(params?: { code?: string }) {
@@ -2044,8 +2115,21 @@ export const CURATED_MARKET_SYMBOLS: MarketSymbolItem[] = [
     is_market_open: false,
     last_updated: "2026-10-05T15:05:00Z",
   },
-  ...VERIFIED_STOCK_ADDITIONS.map(s => ({ ...s, kind: "stock" as const, active: true, halal_source: SCREENING[s.symbol].source, halal_checked_on: SCREENING[s.symbol].checked })),
-].map(s => ({ ...s, kind: s.kind as MarketSymbolItem["kind"], halal_source: SCREENING[s.symbol].source, halal_checked_on: SCREENING[s.symbol].checked, halal_url: SCREENING[s.symbol].url, verified: true }));
+  ...VERIFIED_STOCK_ADDITIONS.map((s) => ({
+    ...s,
+    kind: "stock" as const,
+    active: true,
+    halal_source: SCREENING[s.symbol].source,
+    halal_checked_on: SCREENING[s.symbol].checked,
+  })),
+].map((s) => ({
+  ...s,
+  kind: s.kind as MarketSymbolItem["kind"],
+  halal_source: SCREENING[s.symbol].source,
+  halal_checked_on: SCREENING[s.symbol].checked,
+  halal_url: SCREENING[s.symbol].url,
+  verified: true,
+}));
 
 let demoMarketEnabledState: boolean | null = null;
 export function setDemoMarketEnabled(enabled: boolean | null) {

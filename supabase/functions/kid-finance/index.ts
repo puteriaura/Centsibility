@@ -1,3 +1,4 @@
+import { isCodeUsable, INVALID_ACCESS_CODE } from "../_shared/access-code.ts";
 import { preAuthLimit, actorLimit, hit, hashKey, tooMany } from "../_shared/rate-limit.ts";
 import { validateAvatarImage } from "../_shared/image.ts";
 import { logEvent } from "../_shared/log.ts";
@@ -139,7 +140,7 @@ async function safeParseBody(req: Request): Promise<Record<string, unknown>> {
 // ---------------------------------------------------------------------------
 // Actions that do NOT require a session token (pre-auth only)
 // ---------------------------------------------------------------------------
-const PRE_AUTH_ACTIONS = new Set(["login", "login-by-code", "register", "verify-access-code", "set-initial-pin"]);
+const PRE_AUTH_ACTIONS = new Set(["login", "verify-access-code", "set-initial-pin"]);
 
 // ---------------------------------------------------------------------------
 // Main handler
@@ -221,10 +222,8 @@ Deno.serve(async (req: Request) => {
   try {
     switch (action) {
       case "login":            return await handleLogin(admin, params, requestId);
-      case "login-by-code":    return await handleLoginByCode(admin, params, requestId);
       case "verify-access-code": return await handleVerifyAccessCode(admin, params, requestId);
       case "set-initial-pin":  return await handleSetInitialPin(admin, params, requestId);
-      case "register":         return await handleRegister(admin, params, requestId);
       case "get-state":        return await handleGetState(admin, params, requestId);
       case "get-history":      return await handleGetHistory(admin, params, requestId);
       case "mark-notifications-read": return await handleMarkNotificationsRead(admin, params, requestId);
@@ -285,11 +284,7 @@ function randomHex(bytes: number): string {
   return encodeHex(array);
 }
 
-async function sha256(text: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-  return encodeHex(new Uint8Array(hashBuffer));
-}
+
 
 async function getKid(admin: Admin, token: unknown, requestId: string, quiet = false) {
   if (!isKidSessionToken(token)) {
@@ -345,21 +340,7 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
   return jsonOk({ kidId: kid.id, name: kid.comfort_name || kid.name, code: sessionToken });
 }
 
-async function handleLoginByCode(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
-  if (!loginCode) return jsonError("Missing loginCode", 400);
 
-  const { data: kid, error: kidErr } = await admin.from("kids").select("*").eq("login_code", loginCode).maybeSingle();
-  if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
-  if (!kid) return jsonError("Invalid access code. Please check and try again.", 400);
-
-  if (kid.hashed_pin) {
-    return jsonError("This access code has already been redeemed. Please sign in with your 6-digit PIN.", 400);
-  }
-
-  console.log(`[kid-finance][${requestId}] handleLoginByCode success kidId=${kid.id}`);
-  return jsonOk({ needsPinSetup: true, kidId: kid.id, username: kid.username, name: kid.comfort_name || kid.name });
-}
 
 async function handleVerifyAccessCode(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const loginCode = typeof params.loginCode === "string" ? params.loginCode.trim().toUpperCase() : "";
@@ -367,15 +348,11 @@ async function handleVerifyAccessCode(admin: Admin, params: Record<string, unkno
 
   const { data: kid, error: kidErr } = await admin
     .from("kids")
-    .select("id, name, comfort_name, username, hashed_pin, login_code, birth_date, birth_year")
+    .select("id, name, comfort_name, username, hashed_pin, login_code, login_code_expires_at, birth_date, birth_year")
     .eq("login_code", loginCode)
     .maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
-  if (!kid) return jsonError("Invalid access code. Please check and try again.", 400);
-
-  if (kid.hashed_pin) {
-    return jsonError("This access code has already been used. Please log in with your username and 6-digit PIN.", 400);
-  }
+  if (!kid || !isCodeUsable(kid)) return jsonError(INVALID_ACCESS_CODE, 400);
 
   console.log(`[kid-finance][${requestId}] handleVerifyAccessCode success kidId=${kid.id}`);
   return jsonOk({
@@ -431,15 +408,11 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
 
   const { data: kid, error: kidErr } = await admin
     .from("kids")
-    .select("id, name, username, hashed_pin, login_code, birth_date, birth_year")
+    .select("id, name, username, hashed_pin, login_code, login_code_expires_at, birth_date, birth_year")
     .eq("login_code", loginCode)
     .maybeSingle();
   if (kidErr) return jsonError(`DB error: ${kidErr.message}`, 500);
-  if (!kid) return jsonError("Invalid access code.", 400);
-
-  if (kid.hashed_pin) {
-    return jsonError("This code was just used. Sign in with your PIN.", 409);
-  }
+  if (!kid || !isCodeUsable(kid)) return jsonError(INVALID_ACCESS_CODE, 400);
 
   let hashedPin: string;
   try {
@@ -469,11 +442,13 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
     .update(updateData)
     .eq("id", kid.id)
     .is("hashed_pin", null)
+    .eq("login_code", loginCode)
+    .gt("login_code_expires_at", new Date().toISOString())
     .select("id, name, comfort_name");
 
   if (updateErr) return jsonError(`DB error: ${updateErr.message}`, 500);
   if (!updatedRows || updatedRows.length === 0) {
-    return jsonError("This code was just used. Sign in with your PIN.", 409);
+    return jsonError(INVALID_ACCESS_CODE, 400);
   }
 
   const updatedKid = updatedRows[0];
@@ -481,50 +456,7 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
   return jsonOk({ ok: true, kidId: kid.id, name: updatedKid.comfort_name || updatedKid.name, code: sessionToken });
 }
 
-async function handleRegister(admin: Admin, params: Record<string, unknown>, requestId: string) {
-  const setupCode = typeof params.setupCode === "string" ? params.setupCode.trim() : "";
-  const name = typeof params.name === "string" ? params.name.trim() : "";
-  const username = typeof params.username === "string" ? params.username.trim() : "";
-  const pin = typeof params.pin === "string" ? params.pin : "";
-  if (!setupCode || !name || !username || !pin) return jsonError("Missing required fields: setupCode, name, username, pin", 400);
-  if (!/^\d{6}$/.test(pin)) return jsonError("PIN must be exactly 6 digits", 400);
 
-  const parts = setupCode.split("_");
-  if (parts.length !== 2) return jsonError("Invalid setup code format", 400);
-  const [id, rawKey] = parts;
-
-  const { data: keyData, error: keyErr } = await admin.from("child_creation_keys").select("*").eq("id", id).maybeSingle();
-  if (keyErr) return jsonError(`DB error: ${keyErr.message}`, 500);
-  if (!keyData) return jsonError("Setup code not found", 400);
-  if (keyData.used) return jsonError("Setup code already used", 400);
-  if (new Date() > new Date(keyData.expires_at)) return jsonError("Setup code expired", 400);
-
-  const expectedHash = await sha256(rawKey + keyData.salt);
-  if (expectedHash !== keyData.hashed_key) return jsonError("Invalid setup code", 400);
-
-  const { data: existingUser } = await admin.from("kids").select("id").eq("username", username).maybeSingle();
-  if (existingUser) return jsonError("Username already taken", 400);
-
-  let hashedPin: string;
-  try { hashedPin = await bcrypt.hash(pin, 10); }
-  catch (e) { return jsonError("Failed to hash PIN", 500, e); }
-
-  const loginCode = randomHex(3).toUpperCase();
-  const sessionToken = randomHex(32);
-
-  const { data: kid, error: insertErr } = await admin.from("kids").insert({
-    parent_id: keyData.parent_id, name, username,
-    hashed_pin: hashedPin, bridge_key_hash: keyData.hashed_key,
-    login_code: loginCode, session_token: sessionToken,
-  }).select().single();
-  if (insertErr) return jsonError(`Failed to create account: ${insertErr.message}`, 500);
-
-  await admin.from("child_creation_keys").update({ used: true }).eq("id", id);
-  await admin.from("goals").insert({ kid_id: kid.id, name: "My first Tabung", emoji: "🎯", target: 100 });
-
-  console.log(`[kid-finance][${requestId}] handleRegister created kid id=${kid.id}`);
-  return jsonOk({ ok: true, kidId: kid.id, code: sessionToken });
-}
 
 // ---------------------------------------------------------------------------
 // Remaining handlers (unchanged except they now use fixed jsonOk/jsonError)
