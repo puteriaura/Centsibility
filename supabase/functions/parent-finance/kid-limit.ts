@@ -1,4 +1,5 @@
-type Admin = { from(table: string): { select(columns: string, options: { count: "exact"; head: true }): { eq(column: string, value: string): PromiseLike<{ count: number | null; error: unknown }> } } };
+// Match the untyped Supabase fluent-query boundary used by the existing server helpers.
+type Admin = { from(table: string): any };
 
 export async function enforceKidLimit(admin: Admin, parentId: string, corsHeaders: Record<string, string>) {
   const { count, error } = await admin.from("kids").select("id", { count: "exact", head: true }).eq("parent_id", parentId);

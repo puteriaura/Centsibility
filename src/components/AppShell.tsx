@@ -1,3 +1,4 @@
+import { edgeKidLogout } from "@/lib/edge";
 import { toast } from "sonner";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
@@ -30,6 +31,18 @@ import {
   upTarget,
   type Mode,
 } from "@/lib/navigation";
+
+async function signOutKid() {
+  const session = getKidSession();
+  try {
+    if (session) await edgeKidLogout({ code: session.code });
+  } catch {
+    /* Local sign-out must still work when offline. */
+  } finally {
+    clearKidSession();
+    setKidBypassed(false);
+  }
+}
 
 export function AppShell({
   mode,
@@ -257,8 +270,7 @@ function TopBar({
   const switchMode = async () => {
     sfx.swoosh();
     if (isKid) {
-      clearKidSession();
-      setKidBypassed(false);
+      await signOutKid();
       nav({ to: "/login" });
     } else {
       setParentBypassed(false);
@@ -269,8 +281,7 @@ function TopBar({
   const logout = async () => {
     sfx.tap();
     if (isKid) {
-      clearKidSession();
-      setKidBypassed(false);
+      await signOutKid();
       nav({ to: "/kid-login" });
     } else {
       setParentBypassed(false);

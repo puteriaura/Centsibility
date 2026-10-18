@@ -1,3 +1,4 @@
+import { revokeAllKidSessions } from "../_shared/kid-session.ts";
 import { genCode } from "../_shared/access-code.ts";
 import { actorLimit, hit, tooMany } from "../_shared/rate-limit.ts";
 import { enforceKidLimit } from "./kid-limit.ts";
@@ -393,13 +394,13 @@ async function handleResetKidPin(admin: Admin, parentId: string, params: { kidId
       login_code: code,
       login_code_expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
       hashed_pin: null,
-      session_token: null,
       failed_login_attempts: 0,
       locked_until: null,
     })
     .eq("id", kid.id);
   if (updateErr) return jsonError(updateErr.message, 500);
 
+  await revokeAllKidSessions(admin, kid.id);
   return jsonOk({ ok: true, kidId: kid.id, name: kid.name, loginCode: code });
 }
 

@@ -2153,3 +2153,10 @@ export function getDemoMarketEnabled(): boolean | null {
   if (demoMarketEnabledState !== null) return demoMarketEnabledState;
   return null;
 }
+
+export async function edgeKidLogout(params: { code: string }) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "logout",
+    ...params,
+  });
+}

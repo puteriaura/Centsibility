@@ -1,3 +1,4 @@
+import { issueKidSession, resolveKidSession, revokeKidSession } from "../_shared/kid-session.ts";
 import { isCodeUsable, INVALID_ACCESS_CODE } from "../_shared/access-code.ts";
 import { preAuthLimit, actorLimit, hit, hashKey, tooMany } from "../_shared/rate-limit.ts";
 import { validateAvatarImage } from "../_shared/image.ts";
@@ -9,7 +10,6 @@ import { isKidSessionToken } from "../_shared/kid-session-token.ts";
 
 import { createClient } from "npm:@supabase/supabase-js@2.105.3";
 import bcrypt from "npm:bcryptjs@3.0.3";
-import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import { checkKidPin } from "./pin.ts";
 import {
   buildPennyRequest,
@@ -78,6 +78,7 @@ function jsonError(message: string, status = 400, detail?: unknown): Response {
 // ---------------------------------------------------------------------------
 const makeAdmin = (url: string, key: string) => createClient(url, key);
 type Admin = ReturnType<typeof makeAdmin>;
+const requestKids = new WeakMap<Admin, NonNullable<Awaited<ReturnType<typeof resolveKidSession>>>>();
 
 const RESOLVE_ERRORS: Record<string, [string, number]> = {
   not_found: ["Not found", 404],
@@ -201,26 +202,20 @@ Deno.serve(async (req: Request) => {
 
     const sessionLimit = await hit(admin, "kid-session", await hashKey(token), 120, 60);
     if (!sessionLimit.allowed) return tooMany(sessionLimit.retryAfter, corsHeaders);
-    const { data: exists, error: gateErr } = await admin
-      .from("kids")
-      .select("id")
-      .eq("session_token", token)
-      .maybeSingle();
-
-    if (gateErr) {
-      return jsonError(`Auth check failed: ${gateErr.message}`, 500);
-    }
-
-    if (!exists) {
-      console.warn(`[kid-finance][${requestId}] Rejected action="${action}": invalid token`);
-      return sessionInvalid();
-    }
-    const limited = await actorLimit(admin, "kid", exists.id, action, corsHeaders);
+    let kid;
+    try { kid = await resolveKidSession(admin, token); }
+    catch { return jsonError("Session check unavailable. Please try again.", 503); }
+    if (!kid) return sessionInvalid();
+    requestKids.set(admin, kid);
+    const limited = await actorLimit(admin, "kid", kid.id, action, corsHeaders);
     if (limited) return limited;
   }
 
   try {
     switch (action) {
+      case "logout":
+        await revokeKidSession(admin, String(params.code).trim());
+        return jsonOk({ ok: true });
       case "login":            return await handleLogin(admin, params, requestId);
       case "verify-access-code": return await handleVerifyAccessCode(admin, params, requestId);
       case "set-initial-pin":  return await handleSetInitialPin(admin, params, requestId);
@@ -278,26 +273,13 @@ Deno.serve(async (req: Request) => {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function randomHex(bytes: number): string {
-  const array = new Uint8Array(bytes);
-  crypto.getRandomValues(array);
-  return encodeHex(array);
-}
 
 
 
-async function getKid(admin: Admin, token: unknown, requestId: string, quiet = false) {
-  if (!isKidSessionToken(token)) {
-    throw sessionInvalid();
-  }
-  const { data, error } = await admin
-    .from("kids").select("*").eq("session_token", token).maybeSingle();
 
-  if (error) {
-    throw new Error(`DB error: ${error.message}`);
-  }
+async function getKid(admin: Admin, _token: unknown, requestId: string, quiet = false) {
+  const data = requestKids.get(admin);
   if (!data) throw sessionInvalid();
-
   if (!quiet) logEvent({ fn: "kid-finance", requestId, kidId: data.id });
   return data;
 }
@@ -334,8 +316,7 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
   const pinCheck = await checkKidPin(admin, kid, pin);
   if (!pinCheck.ok) return jsonError(pinCheck.error || "Invalid username or PIN", pinCheck.status || 400);
 
-  const sessionToken = randomHex(32);
-  await admin.from("kids").update({ session_token: sessionToken }).eq("id", kid.id);
+  const sessionToken = await issueKidSession(admin, kid.id, kid.hashed_pin);
   console.log(`[kid-finance][${requestId}] handleLogin success kid id=${kid.id}`);
   return jsonOk({ kidId: kid.id, name: kid.comfort_name || kid.name, code: sessionToken });
 }
@@ -421,11 +402,9 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
     return jsonError("Failed to hash PIN", 500, e);
   }
 
-  const sessionToken = randomHex(32);
   const updateData: Record<string, unknown> = {
     hashed_pin: hashedPin,
     login_code: null,
-    session_token: sessionToken,
     failed_login_attempts: 0,
     locked_until: null,
   };
@@ -452,6 +431,7 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
   }
 
   const updatedKid = updatedRows[0];
+  const sessionToken = await issueKidSession(admin, kid.id, hashedPin);
   console.log(`[kid-finance][${requestId}] handleSetInitialPin success kidId=${kid.id}`);
   return jsonOk({ ok: true, kidId: kid.id, name: updatedKid.comfort_name || updatedKid.name, code: sessionToken });
 }
@@ -500,7 +480,6 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
 
   const safeKid = { ...kid };
   delete safeKid.hashed_pin;
-  delete safeKid.session_token;
   delete safeKid.login_code;
   delete safeKid.bridge_key_hash;
 
