@@ -1,6 +1,21 @@
 import type { SVGProps } from "react";
 
-/** Penny's small-size mark: fixed brand colours, no limbs or perimeter stroke. */
+/** Shared original face geometry; avatars crop the full rig's face. */
+export function PennyFeatures({ happy = false }: { happy?: boolean }) {
+  return (
+    <g>
+      <circle cx="59" cy="70" r="3" fill="#15100C" />
+      <circle cx="99" cy="70" r="3" fill="#15100C" />
+      <path
+        d={happy ? "M73 81Q79 93 85 81" : "M74 81Q79 90 84 81"}
+        stroke="#34271A"
+        strokeWidth=".8"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
 export function PennyFace({
   size = 24,
   ...props
@@ -10,26 +25,13 @@ export function PennyFace({
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="29 22 102 102"
       fill="none"
       {...props}
     >
-      <path
-        d="M34 2C51 2 62 15 62 32C62 49 49 62 33 62L29 59V4Z"
-        fill="#CBA951"
-      />
-      <path
-        d="M30 2C46 1 58 14 58 31C59 48 47 61 30 62C13 62 2 49 2 33C1 16 13 3 30 2Z"
-        fill="#E2C66B"
-      />
-      <circle cx="21" cy="28" r="2.8" fill="#211D17" />
-      <circle cx="41" cy="28" r="2.8" fill="#211D17" />
-      <path
-        d="M24 39Q31 49 38 39"
-        stroke="#211D17"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
+      <ellipse cx="83" cy="73" rx="48" ry="49" fill="#D7C977" />
+      <ellipse cx="79" cy="72" rx="48" ry="49" fill="#E8DC8F" />
+      <PennyFeatures />
     </svg>
   );
 }
