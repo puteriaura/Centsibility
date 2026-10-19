@@ -7,6 +7,7 @@ import { AvatarBubble } from "@/components/AvatarBubble";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SectionTitle } from "@/components/ui/section-title";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
 import { transactionAmount } from "@/lib/finance";
@@ -122,9 +123,7 @@ function ParentInsights() {
       </Card>
 
       <div className="space-y-2">
-        <p className="text-xs font-semibold text-[var(--text-2)] m-0">
-          Children
-        </p>
+        <SectionTitle>Children</SectionTitle>
         {kids.length > 4 && (
           <div className="kid-search">
             <AppIcon name="users" size={16} />

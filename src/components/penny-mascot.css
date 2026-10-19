@@ -14,13 +14,25 @@
 .penny-mascot[data-paused="true"] * {
   animation-play-state: paused !important;
 }
+/* Welcome block at the top of the chat thread: scrolls away with the conversation. */
 .penny-chat__mascot {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  padding-top: 4px;
+  text-align: center;
 }
-.penny-chat__mascot > span:last-child {
+.penny-chat__tagline {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.penny-chat__note {
+  margin: 0;
+  max-width: 300px;
   font-size: 12px;
+  line-height: 1.45;
   color: var(--text-secondary);
 }
 .penny-goal-mascot {

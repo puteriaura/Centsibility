@@ -84,13 +84,16 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
   const initialMessageIds = React.useRef(new Set(messages.map(m => m.id)));
   const [pinInput, setPinInput] = React.useState("");
   const [pinProcessing, setPinProcessing] = React.useState(false);
-  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const threadRef = React.useRef<HTMLDivElement>(null);
 
+  // Scroll only the thread: scrollIntoView also scrolled the page and the drawer.
+  // Until the conversation starts, keep the welcome and its AI notice in view.
   React.useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: reduced
-        ? "instant"
-        : "smooth",
+    const thread = threadRef.current;
+    if (!thread || (messages.length <= 1 && !busy)) return;
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: reduced ? "instant" : "smooth",
     });
   }, [messages, busy, reduced]);
 
@@ -221,23 +224,34 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
         </div>
       ) : (
         <>
-          <div className="penny-chat__mascot px-4" aria-live="off">
-            <PennyMascot
-              state={
-                busy
-                  ? "loading"
-                  : messages.at(-1)?.offline
-                    ? "reassuring"
-                    : messages.length <= 1
-                      ? "welcome"
-                      : "neutral"
-              }
-              size={88}
-            />
-            <span>{busy ? "Preparing your reply…" : "Your money buddy"}</span>
-          </div>
-          {/* Messages Thread */}
-          <div className="penny-chat__thread" role="log" aria-live="polite">
+          {/* Messages Thread: the welcome, starters and replies scroll together */}
+          <div
+            ref={threadRef}
+            className="penny-chat__thread"
+            role="log"
+            aria-live="polite"
+          >
+            <div className="penny-chat__mascot" aria-live="off">
+              <PennyMascot
+                state={
+                  busy
+                    ? "loading"
+                    : messages.at(-1)?.offline
+                      ? "reassuring"
+                      : messages.length <= 1
+                        ? "welcome"
+                        : "neutral"
+                }
+                size={72}
+              />
+              <span className="penny-chat__tagline">
+                {busy ? "Preparing your reply…" : "Your money buddy"}
+              </span>
+              <p className="penny-chat__note">
+                Penny is an AI helper and can make mistakes. Ask a parent about
+                real money decisions.
+              </p>
+            </div>
             {messages.map((m) =>
               m.role === "user" ? (
                 <div key={m.id} data-new={!initialMessageIds.current.has(m.id) || undefined} className="penny-bubble penny-bubble--user">
@@ -299,68 +313,66 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
                 </p>
               </div>
             )}
-            <div ref={bottomRef} />
-          </div>
-
-          <p className="px-4 py-2 text-xs text-[var(--text-secondary)]">Penny is an AI helper and can make mistakes. Ask a parent about real money decisions.</p>
-
-          {/* Quick Starters (shown when only initial welcome message) */}
-          {messages.length <= 1 && mode === "kid" && (
-            <div className="penny-starters" aria-label="Suggested questions">
-              {KID_STARTERS.map((s) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  className="insights-ask-chip"
-                  onClick={() => void send(s.prompt)}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Coach Suggestions */}
-          <div
-            className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar"
-            aria-label="Coach suggestions"
-          >
-            {(mode === "kid" ? KID_COACH_CHIPS : PARENT_COACH_CHIPS).map(
-              (chip) => (
-                <button
-                  key={chip.label}
-                  type="button"
-                  className="insights-ask-chip whitespace-nowrap shrink-0"
-                  disabled={busy}
-                  onClick={() => void send(chip.prompt)}
-                >
-                  {chip.label}
-                </button>
-              ),
+            {/* Quick Starters (shown when only initial welcome message) */}
+            {messages.length <= 1 && mode === "kid" && (
+              <div className="penny-starters" aria-label="Suggested questions">
+                {KID_STARTERS.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    className="insights-ask-chip"
+                    onClick={() => void send(s.prompt)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Message Composer */}
-          <AIInputWithLoading id={`penny-input-${mode}`} busy={busy} onSubmit={send} placeholder={mode === "kid" ? "Ask about saving, spending, or where to tap" : "Ask about your family’s money habits"} />
-
-          {/* Disclaimer */}
-          <p className="penny-chat__disclaimer">
-            {mode === "kid"
-              ? "Content is educational and not financial advice. Subject to our Terms of Use."
-              : "Penny gives general guidance, not financial, legal or religious rulings."}
-          </p>
-
-          {/* Link to Insights on full-page kid chat only */}
-          {!inDrawer && mode === "kid" && (
-            <Link
-              to="/kid/insights"
-              className="penny-chat__insights-link"
-              onClick={() => sfx.tap()}
+          {/* Pinned footer: suggestions, composer and disclaimer never shrink the thread */}
+          <div className="penny-chat__footer">
+            {/* Coach Suggestions */}
+            <div
+              className="flex gap-2 overflow-x-auto px-4 py-2 no-scrollbar"
+              aria-label="Coach suggestions"
             >
-              <span className="insights-sheet__handle" aria-hidden="true" />
-              Insights
-            </Link>
-          )}
+              {(mode === "kid" ? KID_COACH_CHIPS : PARENT_COACH_CHIPS).map(
+                (chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    className="insights-ask-chip whitespace-nowrap shrink-0"
+                    disabled={busy}
+                    onClick={() => void send(chip.prompt)}
+                  >
+                    {chip.label}
+                  </button>
+                ),
+              )}
+            </div>
+
+            {/* Message Composer */}
+            <AIInputWithLoading id={`penny-input-${mode}`} busy={busy} onSubmit={send} placeholder={mode === "kid" ? "Ask about saving, spending, or where to tap" : "Ask about your family’s money habits"} />
+
+            {/* Disclaimer */}
+            <p className="penny-chat__disclaimer">
+              {mode === "kid"
+                ? "Content is educational and not financial advice. Subject to our Terms of Use."
+                : "Penny gives general guidance, not financial, legal or religious rulings."}
+            </p>
+
+            {/* Link to Insights on full-page kid chat only */}
+            {!inDrawer && mode === "kid" && (
+              <Link
+                to="/kid/insights"
+                className="penny-chat__insights-link"
+                onClick={() => sfx.tap()}
+              >
+                Insights
+              </Link>
+            )}
+          </div>
         </>
       )}
     </div>

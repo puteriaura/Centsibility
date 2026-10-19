@@ -20,6 +20,14 @@ export function getTheme() {
 export function applyTheme(theme: "light" | "dark") {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
+  // Tint the browser status bar with the app canvas, not a fixed brand blue.
+  const canvas = getComputedStyle(document.documentElement)
+    .getPropertyValue("--canvas")
+    .trim();
+  if (canvas)
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", canvas);
 }
 export function reduceAnimations() {
   return read(MOTION_KEY) === "true" || (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);

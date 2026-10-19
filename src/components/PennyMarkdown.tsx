@@ -1,34 +1,52 @@
 import React from "react";
 
+type Block =
+  | { kind: "p"; text: string }
+  | { kind: "ul" | "ol"; items: string[] };
+
 export function PennyMarkdown({ text }: { text: string }) {
   // Strip em/en dashes
   const clean = text.replace(/—/g, ", ").replace(/–/g, "-");
-  const paragraphs = clean.split(/\n\s*\n/);
+  // Replies use single newlines, so every line is its own paragraph and
+  // consecutive bullet or numbered lines form one list.
+  const blocks: Block[] = [];
+  for (const raw of clean.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const bullet = /^[-*•]\s+/.exec(line);
+    const marker = bullet ?? /^\d+[.)]\s+/.exec(line);
+    if (!marker) {
+      blocks.push({ kind: "p", text: line });
+      continue;
+    }
+    const kind = bullet ? "ul" : "ol";
+    const item = line.slice(marker[0].length);
+    const last = blocks.at(-1);
+    if (last && last.kind === kind) last.items.push(item);
+    else blocks.push({ kind, items: [item] });
+  }
 
+  // No m-0/my-*: margin utilities would cancel the space-y gap between blocks.
   return (
-    <div className="penny-assistant__text space-y-2">
-      {paragraphs.map((para, pIdx) => {
-        const lines = para.split("\n");
-        const isList = lines.every((l) => /^\s*[-*•]\s+/.test(l) || /^\s*\d+\.\s+/.test(l));
-        if (isList) {
+    <div className="penny-assistant__text space-y-3">
+      {blocks.map((block, i) => {
+        if (block.kind === "p") {
           return (
-            <ul key={pIdx} className="list-disc pl-5 space-y-1 my-1">
-              {lines.map((l, lIdx) => {
-                const itemText = l.replace(/^\s*[-*•]\s+/, "").replace(/^\s*\d+\.\s+/, "");
-                return <li key={lIdx}>{renderInlineMarkdown(itemText)}</li>;
-              })}
-            </ul>
+            <p key={i} className="leading-relaxed">
+              {renderInlineMarkdown(block.text)}
+            </p>
           );
         }
+        const List = block.kind;
         return (
-          <p key={pIdx} className="m-0 leading-relaxed">
-            {lines.map((line, lIdx) => (
-              <span key={lIdx}>
-                {lIdx > 0 && <br />}
-                {renderInlineMarkdown(line)}
-              </span>
+          <List
+            key={i}
+            className={`${List === "ul" ? "list-disc" : "list-decimal"} pl-5 space-y-1`}
+          >
+            {block.items.map((item, j) => (
+              <li key={j}>{renderInlineMarkdown(item)}</li>
             ))}
-          </p>
+          </List>
         );
       })}
     </div>
