@@ -4,7 +4,6 @@ import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
 import "./styles.css";
 import "./reference-theme.css";
-import "./reference-theme.css";
 
 // Polyfill AsyncLocalStorage for client-side compatibility
 declare global {
