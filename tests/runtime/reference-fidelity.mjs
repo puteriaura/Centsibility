@@ -309,10 +309,13 @@ try {
       );
     }
     if (mode === "kid") {
+      await page.setViewportSize({ width: 360, height: 844 });
       await page.goto(base + "/kid", { waitUntil: "networkidle" });
       await page.evaluate(
         () => (document.documentElement.style.fontSize = "200%"),
       );
+      const primaryLines = await page.locator(".balance-hero__amount").evaluate(el => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight));
+      assert(primaryLines <= 1.25, "Primary balance must not split a trailing digit at 360px and 200% text");
       const title = page.locator("main .ui-card p").first();
       await expect(title).toBeVisible();
       const titleWidth = await title.evaluate(

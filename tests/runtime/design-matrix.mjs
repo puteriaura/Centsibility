@@ -85,11 +85,13 @@ for(const theme of ['light','dark']) for(const width of (auditOnly ? [390] : [36
     await page.waitForFunction(()=>Array.from(document.fonts).some(face=>face.family.includes('Red Hat Text')));
     await page.evaluate(()=>document.fonts.load('16px "Red Hat Text"','Simpanan wang café'));
    }
+   const actionOverlap=await page.locator('#wallet-actions [role="tab"]').evaluateAll(buttons=>{const boxes=buttons.map(button=>button.getBoundingClientRect());return boxes.some((a,i)=>boxes.slice(i+1).some(b=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1))||buttons.some(button=>button.scrollWidth>button.clientWidth+1);});
+   const amountOverflow=await page.locator('.balance-hero__amount').evaluateAll(elements=>elements.some(el=>el.scrollWidth>el.clientWidth+1||el.getBoundingClientRect().height>parseFloat(getComputedStyle(el).lineHeight)*1.25));
    const measured=await page.evaluate(()=>({docWidth:document.documentElement.scrollWidth,viewport:innerWidth,bodyText:document.body.innerText.slice(0,180),missingNames:[...document.querySelectorAll('button')].filter(b=>!b.innerText.trim()&&!b.getAttribute('aria-label')&&!b.getAttribute('aria-labelledby')).length,fonts:document.fonts.check('16px "Red Hat Text"','Simpanan wang café')}));
    const name=`${variant === "normal" ? "" : variant+"-"}${audience}-${route.replaceAll('/','-').replace(/^-/, '')}-${width}-${theme}`;
    await page.screenshot({path:`${output}/${name}.png`,fullPage:true});
    const violations = auditOnly ? (await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze()).violations.map(item=>({id:item.id,impact:item.impact,nodes:item.nodes.map(node=>({target:node.target,summary:node.failureSummary}))})) : [];
-   results.push({route,theme,width,violations,overflow:measured.docWidth>width,errors,appError:measured.bodyText.includes("Something went wrong"),missingNames:measured.missingNames,fontsLoaded:measured.fonts});
+   results.push({route,theme,width,violations,actionOverlap,amountOverflow,overflow:measured.docWidth>width,errors,appError:measured.bodyText.includes("Something went wrong"),missingNames:measured.missingNames,fontsLoaded:measured.fonts});
    await page.close();
   }
   await context.close();
@@ -98,7 +100,7 @@ for(const theme of ['light','dark']) for(const width of (auditOnly ? [390] : [36
  fs.writeFileSync(`${output}/${auditOnly ? "accessibility" : variant === "normal" ? "matrix" : "matrix-"+variant}.json`,JSON.stringify(results,null,2));
 }
 } finally {await browser.close();stopPreview();}
-const failures=results.filter(r=>r.overflow||r.errors.length||r.appError||r.violations?.length||r.missingNames||!r.fontsLoaded);
+const failures=results.filter(r=>r.actionOverlap||r.amountOverflow||r.overflow||r.errors.length||r.appError||r.violations?.length||r.missingNames||!r.fontsLoaded);
 console.log(JSON.stringify({checked:results.length,failures},null,2));
 if(failures.length)process.exitCode=1;
 
