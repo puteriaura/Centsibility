@@ -20,17 +20,27 @@ export const NAV: Record<Mode, NavItem[]> = {
   kid: [
     { to: "/kid", label: "Home", icon: "home" },
     { to: "/kid/wallet", label: "Wallet", icon: "wallet" },
-    // The dock's one wide pill: saving is the kid's main daily action.
-    { to: "/kid/goals", label: "Tabung", icon: "save", center: true },
-    { to: "/kid/loans", label: "Loans", icon: "loan" },
-    { to: "/kid/card", label: "Card", icon: "card" },
+    // Transfer opens a focused compose flow without the dock.
+    { to: "/kid/transfer", label: "Transfer", icon: "transfer", center: true },
+    { to: "/kid/insights", label: "Insights", icon: "reports" },
+    { to: "/kid/more", label: "More", icon: "more" },
   ],
   parent: [
     { to: "/parent", label: "Home", icon: "home" },
-    { to: "/parent/approvals", label: "Approvals", icon: "approve", badge: true },
+    {
+      to: "/parent/approvals",
+      label: "Approvals",
+      icon: "approve",
+      badge: true,
+    },
     // Sending money is the parent's main action; like a scanner, it opens a
     // focused flow without the dock.
-    { to: "/parent/transfer", label: "Transfer", icon: "transfer", center: true },
+    {
+      to: "/parent/transfer",
+      label: "Transfer",
+      icon: "transfer",
+      center: true,
+    },
     {
       to: "/parent/insights",
       label: "Insights",
@@ -42,13 +52,19 @@ export const NAV: Record<Mode, NavItem[]> = {
 };
 
 export const DOCK_ROUTES: Record<Mode, string[]> = {
-  kid: ["/kid", "/kid/wallet", "/kid/goals", "/kid/loans", "/kid/card"],
-  parent: ["/parent", "/parent/approvals", "/parent/insights", "/parent/settings"],
+  kid: ["/kid", "/kid/wallet", "/kid/insights", "/kid/more"],
+  parent: [
+    "/parent",
+    "/parent/approvals",
+    "/parent/insights",
+    "/parent/settings",
+  ],
 };
 
 const TITLES: Record<Mode, Array<[string, string]>> = {
   kid: [
     ["/kid/wallet", "Wallet"],
+    ["/kid/more", "More"],
     ["/kid/goals", "Tabung"],
     ["/kid/loans", "Loans"],
     ["/kid/card", "Card"],
@@ -72,7 +88,8 @@ const TITLES: Record<Mode, Array<[string, string]>> = {
   ],
 };
 
-export const trimSlash = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
+export const trimSlash = (p: string) =>
+  p.length > 1 ? p.replace(/\/+$/, "") : p;
 
 export function pageTitle(pathname: string, mode: Mode) {
   const hit = TITLES[mode].find(([prefix]) => pathname.startsWith(prefix));
@@ -89,7 +106,10 @@ export function upTarget(pathname: string, mode: Mode): string {
   return "/parent";
 }
 
-export function screenKind(pathname: string, mode: Mode): "home" | "root" | "detail" {
+export function screenKind(
+  pathname: string,
+  mode: Mode,
+): "home" | "root" | "detail" {
   const p = trimSlash(pathname);
   if (p === `/${mode}`) return "home";
   return DOCK_ROUTES[mode].includes(p) ? "root" : "detail";

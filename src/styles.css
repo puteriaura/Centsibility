@@ -74,23 +74,23 @@
   color-scheme: light;
 
   /* Raw palette. Contrast on white / canvas noted where text uses it. */
-  --blue-50: #EEF3FE;
+  --blue-50: #EAF1FF;
   --blue-100: #DCE5FB;
   --blue-200: #B9CBF6;
-  --blue-600: #1F4FD1;   /* 6.8:1 white text on it */
+  --blue-600: #1957E8;   /* White text meets AA. */
   --blue-700: #173CA6;   /* 9.4:1 on white, 7.5:1 on blue-100 */
   --blue-800: #122F80;
 
   --gray-0: #FFFFFF;
   --gray-50: #F8F9FB;
-  --gray-100: #F2F4F7;   /* canvas */
+  --gray-100: #F3F6FB;   /* canvas */
   --gray-150: #EAECF0;
-  --gray-200: #E4E7EC;
+  --gray-200: #E3E9F2;
   --gray-400: #868F9F;   /* control borders: 3.2:1 on white */
   --gray-500: #5B6575;   /* 5.9:1 white, 5.3:1 canvas */
-  --gray-600: #475467;   /* 7.7:1 white */
+  --gray-600: #52627C;   /* 7.7:1 white */
   --gray-800: #1D2939;
-  --gray-900: #0E1726;
+  --gray-900: #101828;
 
   --green-50: #E6F4EC;
   --green-700: #0E7A4E;  /* 5.4:1 white, 4.7:1 on green-50 */
@@ -166,9 +166,9 @@
 
   /* Radius by role */
   --r-badge: 6px;
-  --r-tile: 12px;       /* icon tiles, inputs */
-  --r-panel: 16px;      /* cards and lists */
-  --r-hero: 20px;       /* balance card */
+  --r-tile: 14px;       /* icon tiles, inputs */
+  --r-panel: 18px;      /* cards and lists */
+  --r-hero: 18px;       /* balance card */
   --r-sheet: 24px;      /* sheet tops, dialogs */
   --r-pill: 999px;      /* buttons, chips, segmented controls */
 
@@ -178,8 +178,8 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
   /* Layout */
-  --touch-min: 44px;
-  --page-pad: clamp(20px, 6.4vw, 24px);  /* AEON's 6.4% side inset */
+  --touch-min: 48px;
+  --page-pad: 20px;  /* AEON's 6.4% side inset */
   --shell-nav-h: 64px;
   --shell-top-h: 56px;
   --section-gap: 28px;
@@ -871,7 +871,7 @@
 
   .app-shell--loading {
     width: 100%;
-    max-width: min(100%, 480px);
+    max-width: min(100%, 560px);
     margin: 0 auto;
     padding: var(--page-pad);
   }
@@ -1156,8 +1156,10 @@
     align-items: center;
     justify-content: center;
     gap: 1px;
-    width: min(84px, 100%);
-    height: 50px;
+    width: 56px;
+    height: 56px;
+    margin-top: -18px;
+    box-shadow: 0 0 0 5px var(--canvas);
     border-radius: var(--r-pill);
     background: var(--action);
     color: var(--on-action);
@@ -1169,7 +1171,7 @@
 
   .shell-navitem--center .shell-navitem__label,
   .shell-navitem--center:hover .shell-navitem__label {
-    color: var(--on-action);
+    color: var(--action-text);
     font-weight: 700;
   }
 
@@ -1351,7 +1353,7 @@
     opacity: 0.5;
   }
 
-  /* 4 x 2 shortcuts: one-colour line icons in white circles */
+  /* Four shortcuts: one-colour line icons in white circles */
   .quick-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1931,19 +1933,19 @@
   .deposit-account-stack {
     display: flex;
     flex-direction: column;
-    background: var(--surface);
-    border-radius: var(--r-panel);
-    overflow: hidden;
+    gap: 12px;
   }
 
-  /* Account rows: one list, divided, rather than three coloured cards */
+  /* Separate accounts preserve the reference hierarchy. */
   .deposit-account-card {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     width: 100%;
     text-align: left;
     padding: var(--space-4);
     border: none;
-    border-radius: 0;
+    border-radius: var(--r-panel);
     background: var(--surface);
     color: var(--ink);
     text-decoration: none;
@@ -1951,14 +1953,46 @@
     font-weight: 400;
   }
 
-  .deposit-account-card + .deposit-account-card {
-    border-top: 1px solid var(--line);
-  }
-
   .deposit-account-card:hover {
     background: var(--surface-hover);
     color: var(--ink);
   }
+
+  .account-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 50%;
+    color: var(--action-text);
+    background: var(--action-tint);
+  }
+  .account-icon--saving { color: var(--pos); background: var(--pos-bg); }
+  .account-icon--loan { color: var(--warn); background: var(--warn-bg); }
+  .account-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+  .account-copy > span { font-size: 14px; }
+  .account-copy > strong { font-family: var(--font-display); font-size: 24px; font-variant-numeric: tabular-nums; }
+  .account-copy > small { color: var(--text-2); font-size: 12px; }
+  .wallet-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .wallet-links > a { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; font-size: 14px; color: var(--action-text); }
+  .settings-groups { display: flex; flex-direction: column; gap: 24px; }
+  .settings-group-title { font-size: 13px; font-weight: 500; color: var(--text-2); margin: 0 0 10px 4px; }
+  .settings-groups .settings-list { margin: 0; background: var(--surface); border-radius: var(--r-panel); overflow: hidden; }
+  .settings-list a.settings-list__item { text-decoration: none; }
+  .insights-segment { display: flex; padding: 4px; background: var(--surface-sunken); border-radius: 16px; }
+  .insights-segment > button { flex: 1; min-height: 48px; border-radius: 12px; color: var(--text-2); background: transparent; }
+  .insights-segment > button[aria-pressed="true"] { background: var(--surface); color: var(--action-text); }
+  .category-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; }
+  .transfer-flow input { scroll-margin-block: 96px; }
+  .home-alert { margin-top: 20px; border-radius: 14px; background: var(--action-tint); }
+  .home-alert > summary { display: flex; align-items: center; gap: 10px; padding: 12px; min-height: 48px; cursor: pointer; color: var(--action-text); font-size: 13px; }
+  .home-alert > summary > span { flex: 1; }
+  .recipient-list { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; }
+  .recipient-chip { display: flex; flex-direction: column; align-items: center; flex: none; width: 76px; gap: 6px; padding: 8px 4px; border-radius: 14px; background: transparent; font-size: 12px; color: var(--text-2); }
+  .recipient-chip[aria-pressed="true"] { background: var(--action-tint); color: var(--action-text); box-shadow: inset 0 0 0 1px var(--action); }
+  .recipient-chip > span:last-child { max-width: 100%; overflow-wrap: anywhere; }
 
   .deposit-account-card--wallet,
   .deposit-account-card--growth,
@@ -2211,7 +2245,7 @@
   }
 
   .insights-page {
-    margin: calc(var(--space-2) * -1) calc(var(--page-pad) * -1) 0;
+    margin: 0;
     overflow-x: clip;
   }
 
@@ -2980,14 +3014,14 @@
   .app-shell,
   .app-shell--immersive {
     width: 100%;
-    max-width: min(100%, 480px);
+    max-width: min(100%, 560px);
     box-shadow: 0 0 0 1px rgb(14 23 38 / 0.06), 0 12px 40px rgb(14 23 38 / 0.12);
   }
 
   .shell-bottomnav {
     left: 50%;
     right: auto;
-    width: min(100%, 480px);
+    width: min(100%, 560px);
     transform: translateX(-50%);
   }
 }
@@ -3078,3 +3112,9 @@ button[data-variant]:active:not(:disabled), .quick-btn:active .quick-circle, .sh
 :root[data-motion="reduced"] .app-dialog, :root[data-motion="reduced"] .app-dialog-overlay, :root[data-motion="reduced"] .story-card { animation: none !important; transition: none !important; }
 
 :root[data-theme="dark"] .quick-circle { color: var(--action-text); }
+
+/* Keep long instrument names and localized text inside small-screen dialogs. */
+.app-dialog__body, .app-dialog__header { overflow-wrap: anywhere; }
+.app-dialog__body button { white-space: normal; }
+
+.auth-page { overflow-wrap: anywhere; }

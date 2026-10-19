@@ -1,0 +1,149 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { AppIcon } from "@/components/ui/app-icon";
+import { Button } from "@/components/ui/button";
+import { AppearanceSettings } from "@/components/AppearanceSettings";
+import { useKidData } from "@/hooks/use-kid-data";
+import { getKidSession } from "@/lib/kid-session";
+import { edgeKidClaimCoins } from "@/lib/edge";
+import { useMoneyAction } from "@/hooks/use-money-action";
+import { isMuted, toggleMute } from "@/lib/sounds";
+import { signOutKid } from "@/components/AppShell";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/kid/more")({
+  head: () => ({ meta: [{ title: "More | Centsibility" }] }),
+  component: KidMore,
+});
+
+const groups = [
+  {
+    title: "Money",
+    items: [
+      { to: "/kid/goals", label: "Tabung", icon: "save" },
+      { to: "/kid/loans", label: "Qard Hasan loans", icon: "loan" },
+      { to: "/kid/card", label: "Practice card", icon: "card" },
+      { to: "/kid/invest", label: "Investment", icon: "trend" },
+      { to: "/kid/sadaqah", label: "Sadaqah", icon: "sadaqah" },
+      { to: "/kid/zakat", label: "Zakat", icon: "scale" },
+      { to: "/kid/history", label: "History", icon: "history" },
+    ],
+  },
+  {
+    title: "Learning & rewards",
+    items: [
+      { to: "/kid/missions", label: "Missions", icon: "missions" },
+      { to: "/kid/rewards", label: "Rewards", icon: "gift" },
+      { to: "/kid/quiz", label: "Quizzes", icon: "brain" },
+    ],
+  },
+  {
+    title: "Help & information",
+    items: [
+      { to: "/kid/chat", label: "Ask Penny", icon: "chat" },
+      { to: "/kid/notifications", label: "Notifications", icon: "bell" },
+    ],
+  },
+] as const;
+
+function KidMore() {
+  const { data, refresh } = useKidData();
+  const { busy, run } = useMoneyAction();
+  const [muted, setMuted] = useState(isMuted());
+  const [preferences, setPreferences] = useState(false);
+  const unclaimed = Math.round(Number(data?.kid.unclaimed_coins) || 0);
+  const claim = () => {
+    const code = getKidSession()?.code;
+    if (code)
+      void run(() => edgeKidClaimCoins({ code }), {
+        success: "Points collected",
+        refresh,
+      });
+  };
+  return (
+    <div className="settings-groups">
+      {unclaimed > 0 && (
+        <Button
+          onClick={claim}
+          disabled={busy}
+          className="w-full justify-center"
+        >
+          <AppIcon name="gift" size={20} />
+          Collect {unclaimed} points
+        </Button>
+      )}
+      {groups.map((group) => (
+        <section key={group.title}>
+          <h2 className="settings-group-title">{group.title}</h2>
+          <ul className="settings-list">
+            {group.items.map((item) => (
+              <li key={item.to}>
+                <Link to={item.to} className="settings-list__item">
+                  <span className="settings-list__icon">
+                    <AppIcon name={item.icon} size={24} />
+                  </span>
+                  {item.label}
+                  <span className="settings-list__chevron">
+                    <AppIcon name="chevron" size={20} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+      <section>
+        <h2 className="settings-group-title">App preferences</h2>
+        <div className="settings-list">
+          <button
+            className="settings-list__item"
+            type="button"
+            onClick={() => setMuted(toggleMute())}
+          >
+            <span className="settings-list__icon">
+              <AppIcon name={muted ? "soundoff" : "soundon"} size={24} />
+            </span>
+            Sounds
+            <span className="settings-list__chevron">
+              {muted ? "Off" : "On"}
+            </span>
+          </button>
+          <button
+            className="settings-list__item"
+            type="button"
+            aria-expanded={preferences}
+            onClick={() => setPreferences((value) => !value)}
+          >
+            <span className="settings-list__icon">
+              <AppIcon name="settings" size={24} />
+            </span>
+            Appearance
+            <span className="settings-list__chevron">
+              <AppIcon name="chevron" size={20} />
+            </span>
+          </button>
+          {preferences && (
+            <div className="p-4">
+              <AppearanceSettings />
+            </div>
+          )}
+        </div>
+      </section>
+      <Button
+        variant="outline"
+        className="w-full justify-center"
+        onClick={async () => {
+          try {
+            await signOutKid();
+            window.location.replace("/kid-login");
+          } catch (error) {
+            toast.error((error as Error).message);
+          }
+        }}
+      >
+        <AppIcon name="exit" size={20} />
+        Sign out
+      </Button>
+    </div>
+  );
+}

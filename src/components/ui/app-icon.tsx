@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  Ellipsis,
   BarChart3,
   Bell,
   Bird,
@@ -109,6 +110,7 @@ import { PennyFace } from "@/components/PennyFace";
 
 /** Temporary icon map — swap assets later without chasing string placeholders. */
 const ICONS: Record<string, LucideIcon> = {
+  more: Ellipsis,
   home: Home,
   wallet: Wallet,
   back: ArrowLeft,
@@ -210,7 +212,7 @@ const ICONS: Record<string, LucideIcon> = {
   userplus: UserPlus,
   close: X,
   copy: Copy,
-  invest: Leaf,
+  invest: TrendingUp,
   withdraw: Minus,
   recall: Undo2,
   trophy: Trophy,

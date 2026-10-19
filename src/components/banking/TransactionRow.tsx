@@ -32,27 +32,44 @@ export function TransactionRow({
   className = "",
 }: TransactionRowProps) {
   const { isMasked, locked, openUnlockSheet, format } = useMoney();
-  const amt = type !== undefined ? transactionAmount(type, label, amount) : null;
+  const amt =
+    type !== undefined ? transactionAmount(type, label, amount) : null;
   const isPos = amt ? amt.tone === "in" : isIncome;
   const iconName = icon || (isPos ? "deposit" : "withdrawal");
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between gap-3 py-3 px-2 ${
-        onClick ? "cursor-pointer rounded-xl hover:bg-[var(--surface-hover)]" : ""
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3 px-2 ${
+        onClick
+          ? "cursor-pointer rounded-xl hover:bg-[var(--surface-hover)]"
+          : ""
       } ${className}`.trim()}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-[1_1_12rem] items-center gap-3">
         <div className="tx-icon" aria-hidden="true">
           <AppIcon name={iconName} size={20} />
         </div>
         <div className="min-w-0">
-          <p className="m-0 truncate text-sm font-semibold leading-snug text-[var(--ink)]">{title}</p>
-          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-3)]">
+          <p className="m-0 text-sm font-semibold leading-snug text-[var(--ink)]">
+            {title}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-3)]">
             {date && <span>{date}</span>}
             {date && subtitle && <span aria-hidden="true">·</span>}
-            {subtitle && <span className="truncate">{subtitle}</span>}
+            {subtitle && <span>{subtitle}</span>}
           </div>
         </div>
       </div>
@@ -76,7 +93,9 @@ export function TransactionRow({
           ? MASKED_AMOUNT
           : amt
             ? amt.text
-            : format(isIncome ? Math.abs(amount) : -Math.abs(amount), { sign: true })}
+            : format(isIncome ? Math.abs(amount) : -Math.abs(amount), {
+                sign: true,
+              })}
       </span>
     </div>
   );

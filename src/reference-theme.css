@@ -1,0 +1,121 @@
+/* The owner's five-screen banking reference is the whole-app visual contract. */
+@font-face { font-family: "Red Hat Text"; src: url("/fonts/red-hat-text-regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Red Hat Text"; src: url("/fonts/red-hat-text-semibold.woff2") format("woff2"); font-weight: 500 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Red Hat Display"; src: url("/fonts/red-hat-display-bold.woff2") format("woff2"); font-weight: 600 800; font-style: normal; font-display: swap; }
+:root {
+  --blue-600: #1957e8; --blue-700: #1546bb; --blue-800: #123997;
+  --r-panel: 18px; --r-tile: 14px; --r-hero: 18px; --touch-min: 48px;
+  --page-pad: 20px; --shell-top-h: 76px; --shell-nav-h: 84px;
+  --paper-shadow: 0 5px 22px rgb(23 49 92 / .045);
+  --khatam: none;
+  --feature-blue: #1957e8; --feature-teal: #0f766e; --feature-green: #167047;
+  --feature-navy: #243a68; --feature-rose: #b42c50; --feature-violet: #6841ba;
+  --feature-slate: #52627c; --feature-amber: #986005;
+}
+:root:not([data-theme="dark"]) { --gray-100: #f3f6fb; --gray-900: #101828; --gray-800: #253652; --gray-600: #52627c; --gray-500: #58677e; --gray-200: #e3e9f2; --blue-50: #eaf1ff; --blue-100: #e1ebff; }
+:root[data-theme="dark"] { --paper-shadow: 0 5px 22px rgb(0 0 0 / .12); --feature-blue: #a9c2ff; --feature-teal: #7bdfcb; --feature-green: #83dcac; --feature-navy: #b1c8f6; --feature-rose: #ffa2bb; --feature-violet: #ceb3ff; --feature-slate: #c1ccdc; --feature-amber: #f4c47b; }
+.ui-card, .list-panel, .settings-list, .month-panel { box-shadow: var(--paper-shadow); border-radius: var(--r-panel); }
+.ui-card:not(.card-brand):not(.card-navy):not(.card-soft) { border: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.ui-card.card-brand, .card-brand { box-shadow: 0 7px 18px rgb(25 87 232 / .12); }
+.card-brand::before { display: none; }
+.balance-hero__amount { font-size: clamp(1.75rem, 7.7vw, 2.25rem); overflow-wrap: anywhere; line-height: 1.2; }
+.balance-hero__amount--long { font-size: 1.375rem; }
+button[data-variant] { border-radius: 14px; min-height: 48px; min-width: 48px; white-space: normal; line-height: 1.3; }
+.app-shell button, .app-dialog button, .auth-page button, .pin-screen button { min-height: 48px; min-width: 48px; }
+.shell-icon-btn, .kid-chip, .tab-pill, .segment-tab { min-height: 48px; min-width: 48px; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select { min-height: 48px; border-radius: 14px; }
+.tab-pills-container { background: var(--action-tint); border-radius: 16px; padding: 4px; }
+.tab-pill { border-radius: 12px; }
+.tab-pill.is-active, .tab-pill[aria-selected="true"] { box-shadow: 0 2px 6px rgb(23 49 92 / .07); }
+.app-shell__main { animation: none; padding-top: 14px; }
+.shell-topbar { padding-inline: var(--page-pad); padding-block: max(12px, env(safe-area-inset-top, 0px)) 10px; background: var(--canvas); color: var(--ink); }
+.shell-topbar--home { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+.shell-topbar__left { gap: 10px; }
+.shell-greeting { min-width: 0; line-height: 1.3; }
+.shell-greeting small { display: block; color: var(--text-2); font-size: 12px; }
+.shell-greeting strong { display: block; font-size: 16px; overflow-wrap: anywhere; }
+.shell-mascot-pill { min-height: 48px; gap: 5px; padding: 6px 10px; font-size: 12px; box-shadow: 0 3px 12px rgb(23 49 92 / .06); }
+.shell-topbar__title { white-space: normal; overflow: visible; overflow-wrap: anywhere; line-height: 1.25; }
+.shell-bottomnav { border-radius: 22px 22px 0 0; border-top: 1px solid var(--line); box-shadow: 0 -5px 24px rgb(23 49 92 / .04); padding-top: 10px; }
+.shell-bottomnav__inner { align-items: end; min-height: 62px; }
+.shell-navitem { min-height: 62px; font-size: 12px; }
+.shell-navitem__center-pill { width: 56px; height: 56px; border-radius: 50%; margin-top: -18px; margin-bottom: 6px; box-shadow: 0 0 0 5px var(--canvas), 0 5px 14px rgb(25 87 232 / .16); }
+.shell-navitem--center .shell-navitem__label, .shell-navitem--center:hover .shell-navitem__label { color: var(--action-text); }
+.shell-navitem__label { overflow: visible; white-space: normal; text-align: center; font-size: 12px; }
+.quick-circle { width: 52px; height: 52px; box-shadow: 0 4px 13px rgb(23 49 92 / .05); }
+.quick-label { font-size: 12px; overflow-wrap: anywhere; }
+.tx-icon { background: var(--action-tint); border-radius: 12px; color: var(--action-text); }
+.app-dialog { border: 1px solid var(--line); border-radius: 22px; }
+.app-dialog--sheet { border-radius: 22px 22px 0 0; }
+.app-dialog__header, .app-dialog__body { padding-inline: 22px; }
+:is(button, a, input, textarea, select):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.pin-screen .pin-box { width: min(48px, calc((100vw - 88px) / 6)) !important; }
+.paper-guidance { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 18px; background: var(--action-tint); }
+.paper-guidance__body { min-width: 0; flex: 1; }
+.paper-guidance h3 { margin: 0 0 6px; font-size: 16px; }
+.paper-guidance p { margin: 0 0 12px; font-size: 14px; color: var(--text-2); }
+.paper-guidance a { display: inline-flex; align-items: center; min-height: 48px; color: var(--action-text); font-weight: 600; }
+.app-shell .truncate, .app-dialog .truncate { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.deposit-hero { border-radius: 20px; margin: 0; padding: 22px; box-shadow: var(--paper-shadow); }
+.deposit-hero::after { display: none; }
+.app-shell:has(.deposit-hero) .shell-topbar { background: var(--canvas); color: var(--ink); }
+.app-shell:has(.deposit-hero) .shell-topbar :is(.shell-topbar__title, .shell-icon-btn) { color: var(--ink); }
+.app-shell:has(.deposit-hero) .shell-topbar .shell-icon-btn svg { color: var(--ink); stroke: currentColor; }
+.app-shell:has(.deposit-hero) .app-shell__main { padding-top: 14px; }
+.deposit-quick-tile { border-radius: 16px; background: var(--surface); box-shadow: var(--paper-shadow); min-height: 76px; }
+.list-row { min-height: 72px; padding-block: 16px; }
+.list-row__title, .list-row__sub { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+:root[data-audience="kid"] .success-state__icon { width: 112px; height: 112px; background: transparent; box-shadow: none; }
+[aria-label="Quest track"] .ui-card { min-height: 96px; }
+
+
+
+
+@media (min-width: 768px) {
+  .app-shell, .app-shell--immersive { max-width: 560px; box-shadow: 0 0 0 1px var(--line); }
+  .shell-bottomnav { width: min(100%, 560px); }
+  :root[data-audience="parent"] .app-shell { max-width: 960px; }
+  :root[data-audience="parent"] .shell-bottomnav { width: min(100%, 960px); }
+  .app-shell__main { padding-bottom: 40px; }
+}
+@media (max-width: 374px) { .shell-greeting strong { font-size: 14px; } .shell-mascot-pill { padding-inline: 7px; } }
+@media (prefers-reduced-motion: reduce) { .penny-mascot *, .paper-guidance * { animation: none !important; transition: none !important; } }
+.practice-card-art { box-shadow: 0 9px 24px rgb(25 87 232 / .12); border-radius: 22px; }
+:root[data-screen="kid-history"] .ui-card { padding: 20px; }
+:root[data-screen="kid-insights"] .ui-card { border-radius: 20px; }
+.investment-notice { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 16px; }
+.penny-bubble--user { border-radius: 18px 18px 5px 18px; box-shadow: var(--paper-shadow); }
+.penny-assistant { padding: 16px 0; }
+.penny-assistant__text, .penny-bubble { font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
+.penny-chat__thread { padding-inline: 22px; }
+.penny-chat__composer { padding-bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+.penny-drawer__content { border-radius: 24px 24px 0 0; border: 1px solid var(--line); }
+.penny-drawer__header-actions button, .penny-assistant__actions button { min-width: 48px; min-height: 48px; }
+:root[data-screen="kid-notifications"] .ui-card { padding: 4px 8px; }
+:root[data-audience="parent"] .crew-card { border-radius: 18px; padding: 0; }
+:root[data-audience="parent"] .crew-card__summary { padding: 18px; gap: 14px; }
+:root[data-audience="parent"] .crew-card__body { padding: 20px; border-top: 1px solid var(--line); }
+:root[data-audience="parent"] .crew-card__name { font-size: 17px; line-height: 1.35; }
+:root[data-audience="parent"] .crew-card__balance { font-size: 18px; overflow-wrap: anywhere; }
+:root[data-audience="parent"] .settings-profile { padding: 20px; border-radius: 20px; box-shadow: var(--paper-shadow); }
+:root[data-audience="parent"] .settings-list__item { min-height: 68px; padding-block: 14px; }
+:root[data-audience="parent"] .settings-list__icon { width: 40px; height: 40px; }
+:root[data-audience="parent"] .settings-panel .ui-card { margin-top: 16px; }
+:root[data-audience="parent"] .transfer-flow { max-width: 640px; }
+:root[data-audience="parent"] .penny-chat__title { font-size: 20px; }
+@media (min-width: 1024px) { :root[data-audience="parent"] .app-shell__main { padding-inline: 32px; } }
+.auth-page { background: var(--canvas); padding-inline: 20px; }
+.auth-page > div { width: 100%; }
+.auth-page .ui-card { border-radius: 22px; padding: 24px; }
+.auth-page form { min-width: 0; }
+.auth-page input { font-size: 16px; }
+.auth-page a, .pin-screen a { min-height: 48px; align-items: center; }
+.auth-page button { border-radius: 14px; }
+.pin-screen { max-width: 440px; margin-inline: auto; }
+.pin-box { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--paper-shadow); }
+:root[data-theme="dark"] .auth-page { background: var(--canvas); }
+.section-title__action a, .app-shell label:has(input[type="checkbox"]), .app-shell label:has(input[type="radio"]), .app-dialog label:has(input[type="radio"]), .app-dialog label:has(input[type="checkbox"]) { min-height: 48px; }
+.section-title__action a { display: inline-flex; align-items: center; }
+.app-shell .text-\[var\(--primary-hover\)\] { color: var(--action-text); }
+.app-shell svg[stroke="var(--primary)"], .app-dialog svg[stroke="var(--primary)"], .settings-list__icon svg, .deposit-quick-tile svg, .tx-icon svg { stroke: var(--action-text); }
+

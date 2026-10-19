@@ -33,7 +33,11 @@ export interface TransferFlowProps {
   mode: "kid" | "parent";
   preselectedKidId?: string;
   onDone?: () => void;
-  kid?: { name?: string; comfort_name?: string | null; balance?: number } | null;
+  kid?: {
+    name?: string;
+    comfort_name?: string | null;
+    balance?: number;
+  } | null;
   onRefreshKid?: () => void;
   parentKids?: Array<{
     id: string;
@@ -44,9 +48,6 @@ export interface TransferFlowProps {
   }>;
   onRefreshParent?: () => void;
 }
-
-const KID_REASONS = ["Gift", "Pay back", "Share", "Birthday", "Lunch"];
-const PARENT_REASONS = ["Allowance", "Reward", "Birthday", "Lunch", "Pocket money"];
 
 export function TransferFlow({
   mode,
@@ -61,8 +62,8 @@ export function TransferFlow({
   const { user } = useAuth();
   const { busy, run } = useMoneyAction();
 
-  // Wizard state: 1 = Recipient, 2 = Amount & Note, 3 = Review, 4 = PIN
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  // Compose, review, then PIN authorization. Composition never moves money.
+  const [step, setStep] = useState<1 | 3 | 4>(1);
   const attemptStatus = usePinStatus(mode, step === 4);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -72,11 +73,17 @@ export function TransferFlow({
   const [recipientName, setRecipientName] = useState<string>("");
 
   // Kid recipients data (loaded from kid-finance)
-  const [kidRecipientsLoading, setKidRecipientsLoading] = useState(mode === "kid");
+  const [kidRecipientsLoading, setKidRecipientsLoading] = useState(
+    mode === "kid",
+  );
   const [siblings, setSiblings] = useState<TransferRecipientSibling[]>([]);
-  const [parentRecipient, setParentRecipient] = useState<TransferRecipientParent | null>(null);
-  const [kidBalance, setKidBalance] = useState<number>(0);
+  const [parentRecipient, setParentRecipient] =
+    useState<TransferRecipientParent | null>(null);
+  const [kidBalance, setKidBalance] = useState<number | null>(null);
   const [kidUsedToday, setKidUsedToday] = useState<number>(0);
+
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const [recipientError, setRecipientError] = useState(false);
 
   // Amount & Note state
   const [rawAmount, setRawAmount] = useState<string>("");
@@ -104,7 +111,7 @@ export function TransferFlow({
         setKidUsedToday(res.usedToday || 0);
       })
       .catch((err) => {
-        console.warn("Failed to load transfer recipients:", err);
+        setRecipientError(true);
       })
       .finally(() => {
         setKidRecipientsLoading(false);
@@ -136,7 +143,8 @@ export function TransferFlow({
   }, [mode, kid, user]);
 
   // Validation
-  const currentBalance = mode === "kid" ? (kidBalance || Number(kid?.balance || 0)) : 1000;
+  const currentBalance =
+    mode === "kid" ? (kidBalance ?? Number(kid?.balance || 0)) : 1000;
   const amountValidation = useMemo(() => {
     if (mode === "kid") {
       return validateTransferAmount(rawAmount, {
@@ -155,16 +163,8 @@ export function TransferFlow({
     return validateTransferNote(note);
   }, [note]);
 
-  // Quick increment handler
-  const addAmount = (delta: number) => {
-    sfx.tap();
-    const current = Number(rawAmount) || 0;
-    const next = (current + delta).toFixed(2);
-    setRawAmount(next);
-  };
-
   // Stepper navigation
-  const goToStep = (nextStep: 1 | 2 | 3 | 4) => {
+  const goToStep = (nextStep: 1 | 3 | 4) => {
     sfx.tap();
     setStep(nextStep);
   };
@@ -227,10 +227,15 @@ export function TransferFlow({
           },
           onError: (err) => {
             setPin("");
-        setPinError((err.message || "Incorrect PIN").replace(/\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi, ""));
+            setPinError(
+              (err.message || "Incorrect PIN").replace(
+                /\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi,
+                "",
+              ),
+            );
             pinSubmittingRef.current = false;
           },
-        }
+        },
       );
     } else {
       await run(
@@ -252,15 +257,23 @@ export function TransferFlow({
           },
           onError: (err) => {
             setPin("");
-        setPinError((err.message || "Incorrect PIN").replace(/\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi, ""));
+            setPinError(
+              (err.message || "Incorrect PIN").replace(
+                /\s*\d+ (?:tries|try|attempts?) (?:left|remaining)\.?/gi,
+                "",
+              ),
+            );
             pinSubmittingRef.current = false;
           },
-        }
+        },
       );
     }
 
     pinSubmittingRef.current = false;
   };
+
+  const typedAmount = amountValidation.amount || Number(rawAmount);
+  const amountText = formatRM(typedAmount); // privacy-ok: typing
 
   const handleFinish = () => {
     sfx.tap();
@@ -305,261 +318,132 @@ export function TransferFlow({
     );
   }
 
-  const reasons = mode === "kid" ? KID_REASONS : PARENT_REASONS;
+  const recipients =
+    mode === "kid"
+      ? [
+          ...(parentRecipient
+            ? [
+                {
+                  id: parentRecipient.id,
+                  name: parentRecipient.name || "Parent",
+                  avatar: parentRecipient.avatar,
+                  kind: "parent" as const,
+                },
+              ]
+            : []),
+          ...siblings.map((s) => ({
+            id: s.id,
+            name: s.comfort_name || s.name,
+            avatar: s.avatar,
+            kind: "kid" as const,
+          })),
+        ]
+      : parentKids.map((k) => ({
+          id: k.id,
+          name: k.comfort_name || k.name,
+          avatar: k.avatar,
+          kind: "kid" as const,
+        }));
+  const matchingRecipients = recipients.filter((r) =>
+    r.name
+      .toLocaleLowerCase()
+      .includes(recipientSearch.toLocaleLowerCase().trim()),
+  );
 
   return (
     <div className="transfer-flow max-w-lg mx-auto pb-12 space-y-5">
-      {/* Top Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm text-[var(--text-2)] m-0">
-            {mode === "kid"
-              ? "Send pocket money to your siblings or return to parents"
-              : "Direct transfer into your child's spending account"}
-          </p>
-        </div>
-        <Badge variant="brand" className="whitespace-nowrap shrink-0">
-          Step {step} of 4
-        </Badge>
-      </div>
-
-      {/* Progress Dots */}
-      <div className="flex items-center gap-1.5" aria-hidden="true">
-        {[1, 2, 3, 4].map((s) => (
-          <div
-            key={s}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
-              s <= step ? "bg-[var(--action)]" : "bg-[var(--surface-sunken)]"
-            }`}
-          />
-        ))}
-      </div>
-
+      {step === 1 && (
+        <Card className="p-4 flex items-center gap-3">
+          <span className="account-icon">
+            <AppIcon name="wallet" size={24} />
+          </span>
+          <div className="min-w-0">
+            <span className="text-sm text-[var(--text-2)]">From</span>
+            <strong className="block">{senderName}</strong>
+            <span className="text-sm">
+              {mode === "kid" ? (
+                <Money amount={currentBalance} />
+              ) : (
+                "Parent funding"
+              )}
+            </span>
+          </div>
+        </Card>
+      )}
       {/* STEP 1: Recipient Selection */}
       {step === 1 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="section-title__heading">
-              Select Recipient
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="section-title__heading shrink-0 whitespace-nowrap">
+              To
             </h2>
             {mode === "kid" && (
               <span className="text-xs text-[var(--text-secondary)]">
-                RM{dailyRemaining.toFixed(2)} daily limit remaining
+                <Money amount={dailyRemaining} /> daily limit remaining
               </span>
             )}
           </div>
 
-          {mode === "kid" ? (
-            kidRecipientsLoading ? (
-              <div className="space-y-3">
-                <Skeleton style={{ height: "4.5rem", borderRadius: "16px" }} />
-                <Skeleton style={{ height: "4.5rem", borderRadius: "16px" }} />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Parent Option */}
-                {parentRecipient && (
-                  <button
-                    type="button"
-                    aria-pressed={recipientKind === "parent" && recipientId === parentRecipient.id}
-                    onClick={() => {
-                      sfx.tap();
-                      setRecipientKind("parent");
-                      setRecipientId(parentRecipient.id);
-                      setRecipientName(parentRecipient.name || "Parent");
-                    }}
-                    className={`w-full text-left p-4 rounded-2xl cursor-pointer transition-all border ${
-                      recipientKind === "parent" && recipientId === parentRecipient.id
-                        ? "border-[var(--primary)] bg-[var(--surface-pink)]"
-                        : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <AvatarBubble
-                        emoji={parentRecipient.avatar || "family"}
-                        size={44}
-                        ring={recipientKind === "parent"}
-                        kind="parent"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-[var(--ink)] truncate m-0">
-                            {parentRecipient.name || "Parent"}
-                          </h3>
-                          <Badge variant="warning">Parent</Badge>
-                        </div>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-                          Arrives instantly
-                        </p>
-                      </div>
-                      <AppIcon
-                        name={
-                          recipientKind === "parent" && recipientId === parentRecipient.id
-                            ? "approve"
-                            : "chevron"
-                        }
-                        size={20}
-                        color={
-                          recipientKind === "parent" && recipientId === parentRecipient.id
-                            ? "var(--primary)"
-                            : "var(--text-muted)"
-                        }
-                      />
-                    </div>
-                  </button>
-                )}
-
-                {/* Sibling Options */}
-                <div className="pt-2">
-                  <span className="text-xs font-semibold text-[var(--text-muted)] block mb-2">
-                    Siblings ({siblings.length})
-                  </span>
-                  {siblings.length === 0 ? (
-                    <Card variant="soft" className="p-4 text-center text-xs text-[var(--text-secondary)]">
-                      No other children found in your family.
-                    </Card>
-                  ) : (
-                    <div className="space-y-2">
-                      {siblings.map((s) => {
-                        const isSelected =
-                          recipientKind === "kid" && recipientId === s.id;
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            aria-pressed={isSelected}
-                            onClick={() => {
-                              sfx.tap();
-                              setRecipientKind("kid");
-                              setRecipientId(s.id);
-                              setRecipientName(s.comfort_name || s.name);
-                            }}
-                            className={`w-full text-left p-4 rounded-2xl cursor-pointer transition-all border ${
-                              isSelected
-                                ? "border-[var(--primary)] bg-[var(--surface-pink)]"
-                                : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <AvatarBubble
-                                emoji={s.avatar || "smile"}
-                                size={44}
-                                ring={isSelected}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="text-sm font-bold text-[var(--ink)] truncate m-0">
-                                    {s.comfort_name || s.name}
-                                  </h3>
-                                  <Badge variant="soft">Sibling</Badge>
-                                </div>
-                                <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-                                  Arrives instantly
-                                </p>
-                              </div>
-                              <AppIcon
-                                name={isSelected ? "approve" : "chevron"}
-                                size={20}
-                                color={
-                                  isSelected
-                                    ? "var(--primary)"
-                                    : "var(--text-muted)"
-                                }
-                              />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
+          <label className="block">
+            <span className="sr-only">Search family recipients</span>
+            <input
+              type="search"
+              value={recipientSearch}
+              onChange={(e) => setRecipientSearch(e.target.value)}
+              placeholder="Search family"
+              className="w-full p-3 rounded-xl bg-[var(--surface)] border border-[var(--line)]"
+            />
+          </label>
+          {kidRecipientsLoading ? (
+            <Skeleton style={{ height: 96, borderRadius: 14 }} />
           ) : (
-            /* Parent Mode: Select child */
-            <div className="space-y-2">
-              {parentKids.map((k) => {
-                const isSelected = recipientId === k.id;
-                return (
-                  <button
-                    key={k.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => {
-                      sfx.tap();
-                      setRecipientKind("kid");
-                      setRecipientId(k.id);
-                      setRecipientName(k.comfort_name || k.name);
-                    }}
-                    className={`w-full text-left p-4 rounded-2xl cursor-pointer transition-all border ${
-                      isSelected
-                        ? "border-[var(--primary)] bg-[var(--surface-pink)]"
-                        : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <AvatarBubble
-                        emoji={k.avatar || "smile"}
-                        size={44}
-                        ring={isSelected}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-[var(--ink)] truncate m-0">
-                          {k.comfort_name || k.name}
-                        </h3>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
-                          Balance: <Money amount={Number(k.balance || 0)} />
-                        </p>
-                      </div>
-                      <AppIcon
-                        name={isSelected ? "approve" : "chevron"}
-                        size={20}
-                        color={
-                          isSelected
-                            ? "var(--primary)"
-                            : "var(--text-muted)"
-                        }
-                      />
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="recipient-list" aria-label="Family recipients">
+              {matchingRecipients.map((r) => (
+                <button
+                  key={r.kind + r.id}
+                  type="button"
+                  className="recipient-chip"
+                  aria-pressed={
+                    recipientId === r.id && recipientKind === r.kind
+                  }
+                  onClick={() => {
+                    setRecipientKind(r.kind);
+                    setRecipientId(r.id);
+                    setRecipientName(r.name);
+                    sfx.tap();
+                  }}
+                >
+                  <AvatarBubble
+                    emoji={
+                      r.avatar || (r.kind === "parent" ? "family" : "smile")
+                    }
+                    size={44}
+                    kind={r.kind}
+                  />
+                  <span>{r.name}</span>
+                </button>
+              ))}
+              {matchingRecipients.length === 0 && (
+                <p className="text-sm text-[var(--text-2)]" role="status">
+                  {recipientError
+                    ? "Could not load recipients. Reopen Transfer to retry."
+                    : recipients.length === 0
+                      ? "No permitted family recipients available."
+                      : "No matching family recipient."}
+                </p>
+              )}
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="primary"
-            className="w-full justify-center"
-            disabled={!recipientId}
-            onClick={() => goToStep(2)}
-          >
-            Continue
-          </Button>
-        </div>
-      )}
-
-      {/* STEP 2: Amount & Reason Note */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-[var(--text-muted)] font-medium">
-              Recipient: <strong className="text-[var(--ink)]">{recipientName}</strong>
-            </span>
-            {mode === "kid" && (
-              <span className="text-xs text-[var(--text-secondary)]">
-                Available: <Money amount={currentBalance} />
-              </span>
-            )}
-          </div>
-
           {/* Large Amount Input Card */}
-          <Card variant="soft" className="p-6 text-center space-y-3">
+          <Card variant="soft" className="p-4 space-y-3">
             <span className="text-xs font-bold text-[var(--text-muted)] block">
-              Enter amount
+              Amount
             </span>
             <div className="flex items-center justify-center gap-1">
-              <span className="text-2xl font-bold text-[var(--text-muted)]">RM</span>
+              <span className="shrink-0 text-2xl font-bold text-[var(--text-muted)]">
+                RM
+              </span>
               <input
                 type="number"
                 step="0.50"
@@ -568,35 +452,8 @@ export function TransferFlow({
                 onChange={(e) => setRawAmount(e.target.value)}
                 placeholder="0.00"
                 aria-label="Transfer amount in RM"
-                className="text-4xl font-extrabold text-[var(--ink)] text-center bg-transparent border-b-2 border-[var(--primary)] outline-hidden w-48 tabular-nums"
-                autoFocus
+                className="text-4xl font-extrabold text-[var(--ink)] text-center bg-transparent border-b-2 border-[var(--primary)] outline-hidden w-full min-w-0 tabular-nums"
               />
-            </div>
-
-            {/* Quick Increment Chips */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              {(mode === "kid" ? [1, 2, 5, 10] : [5, 10, 20, 50]).map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => addAmount(amt)}
-                  className="px-3 py-1 text-xs font-bold rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:border-[var(--primary)] hover:bg-[var(--surface-pink)] transition-colors"
-                >
-                  +RM{amt}
-                </button>
-              ))}
-              {rawAmount && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sfx.tap();
-                    setRawAmount("");
-                  }}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-full text-[var(--error-text)] hover:underline"
-                >
-                  Clear
-                </button>
-              )}
             </div>
 
             {!amountValidation.valid && rawAmount && (
@@ -608,28 +465,12 @@ export function TransferFlow({
 
           {/* Reason / Note Chips */}
           <div className="space-y-2">
-            <label htmlFor="transfer-note" className="text-xs font-bold text-[var(--ink)] block">
+            <label
+              htmlFor="transfer-note"
+              className="text-xs font-bold text-[var(--ink)] block"
+            >
               Reason or Note (Optional)
             </label>
-            <div className="flex flex-wrap gap-1.5">
-              {reasons.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => {
-                    sfx.tap();
-                    setNote(preset);
-                  }}
-                  className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                    note === preset
-                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
-                      : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-soft)]"
-                  }`}
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
             <input
               id="transfer-note"
               type="text"
@@ -646,32 +487,37 @@ export function TransferFlow({
             )}
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 justify-center"
-              onClick={() => goToStep(1)}
-            >
-              Back
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              className="flex-1 justify-center"
-              disabled={!amountValidation.valid || !noteValidation.valid}
-              onClick={() => goToStep(3)}
-            >
-              Review
-            </Button>
-          </div>
+          {mode === "kid" && (
+            <p className="text-sm text-[var(--text-2)]">
+              Daily limit remaining: <Money amount={dailyRemaining} />
+            </p>
+          )}
+          <Button
+            type="button"
+            variant="primary"
+            className="w-full justify-center"
+            disabled={
+              !recipientId ||
+              recipientError ||
+              kidRecipientsLoading ||
+              !amountValidation.valid ||
+              !noteValidation.valid ||
+              busy
+            }
+            onClick={() => goToStep(3)}
+          >
+            Continue
+          </Button>
         </div>
       )}
 
       {/* STEP 3: Review Transfer Details */}
       {step === 3 && (
         <div className="space-y-4">
-          <Card variant="default" className="p-5 border border-[var(--border)] space-y-4">
+          <Card
+            variant="default"
+            className="p-5 border border-[var(--border)] space-y-4"
+          >
             <h3 className="text-sm font-bold text-[var(--ink)] m-0">
               Transfer Summary
             </h3>
@@ -679,18 +525,21 @@ export function TransferFlow({
             <div className="space-y-2 text-xs divide-y divide-[var(--border)]">
               <div className="flex justify-between py-1.5">
                 <span className="text-[var(--text-secondary)]">From</span>
-                <span className="font-bold text-[var(--ink)]">{senderName}</span>
+                <span className="font-bold text-[var(--ink)]">
+                  {senderName}
+                </span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-[var(--text-secondary)]">To</span>
                 <span className="font-bold text-[var(--ink)]">
-                  {recipientName} ({recipientKind === "parent" ? "Parent" : "Child"})
+                  {recipientName} (
+                  {recipientKind === "parent" ? "Parent" : "Child"})
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
                 <span className="text-[var(--text-secondary)]">Amount</span>
                 <span className="text-base font-extrabold text-[var(--ink)] tabular-nums">
-                  {formatRM(amountValidation.amount || Number(rawAmount))} {/* privacy-ok: typing */}
+                  {amountText}
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
@@ -710,8 +559,8 @@ export function TransferFlow({
                 {mode === "kid" && recipientKind === "kid"
                   ? `Funds will be transferred directly to ${recipientName} immediately.`
                   : mode === "kid" && recipientKind === "parent"
-                  ? "Funds will be transferred directly to your parent immediately."
-                  : "Funds will be deposited into your child's spending account right away."}
+                    ? "Funds will be transferred directly to your parent immediately."
+                    : "Funds will be deposited into your child's spending account right away."}
               </p>
             </div>
           </Card>
@@ -721,9 +570,9 @@ export function TransferFlow({
               type="button"
               variant="outline"
               className="flex-1 justify-center"
-              onClick={() => goToStep(2)}
+              onClick={() => goToStep(1)}
             >
-              Edit Amount
+              Edit transfer
             </Button>
             <Button
               type="button"
@@ -749,8 +598,8 @@ export function TransferFlow({
               Enter 6-Digit PIN
             </h2>
             <p className="text-xs text-[var(--text-secondary)] m-0">
-              Confirm transfer of{" "}
-              <strong>{formatRM(amountValidation.amount || Number(rawAmount))}</strong> to{" "} {/* privacy-ok: typing */}
+              Confirm transfer of <strong>{amountText}</strong> to{" "}
+              {/* privacy-ok: typing */}
               <strong>{recipientName}</strong>
             </p>
           </div>
@@ -783,13 +632,18 @@ export function TransferFlow({
 
           {/* Inline PIN error message */}
           {pinError && (
-            <p className="text-xs text-[var(--error-text)] font-semibold mt-2 mb-0" role="alert">
+            <p
+              className="text-xs text-[var(--error-text)] font-semibold mt-2 mb-0"
+              role="alert"
+            >
               {pinError}
             </p>
           )}
 
           {/* Keypad */}
-          <p role="status" className="text-xs text-[var(--text-secondary)]">{attemptStatus.message}</p>
+          <p role="status" className="text-xs text-[var(--text-secondary)]">
+            {attemptStatus.message}
+          </p>
           <NumericKeypad
             keys={PIN_KEYPAD_KEYS}
             onKeyPress={handlePinPress}
@@ -802,6 +656,7 @@ export function TransferFlow({
             variant="ghost"
             size="sm"
             className="text-xs text-[var(--text-secondary)] mx-auto mt-2"
+            disabled={busy}
             onClick={() => goToStep(3)}
           >
             ← Cancel and go back

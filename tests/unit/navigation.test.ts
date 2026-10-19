@@ -6,7 +6,10 @@ describe("navigation map", () => {
     expect(screenKind("/kid", "kid")).toBe("home");
     expect(screenKind("/kid/", "kid")).toBe("home");
     expect(screenKind("/kid/wallet", "kid")).toBe("root");
-    expect(screenKind("/kid/goals", "kid")).toBe("root");
+    expect(screenKind("/kid/goals", "kid")).toBe("detail");
+    expect(screenKind("/kid/insights", "kid")).toBe("root");
+    expect(screenKind("/kid/more", "kid")).toBe("root");
+    expect(screenKind("/kid/transfer", "kid")).toBe("detail");
     expect(screenKind("/kid/invest", "kid")).toBe("detail");
     expect(screenKind("/kid/quest/abc", "kid")).toBe("detail");
     expect(screenKind("/parent", "parent")).toBe("home");

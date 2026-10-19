@@ -5,7 +5,7 @@ import { Money } from "@/features/privacy";
 
 export interface BalanceCardProps {
   title?: string;
-  balance: number;
+  balance: number | null;
   subtitle?: string;
   hideBalance?: boolean;
   onToggleHide?: () => void;
@@ -69,7 +69,9 @@ export function BalanceCard({
               type="button"
               onClick={onToggleHide}
               className={`-my-2.5 -mr-2.5 h-11 w-11 shrink-0 rounded-full ${
-                isDark ? "text-white hover:bg-white/15" : "text-[var(--text-2)] hover:bg-[var(--surface-sunken)]"
+                isDark
+                  ? "text-white hover:bg-white/15"
+                  : "text-[var(--text-2)] hover:bg-[var(--surface-sunken)]"
               }`}
               aria-label={hideBalance ? "Show balance" : "Hide balance"}
             >
@@ -81,7 +83,7 @@ export function BalanceCard({
         <div className="mt-1 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div
-              className={`balance-hero__amount ${strong}`}
+              className={`balance-hero__amount ${Math.abs(balance ?? 0) >= 1000000 ? "balance-hero__amount--long" : ""} ${strong}`}
               aria-label={hideBalance ? "Amount hidden" : undefined}
             >
               {hideBalance ? HIDDEN : <Money amount={balance} />}
@@ -95,20 +97,37 @@ export function BalanceCard({
                   aria-controls={breakdownId}
                   onClick={handleToggleExpanded}
                   className={`mt-1 -ml-1 min-h-[36px] px-1 justify-start gap-1.5 rounded-lg text-sm font-medium ${soft} ${
-                    isDark ? "hover:bg-white/10" : "hover:bg-[var(--surface-sunken)]"
+                    isDark
+                      ? "hover:bg-white/10"
+                      : "hover:bg-[var(--surface-sunken)]"
                   }`}
                 >
                   <span>{secondaryBalance.label}</span>
-                  <strong className={`tabular-nums ${strong}`}>
-                    {hideBalance ? HIDDEN : <Money amount={secondaryBalance.amount} />}
+                  <strong
+                    className={`whitespace-nowrap tabular-nums ${strong}`}
+                  >
+                    {hideBalance ? (
+                      HIDDEN
+                    ) : (
+                      <Money amount={secondaryBalance.amount} />
+                    )}
                   </strong>
-                  <AppIcon name={expanded ? "chevron-up" : "chevron-down"} size={16} />
+                  <AppIcon
+                    name={expanded ? "chevron-up" : "chevron-down"}
+                    size={16}
+                  />
                 </button>
               ) : (
-                <div className={`mt-1 flex items-center gap-1.5 text-sm font-medium ${soft}`}>
+                <div
+                  className={`mt-1 flex flex-wrap items-center gap-1.5 text-sm font-medium ${soft}`}
+                >
                   <span>{secondaryBalance.label}</span>
                   <strong className={`tabular-nums ${strong}`}>
-                    {hideBalance ? HIDDEN : <Money amount={secondaryBalance.amount} />}
+                    {hideBalance ? (
+                      HIDDEN
+                    ) : (
+                      <Money amount={secondaryBalance.amount} />
+                    )}
                   </strong>
                 </div>
               )
@@ -122,7 +141,9 @@ export function BalanceCard({
               type="button"
               onClick={onArrowClick}
               className={`h-11 w-11 shrink-0 rounded-full ${
-                isDark ? "bg-[var(--surface)] text-[var(--action)] hover:bg-[var(--blue-50)]" : "bg-[var(--action)] text-white"
+                isDark
+                  ? "bg-[var(--surface)] text-[var(--action-text)] hover:bg-[var(--blue-50)]"
+                  : "bg-[var(--action)] text-white"
               }`}
               aria-label="Open wallet"
             >
@@ -132,9 +153,15 @@ export function BalanceCard({
         </div>
 
         {expanded && breakdown && breakdown.length > 0 && (
-          <div id={breakdownId} className={`mt-3 pt-3 border-t ${divider} space-y-1.5 text-sm`}>
+          <div
+            id={breakdownId}
+            className={`mt-3 pt-3 border-t ${divider} space-y-1.5 text-sm`}
+          >
             {breakdown.map((row) => (
-              <div key={row.label} className="flex items-center justify-between">
+              <div
+                key={row.label}
+                className="flex items-center justify-between"
+              >
                 <span className={soft}>{row.label}</span>
                 <strong
                   className={`tabular-nums font-semibold ${strong}`}
@@ -144,7 +171,9 @@ export function BalanceCard({
                 </strong>
               </div>
             ))}
-            {footnote && <p className={`m-0 pt-1.5 text-xs ${soft}`}>{footnote}</p>}
+            {footnote && (
+              <p className={`m-0 pt-1.5 text-xs ${soft}`}>{footnote}</p>
+            )}
           </div>
         )}
 
@@ -162,14 +191,18 @@ export function BalanceCard({
                     }
                   >
                     {item.label}
-                    {item.value ? <strong className="ml-1">{item.value}</strong> : null}
+                    {item.value ? (
+                      <strong className="ml-1">{item.value}</strong>
+                    ) : null}
                   </span>
                 ))}
               </div>
             ) : (
               <span />
             )}
-            {actions && <div className="flex items-center gap-2">{actions}</div>}
+            {actions && (
+              <div className="flex items-center gap-2">{actions}</div>
+            )}
           </div>
         )}
       </Card>

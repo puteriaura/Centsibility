@@ -9,49 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ParentRouteImport } from './routes/parent'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as KidLoginRouteImport } from './routes/kid-login'
-import { Route as KidRouteImport } from './routes/kid'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ParentIndexRouteImport } from './routes/parent.index'
+import { Route as KidRouteImport } from './routes/kid'
+import { Route as KidLoginRouteImport } from './routes/kid-login'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ParentRouteImport } from './routes/parent'
 import { Route as KidIndexRouteImport } from './routes/kid.index'
-import { Route as ParentTransferRouteImport } from './routes/parent.transfer'
-import { Route as ParentSettingsRouteImport } from './routes/parent.settings'
-import { Route as ParentReportsRouteImport } from './routes/parent.reports'
-import { Route as ParentPennyRouteImport } from './routes/parent.penny'
-import { Route as ParentInsightsRouteImport } from './routes/parent.insights'
-import { Route as ParentApprovalsRouteImport } from './routes/parent.approvals'
-import { Route as KidZakatRouteImport } from './routes/kid.zakat'
-import { Route as KidWalletRouteImport } from './routes/kid.wallet'
-import { Route as KidTransferRouteImport } from './routes/kid.transfer'
-import { Route as KidSadaqahRouteImport } from './routes/kid.sadaqah'
-import { Route as KidRewardsRouteImport } from './routes/kid.rewards'
-import { Route as KidQuizRouteImport } from './routes/kid.quiz'
-import { Route as KidNotificationsRouteImport } from './routes/kid.notifications'
-import { Route as KidMissionsRouteImport } from './routes/kid.missions'
-import { Route as KidLoansRouteImport } from './routes/kid.loans'
-import { Route as KidInvestRouteImport } from './routes/kid.invest'
-import { Route as KidInsightsRouteImport } from './routes/kid.insights'
-import { Route as KidHistoryRouteImport } from './routes/kid.history'
-import { Route as KidGoalsRouteImport } from './routes/kid.goals'
-import { Route as KidChatRouteImport } from './routes/kid.chat'
 import { Route as KidCardRouteImport } from './routes/kid.card'
+import { Route as KidChatRouteImport } from './routes/kid.chat'
+import { Route as KidGoalsRouteImport } from './routes/kid.goals'
+import { Route as KidHistoryRouteImport } from './routes/kid.history'
+import { Route as KidInsightsRouteImport } from './routes/kid.insights'
+import { Route as KidInvestRouteImport } from './routes/kid.invest'
+import { Route as KidLoansRouteImport } from './routes/kid.loans'
+import { Route as KidMissionsRouteImport } from './routes/kid.missions'
+import { Route as KidMoreRouteImport } from './routes/kid.more'
+import { Route as KidNotificationsRouteImport } from './routes/kid.notifications'
+import { Route as KidQuizRouteImport } from './routes/kid.quiz'
+import { Route as KidRewardsRouteImport } from './routes/kid.rewards'
+import { Route as KidSadaqahRouteImport } from './routes/kid.sadaqah'
+import { Route as KidTransferRouteImport } from './routes/kid.transfer'
+import { Route as KidWalletRouteImport } from './routes/kid.wallet'
+import { Route as KidZakatRouteImport } from './routes/kid.zakat'
+import { Route as ParentIndexRouteImport } from './routes/parent.index'
+import { Route as ParentApprovalsRouteImport } from './routes/parent.approvals'
+import { Route as ParentInsightsRouteImport } from './routes/parent.insights'
+import { Route as ParentPennyRouteImport } from './routes/parent.penny'
+import { Route as ParentReportsRouteImport } from './routes/parent.reports'
+import { Route as ParentSettingsRouteImport } from './routes/parent.settings'
+import { Route as ParentTransferRouteImport } from './routes/parent.transfer'
 import { Route as KidQuestQuestIdRouteImport } from './routes/kid.quest.$questId'
 
-const ParentRoute = ParentRouteImport.update({
-  id: '/parent',
-  path: '/parent',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KidLoginRoute = KidLoginRouteImport.update({
-  id: '/kid-login',
-  path: '/kid-login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KidRoute = KidRouteImport.update({
@@ -59,114 +50,29 @@ const KidRoute = KidRouteImport.update({
   path: '/kid',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const KidLoginRoute = KidLoginRouteImport.update({
+  id: '/kid-login',
+  path: '/kid-login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ParentIndexRoute = ParentIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ParentRoute,
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentRoute = ParentRouteImport.update({
+  id: '/parent',
+  path: '/parent',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const KidIndexRoute = KidIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => KidRoute,
 } as any)
-const ParentTransferRoute = ParentTransferRouteImport.update({
-  id: '/transfer',
-  path: '/transfer',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentSettingsRoute = ParentSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentReportsRoute = ParentReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentPennyRoute = ParentPennyRouteImport.update({
-  id: '/penny',
-  path: '/penny',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentInsightsRoute = ParentInsightsRouteImport.update({
-  id: '/insights',
-  path: '/insights',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentApprovalsRoute = ParentApprovalsRouteImport.update({
-  id: '/approvals',
-  path: '/approvals',
-  getParentRoute: () => ParentRoute,
-} as any)
-const KidZakatRoute = KidZakatRouteImport.update({
-  id: '/zakat',
-  path: '/zakat',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidWalletRoute = KidWalletRouteImport.update({
-  id: '/wallet',
-  path: '/wallet',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidTransferRoute = KidTransferRouteImport.update({
-  id: '/transfer',
-  path: '/transfer',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidSadaqahRoute = KidSadaqahRouteImport.update({
-  id: '/sadaqah',
-  path: '/sadaqah',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidRewardsRoute = KidRewardsRouteImport.update({
-  id: '/rewards',
-  path: '/rewards',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidQuizRoute = KidQuizRouteImport.update({
-  id: '/quiz',
-  path: '/quiz',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidNotificationsRoute = KidNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidMissionsRoute = KidMissionsRouteImport.update({
-  id: '/missions',
-  path: '/missions',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidLoansRoute = KidLoansRouteImport.update({
-  id: '/loans',
-  path: '/loans',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidInvestRoute = KidInvestRouteImport.update({
-  id: '/invest',
-  path: '/invest',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidInsightsRoute = KidInsightsRouteImport.update({
-  id: '/insights',
-  path: '/insights',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidHistoryRoute = KidHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => KidRoute,
-} as any)
-const KidGoalsRoute = KidGoalsRouteImport.update({
-  id: '/goals',
-  path: '/goals',
+const KidCardRoute = KidCardRouteImport.update({
+  id: '/card',
+  path: '/card',
   getParentRoute: () => KidRoute,
 } as any)
 const KidChatRoute = KidChatRouteImport.update({
@@ -174,10 +80,110 @@ const KidChatRoute = KidChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => KidRoute,
 } as any)
-const KidCardRoute = KidCardRouteImport.update({
-  id: '/card',
-  path: '/card',
+const KidGoalsRoute = KidGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
   getParentRoute: () => KidRoute,
+} as any)
+const KidHistoryRoute = KidHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidInsightsRoute = KidInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidInvestRoute = KidInvestRouteImport.update({
+  id: '/invest',
+  path: '/invest',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidLoansRoute = KidLoansRouteImport.update({
+  id: '/loans',
+  path: '/loans',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidMissionsRoute = KidMissionsRouteImport.update({
+  id: '/missions',
+  path: '/missions',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidMoreRoute = KidMoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidNotificationsRoute = KidNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidQuizRoute = KidQuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidRewardsRoute = KidRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidSadaqahRoute = KidSadaqahRouteImport.update({
+  id: '/sadaqah',
+  path: '/sadaqah',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidTransferRoute = KidTransferRouteImport.update({
+  id: '/transfer',
+  path: '/transfer',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidWalletRoute = KidWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => KidRoute,
+} as any)
+const KidZakatRoute = KidZakatRouteImport.update({
+  id: '/zakat',
+  path: '/zakat',
+  getParentRoute: () => KidRoute,
+} as any)
+const ParentIndexRoute = ParentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentApprovalsRoute = ParentApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentInsightsRoute = ParentInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentPennyRoute = ParentPennyRouteImport.update({
+  id: '/penny',
+  path: '/penny',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentReportsRoute = ParentReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentSettingsRoute = ParentSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentTransferRoute = ParentTransferRouteImport.update({
+  id: '/transfer',
+  path: '/transfer',
+  getParentRoute: () => ParentRoute,
 } as any)
 const KidQuestQuestIdRoute = KidQuestQuestIdRouteImport.update({
   id: '/quest/$questId',
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/kid/invest': typeof KidInvestRoute
   '/kid/loans': typeof KidLoansRoute
   '/kid/missions': typeof KidMissionsRoute
+  '/kid/more': typeof KidMoreRoute
   '/kid/notifications': typeof KidNotificationsRoute
   '/kid/quiz': typeof KidQuizRoute
   '/kid/rewards': typeof KidRewardsRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/kid/invest': typeof KidInvestRoute
   '/kid/loans': typeof KidLoansRoute
   '/kid/missions': typeof KidMissionsRoute
+  '/kid/more': typeof KidMoreRoute
   '/kid/notifications': typeof KidNotificationsRoute
   '/kid/quiz': typeof KidQuizRoute
   '/kid/rewards': typeof KidRewardsRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/kid/invest': typeof KidInvestRoute
   '/kid/loans': typeof KidLoansRoute
   '/kid/missions': typeof KidMissionsRoute
+  '/kid/more': typeof KidMoreRoute
   '/kid/notifications': typeof KidNotificationsRoute
   '/kid/quiz': typeof KidQuizRoute
   '/kid/rewards': typeof KidRewardsRoute
@@ -293,6 +302,7 @@ export interface FileRouteTypes {
     | '/kid/invest'
     | '/kid/loans'
     | '/kid/missions'
+    | '/kid/more'
     | '/kid/notifications'
     | '/kid/quiz'
     | '/kid/rewards'
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/kid/invest'
     | '/kid/loans'
     | '/kid/missions'
+    | '/kid/more'
     | '/kid/notifications'
     | '/kid/quiz'
     | '/kid/rewards'
@@ -353,6 +364,7 @@ export interface FileRouteTypes {
     | '/kid/invest'
     | '/kid/loans'
     | '/kid/missions'
+    | '/kid/more'
     | '/kid/notifications'
     | '/kid/quiz'
     | '/kid/rewards'
@@ -381,25 +393,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/parent': {
-      id: '/parent'
-      path: '/parent'
-      fullPath: '/parent'
-      preLoaderRoute: typeof ParentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kid-login': {
-      id: '/kid-login'
-      path: '/kid-login'
-      fullPath: '/kid-login'
-      preLoaderRoute: typeof KidLoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kid': {
@@ -409,19 +407,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KidRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/kid-login': {
+      id: '/kid-login'
+      path: '/kid-login'
+      fullPath: '/kid-login'
+      preLoaderRoute: typeof KidLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/parent/': {
-      id: '/parent/'
-      path: '/'
-      fullPath: '/parent/'
-      preLoaderRoute: typeof ParentIndexRouteImport
-      parentRoute: typeof ParentRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent': {
+      id: '/parent'
+      path: '/parent'
+      fullPath: '/parent'
+      preLoaderRoute: typeof ParentRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/kid/': {
       id: '/kid/'
@@ -430,137 +435,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KidIndexRouteImport
       parentRoute: typeof KidRoute
     }
-    '/parent/transfer': {
-      id: '/parent/transfer'
-      path: '/transfer'
-      fullPath: '/parent/transfer'
-      preLoaderRoute: typeof ParentTransferRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/parent/settings': {
-      id: '/parent/settings'
-      path: '/settings'
-      fullPath: '/parent/settings'
-      preLoaderRoute: typeof ParentSettingsRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/parent/reports': {
-      id: '/parent/reports'
-      path: '/reports'
-      fullPath: '/parent/reports'
-      preLoaderRoute: typeof ParentReportsRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/parent/penny': {
-      id: '/parent/penny'
-      path: '/penny'
-      fullPath: '/parent/penny'
-      preLoaderRoute: typeof ParentPennyRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/parent/insights': {
-      id: '/parent/insights'
-      path: '/insights'
-      fullPath: '/parent/insights'
-      preLoaderRoute: typeof ParentInsightsRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/parent/approvals': {
-      id: '/parent/approvals'
-      path: '/approvals'
-      fullPath: '/parent/approvals'
-      preLoaderRoute: typeof ParentApprovalsRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/kid/zakat': {
-      id: '/kid/zakat'
-      path: '/zakat'
-      fullPath: '/kid/zakat'
-      preLoaderRoute: typeof KidZakatRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/wallet': {
-      id: '/kid/wallet'
-      path: '/wallet'
-      fullPath: '/kid/wallet'
-      preLoaderRoute: typeof KidWalletRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/transfer': {
-      id: '/kid/transfer'
-      path: '/transfer'
-      fullPath: '/kid/transfer'
-      preLoaderRoute: typeof KidTransferRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/sadaqah': {
-      id: '/kid/sadaqah'
-      path: '/sadaqah'
-      fullPath: '/kid/sadaqah'
-      preLoaderRoute: typeof KidSadaqahRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/rewards': {
-      id: '/kid/rewards'
-      path: '/rewards'
-      fullPath: '/kid/rewards'
-      preLoaderRoute: typeof KidRewardsRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/quiz': {
-      id: '/kid/quiz'
-      path: '/quiz'
-      fullPath: '/kid/quiz'
-      preLoaderRoute: typeof KidQuizRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/notifications': {
-      id: '/kid/notifications'
-      path: '/notifications'
-      fullPath: '/kid/notifications'
-      preLoaderRoute: typeof KidNotificationsRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/missions': {
-      id: '/kid/missions'
-      path: '/missions'
-      fullPath: '/kid/missions'
-      preLoaderRoute: typeof KidMissionsRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/loans': {
-      id: '/kid/loans'
-      path: '/loans'
-      fullPath: '/kid/loans'
-      preLoaderRoute: typeof KidLoansRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/invest': {
-      id: '/kid/invest'
-      path: '/invest'
-      fullPath: '/kid/invest'
-      preLoaderRoute: typeof KidInvestRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/insights': {
-      id: '/kid/insights'
-      path: '/insights'
-      fullPath: '/kid/insights'
-      preLoaderRoute: typeof KidInsightsRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/history': {
-      id: '/kid/history'
-      path: '/history'
-      fullPath: '/kid/history'
-      preLoaderRoute: typeof KidHistoryRouteImport
-      parentRoute: typeof KidRoute
-    }
-    '/kid/goals': {
-      id: '/kid/goals'
-      path: '/goals'
-      fullPath: '/kid/goals'
-      preLoaderRoute: typeof KidGoalsRouteImport
+    '/kid/card': {
+      id: '/kid/card'
+      path: '/card'
+      fullPath: '/kid/card'
+      preLoaderRoute: typeof KidCardRouteImport
       parentRoute: typeof KidRoute
     }
     '/kid/chat': {
@@ -570,12 +449,152 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KidChatRouteImport
       parentRoute: typeof KidRoute
     }
-    '/kid/card': {
-      id: '/kid/card'
-      path: '/card'
-      fullPath: '/kid/card'
-      preLoaderRoute: typeof KidCardRouteImport
+    '/kid/goals': {
+      id: '/kid/goals'
+      path: '/goals'
+      fullPath: '/kid/goals'
+      preLoaderRoute: typeof KidGoalsRouteImport
       parentRoute: typeof KidRoute
+    }
+    '/kid/history': {
+      id: '/kid/history'
+      path: '/history'
+      fullPath: '/kid/history'
+      preLoaderRoute: typeof KidHistoryRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/insights': {
+      id: '/kid/insights'
+      path: '/insights'
+      fullPath: '/kid/insights'
+      preLoaderRoute: typeof KidInsightsRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/invest': {
+      id: '/kid/invest'
+      path: '/invest'
+      fullPath: '/kid/invest'
+      preLoaderRoute: typeof KidInvestRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/loans': {
+      id: '/kid/loans'
+      path: '/loans'
+      fullPath: '/kid/loans'
+      preLoaderRoute: typeof KidLoansRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/missions': {
+      id: '/kid/missions'
+      path: '/missions'
+      fullPath: '/kid/missions'
+      preLoaderRoute: typeof KidMissionsRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/more': {
+      id: '/kid/more'
+      path: '/more'
+      fullPath: '/kid/more'
+      preLoaderRoute: typeof KidMoreRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/notifications': {
+      id: '/kid/notifications'
+      path: '/notifications'
+      fullPath: '/kid/notifications'
+      preLoaderRoute: typeof KidNotificationsRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/quiz': {
+      id: '/kid/quiz'
+      path: '/quiz'
+      fullPath: '/kid/quiz'
+      preLoaderRoute: typeof KidQuizRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/rewards': {
+      id: '/kid/rewards'
+      path: '/rewards'
+      fullPath: '/kid/rewards'
+      preLoaderRoute: typeof KidRewardsRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/sadaqah': {
+      id: '/kid/sadaqah'
+      path: '/sadaqah'
+      fullPath: '/kid/sadaqah'
+      preLoaderRoute: typeof KidSadaqahRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/transfer': {
+      id: '/kid/transfer'
+      path: '/transfer'
+      fullPath: '/kid/transfer'
+      preLoaderRoute: typeof KidTransferRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/wallet': {
+      id: '/kid/wallet'
+      path: '/wallet'
+      fullPath: '/kid/wallet'
+      preLoaderRoute: typeof KidWalletRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/kid/zakat': {
+      id: '/kid/zakat'
+      path: '/zakat'
+      fullPath: '/kid/zakat'
+      preLoaderRoute: typeof KidZakatRouteImport
+      parentRoute: typeof KidRoute
+    }
+    '/parent/': {
+      id: '/parent/'
+      path: '/'
+      fullPath: '/parent/'
+      preLoaderRoute: typeof ParentIndexRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/parent/approvals': {
+      id: '/parent/approvals'
+      path: '/approvals'
+      fullPath: '/parent/approvals'
+      preLoaderRoute: typeof ParentApprovalsRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/parent/insights': {
+      id: '/parent/insights'
+      path: '/insights'
+      fullPath: '/parent/insights'
+      preLoaderRoute: typeof ParentInsightsRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/parent/penny': {
+      id: '/parent/penny'
+      path: '/penny'
+      fullPath: '/parent/penny'
+      preLoaderRoute: typeof ParentPennyRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/parent/reports': {
+      id: '/parent/reports'
+      path: '/reports'
+      fullPath: '/parent/reports'
+      preLoaderRoute: typeof ParentReportsRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/parent/settings': {
+      id: '/parent/settings'
+      path: '/settings'
+      fullPath: '/parent/settings'
+      preLoaderRoute: typeof ParentSettingsRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/parent/transfer': {
+      id: '/parent/transfer'
+      path: '/transfer'
+      fullPath: '/parent/transfer'
+      preLoaderRoute: typeof ParentTransferRouteImport
+      parentRoute: typeof ParentRoute
     }
     '/kid/quest/$questId': {
       id: '/kid/quest/$questId'
@@ -596,6 +615,7 @@ interface KidRouteChildren {
   KidInvestRoute: typeof KidInvestRoute
   KidLoansRoute: typeof KidLoansRoute
   KidMissionsRoute: typeof KidMissionsRoute
+  KidMoreRoute: typeof KidMoreRoute
   KidNotificationsRoute: typeof KidNotificationsRoute
   KidQuizRoute: typeof KidQuizRoute
   KidRewardsRoute: typeof KidRewardsRoute
@@ -616,6 +636,7 @@ const KidRouteChildren: KidRouteChildren = {
   KidInvestRoute: KidInvestRoute,
   KidLoansRoute: KidLoansRoute,
   KidMissionsRoute: KidMissionsRoute,
+  KidMoreRoute: KidMoreRoute,
   KidNotificationsRoute: KidNotificationsRoute,
   KidQuizRoute: KidQuizRoute,
   KidRewardsRoute: KidRewardsRoute,

@@ -1,3 +1,4 @@
+import { insightMonth, insightPeriod } from "@/lib/insight-period";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useKidData } from "@/hooks/use-kid-data";
@@ -9,17 +10,13 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sfx } from "@/lib/sounds";
 import { formatRM } from "@/lib/format";
-import {
-  isDebitTransaction,
-  isWalletTransaction,
-  transactionAmount,
-} from "@/lib/finance";
+import { transactionAmount } from "@/lib/finance";
 import {
   transactionTitle,
   transactionTypeLabel,
   humanizeCode,
 } from "@/lib/labels";
-import { usePrivacy, Money, LogInToView, maskAmounts } from "@/features/privacy";
+import { useMoney, Money, LogInToView, maskAmounts } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { useTheme } from "@/lib/theme";
 import { recapBackgrounds, isStoryTap } from "@/lib/recap-backgrounds";
@@ -48,12 +45,10 @@ function formatDateHeader(dateStr: string) {
 
 function KidInsights() {
   const { data, loading, error, refresh } = useKidData();
-  const { locked, openUnlockSheet } = usePrivacy();
+  const { isMasked: locked, openUnlockSheet } = useMoney();
   const { openPenny } = usePenny();
 
-  // Pull-down hero touch state
-  const touchStartY = useRef<number | null>(null);
-  const [pullOffset, setPullOffset] = useState(0);
+  const [metric, setMetric] = useState<"spending" | "income">("spending");
 
   // Story modal state
   const [storyOpen, setStoryOpen] = useState(false);
@@ -67,7 +62,7 @@ function KidInsights() {
   // Dynamically compute active months (from user's earliest transaction to current month)
   const activeMonths = useMemo(() => {
     const now = new Date();
-    const currentMonthStr = now.toLocaleString("en-US", { month: "short" });
+    const currentMonthStr = insightMonth(now);
 
     if (!data?.txs || data.txs.length === 0) {
       return [currentMonthStr];
@@ -79,12 +74,14 @@ function KidInsights() {
 
     const earliest = txDates.length > 0 ? new Date(Math.min(...txDates)) : now;
     const months: string[] = [];
-    const cur = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth(), 1);
+    const cur = new Date(`${insightMonth(earliest)}-01T00:00:00Z`);
+    const end = new Date(`${currentMonthStr}-01T00:00:00Z`);
 
     while (cur <= end) {
-      months.push(cur.toLocaleString("en-US", { month: "short" }));
-      cur.setMonth(cur.getMonth() + 1);
+      months.push(
+        `${cur.getUTCFullYear()}-${String(cur.getUTCMonth() + 1).padStart(2, "0")}`,
+      );
+      cur.setUTCMonth(cur.getUTCMonth() + 1);
     }
 
     return months.length > 0 ? months : [currentMonthStr];
@@ -92,7 +89,8 @@ function KidInsights() {
 
   // Selected month defaults to current/latest active month
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    return new Date().toLocaleString("en-US", { month: "short" });
+    const now = new Date();
+    return insightMonth(now);
   });
 
   // Keep selectedMonth valid within activeMonths
@@ -116,56 +114,20 @@ function KidInsights() {
     () => buildStorySlides(summary, Number(data?.kid?.coins ?? 0)),
     [summary, data?.kid?.coins],
   );
-  const backgrounds = useMemo(() => recapBackgrounds(data?.kid?.id || "guest", summary.rangeLabel), [data?.kid?.id, summary.rangeLabel]);
+  const backgrounds = useMemo(
+    () => recapBackgrounds(data?.kid?.id || "guest", summary.rangeLabel),
+    [data?.kid?.id, summary.rangeLabel],
+  );
 
-  // Month-filtered spending data for Monthly Expenses section (fixes May RM1.00 bug)
-  const monthData = useMemo(() => {
-    const txsInMonth = (data?.txs ?? []).filter((t) => {
-      const d = new Date(t.created_at);
-      return d.toLocaleString("en-US", { month: "short" }) === selectedMonth;
-    });
-
-    const outflowTxs = txsInMonth.filter(
-      (t) =>
-        isWalletTransaction(t.type) &&
-        isDebitTransaction(
-          t.type,
-          (t as { label?: string }).label || t.description,
-        ),
-    );
-
-    const totalOut = outflowTxs.reduce(
-      (sum, t) => sum + Math.abs(Number(t.amount) || 0),
-      0,
-    );
-
-    const catMap: Record<
-      string,
-      { label: string; count: number; amount: number }
-    > = {};
-    for (const t of outflowTxs) {
-      const cat =
-        t.category ||
-        (t.type === "FEE"
-          ? "Fees"
-          : t.type === "SADAQAH"
-            ? "Sadaqah"
-            : "General");
-      if (!catMap[cat]) catMap[cat] = { label: cat, count: 0, amount: 0 };
-      catMap[cat].count += 1;
-      catMap[cat].amount += Math.abs(Number(t.amount) || 0);
-    }
-
-    const topCategories = Object.values(catMap)
-      .map((c) => ({
-        ...c,
-        key: c.label.toLowerCase(),
-        pct: totalOut > 0 ? (c.amount / totalOut) * 100 : 0,
-      }))
-      .sort((a, b) => b.amount - a.amount);
-
-    return { totalOut, topCategories, txsInMonth };
-  }, [data?.txs, selectedMonth]);
+  const monthData = useMemo(
+    () => insightPeriod(data?.txs ?? [], selectedMonth, metric),
+    [data?.txs, selectedMonth, metric],
+  );
+  const previousDate = new Date(selectedMonth + "-01T12:00:00");
+  previousDate.setMonth(previousDate.getMonth() - 1);
+  const previousMonth = insightMonth(previousDate);
+  const previousData = insightPeriod(data?.txs ?? [], previousMonth, metric);
+  const monthIndex = activeMonths.indexOf(selectedMonth);
 
   // Group transactions for the receipt sheet
   const groupedPeriodTxs = useMemo(() => {
@@ -191,7 +153,14 @@ function KidInsights() {
     }, interval);
 
     return () => window.clearInterval(timer);
-  }, [storyOpen, isPaused, receiptSheetOpen, storyIdx, slides.length, reducedMotion]);
+  }, [
+    storyOpen,
+    isPaused,
+    receiptSheetOpen,
+    storyIdx,
+    slides.length,
+    reducedMotion,
+  ]);
 
   useEffect(() => {
     if (!storyOpen || slideProgress < 100) return;
@@ -215,9 +184,6 @@ function KidInsights() {
       </div>
     );
   }
-
-  const k = data?.kid ?? { name: "Young Saver", coins: 0 };
-  const goals = data?.goals ?? [];
 
   const openStory = () => {
     sfx.pop();
@@ -248,244 +214,87 @@ function KidInsights() {
     sfx.tap();
   };
 
-  // Pull down touch handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY <= 10) {
-      touchStartY.current = e.touches[0].clientY;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    if (dy > 0 && window.scrollY <= 5) {
-      setPullOffset(Math.min(dy * 0.5, 75));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (pullOffset > 40) {
-      sfx.pop();
-      openPenny({ context: { page: "Insights" } });
-    }
-    touchStartY.current = null;
-    setPullOffset(0);
-  };
-
   return (
     <div className="insights-page pb-12">
-      {/* Assistant hero with interactive pull-down to chat */}
-      <section
-        className="insights-ask-hero"
-        aria-label="Ask Penny"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          transform: `translateY(${pullOffset}px)`,
-          transition:
-            pullOffset === 0
-              ? "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)"
-              : "none",
-        }}
-      >
-        <h2 className="insights-ask-hero__title">Hi {k.name}! Ask me about:</h2>
-        <div className="insights-ask-actions">
-          <button
-            type="button"
-            className="insights-ask-chip"
-            onClick={() => {
-              sfx.tap();
-              openPenny({
-                prompt: "I would like to know more about spending.",
-                context: {
-                  page: "Insights",
-                  detail:
-                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
-                      0,
-                      600,
-                    ),
-                },
-              });
-            }}
-          >
-            <AppIcon name="trend" size={16} /> Spending
-          </button>
-          <button
-            type="button"
-            className="insights-ask-chip"
-            onClick={() => {
-              sfx.tap();
-              openPenny({
-                prompt: "How can I save better?",
-                context: {
-                  page: "Insights",
-                  detail:
-                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
-                      0,
-                      600,
-                    ),
-                },
-              });
-            }}
-          >
-            <AppIcon name="wallet" size={16} /> Savings
-          </button>
-          <button
-            type="button"
-            className="insights-ask-chip insights-ask-chip--wide"
-            onClick={() => {
-              sfx.tap();
-              openPenny({
-                prompt: "Surprise me with a tip.",
-                context: {
-                  page: "Insights",
-                  detail:
-                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
-                      0,
-                      600,
-                    ),
-                },
-              });
-            }}
-          >
-            <AppIcon name="sparkles" size={16} /> Surprise me
-          </button>
-        </div>
-        <button
-          type="button"
-          className="insights-ask-hint"
-          onClick={() => {
-            sfx.tap();
-            openPenny({ context: { page: "Insights" } });
-          }}
+      <div className="space-y-5">
+        <div
+          className="insights-segment"
+          role="group"
+          aria-label="Transaction view"
         >
-          {pullOffset > 30 ? "Release to open chat" : "Pull down to chat"}
-        </button>
-      </section>
-
-      <div className="insights-sheet">
-        <div className="insights-sheet__handle" aria-hidden="true" />
-
-        <div className="section-tag">
-          <span>MONTHLY CASHFLOW</span>
-        </div>
-        <div className="insights-cashflow">
-          <Card
-            variant="default"
-            className="insights-cashflow__card p-4 m-0"
-            onClick={locked ? openUnlockSheet : undefined}
-            style={locked ? { cursor: "pointer" } : undefined}
-          >
-            <span className="text-xs text-[var(--text-muted)]">Money in</span>
-            {locked ? (
-              <LogInToView className="mt-1" />
-            ) : (
-              <strong className="insights-cashflow__in tabular-nums">
-                <Money amount={summary.moneyIn} />
-              </strong>
-            )}
-          </Card>
-          <Card
-            variant="default"
-            className="insights-cashflow__card p-4 m-0"
-            onClick={locked ? openUnlockSheet : undefined}
-            style={locked ? { cursor: "pointer" } : undefined}
-          >
-            <span className="text-xs text-[var(--text-muted)]">Money out</span>
-            {locked ? (
-              <LogInToView className="mt-1" />
-            ) : (
-              <strong className="insights-cashflow__out tabular-nums">
-                <Money amount={summary.moneyOut} />
-              </strong>
-            )}
-          </Card>
-        </div>
-
-        <div className="section-tag">
-          <span>SPENDING RECAP</span>
-        </div>
-        <button type="button" className="insights-recap" onClick={openStory}>
-          <span className="insights-recap__avatar" aria-hidden="true">
-            <AppIcon name="penny" size={22} color="#fff" />
-          </span>
-          <span className="insights-recap__text">{maskAmounts(summary.highlight, locked)}</span>
-        </button>
-
-        <div className="section-tag">
-          <span>SPENDING TRACKER</span>
-        </div>
-        <Card variant="default" className="p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <span
-              className="insights-recap__avatar shrink-0"
-              aria-hidden="true"
-            >
-              <AppIcon name="penny" size={18} color="#fff" />
-            </span>
-            <p className="text-sm text-[var(--ink)] m-0 leading-relaxed">
-              {goals.length === 0
-                ? "You haven't created a Tabung yet. Let's create one together!"
-                : `You have ${goals.length} Tabung tracking progress. Keep allocating!`}
-            </p>
-          </div>
-          {goals.length === 0 ? (
-            <Link
-              to="/kid/goals"
-              onClick={() => sfx.tap()}
-              className="block w-full min-h-[44px]"
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-center font-bold"
-              >
-                Create Tabung
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full justify-center font-bold min-h-[44px]"
-              onClick={() => {
-                sfx.tap();
-                openPenny({
-                  context: {
-                    page: "Insights",
-                    detail: `Tabung; ${goals.length} goal${goals.length === 1 ? "" : "s"} active`,
-                  },
-                });
-              }}
-            >
-              Ask Penny
-            </Button>
-          )}
-        </Card>
-
-        <div className="section-tag">
-          <span>MONTHLY EXPENSES</span>
-        </div>
-        <div className="insights-months" role="tablist" aria-label="Month">
-          {activeMonths.map((m) => (
+          {(["spending", "income"] as const).map((value) => (
             <button
-              key={m}
+              key={value}
               type="button"
-              role="tab"
-              aria-selected={selectedMonth === m}
-              className={`insights-month ${selectedMonth === m ? "is-active" : ""}`}
-              onClick={() => {
-                sfx.tap();
-                setSelectedMonth(m);
-              }}
+              aria-pressed={metric === value}
+              onClick={() => setMetric(value)}
             >
-              {m}
+              {value === "spending" ? "Spending" : "Income"}
             </button>
           ))}
         </div>
-
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="shell-icon-btn"
+            aria-label="Previous month"
+            disabled={monthIndex <= 0}
+            onClick={() => setSelectedMonth(activeMonths[monthIndex - 1])}
+          >
+            <AppIcon name="back" size={20} />
+          </button>
+          <label>
+            <span className="sr-only">Month</span>
+            <select
+              className="bg-transparent text-center font-bold max-w-full"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              {activeMonths.map((m) => (
+                <option key={m} value={m}>
+                  {new Date(m + "-01T12:00:00").toLocaleDateString("en-MY", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="shell-icon-btn"
+            aria-label="Next month"
+            disabled={monthIndex >= activeMonths.length - 1}
+            onClick={() => setSelectedMonth(activeMonths[monthIndex + 1])}
+          >
+            <AppIcon name="chevron" size={20} />
+          </button>
+        </div>
+        <div>
+          <p className="m-0 text-sm text-[var(--text-2)]">Total {metric}</p>
+          <strong className="text-3xl tabular-nums">
+            <Money amount={monthData.totalOut} />
+          </strong>
+        </div>
+        {previousData.hasData && monthData.hasData && (
+          <p className="m-0 text-sm text-[var(--text-2)]">
+            {locked ? (
+              "Comparison hidden"
+            ) : (
+              <>
+                <Money
+                  amount={Math.abs(monthData.totalOut - previousData.totalOut)}
+                />{" "}
+                {monthData.totalOut >= previousData.totalOut ? "more" : "less"}{" "}
+                than{" "}
+                {previousDate.toLocaleDateString("en-MY", {
+                  month: "short",
+                  year: "numeric",
+                })}
+              </>
+            )}
+          </p>
+        )}
         <Card variant="default" className="p-5 space-y-4">
           <div className="insights-donut-wrap" aria-hidden="true">
             <svg
@@ -500,9 +309,10 @@ function KidInsights() {
                 r="50"
                 fill="none"
                 stroke="var(--border)"
-                strokeWidth="4"
+                strokeWidth="14"
               />
-              {monthData.topCategories.length > 0 &&
+              {!locked &&
+                monthData.topCategories.length > 0 &&
                 (() => {
                   const r = 50;
                   const c = 2 * Math.PI * r;
@@ -517,7 +327,7 @@ function KidInsights() {
                         r={r}
                         fill="none"
                         stroke={CAT_COLORS[i % CAT_COLORS.length]}
-                        strokeWidth="4"
+                        strokeWidth="14"
                         strokeDasharray={`${len} ${c - len}`}
                         strokeDashoffset={-offset}
                         transform="rotate(-90 60 60)"
@@ -534,7 +344,7 @@ function KidInsights() {
               style={locked ? { cursor: "pointer" } : undefined}
             >
               <span className="text-sm text-[var(--text-secondary)]">
-                Monthly spending
+                {metric === "spending" ? "Spending" : "Income"}
               </span>
               {locked ? (
                 <LogInToView className="mt-2 text-base" />
@@ -549,20 +359,16 @@ function KidInsights() {
           <ul className="insights-cat-list">
             {monthData.topCategories.length === 0 ? (
               <li className="text-sm text-[var(--text-muted)] text-center py-4">
-                No expenses in {selectedMonth}.
+                No {metric} in this month.
               </li>
             ) : (
               monthData.topCategories.map((c, i) => (
                 <li key={c.key} className="insights-cat-row">
                   <span
-                    className="insights-cat-row__icon"
-                    style={{ color: CAT_COLORS[i % CAT_COLORS.length] }}
-                  >
-                    <AppIcon
-                      name={i === 0 ? "trend" : i === 1 ? "meal" : "wallet"}
-                      size={20}
-                    />
-                  </span>
+                    className="category-dot"
+                    style={{ background: CAT_COLORS[i % CAT_COLORS.length] }}
+                    aria-hidden="true"
+                  />
                   <div className="min-w-0 flex-1">
                     <strong className="text-sm text-[var(--ink)] block">
                       {c.label}
@@ -571,8 +377,11 @@ function KidInsights() {
                       {c.count} transaction{c.count === 1 ? "" : "s"}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-[var(--error-text)] tabular-nums">
-                    <Money amount={-c.amount} sign />
+                  <span className="text-sm font-bold text-[var(--ink)] tabular-nums">
+                    <Money amount={c.amount} />
+                    <span className="ml-3 text-xs text-[var(--text-2)]">
+                      {locked ? "•••" : `${Math.round(c.pct)}%`}
+                    </span>
                   </span>
                 </li>
               ))
@@ -580,6 +389,17 @@ function KidInsights() {
           </ul>
         </Card>
 
+        <button
+          type="button"
+          className="insights-recap"
+          onClick={() => openPenny({ context: { page: "Insights" } })}
+        >
+          <AppIcon name="penny" size={40} />
+          <span className="text-sm">
+            {maskAmounts(summary.highlight, locked)}
+          </span>
+          <AppIcon name="chevron" size={20} />
+        </button>
         <div className="flex gap-2 pt-2">
           <Button
             type="button"
@@ -621,8 +441,14 @@ function KidInsights() {
           aria-label="Daily wrap"
           onKeyDown={(e) => {
             if (receiptSheetOpen) return;
-            if (e.key === "ArrowLeft") { e.preventDefault(); prevStory(); }
-            if (e.key === "ArrowRight") { e.preventDefault(); nextStory(); }
+            if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              prevStory();
+            }
+            if (e.key === "ArrowRight") {
+              e.preventDefault();
+              nextStory();
+            }
           }}
           style={{
             position: "fixed",
@@ -693,7 +519,11 @@ function KidInsights() {
               userSelect: "none",
             }}
             onPointerDown={(e) => {
-              if ((e.target as HTMLElement).closest("button,a") && !(e.target as HTMLElement).closest("[data-story-zone]")) return;
+              if (
+                (e.target as HTMLElement).closest("button,a") &&
+                !(e.target as HTMLElement).closest("[data-story-zone]")
+              )
+                return;
               pointerStartedAt.current = performance.now();
               e.currentTarget.setPointerCapture(e.pointerId);
               setIsPaused(true);
@@ -702,7 +532,8 @@ function KidInsights() {
               setIsPaused(false);
               const started = pointerStartedAt.current;
               pointerStartedAt.current = null;
-              if (started === null || !isStoryTap(started, performance.now())) return;
+              if (started === null || !isStoryTap(started, performance.now()))
+                return;
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
               if (x < rect.width * 0.35) {
@@ -711,7 +542,10 @@ function KidInsights() {
                 nextStory();
               }
             }}
-            onPointerCancel={() => { pointerStartedAt.current = null; setIsPaused(false); }}
+            onPointerCancel={() => {
+              pointerStartedAt.current = null;
+              setIsPaused(false);
+            }}
           >
             {/* Top Bar: Mascot Avatar, Title, Close Button */}
             <div className="flex items-center justify-between mb-6">
@@ -770,10 +604,28 @@ function KidInsights() {
               {maskAmounts(slides[storyIdx].body, locked)}
             </p>
 
-            <button type="button" data-story-zone aria-label="Previous slide" className="absolute left-0 top-20 bottom-0 w-[35%] border-0 bg-transparent" onClick={(e) => { if (e.detail === 0) prevStory(); }} />
-            <button type="button" data-story-zone aria-label="Next slide" className="absolute right-0 top-20 bottom-0 w-[65%] border-0 bg-transparent" onClick={(e) => { if (e.detail === 0) nextStory(); }} />
+            <button
+              type="button"
+              data-story-zone
+              aria-label="Previous slide"
+              className="absolute left-0 top-20 bottom-0 w-[35%] border-0 bg-transparent"
+              onClick={(e) => {
+                if (e.detail === 0) prevStory();
+              }}
+            />
+            <button
+              type="button"
+              data-story-zone
+              aria-label="Next slide"
+              className="absolute right-0 top-20 bottom-0 w-[65%] border-0 bg-transparent"
+              onClick={(e) => {
+                if (e.detail === 0) nextStory();
+              }}
+            />
           </div>
-          <span className="sr-only" role="status">Slide {storyIdx + 1} of {slides.length}</span>
+          <span className="sr-only" role="status">
+            Slide {storyIdx + 1} of {slides.length}
+          </span>
           <div
             style={{
               display: "flex",
@@ -1042,7 +894,7 @@ function KidInsights() {
                                           : "var(--success-text)",
                                     }}
                                   >
-                                    {amt.text}
+                                    {maskAmounts(amt.text, locked)}
                                   </span>
                                 </div>
                               );

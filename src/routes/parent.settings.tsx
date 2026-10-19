@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
 import { useAuth } from "@/providers/auth";
@@ -20,7 +20,13 @@ import { AvatarBubble, AvatarPicker } from "@/components/AvatarBubble";
 import { DEFAULT_PARENT_AVATAR, resolveAvatar } from "@/lib/avatar";
 import { sfx, isMuted, toggleMute } from "@/lib/sounds";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppIcon } from "@/components/ui/app-icon";
@@ -34,7 +40,8 @@ export const Route = createFileRoute("/parent/settings")({
 
 function Settings() {
   const { user } = useAuth();
-  const { kids, loading, error, hasLoaded, lastLoadedAt, refresh } = useParentData();
+  const { kids, loading, error, hasLoaded, lastLoadedAt, refresh } =
+    useParentData();
   const [editing, setEditing] = useState<string | null>(null);
   const [custom, setCustom] = useState(5);
   const [pin, setPin] = useState("");
@@ -44,7 +51,7 @@ function Settings() {
   const [kidAvatarQuery, setKidAvatarQuery] = useState("");
   const [muted, setMuted] = useState(isMuted());
   const [comfortName, setComfortName] = useState(
-    (user?.user_metadata as any)?.comfort_name ?? ""
+    (user?.user_metadata as { comfort_name?: string })?.comfort_name ?? "",
   );
   const [savingName, setSavingName] = useState(false);
   const [panel, setPanel] = useState<
@@ -52,8 +59,10 @@ function Settings() {
   >(null);
 
   useEffect(() => {
-    if ((user?.user_metadata as any)?.comfort_name) {
-      setComfortName((user?.user_metadata as any).comfort_name);
+    if ((user?.user_metadata as { comfort_name?: string })?.comfort_name) {
+      setComfortName(
+        (user?.user_metadata as { comfort_name: string }).comfort_name,
+      );
     }
   }, [user]);
 
@@ -74,17 +83,40 @@ function Settings() {
       toast.success(`Comfort name updated to "${trimmed}"`);
     } catch (err: unknown) {
       sfx.error();
-      toast.error(err instanceof Error ? err.message : "Failed to update comfort name");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update comfort name",
+      );
     } finally {
       setSavingName(false);
     }
   };
 
   useEffect(() => {
-    edgeParentGetPin().then((res) => setHasPin(res.hasPin));
-    edgeParentGetSelfAvatar().then((res) => {
-      if (res.avatar) setSelfAvatar(resolveAvatar(res.avatar, "parent"));
-    });
+    let active = true;
+    void edgeParentGetPin()
+      .then((res) => {
+        if (active) setHasPin(res.hasPin);
+      })
+      .catch(() => {
+        if (active)
+          toast.error(
+            "Could not load PIN settings. Open Settings again to retry.",
+          );
+      });
+    void edgeParentGetSelfAvatar()
+      .then((res) => {
+        if (active && res.avatar)
+          setSelfAvatar(resolveAvatar(res.avatar, "parent"));
+      })
+      .catch(() => {
+        if (active)
+          toast.error(
+            "Could not load your profile picture. Open Settings again to retry.",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filteredKids = useMemo(() => {
@@ -93,7 +125,8 @@ function Settings() {
     if (!q) return sorted;
     return sorted.filter(
       (k) =>
-        k.name.toLowerCase().includes(q) || (k.username ?? "").toLowerCase().includes(q),
+        k.name.toLowerCase().includes(q) ||
+        (k.username ?? "").toLowerCase().includes(q),
     );
   }, [kids, kidAvatarQuery]);
 
@@ -174,7 +207,9 @@ function Settings() {
     return (
       <div className="parent-page space-y-4">
         <Skeleton style={{ height: "40px", width: "200px" }} />
-        <Skeleton style={{ height: "160px", width: "100%", borderRadius: "1.25rem" }} />
+        <Skeleton
+          style={{ height: "160px", width: "100%", borderRadius: "1.25rem" }}
+        />
       </div>
     );
 
@@ -192,64 +227,120 @@ function Settings() {
   return (
     <div className="parent-page settings-page mobile-stack pb-4">
       {error && hasLoaded && (
-        <ParentLoadError variant="banner" onRetry={refresh} lastLoadedAt={lastLoadedAt} />
+        <ParentLoadError
+          variant="banner"
+          onRetry={refresh}
+          lastLoadedAt={lastLoadedAt}
+        />
       )}
       <div className="settings-profile">
         <div className="settings-profile__identity">
           <AvatarBubble emoji={selfAvatar} size={48} ring kind="parent" />
           <div className="min-w-0">
-            <strong className="text-base text-[var(--ink)] block truncate">{displayName}</strong>
-            <span className="text-xs text-[var(--text-muted)] truncate block">{user?.email}</span>
+            <strong className="text-base text-[var(--ink)] block truncate">
+              {displayName}
+            </strong>
+            <span className="text-xs text-[var(--text-muted)] truncate block">
+              {user?.email}
+            </span>
           </div>
         </div>
-        <button type="button" className="settings-logout" onClick={doLogout}>
-          <AppIcon name="exit" size={16} />
-          Sign out
-        </button>
       </div>
 
-      <nav aria-label="Settings sections" className="w-full">
-        <ul className="settings-list">
-          {(
-            [
-              { id: "profile" as const, label: "My profile", icon: "user" },
-              { id: "kids" as const, label: "Children avatars", icon: "users" },
-              { id: "pin" as const, label: "Dashboard PIN", icon: "lock" },
-              { id: "prefs" as const, label: "Sound & appearance", icon: "settings" },
-              { id: "hibah" as const, label: "Hibah preferences", icon: "sparkles" },
-            ] as const
-          ).map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="settings-list__item"
-                aria-expanded={panel === item.id}
-                onClick={() => {
-                  sfx.tap();
-                  setPanel((p) => (p === item.id ? null : item.id));
-                }}
-              >
+      <nav aria-label="Settings sections" className="settings-groups">
+        {(
+          [
+            {
+              title: "Account & security",
+              items: [
+                { id: "profile", label: "My profile", icon: "user" },
+                { id: "kids", label: "Children avatars", icon: "users" },
+                { id: "pin", label: "Dashboard PIN", icon: "lock" },
+              ],
+            },
+            {
+              title: "App preferences",
+              items: [
+                { id: "prefs", label: "Sound & appearance", icon: "settings" },
+                { id: "hibah", label: "Hibah preferences", icon: "gift" },
+              ],
+            },
+          ] as const
+        ).map((group) => (
+          <section key={group.title}>
+            <h2 className="settings-group-title">{group.title}</h2>
+            <ul className="settings-list">
+              {group.items.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="settings-list__item"
+                    aria-expanded={panel === item.id}
+                    onClick={() => {
+                      sfx.tap();
+                      setPanel((p) => (p === item.id ? null : item.id));
+                    }}
+                  >
+                    <span className="settings-list__icon">
+                      <AppIcon name={item.icon} size={24} />
+                    </span>
+                    {item.label}
+                    <span className="settings-list__chevron">
+                      <AppIcon name="chevron" size={20} />
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+        <section>
+          <h2 className="settings-group-title">Help & information</h2>
+          <ul className="settings-list">
+            <li>
+              <Link to="/parent/penny" className="settings-list__item">
                 <span className="settings-list__icon">
-                  <AppIcon name={item.icon} size={18} />
+                  <AppIcon name="chat" size={24} />
                 </span>
-                {item.label}
-                <span
-                  className={`settings-list__chevron${panel === item.id ? " is-open" : ""}`}
-                  aria-hidden="true"
-                >
-                  <AppIcon name="chevron" size={18} />
+                Ask Penny
+                <span className="settings-list__chevron">
+                  <AppIcon name="chevron" size={20} />
                 </span>
-              </button>
+              </Link>
             </li>
-          ))}
-        </ul>
+            <li>
+              <Link to="/parent/reports" className="settings-list__item">
+                <span className="settings-list__icon">
+                  <AppIcon name="filetext" size={24} />
+                </span>
+                Monthly statements
+                <span className="settings-list__chevron">
+                  <AppIcon name="chevron" size={20} />
+                </span>
+              </Link>
+            </li>
+          </ul>
+        </section>
       </nav>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full justify-center"
+        onClick={doLogout}
+      >
+        <AppIcon name="exit" size={20} />
+        Sign out
+      </Button>
 
       <div className={`settings-panel${panel === "profile" ? " is-open" : ""}`}>
         <Card variant="default" className="m-0 mb-4">
           <CardHeader>
-            <CardTitle style={{ fontSize: "1rem" }}>Your Comfort Name</CardTitle>
-            <CardDescription>What Centsibility calls you across the app</CardDescription>
+            <CardTitle style={{ fontSize: "1rem" }}>
+              Your Comfort Name
+            </CardTitle>
+            <CardDescription>
+              What Centsibility calls you across the app
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={updateComfortName} className="space-y-3">
@@ -260,7 +351,12 @@ function Settings() {
                 placeholder="e.g. Mama, Papa, Ummi, Abi, Coach Dan"
                 maxLength={30}
               />
-              <Button type="submit" variant="primary" size="sm" disabled={savingName}>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={savingName}
+              >
                 {savingName ? "Saving..." : "Save Comfort Name"}
               </Button>
             </form>
@@ -269,11 +365,17 @@ function Settings() {
 
         <Card variant="default" className="m-0">
           <CardHeader>
-            <CardTitle style={{ fontSize: "1rem" }}>Your profile avatar</CardTitle>
+            <CardTitle style={{ fontSize: "1rem" }}>
+              Your profile avatar
+            </CardTitle>
             <CardDescription>Upload a photo or pick an icon</CardDescription>
           </CardHeader>
           <CardContent>
-            <AvatarPicker value={selfAvatar} onChange={updateSelfAvatar} kind="parent" />
+            <AvatarPicker
+              value={selfAvatar}
+              onChange={updateSelfAvatar}
+              kind="parent"
+            />
           </CardContent>
         </Card>
       </div>
@@ -284,9 +386,17 @@ function Settings() {
             <CardTitle style={{ fontSize: "1rem" }}>Children avatars</CardTitle>
             <CardDescription>Search, then update a child</CardDescription>
           </CardHeader>
-          <CardContent style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <CardContent
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
             {hasLoaded && !error && kids.length === 0 ? (
-              <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--text-muted)",
+                  margin: 0,
+                }}
+              >
                 No children enrolled yet.
               </p>
             ) : (
@@ -327,7 +437,9 @@ function Settings() {
                             ring
                             kind="kid"
                           />
-                          <strong className="truncate text-sm text-[var(--ink)]">{k.name}</strong>
+                          <strong className="truncate text-sm text-[var(--ink)]">
+                            {k.name}
+                          </strong>
                         </div>
                       </div>
                       <AvatarPicker
@@ -348,11 +460,19 @@ function Settings() {
         <Card variant="default" className="m-0">
           <CardHeader>
             <CardTitle style={{ fontSize: "1rem" }}>Dashboard PIN</CardTitle>
-            <CardDescription>Asked for whenever the parent dashboard opens</CardDescription>
+            <CardDescription>
+              Asked for whenever the parent dashboard opens
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", margin: "0 0 0.85rem" }}>
-              Set a 4 to 6 digit PIN. It is stored only as a hash on the server.
+            <p
+              style={{
+                fontSize: "0.8125rem",
+                color: "var(--text-secondary)",
+                margin: "0 0 0.85rem",
+              }}
+            >
+              Set a 6-digit PIN. It is stored only as a hash on the server.
             </p>
             {hasPin ? (
               <div
@@ -366,11 +486,26 @@ function Settings() {
                   border: "1px solid rgba(23, 166, 115, 0.2)",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.65rem",
+                  }}
+                >
                   <AppIcon name="check" size={18} color="var(--success)" />
-                  <strong style={{ fontSize: "0.875rem", color: "var(--ink)" }}>PIN active</strong>
+                  <strong style={{ fontSize: "0.875rem", color: "var(--ink)" }}>
+                    PIN active
+                  </strong>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <Input
                     id="settings-current-pin-input"
                     value={currentPin}
@@ -390,7 +525,11 @@ function Settings() {
             ) : (
               <form
                 onSubmit={savePin}
-                style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.85rem",
+                }}
               >
                 <div>
                   <label
@@ -453,9 +592,17 @@ function Settings() {
             <CardTitle style={{ fontSize: "1rem" }}>Hibah rate</CardTitle>
             <CardDescription>Monthly gift per child</CardDescription>
           </CardHeader>
-          <CardContent style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <CardContent
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
             {hasLoaded && !error && kids.length === 0 ? (
-              <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--text-muted)",
+                  margin: 0,
+                }}
+              >
                 No children enrolled yet.
               </p>
             ) : (
@@ -493,21 +640,30 @@ function Settings() {
                           ring
                           kind="kid"
                         />
-                        <strong className="truncate text-sm text-[var(--ink)]">{k.name}</strong>
+                        <strong className="truncate text-sm text-[var(--ink)]">
+                          {k.name}
+                        </strong>
                       </div>
                       <strong
                         style={{
                           fontSize: "1.1rem",
-                          color: "var(--primary)",
+                          color: "var(--action-text)",
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
                         {(Number(k.hibah_rate) * 100).toFixed(1)}%
                       </strong>
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "0.4rem",
+                      }}
+                    >
                       {presets.map((r) => {
-                        const active = Math.abs(Number(k.hibah_rate) - r) < 0.001;
+                        const active =
+                          Math.abs(Number(k.hibah_rate) - r) < 0.001;
                         return (
                           <Button
                             key={r}
@@ -523,7 +679,9 @@ function Settings() {
                       <Button
                         size="sm"
                         variant={editing === k.id ? "secondary" : "outline"}
-                        onClick={() => setEditing(editing === k.id ? null : k.id)}
+                        onClick={() =>
+                          setEditing(editing === k.id ? null : k.id)
+                        }
                       >
                         Custom
                       </Button>
@@ -541,17 +699,31 @@ function Settings() {
                         }}
                       >
                         <div className="flex items-center justify-between">
-                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Custom</span>
-                          <strong style={{ color: "var(--primary)" }}>{custom.toFixed(1)}%</strong>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                            Custom
+                          </span>
+                          <strong style={{ color: "var(--action-text)" }}>
+                            {custom.toFixed(1)}%
+                          </strong>
                         </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "0.35rem",
+                          }}
+                        >
                           {[0.5, 1, 2, 5].map((step) => (
                             <Button
                               key={`-${step}`}
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setCustom((v) => Math.max(0, +(v - step).toFixed(1)))}
+                              onClick={() =>
+                                setCustom((v) =>
+                                  Math.max(0, +(v - step).toFixed(1)),
+                                )
+                              }
                             >
                               −{step}%
                             </Button>
@@ -562,7 +734,11 @@ function Settings() {
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setCustom((v) => Math.min(20, +(v + step).toFixed(1)))}
+                              onClick={() =>
+                                setCustom((v) =>
+                                  Math.min(20, +(v + step).toFixed(1)),
+                                )
+                              }
                             >
                               +{step}%
                             </Button>

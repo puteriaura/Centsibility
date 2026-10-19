@@ -1,3 +1,4 @@
+import { edgeKidRequestApproval } from "@/lib/edge";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -6,17 +7,12 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { StatCard, TransactionRow } from "@/components/banking";
 import { useKidData } from "@/hooks/use-kid-data";
 import { KidLoadError } from "@/features/kid/components";
-import { edgeKidSadaqah, edgeKidRequestApproval } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
-import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
-import {
-  getBalanceSummary,
-  isDebitTransaction,
-  isWalletTransaction,
-} from "@/lib/finance";
+import { getBalanceSummary, isWalletTransaction } from "@/lib/finance";
+import { PennyMascot } from "@/components/PennyMascot";
 import { AppIcon } from "@/components/ui/app-icon";
 import { formatDate, formatRM } from "@/lib/format";
 import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
@@ -33,8 +29,7 @@ type Tab = "deposit" | "withdraw" | "loan";
 function KidWallet() {
   const { data, loading, error, refresh } = useKidData();
   const { busy, run } = useMoneyAction();
-  const [tab, setTab] = useState<Tab>("deposit");
-  const [showHeroBreakdown, setShowHeroBreakdown] = useState(false);
+  const [tab, setTab] = useState<Tab | null>(null);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -95,163 +90,102 @@ function KidWallet() {
 
   return (
     <div className="space-y-5 pb-8">
-      {/* Total balance header; the canvas sheet rises over it */}
-      <section className="deposit-hero" aria-label="Total balance">
-        <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Total balance</p>
-          <p className="deposit-hero__amount tabular-nums">
-            <Money amount={balanceSummary.total} />
-          </p>
-          <button
-            type="button"
-            className="deposit-hero__link"
-            aria-expanded={showHeroBreakdown}
-            aria-controls="deposit-hero-breakdown"
-            onClick={() => {
-              sfx.tap();
-              setShowHeroBreakdown((prev) => !prev);
-            }}
-          >
-            {showHeroBreakdown ? "Hide breakdown" : "Show breakdown"}
-            <AppIcon name={showHeroBreakdown ? "chevron-up" : "chevron-down"} size={16} />
-          </button>
-        </div>
-        <div className="deposit-hero__mascot" aria-hidden="true">
-          <AppIcon name="penny" size={40} color="#fff" />
-        </div>
-        {showHeroBreakdown && (
-          <div
-            id="deposit-hero-breakdown"
-            className="w-full mt-3 pt-3 border-t border-white/20 text-xs text-white space-y-2 basis-full"
-          >
-            <div className="flex justify-between">
-              <span className="text-white">Spending</span>
-              <strong className="tabular-nums font-bold">
-                <Money amount={balanceSummary.spending} />
-              </strong>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white">Tabung</span>
-              <strong className="tabular-nums font-bold">
-                <Money amount={balanceSummary.tabung} />
-              </strong>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white">Investment</span>
-              <strong className="tabular-nums font-bold">
-                <Money amount={balanceSummary.investments} />
-              </strong>
-            </div>
-            {balanceSummary.owed > 0 && (
-              <p className="text-[11px] pt-1.5 border-t border-white/10 text-white">
-                Owed on loans: <Money amount={balanceSummary.owed} /> (not taken
-                off your total)
-              </p>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* History / Tabung / Insights quick tiles */}
-      <div
-        className="deposit-quick-row"
-        role="navigation"
-        aria-label="Wallet shortcuts"
-      >
-        <Link
-          to="/kid/history"
-          className="deposit-quick-tile"
-          onClick={() => sfx.tap()}
-        >
-          <AppIcon name="history" size={22} />
-          <span>History</span>
-        </Link>
-        <Link
-          to="/kid/transfer"
-          className="deposit-quick-tile"
-          onClick={() => sfx.tap()}
-        >
-          <AppIcon name="transfer" size={22} />
-          <span>Transfer</span>
-        </Link>
-        <Link
-          to="/kid/insights"
-          className="deposit-quick-tile"
-          onClick={() => sfx.tap()}
-        >
-          <AppIcon name="trend" size={22} />
-          <span>Insights</span>
-        </Link>
-      </div>
-
-      {/* Stacked account cards */}
       <div className="deposit-account-stack">
         <button
           type="button"
-          className="deposit-account-card deposit-account-card--wallet"
+          className="deposit-account-card"
           onClick={() => {
-            sfx.tap();
             setTab("deposit");
+            document
+              .getElementById("wallet-actions")
+              ?.scrollIntoView({ block: "start" });
           }}
         >
-          <div className="deposit-account-card__top">
-            <div>
-              <strong>Main Wallet</strong>
-              <p>Spending · Hibah {(Number(k.hibah_rate) * 100).toFixed(0)}%</p>
-            </div>
-            <span className="deposit-account-card__badge">0% fee</span>
-          </div>
-          <div className="deposit-account-card__bottom">
-            <span>Account balance</span>
-            <strong className="tabular-nums">
+          <span className="account-icon">
+            <AppIcon name="wallet" size={24} />
+          </span>
+          <span className="account-copy">
+            <span>Spending</span>
+            <strong>
               <Money amount={balance} />
             </strong>
-          </div>
+            <small>
+              Available to spend · Hibah{" "}
+              {(Number(k.hibah_rate) * 100).toFixed(0)}%
+            </small>
+          </span>
+          <AppIcon name="chevron" size={20} />
         </button>
-
         <Link
           to="/kid/goals"
-          className="deposit-account-card deposit-account-card--growth"
+          className="deposit-account-card"
           onClick={() => sfx.tap()}
         >
-          <div className="deposit-account-card__top">
-            <div>
-              <strong>Tabung</strong>
-              <p>{data.goals.length} Tabung</p>
-            </div>
-            <span className="deposit-account-card__badge">Savings</span>
-          </div>
-          <div className="deposit-account-card__bottom">
-            <span>Account balance</span>
-            <strong className="tabular-nums">
+          <span className="account-icon account-icon--saving">
+            <AppIcon name="save" size={24} />
+          </span>
+          <span className="account-copy">
+            <span>Tabung</span>
+            <strong>
               <Money amount={balanceSummary.tabung} />
             </strong>
-          </div>
+            <small>
+              {data.goals.length} savings goal
+              {data.goals.length === 1 ? "" : "s"}
+            </small>
+          </span>
+          <AppIcon name="chevron" size={20} />
         </Link>
-
-        <Link
-          to="/kid/loans"
-          className="deposit-account-card deposit-account-card--neutral"
-          onClick={() => sfx.tap()}
-        >
-          <div className="deposit-account-card__top">
-            <div>
-              <strong>Qard Hasan</strong>
-              <p>{activeLoans.length} active placement(s)</p>
-            </div>
-            <span className="deposit-account-card__badge">0% interest</span>
-          </div>
-          <div className="deposit-account-card__bottom">
-            <span>Outstanding</span>
-            <strong className="tabular-nums">
-              <Money amount={outstanding} />
-            </strong>
-          </div>
-        </Link>
+        {activeLoans.length > 0 && (
+          <Link
+            to="/kid/loans"
+            className="deposit-account-card"
+            onClick={() => sfx.tap()}
+          >
+            <span className="account-icon account-icon--loan">
+              <AppIcon name="loan" size={24} />
+            </span>
+            <span className="account-copy">
+              <span>Qard Hasan</span>
+              <strong>
+                <Money amount={outstanding} />
+              </strong>
+              <small>
+                Outstanding borrowing · {activeLoans.length} active loan
+                {activeLoans.length === 1 ? "" : "s"}
+              </small>
+            </span>
+            <AppIcon name="chevron" size={20} />
+          </Link>
+        )}
       </div>
-
+      <SectionTitle>Explore more</SectionTitle>
+      <section className="paper-guidance" aria-label="Savings guidance">
+        <div className="paper-guidance__body">
+          <h3>Grow your savings</h3>
+          <p>Give your next goal a place to grow.</p>
+          <Link to="/kid/goals">Explore Tabung →</Link>
+        </div>
+        <PennyMascot state="encouraging" size={80} />
+      </section>
+      <nav className="wallet-links" aria-label="Wallet destinations">
+        {(
+          [
+            { to: "/kid/transfer", label: "Transfer", icon: "transfer" },
+            { to: "/kid/history", label: "History", icon: "history" },
+            { to: "/kid/invest", label: "Investment", icon: "trend" },
+            { to: "/kid/card", label: "Card", icon: "card" },
+          ] as const
+        ).map((item) => (
+          <Link key={item.to} to={item.to}>
+            <AppIcon name={item.icon} size={20} />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
       {/* Action Tabs with Scrollable Pill Container */}
       <div
+        id="wallet-actions"
         className="tab-pills-container no-scrollbar"
         role="tablist"
         aria-label="Ask a parent"
@@ -265,7 +199,7 @@ function KidWallet() {
               role="tab"
               aria-selected={isActive}
               onClick={() => {
-                setTab(t.key);
+                setTab((previous) => (previous === t.key ? null : t.key));
                 sfx.tap();
               }}
               className={`tab-pill ${isActive ? "is-active" : ""}`}
@@ -340,7 +274,8 @@ function KidWallet() {
                 Qard Hasan loan
               </h3>
               <p className="m-0 text-sm text-[var(--text-2)]">
-                Borrow with no interest, sign an agreement, and pay back on a schedule.
+                Borrow with no interest, sign an agreement, and pay back on a
+                schedule.
               </p>
             </div>
           </div>

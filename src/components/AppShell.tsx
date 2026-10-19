@@ -9,6 +9,7 @@ import {
   useRef,
 } from "react";
 import { useAuth } from "@/providers/auth";
+import { parentDisplayName } from "@/lib/display-name";
 import { getKidSession, clearKidSession, KidSession } from "@/lib/kid-session";
 import { supabase } from "@/integrations/supabase/client";
 import { sfx } from "@/lib/sounds";
@@ -32,7 +33,7 @@ import {
   type Mode,
 } from "@/lib/navigation";
 
-async function signOutKid() {
+export async function signOutKid() {
   const session = getKidSession();
   try {
     if (session) await edgeKidLogout({ code: session.code });
@@ -241,6 +242,7 @@ function TopBar({
   unread: number;
 }) {
   const isKid = mode === "kid";
+  const { user } = useAuth();
   const nav = useNavigate();
   const { openPenny } = usePenny();
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
@@ -333,6 +335,12 @@ function TopBar({
             />
           </button>
 
+          <div className="shell-greeting">
+            <small>Hello,</small>
+            <strong>
+              {isKid ? kidName || "Saver" : parentDisplayName(user)}
+            </strong>
+          </div>
           {menuOpen && (
             <div role="menu" aria-label="Account menu" className="shell-menu">
               {isKid ? (
@@ -398,21 +406,7 @@ function TopBar({
           )}
         </div>
 
-        {/* Centre: the assistant */}
-        <div className="shell-topbar__center">
-          <button
-            type="button"
-            className="shell-mascot-pill"
-            onClick={() => {
-              sfx.pop();
-              openPenny({ context: { page: title } });
-            }}
-          >
-            <AppIcon name="penny" size={18} color="var(--action)" />
-            Ask Penny
-          </button>
-        </div>
-
+        {/* Penny remains available through guidance and More. */}
         {/* Right: notifications (the parent's live on the Approvals Activity tab) */}
         <div className="shell-topbar__right">
           {isKid ? (
@@ -518,18 +512,16 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
               onClick={() => sfx.tap()}
             >
               {it.center ? (
-                <span className="shell-navitem__center-pill">
-                  <AppIcon name={it.icon} size={22} color="#fff" />
+                <>
+                  <span className="shell-navitem__center-pill">
+                    <AppIcon name={it.icon} size={24} color="#fff" />
+                  </span>
                   <span className="shell-navitem__label">{it.label}</span>
-                </span>
+                </>
               ) : (
                 <>
                   <span className="shell-navitem__icon-wrap">
-                    <AppIcon
-                      name={it.icon}
-                      size={24}
-                      strokeWidth={active ? 2.25 : 1.75}
-                    />
+                    <AppIcon name={it.icon} size={24} strokeWidth={1.75} />
                     {badge > 0 && (
                       <span className="shell-navitem__badge" aria-hidden="true">
                         {badge > 9 ? "9+" : badge}
