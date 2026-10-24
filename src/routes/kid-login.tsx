@@ -56,7 +56,6 @@ function KidLogin() {
       const res = await edgeKidLogin({ username: cleanUsername, pin: cleanPin });
       setKidSession({ kidId: res.kidId, code: res.code || "", name: res.name });
       markJustUnlocked();
-      toast.success(`Welcome back, ${res.name}!`);
       nav({ to: "/kid" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Invalid username or PIN";
@@ -79,7 +78,7 @@ function KidLogin() {
       const res = await edgeKidVerifyAccessCode({ loginCode: cleanCode });
       setCodeVerifiedKid(res);
       setComfortName(res.name);
-      toast.success(`Code verified! Welcome, ${res.name}. Let's create your 6-digit PIN.`);
+      toast.success("Code verified. Set your PIN.");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Invalid or expired access code.");
     } finally {
@@ -299,7 +298,7 @@ function KidLogin() {
                     Create Your 6-Digit PIN
                   </h3>
                   <p style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", margin: "0.25rem 0 0" }}>
-                    Hi <strong>{codeVerifiedKid.name}</strong> (@{codeVerifiedKid.username})! You'll use this PIN for all future logins.
+                    Setting PIN for <strong>{codeVerifiedKid.name}</strong> (@{codeVerifiedKid.username})
                   </p>
                 </div>
 

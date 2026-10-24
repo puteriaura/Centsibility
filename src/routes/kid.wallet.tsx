@@ -337,16 +337,6 @@ function KidWallet() {
               );
             }
             return walletTxs.slice(0, 5).map((t: (typeof data.txs)[number]) => {
-              const iconName = t.type.toLowerCase().includes("deposit")
-                ? "deposit"
-                : t.type.toLowerCase().includes("invest")
-                  ? "invest"
-                  : t.type.toLowerCase().includes("sadaqah")
-                    ? "sadaqah"
-                    : t.type.toLowerCase().includes("loan")
-                      ? "loan"
-                      : "wallet";
-
               const title = transactionTitle(t);
               const typeLabel = transactionTypeLabel(t.type, t.label);
               const subtitle =
@@ -363,7 +353,6 @@ function KidWallet() {
                   amount={Number(t.amount)}
                   type={t.type}
                   label={t.label}
-                  icon={iconName}
                 />
               );
             });

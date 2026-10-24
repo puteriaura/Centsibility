@@ -335,12 +335,6 @@ function TopBar({
             />
           </button>
 
-          <div className="shell-greeting">
-            <small>Hello,</small>
-            <strong>
-              {isKid ? kidName || "Saver" : parentDisplayName(user)}
-            </strong>
-          </div>
           {menuOpen && (
             <div role="menu" aria-label="Account menu" className="shell-menu">
               {isKid ? (
@@ -406,9 +400,9 @@ function TopBar({
           )}
         </div>
 
-        {/* Penny remains available through guidance and More. */}
         {/* Right: notifications (the parent's live on the Approvals Activity tab) */}
         <div className="shell-topbar__right">
+          {isKid && <PennyButton title={title} />}
           {isKid ? (
             <Link
               to="/kid/notifications"

@@ -1,12 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
-import { useAuth } from "@/providers/auth";
 import { edgeParentCreateKid, edgeParentDeleteKid } from "@/lib/edge";
 import { CrewMemberCard } from "@/features/parent/components";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { toast } from "sonner";
-import { QuoteCard } from "@/components/QuoteCard";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionTitle } from "@/components/ui/section-title";
@@ -17,11 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { AppIcon } from "@/components/ui/app-icon";
 import { cleanApprovalReason } from "@/lib/qard";
-import { parentDisplayName } from "@/lib/display-name";
 import { approvalKindLabel } from "@/lib/labels";
 import { getBalanceSummary } from "@/lib/finance";
 
-import { Money, EyeToggle } from "@/features/privacy";
+import { BalanceCard } from "@/components/banking";
+import { Money, useMoney } from "@/features/privacy";
 
 export const Route = createFileRoute("/parent/")({
   head: () => ({ meta: [{ title: "Parent Dashboard | Centsibility" }] }),
@@ -29,7 +27,7 @@ export const Route = createFileRoute("/parent/")({
 });
 
 function ParentHome() {
-  const { user } = useAuth();
+  const { isMasked, locked, toggleHidden, openUnlockSheet } = useMoney();
   const {
     kids,
     goals,
@@ -156,10 +154,6 @@ function ParentHome() {
   }
 
   const pendingCount = approvals.length + rewards.length;
-  const hiddenPending =
-    pendingCount - Math.min(approvals.length, 3) - Math.min(rewards.length, 2);
-  const needsComfortName = !(user?.user_metadata as { comfort_name?: string } | undefined)
-    ?.comfort_name;
   const familyTotal = kids.reduce((sum, k) => {
     const kGoals = goals.filter((g) => g.kid_id === k.id);
     const kLoans = loans.filter((l) => l.kid_id === k.id);
@@ -179,33 +173,29 @@ function ParentHome() {
           lastLoadedAt={lastLoadedAt}
         />
       )}
-      <section className="deposit-hero" aria-label="Family total balance">
-        <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Family total balance</p>
-          <div className="deposit-hero__amount tabular-nums flex items-center gap-2">
-            <Money amount={familyTotal} />
-            <EyeToggle variant="dark" />
-          </div>
-          <p className="m-0 text-sm font-medium">
-            {parentDisplayName(user)} · {kids.length} {kids.length === 1 ? "child" : "children"}
-          </p>
-        </div>
-      </section>
-
+      <BalanceCard className="home-balance" title="Family total" balance={familyTotal}
+        subtitle={`${kids.length} ${kids.length === 1 ? "child" : "children"}`}
+        hideBalance={isMasked} onToggleHide={() => locked ? openUnlockSheet() : toggleHidden()}
+        tag={pendingCount > 0 ? `${pendingCount} to approve` : undefined} />
+      <nav className="quick-grid" aria-label="Shortcuts">
+        {[{ to: "/parent/transfer", label: "Send", icon: "send" }, { to: "/parent/approvals", label: "Approve", icon: "approve" }, { to: "/parent/reports", label: "Reports", icon: "reports" }].map(item =>
+          <Link key={item.label} to={item.to} className="quick-btn" onClick={() => sfx.tap()}><span className="quick-circle"><AppIcon name={item.icon} size={28} /></span><span className="quick-label">{item.label}</span></Link>)}
+        <button type="button" className="quick-btn" onClick={openRecruit}><span className="quick-circle"><AppIcon name="userplus" size={28} /></span><span className="quick-label">Add child</span></button>
+      </nav>
       {/* Anything waiting on the parent, first */}
-      {(pendingCount > 0 || needsComfortName) && (
+      {(pendingCount > 0) && (
         <div>
           <SectionTitle
             className="mt-2"
             action={
               pendingCount > 0 ? (
                 <Link to="/parent/approvals" onClick={() => sfx.tap()}>
-                  Review all
+                  See all
                 </Link>
               ) : undefined
             }
           >
-            Waiting for you
+            Needs you
           </SectionTitle>
           <div className="list-panel">
             {approvals.slice(0, 3).map((a) => (
@@ -224,7 +214,7 @@ function ParentHome() {
                 </span>
               </Link>
             ))}
-            {rewards.slice(0, 2).map((r) => (
+            {rewards.slice(0, Math.max(0, 3 - approvals.length)).map((r) => (
               <Link
                 key={r.id}
                 to="/parent/approvals"
@@ -242,25 +232,7 @@ function ParentHome() {
                 <span className="list-row__end">{r.cost} pts</span>
               </Link>
             ))}
-            {hiddenPending > 0 && (
-              <Link to="/parent/approvals" className="list-row justify-center" onClick={() => sfx.tap()}>
-                <span className="text-sm font-semibold text-[var(--action-text)]">
-                  {hiddenPending} more waiting
-                </span>
-              </Link>
-            )}
-            {needsComfortName && (
-              <Link to="/parent/settings" className="list-row" onClick={() => sfx.tap()}>
-                <span className="list-row__icon" aria-hidden="true">
-                  <AppIcon name="penny" size={20} />
-                </span>
-                <span className="list-row__body">
-                  <span className="list-row__title">Choose what your children call you</span>
-                  <span className="list-row__sub">Mama, Papa, Ummi or your own</span>
-                </span>
-                <AppIcon name="forward" size={18} className="shrink-0 text-[var(--text-3)]" />
-              </Link>
-            )}
+
           </div>
         </div>
       )}
@@ -318,7 +290,7 @@ function ParentHome() {
                 No match for “{kidQuery}”.
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="home-children">
                 {filteredKids.map((c) => (
                   <CrewMemberCard
                     key={c.id}
@@ -345,9 +317,6 @@ function ParentHome() {
         )}
       </div>
 
-      <div className="mt-4">
-        <QuoteCard variant="parent" />
-      </div>
 
       <Modal
         isOpen={Boolean(deletingKidId)}

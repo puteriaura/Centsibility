@@ -188,7 +188,7 @@ export function pennyReply(
       : "no major spending categories yet";
 
   if (/spend|spending|expense|out/.test(q)) {
-    return `Hi ${kidName}! Over the past period you spent ${formatRM(s.moneyOut)} across ${s.txCount} transactions, averaging ${formatRM(s.avgTx)} each. Your daily average outflow is ${formatRM(s.dailyAvg)}, with most going to ${topLine}.\n\nTracking categories is lowkey a superpower because it shows where the cash leaks are. Want tips on cutting back on ${s.topCategories[0]?.label || "spending"}?`;
+    return `Over the past period you spent ${formatRM(s.moneyOut)} across ${s.txCount} transactions, averaging ${formatRM(s.avgTx)} each. Your daily average outflow is ${formatRM(s.dailyAvg)}, with most going to ${topLine}.\n\nTracking categories is lowkey a superpower because it shows where the cash leaks are. Want tips on cutting back on ${s.topCategories[0]?.label || "spending"}?`;
   }
   if (/save|saving|goal|pot|tabung/.test(q)) {
     return `Pro saver move from Penny: move a little from your wallet into a Tabung right when money comes in. You received ${formatRM(s.moneyIn)} recently. Even putting ${formatRM(Math.max(2, s.moneyIn * 0.1))} into a Tabung builds massive discipline! Open Tabung to tuck it away.`;

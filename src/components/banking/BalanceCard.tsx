@@ -6,7 +6,7 @@ import { Money } from "@/features/privacy";
 export interface BalanceCardProps {
   title?: string;
   balance: number | null;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   hideBalance?: boolean;
   onToggleHide?: () => void;
   metadata?: Array<{ label: string; value?: string }>;

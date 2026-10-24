@@ -89,7 +89,7 @@
   --tile-edge: #D9DEEE;
   --paper-shadow: 0 4px 0 var(--edge);
   --blue-600: #47629A;   /* White text meets AA. */
-  --blue-700: #344C7B;   /* 9.4:1 on white, 7.5:1 on blue-100 */
+  --blue-700: #344C7B;   /* 8.52:1 on white, 6.88:1 on blue-100 */
   --blue-800: #22355B;
 
   --gray-0: #FFFFFF;
@@ -1395,7 +1395,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--action);
+    color: var(--action-text);
     transition: background-color var(--motion-fast) var(--ease-standard);
   }
 
@@ -1404,7 +1404,7 @@
   .quick-circle--amber,
   .quick-circle--coral {
     background: var(--surface);
-    color: var(--action);
+    color: var(--action-text);
   }
 
   .quick-btn:hover .quick-circle {
@@ -1480,7 +1480,7 @@
     align-items: center;
     justify-content: center;
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
   }
 
   /* Recap row: Penny's one-line summary of the week */
@@ -1508,7 +1508,7 @@
     height: 40px;
     border-radius: 50%;
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1562,7 +1562,7 @@
     height: 40px;
     border-radius: 50%;
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1720,7 +1720,7 @@
     height: 40px;
     border-radius: 50%;
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
     margin-bottom: var(--space-1);
   }
 
@@ -1764,7 +1764,7 @@
     height: 44px;
     border-radius: 50%;
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1924,7 +1924,7 @@
   }
 
   .deposit-quick-tile svg {
-    color: var(--action);
+    color: var(--action-text);
   }
 
   .deposit-quick-tile > span {
@@ -2073,7 +2073,7 @@
   .financing-promo__art {
     padding: var(--space-5);
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
     min-height: 96px;
     display: flex;
     align-items: flex-start;
@@ -2156,7 +2156,7 @@
     height: 36px;
     border-radius: 50%;
     background: var(--action-tint);
-    color: var(--action);
+    color: var(--action-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2306,7 +2306,7 @@
   }
 
   .insights-ask-chip svg {
-    color: var(--action);
+    color: var(--action-text);
   }
 
   .insights-ask-chip--wide {
@@ -2830,7 +2830,7 @@
   .pin-box.is-filled {
     border-color: var(--action);
     border-width: 2px;
-    color: var(--action);
+    color: var(--action-text);
   }
 
   /* Amount keypad (MoneyKeypad and the default NumericKeypad) */

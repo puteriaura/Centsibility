@@ -1,5 +1,7 @@
 import { AppIcon } from "@/components/ui/app-icon";
 const features = {
+  send: "send",
+  ask: "ask",
   transfer: "transfer",
   request: "plus",
   tabung: "save",

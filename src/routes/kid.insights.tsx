@@ -26,8 +26,8 @@ export const Route = createFileRoute("/kid/insights")({
   component: KidInsights,
 });
 
-// Chart palette (styles.css --chart-*): distinct hues for categories only; red stays reserved for money out.
-const CAT_COLORS = ["var(--action)", "#0F766E", "#B45309", "#6941C6", "#475467"];
+// Category colours are paired with names and amounts in the legend.
+const CAT_COLORS = [1, 2, 3, 4, 5, 6].map(n => `var(--chart-${n})`);
 
 function formatDateHeader(dateStr: string) {
   try {
@@ -308,7 +308,7 @@ function KidInsights() {
                 cy="60"
                 r="50"
                 fill="none"
-                stroke="var(--border)"
+                style={{ stroke: "var(--line)" }}
                 strokeWidth="14"
               />
               {!locked &&
@@ -326,7 +326,7 @@ function KidInsights() {
                         cy="60"
                         r={r}
                         fill="none"
-                        stroke={CAT_COLORS[i % CAT_COLORS.length]}
+                        style={{ stroke: CAT_COLORS[i % CAT_COLORS.length] }}
                         strokeWidth="14"
                         strokeDasharray={`${len} ${c - len}`}
                         strokeDashoffset={-offset}
@@ -718,7 +718,7 @@ function KidInsights() {
             >
               <div
                 style={{
-                  background: "#ffffff",
+                  background: "var(--surface)",
                   borderRadius: "24px 24px 0 0",
                   maxHeight: "75vh",
                   display: "flex",

@@ -12,7 +12,6 @@ export interface TransactionRowProps {
   isIncome?: boolean;
   type?: string;
   label?: string | null;
-  icon?: string;
   onClick?: () => void;
   className?: string;
 }
@@ -74,7 +73,7 @@ export function TransactionRow({
 
       <span
         className={`shrink-0 text-sm font-bold tabular-nums ${
-          isPos ? "text-[var(--pos)]" : "text-[var(--neg)]"
+          isPos ? "text-[var(--pos)]" : "text-[var(--ink)]"
         }`}
         aria-label={isMasked ? "Amount hidden" : undefined}
         onClick={

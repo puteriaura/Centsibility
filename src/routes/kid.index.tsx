@@ -19,8 +19,9 @@ import { AvatarBubble } from "@/components/AvatarBubble";
 import { sfx } from "@/lib/sounds";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cleanApprovalReason } from "@/lib/qard";
-import { KidLoadError, TX_ICON_MAP } from "@/features/kid/components";
+import { KidLoadError } from "@/features/kid/components";
 import { AppIcon } from "@/components/ui/app-icon";
+import { topUnfinishedGoal, weeklyIncoming } from "@/lib/home-summary";
 import { formatDate } from "@/lib/format";
 import { getBalanceSummary, isWalletTransaction } from "@/lib/finance";
 import {
@@ -33,9 +34,9 @@ import {
 // anything waiting on the kid, one promotion, the month, recent activity.
 // Dock items (Wallet, Loans, Card) and Penny (header) are not repeated here.
 const SHORTCUTS: Array<{ to: string; label: string; icon: string }> = [
-  { to: "/kid/transfer", label: "Transfer", icon: "transfer" },
-  { to: "/kid/wallet", label: "Request", icon: "deposit" },
-  { to: "/kid/goals", label: "Tabung", icon: "save" },
+  { to: "/kid/transfer", label: "Send", icon: "send" },
+  { to: "/kid/goals", label: "Tabung", icon: "tabung" },
+  { to: "/kid/wallet", label: "Ask", icon: "ask" },
   { to: "/kid/more", label: "More", icon: "more" },
 ];
 
@@ -161,6 +162,9 @@ function KidHome() {
   const activeLoans = data.loans.filter(
     (l: (typeof data.loans)[number]) => l.status === "active",
   );
+  const incoming = weeklyIncoming(data.txs);
+  const topGoal = topUnfinishedGoal(data.goals);
+  const goalPercent = topGoal ? Math.round(Number(topGoal.saved) / Number(topGoal.target) * 100) : 0;
   const hasUpdates = pendingApprovals.length > 0 || activeLoans.length > 0;
   const summary = getBalanceSummary(
     k,
@@ -172,12 +176,11 @@ function KidHome() {
   return (
     <>
       <BalanceCard
-        title="Total balance"
+        className="home-balance"
+        title="My balance"
         balance={summary.total}
-        secondaryBalance={{
-          label: "Available to spend",
-          amount: summary.spending,
-        }}
+        subtitle={<><Money amount={summary.spending} /> to spend</>}
+        tag={incoming > 0 ? <><Money amount={incoming} sign /> this week</> : undefined}
         hideBalance={isMasked}
         onToggleHide={() => {
           if (locked) openUnlockSheet();
@@ -206,6 +209,25 @@ function KidHome() {
           </Link>
         ))}
       </nav>
+
+      <div className="home-tiles">
+        <Card className="home-tile">
+          <small>Streak</small>
+          <strong>{k.streak} {k.streak === 1 ? "day" : "days"}</strong>
+          <span className="home-streak-badge"><AppIcon name="flame" size={28} /></span>
+        </Card>
+        <Link to="/kid/goals" className="home-tile home-goal" onClick={() => sfx.tap()}>
+          {topGoal ? <>
+            <small>{topGoal.name}</small>
+            <strong><Money amount={Number(topGoal.saved)} /> / <Money amount={Number(topGoal.target)} /></strong>
+            <svg className="home-goal-ring" viewBox="0 0 66 66" role="img" aria-label={`${goalPercent}% saved`}>
+              <circle cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--blue-100)" }} strokeWidth="9" />
+              <circle cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--goal-progress)" }} strokeWidth="9" strokeLinecap="round" strokeDasharray={`${goalPercent / 100 * 164} 164`} transform="rotate(-90 33 33)" />
+              <text x="33" y="38" textAnchor="middle">{goalPercent}%</text>
+            </svg>
+          </> : <><small>Tabung</small><strong>Start a goal</strong><AppIcon name="sprout" size={48} /></>}
+        </Link>
+      </div>
 
       {/* Anything waiting on the kid or on a parent, in one list */}
       {hasUpdates && (
@@ -286,10 +308,10 @@ function KidHome() {
           ) : undefined
         }
       >
-        Recent activity
+        Recent
       </SectionTitle>
       <Card className="px-2 py-1 divide-y divide-[var(--line)]">
-        {walletTxs.slice(0, 4).map((t: (typeof walletTxs)[number]) => {
+        {walletTxs.slice(0, 3).map((t: (typeof walletTxs)[number]) => {
           const title = transactionTitle(t);
           const typeLabel = transactionTypeLabel(t.type, t.label);
           const subtitle =
@@ -305,27 +327,17 @@ function KidHome() {
               amount={Number(t.amount)}
               type={t.type}
               label={t.label}
-              icon={TX_ICON_MAP[t.type] || "transaction"}
             />
           );
         })}
         {walletTxs.length === 0 && (
-          <p className="m-0 p-6 text-center text-sm text-[var(--text-3)]">
-            No activity yet.
-          </p>
+          <div className="home-empty">
+            <PennyMascot size={64} state="guide" />
+            <p>Nothing here yet.</p>
+            <Link to="/kid/wallet" className="home-secondary-link">Ask for pocket money</Link>
+          </div>
         )}
       </Card>
-
-      <section className="paper-guidance mt-6" aria-label="Savings guidance">
-        <div className="paper-guidance__body">
-          <h3>A little saved, every day</h3>
-          <p>Keep your next goal in sight.</p>
-          <Link to="/kid/goals">
-            Open Tabung <span aria-hidden="true">→</span>
-          </Link>
-        </div>
-        <PennyMascot state="guide" size={80} />
-      </section>
 
       {showProfile && (
         <Modal

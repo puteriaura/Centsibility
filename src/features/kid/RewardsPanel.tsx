@@ -147,10 +147,10 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
                 }
                 className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${
                   !rewardsUnlocked
-                    ? "bg-white/80 border-transparent opacity-75"
+                    ? "bg-[var(--surface)] border-transparent opacity-75"
                     : hasEnough
                       ? "bg-[var(--surface)] border-transparent hover:border-[var(--primary)] shadow-sm"
-                      : "bg-white/90 border-dashed border-[var(--border)] opacity-85 hover:border-[var(--primary-soft)]"
+                      : "bg-[var(--surface)] border-dashed border-[var(--border)] opacity-85 hover:border-[var(--primary-soft)]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -158,7 +158,7 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
                     <AppIcon name={!rewardsUnlocked ? "lock" : s.icon} size={18} />
                   </div>
                   <span className={`inline-flex items-center gap-1 text-sm font-bold ${hasEnough ? "text-[var(--primary-hover)]" : "text-[var(--text-muted)]"}`}>
-                    {s.cost.toLocaleString("en-MY")} <AppIcon name="star" size={12} color={hasEnough ? "var(--primary)" : "var(--text-muted)"} />
+                    {s.cost.toLocaleString("en-MY")} <AppIcon name="star" size={12} color={hasEnough ? "var(--action-text)" : "var(--text-muted)"} />
                   </span>
                 </div>
                 <strong className="text-sm font-semibold text-[var(--ink)] line-clamp-2 leading-snug">

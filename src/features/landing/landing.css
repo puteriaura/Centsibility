@@ -209,10 +209,10 @@
   z-index: -1;
   background: linear-gradient(
     90deg,
-    #fff 0%,
-    rgb(255 255 255 / 0.98) 34%,
-    rgb(255 255 255 / 0.88) 48%,
-    rgb(255 255 255 / 0.15) 70%,
+    var(--surface) 0%,
+    color-mix(in srgb, var(--surface) 98%, transparent) 34%,
+    color-mix(in srgb, var(--surface) 88%, transparent) 48%,
+    color-mix(in srgb, var(--surface) 15%, transparent) 70%,
     transparent 100%
   );
 }
@@ -526,7 +526,7 @@
 .landing-saving-demo {
   width: min(100%, 320px);
   margin-inline: auto;
-  background: #fff;
+  background: var(--surface);
   border-radius: 16px;
   padding: 24px;
 }
@@ -584,7 +584,7 @@
   background: var(--canvas);
 }
 .landing-agreement-demo {
-  background: #fff;
+  background: var(--surface);
   border-radius: 16px;
   padding: 26px;
 }
@@ -642,7 +642,7 @@
   color: var(--action);
 }
 .landing-giving-art {
-  background: #fdf1de;
+  background: var(--warn-bg);
 }
 .landing-giving-symbol {
   width: 92px;
@@ -657,7 +657,7 @@
   color: var(--ink);
 }
 .landing-giving-demo {
-  background: #fff;
+  background: var(--surface);
   padding: 42px 24px 24px;
   border-radius: 16px;
   text-align: center;
@@ -1115,9 +1115,9 @@
   .landing-hero-scene::after {
     background: linear-gradient(
       180deg,
-      #fff 0%,
-      #fff 40%,
-      rgb(255 255 255 / 0.95) 46%,
+      var(--surface) 0%,
+      var(--surface) 40%,
+      color-mix(in srgb, var(--surface) 95%, transparent) 46%,
       transparent 58%
     );
   }
@@ -1283,3 +1283,19 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Marketing surfaces share the app palette without changing page composition. */
+.landing-header, .landing-family, .landing-phone-balance { background: var(--brand-card); color: var(--on-brand-card); }
+.landing-header .landing-brand, .landing-header .landing-menu-toggle, .landing-header .landing-desktop-nav a:hover, .landing-family p, .landing-family h2, .landing-family h3, .landing-phone-balance p { color: var(--on-brand-card); }
+.landing-header .landing-nav-login, .landing-header .landing-menu-toggle { border-color: var(--on-brand-card); }
+.landing-header .landing-nav-login:hover { background: var(--blue-100); }
+.landing-button { background: var(--sun); color: var(--on-sun) !important; font-family: var(--font-display); font-weight: 800; border-radius: 18px; box-shadow: 0 5px 0 var(--sun-edge); }
+.landing-button:hover { background: var(--sun); transform: none; }
+.landing-button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--sun-edge); }
+.landing-saving-note, .landing-demo-heading svg, .landing-loan-note svg, .landing-phone-actions > div, .landing-demo-bottom strong { color: var(--action-text); }
+.landing-giving-symbol { color: var(--on-sun); }
+:root[data-motion="reduced"] .landing-button:active { transform: none; }
+@media (prefers-reduced-motion: reduce) { .landing-button:active { transform: none; } }
+
+.landing-family .landing-text-link, .landing-family .landing-text-link:hover { color: var(--on-brand-card); text-decoration-color: var(--on-brand-card) !important; }
+.landing-header :is(a, button):focus-visible { outline-color: var(--on-brand-card); }

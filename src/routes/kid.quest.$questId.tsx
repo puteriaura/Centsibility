@@ -320,7 +320,7 @@ function KidQuestRunnerPage() {
               } else if (isSelected && !isCorrectIndex) {
                 buttonStyle = "bg-[var(--surface-pink)] border-[var(--error)] text-[var(--ink)]";
               } else {
-                buttonStyle = "bg-white/70 border-transparent opacity-60 text-[var(--text-muted)]";
+                buttonStyle = "bg-[var(--surface)] border-transparent opacity-60 text-[var(--text-muted)]";
               }
             } else if (isSelected) {
               buttonStyle = "bg-[var(--surface-pink)] border-[var(--primary)] text-[var(--ink)]";

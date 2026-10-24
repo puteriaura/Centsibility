@@ -55,6 +55,8 @@ export function CrewMemberCard({
   const [hideBalance, setHideBalance] = useState(false);
   const { isMasked, locked, openUnlockSheet } = usePrivacy();
   const [open, setOpen] = useState(defaultOpen);
+  const [codeVisible, setCodeVisible] = useState(false);
+  useEffect(() => { if (!open || isMasked) setCodeVisible(false); }, [open, isMasked]);
 
   useEffect(() => {
     if (defaultOpen) setOpen(true);
@@ -102,9 +104,8 @@ export function CrewMemberCard({
       const res = await edgeParentResetKidPin({ kidId: kid.id });
       setResetCode(res.loginCode);
       sfx.coin();
-      toast.success(
-        `New access code for ${kid.name}: ${res.loginCode}. Their old PIN no longer works.`,
-      );
+      setCodeVisible(false);
+      toast.success("New access code ready. Their old PIN no longer works.");
       onRefresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to reset child PIN");
@@ -308,7 +309,7 @@ export function CrewMemberCard({
         <div className="crew-card__meta min-w-0 flex-1 text-left">
           <div className="flex items-center gap-1.5 flex-wrap">
             <strong className="crew-card__name truncate">{kid.name}</strong>
-            <Badge
+            {(open || cardFrozen) && <Badge
               variant={cardFrozen ? "error" : "default"}
               className="text-[11px] px-2 py-0.5 font-medium"
             >
@@ -316,7 +317,7 @@ export function CrewMemberCard({
               {controlsLocked && (
                 <AppIcon name="lock" size={12} aria-label="Locked" />
               )}
-            </Badge>
+            </Badge>}
           </div>
           <span className="crew-card__sub truncate">
             {kid.username ? `@${kid.username}` : "Child account"}
@@ -325,33 +326,7 @@ export function CrewMemberCard({
             {" · "}
             {kid.coins ?? 0} pts
           </span>
-          <span className="crew-card__sub block truncate text-[11px]">
-            {activeCode ? (
-              <span>
-                Access code:{" "}
-                <strong
-                  className="font-mono text-[var(--primary-text)] font-semibold"
-                  aria-label={isMasked ? "Code hidden" : undefined}
-                  onClick={
-                    locked
-                      ? (e) => {
-                          e.stopPropagation();
-                          openUnlockSheet();
-                        }
-                      : undefined
-                  }
-                  style={locked ? { cursor: "pointer" } : undefined}
-                >
-                  {isMasked ? "••••••" : activeCode}
-                </strong>{" "}
-                · valid for 3 days · give this to your child once
-              </span>
-            ) : (
-              <span className="text-[var(--success-text)] font-medium">
-                PIN set
-              </span>
-            )}
-          </span>
+
         </div>
         <div className="crew-card__balance text-right shrink-0">
           <span className="tabular-nums font-extrabold text-[var(--ink)]">
@@ -365,6 +340,20 @@ export function CrewMemberCard({
           </span>
         </div>
       </button>
+
+      {activeCode && <div className="crew-card__access">
+        <Button type="button" variant="ghost" size="sm" aria-expanded={codeVisible && !isMasked}
+          onClick={() => { if (locked) { openUnlockSheet(); return; } setOpen(true); setCodeVisible(v => !v); }}>
+          {codeVisible && !isMasked ? "Hide code" : "Show code"}
+        </Button>
+        {codeVisible && !isMasked && <div className="crew-card__revealed-code">
+          <strong className="crew-access-code font-mono" aria-label="Access code">{activeCode}</strong>
+          <Button type="button" variant="secondary" size="sm" onClick={async () => {
+            try { await navigator.clipboard.writeText(activeCode); toast.success("Code copied!"); }
+            catch { toast.error("Copy failed. Try again."); }
+          }}><AppIcon name="copy" size={16} />Copy code</Button>
+        </div>}
+      </div>}
 
       {open && (
         <div className="crew-card__body space-y-3">
@@ -436,45 +425,6 @@ export function CrewMemberCard({
               </div>
             )}
           </div>
-
-          {resetCode && (
-            <div className="p-3 bg-[var(--surface-soft)] border border-[var(--primary)] rounded-xl text-center space-y-2">
-              <div className="text-xs font-semibold text-[var(--ink)]">
-                New One-Time Access Code for {kid.name}:
-              </div>
-              <div
-                className="text-2xl font-black tracking-widest text-[var(--primary)] font-mono"
-                aria-label={isMasked ? "Code hidden" : undefined}
-                onClick={locked ? openUnlockSheet : undefined}
-                style={locked ? { cursor: "pointer" } : undefined}
-              >
-                {isMasked ? "••••••" : resetCode}
-              </div>
-              <p className="text-[11px] text-[var(--text-secondary)] m-0">
-                Give this code to {kid.name}. They will enter it on the login
-                screen to set their new 6-digit PIN.
-              </p>
-              <div className="flex gap-2 justify-center pt-1">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => {
-                    navigator.clipboard.writeText(resetCode);
-                    toast.success("Code copied!");
-                  }}
-                >
-                  Copy Code
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setResetCode(null)}
-                >
-                  Done
-                </Button>
-              </div>
-            </div>
-          )}
 
           <div className="grid grid-cols-4 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
             <div className="text-center">

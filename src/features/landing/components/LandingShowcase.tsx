@@ -10,7 +10,6 @@ export function PhoneMockup() {
       <div className="landing-phone-top">
         <div>
           <span>Young saver</span>
-          <strong>Hi, Aiman.</strong>
         </div>
         <span className="landing-avatar">A</span>
       </div>

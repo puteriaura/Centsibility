@@ -1,3 +1,4 @@
+import { useTheme } from "@/lib/theme";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
@@ -45,17 +46,11 @@ function groupByDate(txs: Tx[]): Record<string, Tx[]> {
   );
 }
 
-// Chart palette (styles.css --chart-*): categories only, never the brand pink of the old theme
-const PIE_COLORS = [
-  "var(--action)",
-  "#0F766E",
-  "#B45309",
-  "#6941C6",
-  "#475467",
-  "#BE185D",
-];
+// Category colours are paired with names and amounts in the legend.
+const PIE_COLORS = [1, 2, 3, 4, 5, 6].map(n => `var(--chart-${n})`);
 
 function Reports() {
+  const { reduced } = useTheme();
   const {
     kids,
     loans,
@@ -176,6 +171,11 @@ function Reports() {
     .filter((t) => isDebit(t.type, t.label))
     .reduce((s, t) => s + t.amount, 0);
   const net = totalIn - totalOut;
+  const chartCategories = Object.entries(stmtTxs.filter(t => isDebit(t.type, t.label)).reduce((acc, t) => {
+    const name = transactionTypeLabel(t.type, t.label);
+    acc[name] = (acc[name] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>)).map(([name, value]) => ({ name, value }));
 
   const endBalance = stmt?.kid.balance ?? 0;
   let runningBalance = endBalance;
@@ -430,7 +430,7 @@ function Reports() {
                 className={`text-lg sm:text-xl font-bold tabular-nums mt-1 ${
                   net >= 0
                     ? "text-[var(--success-text)]"
-                    : "text-[var(--error-text)]"
+                    : "text-[var(--ink)]"
                 }`}
               >
                 {locked ? <LogInToView /> : <Money amount={net} sign />}
@@ -469,21 +469,8 @@ function Reports() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={Object.entries(
-                        stmtTxs
-                          .filter((t) => isDebit(t.type, t.label))
-                          .reduce(
-                            (acc, t) => {
-                              const name = transactionTypeLabel(
-                                t.type,
-                                t.label,
-                              );
-                              acc[name] = (acc[name] || 0) + t.amount;
-                              return acc;
-                            },
-                            {} as Record<string, number>,
-                          ),
-                      ).map(([name, value]) => ({ name, value }))}
+                      isAnimationActive={!reduced}
+                      data={chartCategories}
                       cx="50%"
                       cy="50%"
                       innerRadius={55}
@@ -491,25 +478,8 @@ function Reports() {
                       paddingAngle={4}
                       dataKey="value"
                     >
-                      {Object.entries(
-                        stmtTxs
-                          .filter((t) => isDebit(t.type, t.label))
-                          .reduce(
-                            (acc, t) => {
-                              const name = transactionTypeLabel(
-                                t.type,
-                                t.label,
-                              );
-                              acc[name] = (acc[name] || 0) + t.amount;
-                              return acc;
-                            },
-                            {} as Record<string, number>,
-                          ),
-                      ).map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={PIE_COLORS[index % PIE_COLORS.length]}
-                        />
+                      {chartCategories.map((_, index) => (
+                        <Cell key={`cell-${index}`} style={{ fill: PIE_COLORS[index % PIE_COLORS.length] }} />
                       ))}
                     </Pie>
                     <RechartsTooltip
@@ -518,6 +488,12 @@ function Reports() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
+              <ul className="insights-cat-list">
+                {chartCategories.map((category, index) => <li key={category.name} className="insights-cat-row">
+                  <span className="category-dot" aria-hidden="true" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
+                  <span className="flex-1">{category.name}</span><Money amount={category.value} />
+                </li>)}
+              </ul>
             </Card>
           )}
 

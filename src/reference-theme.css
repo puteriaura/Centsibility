@@ -140,3 +140,60 @@ button[data-variant="secondary"] { background: var(--surface); border: 2px solid
 
 .balance-hero :is(h1, h2, h3, h4, strong, small, p, span) { color: var(--on-brand-card); }
 .balance-hero .balance-hero__tag, .balance-hero .balance-hero__tag :is(strong, span) { color: var(--on-sun); }
+/* Approved Bright home composition; screen flows stay unchanged. */
+:root { --goal-progress: var(--blue-600); }
+:root[data-theme="dark"] { --goal-progress: #A0B0DA; }
+.shell-topbar--home { display: flex; justify-content: space-between; }
+.shell-topbar--home .shell-topbar__right { display: flex; flex-direction: row-reverse; gap: 10px; }
+.shell-topbar--home .shell-icon-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); }
+.shell-topbar--home [aria-label="Ask Penny"] { background: transparent; }
+.shell-topbar--home [aria-label="Ask Penny"] svg { width: 44px; height: 44px; }
+.balance-hero { min-height: 158px; border-radius: 26px; padding: 20px 22px; }
+.balance-hero__amount { margin-top: 6px; }
+.balance-hero__tag { margin-top: 12px; }
+.quick-grid { margin-top: 22px; padding: 0 4px; }
+:root[data-theme="dark"] .quick-circle { background: var(--gray-50); }
+.home-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+.home-tile { min-width: 0; min-height: 146px; margin: 0; border-radius: 24px; padding: 16px; background: var(--surface); color: var(--ink); box-shadow: var(--paper-shadow); text-decoration: none; }
+.home-tile small { display: block; color: var(--text-2); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; overflow-wrap: anywhere; }
+.home-tile > strong { display: block; font-family: var(--font-display); font-size: 22px; font-weight: 800; line-height: 1.15; margin-top: 6px; }
+.home-streak-badge { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 16px; margin-top: 12px; background: var(--sun); color: var(--on-sun); box-shadow: 0 4px 0 var(--sun-edge); }
+.home-goal-ring { width: 64px; height: 64px; margin-top: 8px; }
+.home-goal-ring text { fill: var(--ink); font-family: var(--font-display); font-weight: 800; font-size: 16px; }
+.home-empty { display: flex; flex-direction: column; align-items: center; padding: 24px; gap: 12px; }
+.home-empty p { margin: 0; }
+.home-secondary-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px; border-radius: 18px; border: 2px solid var(--blue-200); color: var(--action-text); text-align: center; }
+.parent-page > .quick-grid { margin-top: 22px; }
+.home-children { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.home-children .crew-card { min-width: 0; }
+.home-children .crew-card__summary { flex-wrap: wrap; padding: 14px; gap: 10px; align-items: start; }
+.home-children .crew-card__meta { flex-basis: calc(100% - 56px); }
+
+.home-children .crew-card__balance { width: 100%; text-align: left; font-size: 24px; }
+.home-children .crew-card__chevron { float: right; }
+.crew-card__access { padding: 0 10px 10px; }
+.crew-card__revealed-code { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 4px; }
+.crew-access-code { overflow-wrap: anywhere; }
+.home-children .crew-card:has(.crew-card__body) { grid-column: 1 / -1; }
+.list-row__title { color: var(--ink); }
+.list-row__icon { color: var(--action-text); }
+/* Screen labels use the text role, rather than the action fill, in dark mode. */
+:root[data-theme="dark"] :is(.app-shell, .auth-page) .text-\[var\(--primary\)\] { color: var(--action-text); }
+:root[data-theme="dark"] .landing-page { color-scheme: dark; }
+@media (max-width: 374px) { .home-tile { padding: 14px; } .home-tile > strong { font-size: 20px; } }
+.home-balance .balance-hero { min-height: 158px; padding-bottom: 68px; }
+.home-balance .balance-hero__tag { position: absolute; right: 18px; bottom: 18px; margin: 0; }
+.home-balance .balance-hero__label { font-size: 15px; }
+.home-children .crew-card__name { font-size: 15px; }
+.home-children .crew-card__sub { font-size: 11.5px; }
+/* Keep named chart amounts legible at enlarged text sizes. */
+.insights-cat-row { flex-wrap: wrap; }
+/* Home section names follow the approved mixed-case display headings. */
+.app-shell:has(.home-balance) .section-title__heading { font-family: var(--font-display); font-size: 19px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.parent-page .home-children .crew-card__body { min-width: 0; }
+
+.home-children .crew-card:not(:has(.crew-card__body)) .crew-card__sub { display: none; }
+.home-children .crew-card__balance { justify-content: space-between; }
+/* Enlarged text reflows the paired home cards into one readable column. */
+.home-children, .home-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
+.home-children .crew-card__balance > span:first-child { min-width: 0; white-space: nowrap; font-size: clamp(20px, 6vw, 24px); }
