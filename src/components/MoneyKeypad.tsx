@@ -228,7 +228,7 @@ export function MoneyKeypad({
             <Button
               key={opt}
               type="button"
-              variant={reference === opt ? "primary" : "secondary"}
+              variant={reference === opt ? "selected" : "secondary"}
               size="sm"
               onClick={() => setReference(opt)}
               className="justify-center text-xs"

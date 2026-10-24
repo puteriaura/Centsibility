@@ -316,7 +316,7 @@ function KidLoans() {
                     <Button
                       key={d}
                       type="button"
-                      variant={dueDays === d ? "primary" : "secondary"}
+                      variant={dueDays === d ? "selected" : "secondary"}
                       size="sm"
                       onClick={() => setDueDays(d)}
                       className="justify-center"

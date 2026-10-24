@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/providers/auth";
+import { QuoteCard } from "@/components/QuoteCard";
 import { useParentData } from "@/hooks/use-parent-data";
 import { edgeParentCreateKid, edgeParentDeleteKid } from "@/lib/edge";
 import { CrewMemberCard } from "@/features/parent/components";
@@ -27,6 +29,8 @@ export const Route = createFileRoute("/parent/")({
 });
 
 function ParentHome() {
+  const { user } = useAuth();
+  const needsComfortName = !(user?.user_metadata as { comfort_name?: string } | undefined)?.comfort_name;
   const { isMasked, locked, toggleHidden, openUnlockSheet } = useMoney();
   const {
     kids,
@@ -183,7 +187,7 @@ function ParentHome() {
         <button type="button" className="quick-btn" onClick={openRecruit}><span className="quick-circle"><AppIcon name="userplus" size={28} /></span><span className="quick-label">Add child</span></button>
       </nav>
       {/* Anything waiting on the parent, first */}
-      {(pendingCount > 0) && (
+      {(pendingCount > 0 || needsComfortName) && (
         <div>
           <SectionTitle
             className="mt-2"
@@ -232,7 +236,16 @@ function ParentHome() {
                 <span className="list-row__end">{r.cost} pts</span>
               </Link>
             ))}
-
+            {needsComfortName && (
+              <Link to="/parent/settings" className="list-row" onClick={() => sfx.tap()}>
+                <span className="list-row__icon" aria-hidden="true"><AppIcon name="penny" size={20} /></span>
+                <span className="list-row__body">
+                  <span className="list-row__title">Choose what your children call you</span>
+                  <span className="list-row__sub">Mama, Papa, Ummi or your own</span>
+                </span>
+                <AppIcon name="chevron" size={18} aria-hidden="true" />
+              </Link>
+            )}
           </div>
         </div>
       )}
@@ -317,6 +330,7 @@ function ParentHome() {
         )}
       </div>
 
+      <QuoteCard variant="parent" />
 
       <Modal
         isOpen={Boolean(deletingKidId)}

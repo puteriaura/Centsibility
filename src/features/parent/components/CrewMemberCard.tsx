@@ -309,6 +309,7 @@ export function CrewMemberCard({
         <div className="crew-card__meta min-w-0 flex-1 text-left">
           <div className="flex items-center gap-1.5 flex-wrap">
             <strong className="crew-card__name truncate">{kid.name}</strong>
+            {kid.has_pin && <span className="text-xs text-[var(--text-2)]">PIN set</span>}
             {(open || cardFrozen) && <Badge
               variant={cardFrozen ? "error" : "default"}
               className="text-[11px] px-2 py-0.5 font-medium"
@@ -352,6 +353,7 @@ export function CrewMemberCard({
             try { await navigator.clipboard.writeText(activeCode); toast.success("Code copied!"); }
             catch { toast.error("Copy failed. Try again."); }
           }}><AppIcon name="copy" size={16} />Copy code</Button>
+          <p className="w-full m-0 text-xs text-[var(--text-2)]">Valid for 3 days. Your child enters it once on the login screen.</p>
         </div>}
       </div>}
 
@@ -656,7 +658,7 @@ export function CrewMemberCard({
             <Button
               type="button"
               variant={
-                isActing && actType === "WITHDRAWAL" ? "primary" : "outline"
+                isActing && actType === "WITHDRAWAL" ? "selected" : "outline"
               }
               size="sm"
               className="justify-center text-xs font-semibold"
@@ -672,7 +674,7 @@ export function CrewMemberCard({
             </Button>
             <Button
               type="button"
-              variant={logOpen ? "primary" : "outline"}
+              variant={logOpen ? "selected" : "outline"}
               size="sm"
               className="justify-center text-xs font-semibold"
               onClick={() => {
@@ -684,7 +686,7 @@ export function CrewMemberCard({
             </Button>
             <Button
               type="button"
-              variant={isScheduling ? "primary" : "outline"}
+              variant={isScheduling ? "selected" : "outline"}
               size="sm"
               className="justify-center text-xs font-semibold"
               onClick={() => {

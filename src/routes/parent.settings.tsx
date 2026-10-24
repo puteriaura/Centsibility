@@ -668,7 +668,7 @@ function Settings() {
                           <Button
                             key={r}
                             size="sm"
-                            variant={active ? "primary" : "outline"}
+                            variant={active ? "selected" : "outline"}
                             onClick={() => setRate(k.id, r)}
                             style={{ minWidth: "56px" }}
                           >

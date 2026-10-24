@@ -10,6 +10,8 @@ const buttonVariants = cva(
       variant: {
         primary:
           "bg-[var(--sun)] text-[var(--on-sun)] font-display font-extrabold rounded-[18px]",
+        selected:
+          "bg-[var(--blue-100)] text-[var(--action-text)] font-bold",
         secondary:
           "bg-[var(--surface)] border-2 border-[var(--blue-200)] text-[var(--action-text)]",
         outline:

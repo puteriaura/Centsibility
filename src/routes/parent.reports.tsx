@@ -596,10 +596,10 @@ function Reports() {
                           return (
                             <div
                               key={tx.id}
-                              className="p-3 flex items-center justify-between gap-3 text-xs"
+                              className="p-3 flex flex-wrap items-center justify-between gap-3 text-xs"
                             >
-                              <div>
-                                <div className="flex items-center gap-2">
+                              <div className="flex-1 min-w-0 basis-40">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <Badge
                                     variant={debit ? "default" : "success"}
                                   >
@@ -614,7 +614,7 @@ function Reports() {
                                 </span>
                               </div>
 
-                              <div className="text-right shrink-0">
+                              <div className="text-right shrink-0 ml-auto">
                                 <span
                                   className={`text-sm font-bold tabular-nums block ${
                                     amt.tone === "out"

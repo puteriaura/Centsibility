@@ -179,7 +179,7 @@ function KidLogin() {
                 type="button"
                 role="tab"
                 aria-selected={tab === "login"}
-                variant={tab === "login" ? "primary" : "ghost"}
+                variant={tab === "login" ? "selected" : "ghost"}
                 size="sm"
                 onClick={() => {
                   setTab("login");
@@ -194,7 +194,7 @@ function KidLogin() {
                 type="button"
                 role="tab"
                 aria-selected={tab === "code"}
-                variant={tab === "code" ? "primary" : "ghost"}
+                variant={tab === "code" ? "selected" : "ghost"}
                 size="sm"
                 onClick={() => setTab("code")}
                 style={{ borderRadius: "0.625rem" }}
