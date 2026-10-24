@@ -58,7 +58,7 @@ export function Money({
   if (isMasked) {
     return (
       <span
-        className={className}
+        className={`tabular-nums ${className}`.trim()}
         aria-label="Amount hidden"
         onClick={locked ? handleClick : onClick}
         style={locked ? { cursor: "pointer" } : undefined}
@@ -69,7 +69,7 @@ export function Money({
   }
 
   return (
-    <span className={className} onClick={onClick}>
+    <span className={`tabular-nums ${className}`.trim()} onClick={onClick}>
       {formatRM(amount, { sign })}
     </span>
   );

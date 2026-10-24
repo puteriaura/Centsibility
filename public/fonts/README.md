@@ -1,7 +1,5 @@
-# Self-hosted Red Hat fonts
+# Self-hosted fonts
 
-The application uses the official Red Hat Text Regular and Semibold WOFF2 files and Red Hat Display Bold WOFF2 file. These existing source-checkout assets support the approved reference typography without third-party font requests. They retain the upstream Latin character set used by Bahasa Malaysia and accented names; no local subsetting tool was added.
+Baloo 2 (700 and 800) is used for headings and money amounts. Lexend (400, 500 and 600) is used for body text. All files are Latin WOFF2 subsets from Fontsource 5.3.0. Each face uses font-display: swap.
 
-Source: https://github.com/RedHatOfficial/RedHatFont
-
-License: SIL Open Font License 1.1; see OFL.txt. Copyright 2021 The Red Hat Project Authors.
+Both families are licensed under SIL Open Font License 1.1. See OFL-baloo-2.txt and OFL-lexend.txt. No remote font request is needed.

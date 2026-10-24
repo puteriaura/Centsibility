@@ -514,7 +514,7 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
               {it.center ? (
                 <>
                   <span className="shell-navitem__center-pill">
-                    <AppIcon name={it.icon} size={24} color="#fff" />
+                    <AppIcon name={it.icon} size={24} color="var(--on-sun)" strokeWidth={1.75} />
                   </span>
                   <span className="shell-navitem__label">{it.label}</span>
                 </>

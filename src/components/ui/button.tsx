@@ -1,17 +1,17 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
-// One filled button per view (primary). Secondary is tonal blue, outline is
-// for neutral alternatives, ghost for inline text actions. All are pills.
+// Primary actions use a chunky mustard button. Secondary uses a bordered
+// surface, outline is neutral, and ghost is for inline text actions.
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 font-semibold select-none cursor-pointer rounded-full transition-colors duration-150 disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] min-h-[44px] min-w-[44px]",
   {
     variants: {
       variant: {
         primary:
-          "bg-[var(--action)] text-[var(--on-action)] hover:bg-[var(--action-pressed)] active:bg-[var(--blue-800)]",
+          "bg-[var(--sun)] text-[var(--on-sun)] font-display font-extrabold rounded-[18px]",
         secondary:
-          "bg-[var(--action-tint)] text-[var(--action-text)] hover:bg-[var(--action-tint-strong)]",
+          "bg-[var(--surface)] border-2 border-[var(--blue-200)] text-[var(--action-text)]",
         outline:
           "bg-[var(--surface)] text-[var(--ink)] border border-[var(--line-strong)] hover:bg-[var(--surface-hover)]",
         ghost:
@@ -19,7 +19,7 @@ const buttonVariants = cva(
         danger:
           "bg-[var(--neg)] text-white hover:bg-[var(--red-800)]",
         brand:
-          "bg-[var(--action)] text-[var(--on-action)] hover:bg-[var(--action-pressed)] active:bg-[var(--blue-800)]",
+          "bg-[var(--sun)] text-[var(--on-sun)] font-display font-extrabold rounded-[18px]",
       },
       size: {
         sm: "h-10 px-4 text-sm",

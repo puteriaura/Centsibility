@@ -47,7 +47,7 @@ function groupByDate(txs: Tx[]): Record<string, Tx[]> {
 
 // Chart palette (styles.css --chart-*): categories only, never the brand pink of the old theme
 const PIE_COLORS = [
-  "#1F4FD1",
+  "var(--action)",
   "#0F766E",
   "#B45309",
   "#6941C6",

@@ -17,13 +17,14 @@ export interface BalanceCardProps {
   className?: string;
   breakdown?: Array<{ label: string; amount: number | null }>;
   footnote?: string;
+  tag?: React.ReactNode;
   isExpanded?: boolean;
   onToggleExpanded?: (expanded: boolean) => void;
 }
 
 const HIDDEN = "RM*****";
 
-// The screen's one solid blue block. Hierarchy inside it: label, then the
+// The screen's periwinkle balance surface. Hierarchy: label, then the
 // amount (largest type on the screen), then one supporting line.
 export function BalanceCard({
   title = "Spending balance",
@@ -39,6 +40,7 @@ export function BalanceCard({
   className = "",
   breakdown,
   footnote,
+  tag,
   isExpanded,
   onToggleExpanded,
 }: BalanceCardProps) {
@@ -54,9 +56,9 @@ export function BalanceCard({
   };
 
   const isDark = variant === "brand" || variant === "navy";
-  // White text on the brand blue is 6.8:1; tinted white would drop below AA.
-  const soft = isDark ? "text-white" : "text-[var(--text-2)]";
-  const strong = isDark ? "text-white" : "text-[var(--ink)]";
+  // Navy text stays readable on the same brand surface in both themes.
+  const soft = isDark ? "text-[var(--on-brand-card)]" : "text-[var(--text-2)]";
+  const strong = isDark ? "text-[var(--on-brand-card)]" : "text-[var(--ink)]";
   const divider = isDark ? "border-white/25" : "border-[var(--line)]";
 
   return (
@@ -70,7 +72,7 @@ export function BalanceCard({
               onClick={onToggleHide}
               className={`-my-2.5 -mr-2.5 h-11 w-11 shrink-0 rounded-full ${
                 isDark
-                  ? "text-white hover:bg-white/15"
+                  ? "text-[var(--on-brand-card)] hover:bg-white/15"
                   : "text-[var(--text-2)] hover:bg-[var(--surface-sunken)]"
               }`}
               aria-label={hideBalance ? "Show balance" : "Hide balance"}
@@ -186,7 +188,7 @@ export function BalanceCard({
                     key={item.label}
                     className={
                       isDark
-                        ? "balance-hero__meta text-white"
+                        ? "balance-hero__meta text-[var(--on-brand-card)]"
                         : "inline-flex h-[26px] items-center rounded-full bg-[var(--surface-sunken)] px-2.5 text-xs font-semibold text-[var(--text-2)]"
                     }
                   >
@@ -205,6 +207,7 @@ export function BalanceCard({
             )}
           </div>
         )}
+        {tag && <div className="balance-hero__tag">{tag}</div>}
       </Card>
     </div>
   );

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/kid/insights")({
 });
 
 // Chart palette (styles.css --chart-*): distinct hues for categories only; red stays reserved for money out.
-const CAT_COLORS = ["#1F4FD1", "#0F766E", "#B45309", "#6941C6", "#475467"];
+const CAT_COLORS = ["var(--action)", "#0F766E", "#B45309", "#6941C6", "#475467"];
 
 function formatDateHeader(dateStr: string) {
   try {

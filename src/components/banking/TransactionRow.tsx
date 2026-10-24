@@ -17,8 +17,7 @@ export interface TransactionRowProps {
   className?: string;
 }
 
-// One row of a statement. Icons stay neutral; only the amount carries
-// direction: money in is green with a plus, money out is ink with a minus.
+// Direction arrows and signed amounts distinguish money in from money out.
 export function TransactionRow({
   title,
   subtitle,
@@ -27,7 +26,6 @@ export function TransactionRow({
   isIncome = false,
   type,
   label,
-  icon,
   onClick,
   className = "",
 }: TransactionRowProps) {
@@ -35,7 +33,7 @@ export function TransactionRow({
   const amt =
     type !== undefined ? transactionAmount(type, label, amount) : null;
   const isPos = amt ? amt.tone === "in" : isIncome;
-  const iconName = icon || (isPos ? "deposit" : "withdrawal");
+  const iconName = isPos ? "incoming" : "outgoing";
 
   return (
     <div
@@ -76,7 +74,7 @@ export function TransactionRow({
 
       <span
         className={`shrink-0 text-sm font-bold tabular-nums ${
-          isPos ? "text-[var(--pos)]" : "text-[var(--ink)]"
+          isPos ? "text-[var(--pos)]" : "text-[var(--neg)]"
         }`}
         aria-label={isMasked ? "Amount hidden" : undefined}
         onClick={

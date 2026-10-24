@@ -30,7 +30,7 @@ import {
 import { getKidSession } from "@/lib/kid-session";
 import { MoneyKeypad } from "@/components/MoneyKeypad";
 import { AppIcon } from "@/components/ui/app-icon";
-import { Info, Moon } from "lucide-react";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -1543,8 +1543,8 @@ function KidInvest() {
                             className="text-[11px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
                             aria-label="Shariah screened"
                           >
-                            <Moon size={11} aria-hidden="true" />
-                            <Info size={11} aria-hidden="true" />
+                            <AppIcon name="moon" size={11} aria-hidden="true" />
+                            <AppIcon name="info" size={11} aria-hidden="true" />
                             <span className="sr-only">Screening information</span>
                           </Badge>
                         </button>
@@ -1601,8 +1601,8 @@ function KidInvest() {
                         className="text-[11px] cursor-pointer hover:opacity-80 inline-flex items-center gap-1"
                         aria-label="Shariah screened"
                       >
-                        <Moon size={11} aria-hidden="true" />
-                        <Info size={11} aria-hidden="true" />
+                        <AppIcon name="moon" size={11} aria-hidden="true" />
+                        <AppIcon name="info" size={11} aria-hidden="true" />
                         <span className="sr-only">Screening information</span>
                       </Badge>
                     </button>

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { CornerRightUp } from "lucide-react";
+import { AppIcon } from "@/components/ui/app-icon";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/components/hooks/use-auto-resize-textarea";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ export function AIInputWithLoading({ id = "penny-input", placeholder = "Ask abou
     <label htmlFor={id} className="sr-only">Ask Penny</label>
     <div className="relative">
       <Textarea id={id} ref={textareaRef} value={value} onChange={e => setValue(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void submit(); } }} placeholder={placeholder} maxLength={2000} disabled={busy} className="resize-none rounded-3xl pl-4 pr-14 py-4 leading-snug" style={{ minHeight, maxHeight }} />
-      <button type="button" onClick={() => void submit()} disabled={busy || !value.trim()} aria-label="Send message to Penny" className="absolute right-2 bottom-2 w-11 h-11 flex items-center justify-center rounded-full bg-[var(--primary)] text-white disabled:opacity-50"><CornerRightUp size={20} aria-hidden="true" /></button>
+      <button type="button" onClick={() => void submit()} disabled={busy || !value.trim()} aria-label="Send message to Penny" className="absolute right-2 bottom-2 w-11 h-11 flex items-center justify-center rounded-full bg-[var(--primary)] text-white disabled:opacity-50"><AppIcon name="send" size={20} aria-hidden="true" /></button>
     </div>
     <p className="mt-1 text-xs text-[var(--text-secondary)]">{busy ? "Waiting for Penny’s answer…" : <><span className="pointer-coarse:hidden">Enter to send · Shift + Enter for a new line. </span>Never share your PIN.</>}</p>
   </div>;

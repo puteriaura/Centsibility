@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { hasIcon } from "@/components/ui/app-icon";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { AppIcon, hasIcon } from "@/components/ui/app-icon";
 
 function getAllTsxFiles(dir: string, fileList: string[] = []): string[] {
   const files = readdirSync(dir);
@@ -18,6 +20,21 @@ function getAllTsxFiles(dir: string, fileList: string[] = []): string[] {
 }
 
 describe("AppIcon coverage", () => {
+  it("defines every map value and keeps saving aliases on the sprout", () => {
+    const source = readFileSync("src/components/ui/app-icon.tsx", "utf8");
+    const map = source.split("const ICONS:")[1].split("};")[0];
+    const keys = [...map.matchAll(/^  ["]?([\w-]+)["]?: /gm)].map(match => match[1]);
+    expect(keys.length).toBeGreaterThan(100);
+    for (const name of keys) {
+      expect(hasIcon(name), name).toBe(true);
+      expect(renderToStaticMarkup(React.createElement(AppIcon, { name }))).toContain("<svg");
+    }
+    const render = (name: string) => renderToStaticMarkup(React.createElement(AppIcon, { name }));
+    expect(render("piggy")).toBe(render("sprout"));
+    expect(render("piggybank")).toBe(render("sprout"));
+    expect(render("tabung")).toBe(render("sprout"));
+    expect(render("unknown")).toContain("<svg");
+  });
   it("resolves all static icon names used across src TSX components", () => {
     const srcDir = join(process.cwd(), "src");
     const tsxFiles = getAllTsxFiles(srcDir);

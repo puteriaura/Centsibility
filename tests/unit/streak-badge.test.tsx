@@ -7,7 +7,8 @@ describe("StreakBadge", () => {
   it("renders the count with a flame icon and an aria-label when count > 0", () => {
     const html = renderToString(<StreakBadge count={2} />);
     expect(html).toContain(">2</span>");
-    expect(html).toContain("lucide-flame");
+    expect(html).toContain("<svg");
+    expect(html).toContain('stroke-width="1.5"');
     expect(html).toContain('aria-label="2 day streak"');
   });
 

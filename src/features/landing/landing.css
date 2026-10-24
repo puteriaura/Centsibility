@@ -1,19 +1,9 @@
 /* Landing-only composition; the app's colors and type remain the contract. */
 .landing-page {
-  --landing-accent: #efbc56;
-  --canvas: #f2f4f7;
-  --surface: #fff;
-  --ink: #0e1726;
-  --text-2: #475467;
-  --text-3: #5b6575;
-  --line: #e4e7ec;
-  --line-strong: #868f9f;
-  --action: #1f4fd1;
-  --action-pressed: #173ca6;
-  --action-tint: #eef3fe;
+  --landing-accent: var(--sun);
   background: var(--surface);
   color: var(--ink);
-  font-family: "Red Hat Text", sans-serif;
+  font-family: var(--font-text);
   font-size: 16px;
   line-height: 1.65;
   color-scheme: light;
@@ -22,7 +12,7 @@
 .landing-page h2,
 .landing-page h3,
 .landing-page strong {
-  font-family: "Red Hat Display", sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
 }
 .landing-page h1,
@@ -118,7 +108,7 @@
   display: inline-flex;
   gap: 10px;
   align-items: center;
-  font-family: "Red Hat Display", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: -0.045em;
@@ -386,7 +376,7 @@
   font-weight: 600;
 }
 .landing-goal-track {
-  background: #dce5fb;
+  background: var(--blue-100);
   height: 10px;
   border-radius: 5px;
   overflow: hidden;
@@ -623,7 +613,7 @@
 }
 .landing-agreement-demo dd {
   margin: 0;
-  font-family: "Red Hat Display", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -912,7 +902,7 @@
 }
 .landing-mini-track {
   height: 6px;
-  background: #dce5fb;
+  background: var(--blue-100);
   border-radius: 3px;
 }
 .landing-mini-track span {
@@ -981,7 +971,7 @@
   padding-bottom: 0;
 }
 .landing-principles dt {
-  font-family: "Red Hat Display", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 700;
   display: flex;
@@ -990,7 +980,7 @@
   gap: 20px;
 }
 .landing-principles dt span {
-  font-family: "Red Hat Text", sans-serif;
+  font-family: var(--font-text);
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-2);

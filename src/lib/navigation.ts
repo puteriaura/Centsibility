@@ -21,7 +21,7 @@ export const NAV: Record<Mode, NavItem[]> = {
     { to: "/kid", label: "Home", icon: "home" },
     { to: "/kid/wallet", label: "Wallet", icon: "wallet" },
     // Transfer opens a focused compose flow without the dock.
-    { to: "/kid/transfer", label: "Transfer", icon: "transfer", center: true },
+    { to: "/kid/transfer", label: "Send", icon: "transfer", center: true },
     { to: "/kid/insights", label: "Insights", icon: "reports" },
     { to: "/kid/more", label: "More", icon: "more" },
   ],
@@ -37,7 +37,7 @@ export const NAV: Record<Mode, NavItem[]> = {
     // focused flow without the dock.
     {
       to: "/parent/transfer",
-      label: "Transfer",
+      label: "Send",
       icon: "transfer",
       center: true,
     },
@@ -70,7 +70,7 @@ const TITLES: Record<Mode, Array<[string, string]>> = {
     ["/kid/card", "Card"],
     ["/kid/insights", "Insights"],
     ["/kid/chat", "Penny"],
-    ["/kid/transfer", "Transfer"],
+    ["/kid/transfer", "Send"],
     ["/kid/missions", "Missions"],
     ["/kid/quest", "Quest"],
     ["/kid/notifications", "Notifications"],
@@ -80,7 +80,7 @@ const TITLES: Record<Mode, Array<[string, string]>> = {
   ],
   parent: [
     ["/parent/approvals", "Approvals"],
-    ["/parent/transfer", "Transfer"],
+    ["/parent/transfer", "Send"],
     ["/parent/insights", "Insights"],
     ["/parent/reports", "Statements"],
     ["/parent/settings", "Settings"],
