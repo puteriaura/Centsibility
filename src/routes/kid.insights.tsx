@@ -1,3 +1,4 @@
+import { SlidingPill } from "@/components/ui/sliding-pill";
 import { insightMonth, insightPeriod } from "@/lib/insight-period";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -229,7 +230,8 @@ function KidInsights() {
               aria-pressed={metric === value}
               onClick={() => setMetric(value)}
             >
-              {value === "spending" ? "Spending" : "Income"}
+              {metric === value && <SlidingPill layoutId="insights-metric" />}
+              <span>{value === "spending" ? "Spending" : "Income"}</span>
             </button>
           ))}
         </div>

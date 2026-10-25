@@ -179,6 +179,7 @@ function KidHome() {
         className="home-balance"
         title="My balance"
         balance={summary.total}
+        confirmed={!loading && !error}
         subtitle={<><Money amount={summary.spending} /> to spend</>}
         tag={incoming > 0 ? <><Money amount={incoming} sign /> this week</> : undefined}
         hideBalance={isMasked}
@@ -222,7 +223,7 @@ function KidHome() {
             <strong><Money amount={Number(topGoal.saved)} /> / <Money amount={Number(topGoal.target)} /></strong>
             <svg className="home-goal-ring" viewBox="0 0 66 66" role="img" aria-label={`${goalPercent}% saved`}>
               <circle cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--blue-100)" }} strokeWidth="9" />
-              <circle cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--goal-progress)" }} strokeWidth="9" strokeLinecap="round" strokeDasharray={`${goalPercent / 100 * 164} 164`} transform="rotate(-90 33 33)" />
+              <circle className="motion-ring" cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--goal-progress)", "--progress-offset": 164 * (1 - goalPercent / 100) } as React.CSSProperties} strokeWidth="9" strokeLinecap="round" strokeDasharray="164" transform="rotate(-90 33 33)" />
               <text x="33" y="38" textAnchor="middle">{goalPercent}%</text>
             </svg>
           </> : <><small>Tabung</small><strong>Start a goal</strong><AppIcon name="sprout" size={48} /></>}

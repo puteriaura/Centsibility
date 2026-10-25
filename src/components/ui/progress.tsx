@@ -34,11 +34,12 @@ export function Progress({
         aria-label={ariaLabel}
       >
         <div
-          className="h-full rounded-full transition-all duration-700 ease-out"
+          className="motion-fill h-full rounded-full"
           style={{
-            width: `${percentage}%`,
+            width: "100%",
+            "--progress": percentage / 100,
             backgroundColor: indicatorColor || "var(--primary)",
-          }}
+          } as React.CSSProperties}
         />
       </div>
       {showLabel && (

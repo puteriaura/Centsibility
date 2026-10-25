@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, useRouter, type ErrorComponentProps } fr
 import { AuthProvider } from "@/providers/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect } from "react";
+import { MotionConfig } from "framer-motion";
 import { useTheme } from "@/lib/theme";
 import { purgeStoredCredentials } from "@/lib/quick-login";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -74,18 +75,20 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  useTheme();
+  const { reduced: reduce } = useTheme();
   useEffect(observeViewport, []);
   useEffect(() => {
     purgeStoredCredentials();
   }, []);
 
   return (
+    <MotionConfig reducedMotion={reduce ? "always" : "user"}>
     <ErrorBoundary>
       <AuthProvider>
         <Outlet />
         <Toaster />
       </AuthProvider>
     </ErrorBoundary>
+    </MotionConfig>
   );
 }

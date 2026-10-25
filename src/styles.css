@@ -71,6 +71,10 @@
    2. Tokens
    ------------------------------------------------------------------------ */
 :root {
+  --ease-spring: linear(0, 0.05, 0.159, 0.288, 0.414, 0.529, 0.627, 0.709, 0.775, 0.828, 0.869, 0.901, 0.925, 0.944, 0.958, 0.969, 0.977, 0.983, 0.988, 0.991, 0.993, 0.995, 0.996, 0.997, 1);
+  --dur-spring: 540ms;
+  --ease-pop: linear(0, 0.043, 0.145, 0.278, 0.42, 0.556, 0.677, 0.78, 0.863, 0.926, 0.972, 1.004, 1.023, 1.034, 1.038, 1.038, 1.034, 1.03, 1.024, 1.019, 1.014, 1.01, 1.006, 1.004, 1);
+  --dur-pop: 540ms;
   color-scheme: light;
 
   /* Raw palette. Contrast on white / canvas noted where text uses it. */
@@ -3074,8 +3078,8 @@
 
 /* Shared overlays stay above the sticky shell and use the visible viewport. */
 .app-dialog-overlay { position: fixed; inset: 0; z-index: 200; background: rgb(14 23 38 / .55); }
-.app-dialog { position: fixed; z-index: 201; top: calc(var(--viewport-top, 0px) + var(--viewport-height, 100dvh) / 2); left: 50%; transform: translate(-50%, -50%); width: calc(100% - 2rem); max-height: calc(var(--viewport-height, 100dvh) - 2rem); display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-sheet); background: var(--surface); color: var(--text); box-shadow: 0 12px 40px rgb(0 0 0 / .2); }
-.app-dialog--sheet { top: auto; bottom: var(--keyboard-inset, 0px); transform: translateX(-50%); width: 100%; border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.app-dialog { position: fixed; z-index: 201; top: calc(var(--viewport-top, 0px) + var(--viewport-height, 100dvh) / 2); left: 50%; translate: -50% -50%; width: calc(100% - 2rem); max-height: calc(var(--viewport-height, 100dvh) - 2rem); display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-sheet); background: var(--surface); color: var(--text); box-shadow: 0 12px 40px rgb(0 0 0 / .2); }
+.app-dialog--sheet { top: auto; bottom: var(--keyboard-inset, 0px); translate: -50% 0; width: 100%; border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
 .app-dialog__header { flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; }
 .app-dialog__body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px 20px; }
 .app-dialog__body:has(.market-picker) { overflow: hidden; }
@@ -3098,21 +3102,10 @@
 }
 :root[data-theme="dark"] body { background-color: var(--canvas); }
 
-/* Short motion communicates state; money values and navigation remain stationary. */
-.app-shell__main { animation: content-arrive var(--motion-standard) var(--ease-standard); }
-@keyframes content-arrive { from { opacity: .75; } to { opacity: 1; } }
-.app-dialog, .app-dialog-overlay { transition: opacity var(--motion-standard) var(--ease-standard), transform var(--motion-standard) var(--ease-standard); }
-@starting-style {
-  .app-dialog[data-state="open"] { opacity: 0; transform: translate(-50%, -50%) scale(.97); }
-  .app-dialog--sheet[data-state="open"] { transform: translate(-50%, 8%); }
-  .app-dialog-overlay[data-state="open"] { opacity: 0; }
-}
-.app-dialog[data-state="closed"], .app-dialog-overlay[data-state="closed"] { animation: overlay-leave var(--motion-fast) var(--ease-standard); }
-@keyframes overlay-leave { to { opacity: 0; } }
+/* Sections arrive once on mount; nothing is tied to scrolling. */
 button[data-variant], .quick-circle, .shell-icon-btn { transition: transform var(--motion-fast) var(--ease-standard), background-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard); }
 button[data-variant]:active:not(:disabled), .quick-btn:active .quick-circle, .shell-icon-btn:active { transform: scale(.97); }
-.app-shell, .shell-topbar, .shell-bottomnav, .app-dialog, input, textarea { transition-property: background-color, color, border-color; transition-duration: var(--motion-standard); transition-timing-function: var(--ease-standard); }
-.app-dialog { transition-property: opacity, transform, background-color, color; }
+
 .penny-bubble[data-new], .penny-assistant[data-new], .story-card { animation: quiet-arrive var(--motion-standard) var(--ease-standard); }
 @keyframes quiet-arrive { from { opacity: .6; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .penny-drawer__overlay { z-index: 200; }
@@ -3143,3 +3136,67 @@ button[data-variant]:active:not(:disabled), .quick-btn:active .quick-circle, .sh
 
 /* Amounts share the display face, including privacy masks. */
 .tabular-nums { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+
+/* Part 2 motion foundation. Geometry is final; only the paint animates. */
+.quick-circle, .more-tile, .shell-navitem, a.list-row { transition: transform 100ms ease-out; }
+.quick-btn:active .quick-circle, .more-tile:active, .shell-navitem:active, a.list-row:active { transform: scale(.97); }
+.shell-navitem:not(.shell-navitem--active):not(.shell-navitem--center) { color: var(--ink); }
+.shell-bottomnav { view-transition-name: shell-dock; background: color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter: blur(16px) saturate(160%); }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .shell-bottomnav { background: var(--surface); backdrop-filter: none; }
+}
+.sliding-pill { position: absolute; inset: 0; border-radius: inherit; background: var(--blue-100); pointer-events: none; z-index: -1; }
+.sliding-option, .insights-segment > button, .shell-navitem__icon-wrap { position: relative; isolation: isolate; }
+.sliding-option[data-variant="selected"], .insights-segment > button[aria-pressed="true"] { background: transparent; color: var(--action-text); font-weight: 700; }
+.insights-segment > button { border-radius: 12px; }
+/* Native View Transition snapshots must never intercept a second tap. */
+::view-transition { pointer-events: none; }
+::view-transition-group(root), ::view-transition-group(shell-dock) { animation: none; }
+::view-transition-old(shell-dock) { display: none; }
+::view-transition-new(shell-dock) { animation: none; }
+::view-transition-old(root) { animation: page-fade-out 150ms ease-out both; }
+::view-transition-new(root) { animation: page-fade-in 150ms ease-out both; }
+html:active-view-transition-type(forward)::view-transition-new(root) { animation: page-forward var(--dur-spring) var(--ease-spring) both; }
+html:active-view-transition-type(back)::view-transition-new(root) { animation: page-back var(--dur-spring) var(--ease-spring) both; }
+@keyframes page-forward { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes page-back { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+@keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes page-fade-out { from { opacity: 1; } to { opacity: 0; } }
+/* Direct sections, or the sections in a page's single stack wrapper. */
+.app-shell__main > :nth-child(-n+6), .app-shell__main > :only-child > :nth-child(-n+6) { animation: section-arrive var(--dur-spring) var(--ease-spring) backwards; }
+.app-shell__main > :only-child { animation: none; }
+.app-shell__main > :nth-child(2), .app-shell__main > :only-child > :nth-child(2) { animation-delay: 30ms; }
+.app-shell__main > :nth-child(3), .app-shell__main > :only-child > :nth-child(3) { animation-delay: 60ms; }
+.app-shell__main > :nth-child(4), .app-shell__main > :only-child > :nth-child(4) { animation-delay: 90ms; }
+.app-shell__main > :nth-child(5), .app-shell__main > :only-child > :nth-child(5) { animation-delay: 120ms; }
+.app-shell__main > :nth-child(6), .app-shell__main > :only-child > :nth-child(6) { animation-delay: 150ms; }
+@keyframes section-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.ui-skeleton { animation: page-fade-in 120ms ease-out; }
+.motion-fill { transform-origin: left; transform: scaleX(var(--progress, 0)); transition: transform 900ms var(--ease-spring); }
+.motion-bar { transform-origin: bottom; transform: scaleY(var(--progress, 0)); transition: transform 900ms var(--ease-spring); }
+.motion-ring { stroke-dashoffset: var(--progress-offset, 164); transition: stroke-dashoffset 900ms var(--ease-spring); }
+@starting-style {
+  .motion-fill { transform: scaleX(0); }
+  .motion-bar { transform: scaleY(0); }
+  .motion-ring { stroke-dashoffset: 164; }
+}
+.balance-hero--glow { animation: money-glow 700ms ease-out; }
+@keyframes money-glow { 0%, 100% { box-shadow: var(--paper-shadow); } 35% { box-shadow: var(--paper-shadow), 0 0 0 6px color-mix(in srgb, var(--sun) 65%, transparent), 0 0 24px color-mix(in srgb, var(--sun) 45%, transparent); } }
+input.toggle-switch[type="checkbox"] { appearance: none; width: 48px; min-width: 48px; height: 28px; border-radius: 999px; background: var(--text-3); padding: 3px; cursor: pointer; }
+input.toggle-switch[type="checkbox"]::before { content: ""; display: block; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); transform: translateX(0); transition: transform var(--dur-spring) var(--ease-spring); }
+input.toggle-switch[type="checkbox"]:checked { background: var(--action-text); }
+input.toggle-switch[type="checkbox"]:checked::before { transform: translateX(20px); }
+@media (prefers-reduced-motion: reduce) {
+  html::view-transition-old(root) { animation: page-fade-out 120ms ease-out both !important; }
+  html::view-transition-new(root) { animation: page-fade-in 120ms ease-out both !important; }
+  .app-shell__main > *, .app-shell__main > :only-child > :nth-child(-n+6) { animation: page-fade-in 120ms ease-out; }
+  .motion-fill, .motion-bar, .motion-ring, input.toggle-switch::before { transition: none !important; }
+  .balance-hero--glow { animation: none; }
+  .quick-btn:active .quick-circle, .more-tile:active, .shell-navitem:active, a.list-row:active { transform: none; }
+}
+:root[data-motion="reduced"]::view-transition-old(root) { animation: page-fade-out 120ms ease-out both !important; }
+:root[data-motion="reduced"]::view-transition-new(root) { animation: page-fade-in 120ms ease-out both !important; }
+:root[data-motion="reduced"] .app-shell__main > *, :root[data-motion="reduced"] .app-shell__main > :only-child > :nth-child(-n+6) { animation: page-fade-in 120ms ease-out; }
+:root[data-motion="reduced"] .motion-fill, :root[data-motion="reduced"] .motion-bar, :root[data-motion="reduced"] .motion-ring, :root[data-motion="reduced"] input.toggle-switch::before { transition: none !important; }
+:root[data-motion="reduced"] .balance-hero--glow { animation: none; }
+:root[data-motion="reduced"] .quick-btn:active .quick-circle, :root[data-motion="reduced"] .more-tile:active, :root[data-motion="reduced"] .shell-navitem:active, :root[data-motion="reduced"] a.list-row:active { transform: none; }

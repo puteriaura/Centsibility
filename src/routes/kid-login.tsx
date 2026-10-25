@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { SlidingPill } from "@/components/ui/sliding-pill";
 import { useState } from "react";
 import {
   edgeKidLogin,
@@ -185,8 +186,10 @@ function KidLogin() {
                   setTab("login");
                   setCodeVerifiedKid(null);
                 }}
+                className="sliding-option"
                 style={{ borderRadius: "0.625rem" }}
               >
+                {tab === "login" && <SlidingPill layoutId="kid-login-method" />}
                 <AppIcon name="user" size={16} />
                 <span>Username + PIN</span>
               </Button>
@@ -197,8 +200,10 @@ function KidLogin() {
                 variant={tab === "code" ? "selected" : "ghost"}
                 size="sm"
                 onClick={() => setTab("code")}
+                className="sliding-option"
                 style={{ borderRadius: "0.625rem" }}
               >
+                {tab === "code" && <SlidingPill layoutId="kid-login-method" />}
                 <AppIcon name="key" size={16} />
                 <span>First Time Code</span>
               </Button>

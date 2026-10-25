@@ -13,6 +13,7 @@ import { parentDisplayName } from "@/lib/display-name";
 import { getKidSession, clearKidSession, KidSession } from "@/lib/kid-session";
 import { supabase } from "@/integrations/supabase/client";
 import { sfx } from "@/lib/sounds";
+import { SlidingPill } from "@/components/ui/sliding-pill";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AvatarBubble } from "@/components/AvatarBubble";
@@ -516,6 +517,7 @@ function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
               ) : (
                 <>
                   <span className="shell-navitem__icon-wrap">
+                    {active && <SlidingPill layoutId={`dock-${mode}`} />}
                     <AppIcon name={it.icon} size={24} strokeWidth={1.75} />
                     {badge > 0 && (
                       <span className="shell-navitem__badge" aria-hidden="true">

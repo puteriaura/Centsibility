@@ -1,7 +1,18 @@
+import { navigationMotion } from "@/lib/motion";
 import { describe, it, expect } from "vitest";
 import { NAV, pageTitle, screenKind, upTarget } from "@/lib/navigation";
 
 describe("navigation map", () => {
+  it("cross-fades dock tabs and follows drill-down depth in both modes", () => {
+    expect(navigationMotion("/kid/", "/kid/wallet")).toBe("tab");
+    expect(navigationMotion("/kid/more", "/kid/card")).toBe("forward");
+    expect(navigationMotion("/kid/card", "/kid")).toBe("back");
+    expect(navigationMotion("/kid/quest/demo", "/kid/missions")).toBe("back");
+    expect(navigationMotion("/parent", "/parent/settings")).toBe("tab");
+    expect(navigationMotion("/parent/insights", "/parent/reports")).toBe("forward");
+    expect(navigationMotion("/parent/reports", "/parent/insights")).toBe("back");
+    expect(navigationMotion(undefined, "/kid-login")).toBe("forward");
+  });
   it("treats dock destinations as roots and everything else as detail", () => {
     expect(screenKind("/kid", "kid")).toBe("home");
     expect(screenKind("/kid/", "kid")).toBe("home");

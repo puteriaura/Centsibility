@@ -1,3 +1,4 @@
+import { useLoadingTransition } from "@/hooks/use-loading-transition";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
@@ -71,7 +72,7 @@ export function useParentData() {
   const [investmentsByKid, setInvestmentsByKid] = useState<
     Record<string, InvestmentItem[]>
   >({});
-  const [loading, setLoading] = useState(true);
+  const [loading, finishLoading] = useLoadingTransition();
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(() => isParentBypassed());
   const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(() =>
@@ -80,7 +81,7 @@ export function useParentData() {
 
   const refresh = useCallback(async () => {
     if (!user) {
-      setLoading(false);
+      finishLoading();
       return;
     }
     if (isParentBypassed()) {
@@ -97,7 +98,7 @@ export function useParentData() {
       setHasLoaded(true);
       setLastLoadedAt(new Date());
       setError(null);
-      setLoading(false);
+      finishLoading();
       return;
     }
     try {
@@ -283,9 +284,9 @@ export function useParentData() {
         // Keep last good data: do not overwrite state arrays
       }
     } finally {
-      setLoading(false);
+      finishLoading();
     }
-  }, [user]);
+  }, [user, finishLoading]);
 
   useEffect(() => {
     refresh();

@@ -1,3 +1,4 @@
+import { useLoadingTransition } from "@/hooks/use-loading-transition";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { edgeKidGetState } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
@@ -31,7 +32,7 @@ export function useKidData() {
     if (isKidBypassed()) return DEMO_KID_STATE as unknown as KidState;
     return null;
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, finishLoading] = useLoadingTransition();
   // Set when the latest fetch failed. Pages keep showing the last good data;
   // with nothing loaded yet they show <KidLoadError> with a retry button.
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export function useKidData() {
       if (isKidBypassed()) {
         setData(DEMO_KID_STATE as unknown as KidState);
       }
-      setLoading(false);
+      finishLoading();
       return;
     }
     try {
@@ -101,9 +102,9 @@ export function useKidData() {
         setError(err instanceof Error ? err.message : "Could not load your account");
       }
     } finally {
-      setLoading(false);
+      finishLoading();
     }
-  }, []);
+  }, [finishLoading]);
 
   useEffect(() => {
     refresh();

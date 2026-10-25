@@ -6,6 +6,7 @@ import { Money } from "@/features/privacy";
 export interface BalanceCardProps {
   title?: string;
   balance: number | null;
+  confirmed?: boolean;
   subtitle?: React.ReactNode;
   hideBalance?: boolean;
   onToggleHide?: () => void;
@@ -29,6 +30,7 @@ const HIDDEN = "RM*****";
 export function BalanceCard({
   title = "Spending balance",
   balance,
+  confirmed = false,
   subtitle,
   hideBalance = false,
   onToggleHide,
@@ -44,6 +46,18 @@ export function BalanceCard({
   isExpanded,
   onToggleExpanded,
 }: BalanceCardProps) {
+  const [glow, setGlow] = React.useState(false);
+  const previousBalance = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    setGlow(false);
+    if (!confirmed || balance === null) return;
+    const changed = previousBalance.current !== null && previousBalance.current !== balance;
+    previousBalance.current = balance;
+    if (!changed) return;
+    setGlow(true);
+    const timer = window.setTimeout(() => setGlow(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [balance, confirmed]);
   const [internalExpanded, setInternalExpanded] = React.useState(false);
   const isExpandedControlled = typeof isExpanded === "boolean";
   const expanded = isExpandedControlled ? isExpanded : internalExpanded;
@@ -63,7 +77,7 @@ export function BalanceCard({
 
   return (
     <div className={`w-full ${className}`.trim()}>
-      <Card variant={variant} className="balance-hero">
+      <Card variant={variant} className={`balance-hero${glow ? " balance-hero--glow" : ""}`}>
         <div className="flex items-center justify-between gap-2">
           <span className={`balance-hero__label ${soft}`}>{title}</span>
           {onToggleHide && (

@@ -177,7 +177,7 @@ function ParentHome() {
           lastLoadedAt={lastLoadedAt}
         />
       )}
-      <BalanceCard className="home-balance" title="Family total" balance={familyTotal}
+      <BalanceCard className="home-balance" title="Family total" balance={familyTotal} confirmed={!loading && !error}
         subtitle={`${kids.length} ${kids.length === 1 ? "child" : "children"}`}
         hideBalance={isMasked} onToggleHide={() => locked ? openUnlockSheet() : toggleHidden()}
         tag={pendingCount > 0 ? `${pendingCount} to approve` : undefined} />
