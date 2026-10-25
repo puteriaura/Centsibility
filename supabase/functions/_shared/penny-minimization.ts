@@ -3,7 +3,7 @@ import { categoryKey, formatPageContext, getMytDateInfo, isSpendingTransaction }
 import { formatInvestmentList } from "./investments.ts";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.105.3";
 
-type PennyAccount = { id?: string; name?: string; comfort_name?: string; balance?: number | string; streak?: number; card_frozen?: boolean; card_controls_locked?: boolean };
+type PennyAccount = { id?: string; name?: string; username?: string; comfort_name?: string; balance?: number | string; streak?: number; card_frozen?: boolean; card_controls_locked?: boolean };
 const contextQuery = (admin: SupabaseClient, table: string, columns: string, kidId: string | undefined) =>
   admin.from(table).select(columns).eq("kid_id", kidId);
 type ContextQuery = ReturnType<typeof contextQuery>;
@@ -41,27 +41,53 @@ const QUESTIONS: Record<PennyIntent, string> = {
   card: "Explain the relevant card restrictions and how to ask a parent for help.",
   quest: "Give coaching or a hint about the selected public quest or saving streak, never an answer key.",
 };
-function publicQuestion(message: string, navigation: boolean) {
-  // No free-form question text crosses the provider boundary: unknown names/amounts
-  // cannot be reliably anonymized with regex. Preserve only recognized public topics.
-  const topics: Array<[RegExp, string]> = [
-    [/freeze|frozen|beku/i, "how to freeze or unfreeze a practice card"],
-    [/moon|shariah|halal/i, "the moon screening icon and dated Shariah evidence"],
-    [/compound/i, "compound growth with a small fictional example"],
-    [/balance|baki/i, "what a spending balance means"],
-    [/sadaqah|zakat/i, "general giving concepts, without religious rulings"],
-    [/loan|repay|pinjaman|hutang/i, "loans and repayment"],
-    [/budget|bajet/i, "budgeting and needs versus wants"],
-    [/transfer|pindah/i, "family transfers and parent approval"],
-    [/goal|tabung|saving|save|simpan/i, "saving and Tabung"],
-    [/investment|fund|market|pelaburan/i, "practice Funds and Market Tracker, without investment advice"],
-    [/quest|mission|misi/i, "money learning missions and hints"],
-    [/card|kad/i, "practice card controls"],
-    [/RM|ringgit|currency/i, "Malaysian ringgit and money amounts"],
-  ];
-  const topic = topics.find(([rule]) => rule.test(message))?.[1];
-  return topic ? `${navigation ? "Explain the verified app steps for" : "Explain"} ${topic}.` : "Offer general money help and ask which money topic or app screen the user needs.";
+export function cleanPennyQuestion(message: string, knownNames: string[]): { text: string; removed: number } {
+  let text = message.normalize("NFKC").replace(/\s+/gu, " ").trim();
+  let removed = 0;
+  const names = new Set<string>();
+  for (const value of knownNames) {
+    const name = value.normalize("NFKC").replace(/\s+/gu, " ").trim();
+    if (!name) continue;
+    names.add(name);
+    for (const word of name.match(/[\p{L}]{3,}/gu) ?? []) {
+      if (!["bin", "binti", "bte", "bt"].includes(word.toLowerCase())) names.add(word);
+    }
+  }
+  const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (names.size) {
+    const alternatives = [...names].sort((a, b) => b.length - a.length).map(escape).join("|");
+    text = text.replace(new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives})(?![\\p{L}\\p{N}])`, "giu"), () => { removed++;return "[name]"; });
+  }
+  for (const rule of [
+    /[\w.+-]+@[\w-]+\.[\w.-]+/gi,
+    /\b(?:https?:\/\/|www\.)\S+/gi,
+    /\+?\d(?:[\s-]?\d){7,}/g,
+    /\d{6,}/g,
+    /(?<![\p{L}\p{N}])(?!rm)(?=[a-hj-np-z2-9]*[2-9])(?=[a-hj-np-z2-9]*[a-hj-np-z])[a-hj-np-z2-9]{6}(?![\p{L}\p{N}])/giu,
+    /\b(?:jalan|jln|lorong|lrg|taman|tmn|blok|block|apartment|kondo|condo|street|road|no\.\s*\d+)[^,.]*/gi,
+    /\b(?:poskod|postcode|postal code)\s*:?\s*\d{5}\b/gi,
+    /\b\d{5}(?=\s+\p{Lu})(?!\s+(?:Ringgit|RM|Sen)\b)/gu,
+  ]) text = text.replace(rule, () => { removed++;return "[removed]"; });
+  return { text: text.replace(/"/g, "'").slice(0, 280), removed };
 }
+
+// Both chat handlers fail closed on the same minimal family-name lookup.
+export async function getPennyKnownNames(admin: SupabaseClient, parentId: string, parentUser?: { user_metadata?: Record<string, unknown> }): Promise<string[]> {
+  try {
+    if (!parentId) throw new Error("Penny context unavailable");
+    const [family, parent] = await Promise.all([
+      admin.from("kids").select("name, username, comfort_name").eq("parent_id", parentId),
+      parentUser ? { data: { user: parentUser }, error: null } : admin.auth.admin.getUserById(parentId),
+    ]);
+    if (family.error || !family.data || parent.error || !parent.data?.user?.user_metadata) throw new Error("Penny context unavailable");
+    const metadata = parent.data.user.user_metadata;
+    return [...family.data.flatMap(row => [row.name, row.username, row.comfort_name]), metadata.full_name, metadata.name, metadata.comfort_name]
+      .filter((name): name is string => typeof name === "string");
+  } catch {
+    throw new Error("Penny context unavailable");
+  }
+}
+
 const cents = (v: unknown) => Math.round((Number(v) || 0) * 100);
 const daysLeft = (value: unknown, now: Date) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? Math.ceil((Date.parse(value) - now.getTime()) / 86400000) : null;
 const moneyInput = (q: string, label: string) => {
@@ -69,7 +95,7 @@ const moneyInput = (q: string, label: string) => {
   return match ? Number(match[1]) : null;
 };
 
-export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAccount, message: string, selection: Record<string, unknown> = {}, now = new Date()) {
+export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAccount, message: string, selection: Record<string, unknown> = {}, now = new Date(), options: { asker: "child" | "parent"; knownNames: string[] } = { asker: "child", knownNames: [] }) {
   const intent = routePennyQuestion(message);
   let fields: Record<string, unknown> = {};
   let localReply: string | undefined;
@@ -155,7 +181,16 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
   }
   // Fail closed if a future change tries to send an unapproved field.
   for (const field of Object.keys(fields)) if (!(PENNY_ALLOWLIST[intent] as readonly string[]).includes(field)) throw new Error("Unapproved Penny field");
-  let question = QUESTIONS[intent] || publicQuestion(message, intent === "navigation");
-  if (/\b(saya|aku|bagaimana|berapa|mana|simpan|belanja|bajet|pinjaman|kad|minggu|bulan)\b/i.test(message)) question += " Reply in Malay.";
+  let question = "";
+  if (!localReply) {
+    const knownNames = [...options.knownNames, kid.name, kid.comfort_name, kid.username].filter((name): name is string => typeof name === "string");
+    const { text } = cleanPennyQuestion(message, knownNames);
+    const words = text.replace(/\[(?:name|removed)\]/g, " ").match(/[\p{L}\p{N}]+/gu) ?? [];
+    if (words.length < 2) localReply = "Ask again without names or numbers.";
+    else {
+      question = (QUESTIONS[intent] ? QUESTIONS[intent] + " " : "") + `${options.asker === "parent" ? "Parent" : "Child"} asks: "${text}"`;
+      if (/\b(saya|aku|bagaimana|berapa|mana|simpan|belanja|bajet|pinjaman|kad|minggu|bulan)\b/i.test(message)) question += " Reply in Malay.";
+    }
+  }
   return { intent, fields, question, localReply, audit: { intent, fields: Object.keys(fields) } };
 }

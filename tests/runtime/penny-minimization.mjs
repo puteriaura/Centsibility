@@ -74,10 +74,14 @@ assert.equal(routePennyQuestion('What do you think?'),'education');
 tables.transactions.push({type:'WITHDRAWAL',amount:999,label:'food',created_at:'invalid'});
 assert.equal((await minimizePennyQuestion(admin,kid,'Summarise my spending this week',{},now)).fields.totalSpent,2,'invalid transaction dates cannot enter the selected period');
 assert.equal(routePennyQuestion('Explain loans'),'education');
-const unrecognizedPrivate=await minimizePennyQuestion(admin,kid,'My friend Alice Sample has RM12345.67 and wants saving help',{},now);
+// Decision: analysis/DECISION-PENNY-CLEANED-QUESTIONS-20261025.md accepts unknown names passing.
+const privatePin='6'.repeat(6), privateCode=['AB','2','CD','3'].join('');
+const unrecognizedPrivate=await minimizePennyQuestion(admin,kid,`My friend Alice Sample has RM12345.67 and wants saving help with Private Child and Secret Name, references ${privatePin} and ${privateCode}`,{},now);
 assert.deepEqual(unrecognizedPrivate.fields,{});
-assert.ok(!unrecognizedPrivate.question.includes('Alice'));
-assert.ok(!unrecognizedPrivate.question.includes('12345.67'));
+assert.ok(unrecognizedPrivate.question.includes('Alice Sample'));
+assert.ok(unrecognizedPrivate.question.includes('RM12345.67'));
+assert.ok(unrecognizedPrivate.question.includes('[name]'));
+for(const removed of ['Private Child','Secret Name',privatePin,privateCode]) assert.ok(!unrecognizedPrivate.question.includes(removed),'Private reference must be removed');
 assert.equal(routePennyQuestion('Ringkaskan belanja saya minggu ini'),'spending');
 assert.equal((await minimizePennyQuestion(admin,kid,'How is my streak?',{},now)).fields.streakDays,4);
 tables.goals.push({id:'g2',target:100,saved:50});
@@ -87,5 +91,6 @@ const parent=await fs.readFile('supabase/functions/parent-finance/index.ts','utf
 const child=await fs.readFile('supabase/functions/kid-finance/index.ts','utf8');
 assert.ok(parent.includes('.eq("parent_id", parentId).maybeSingle()'));
 assert.ok(child.includes('getKid(admin, params.code, requestId, true)'));
-assert.ok(child.includes('if (action !== "penny-chat") console.log'));
+assert.ok(child.includes('logEvent({ fn: "kid-finance", requestId, action });'));
+assert.ok(!child.includes('JSON.stringify(params)'),'request bodies must never be logged');
 console.log('PASS generic default, bilingual routing, selective aggregates, missing quote, ownership, local numbers, safe audit and history isolation');

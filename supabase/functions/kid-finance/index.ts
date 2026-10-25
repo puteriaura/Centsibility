@@ -4,7 +4,7 @@ import { isCodeUsable, INVALID_ACCESS_CODE } from "../_shared/access-code.ts";
 import { preAuthLimit, actorLimit, pennyGlobalLimit, hit, hashKey, tooMany } from "../_shared/rate-limit.ts";
 import { validateAvatarImage } from "../_shared/image.ts";
 import { logEvent } from "../_shared/log.ts";
-import { minimizePennyQuestion } from "../_shared/penny-minimization.ts";
+import { getPennyKnownNames, minimizePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 import { isKidSessionToken } from "../_shared/kid-session-token.ts";
 // supabase/functions/kid-finance/index.ts
@@ -1055,7 +1055,8 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     : undefined;
 
 
-  const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
+  const knownNames = await getPennyKnownNames(admin, kid.parent_id);
+  const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {}, undefined, { asker: "child", knownNames });
   logEvent(plan.audit);
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
@@ -1066,7 +1067,8 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   const isThinking = params.thinking !== false;
   const contextLines = Object.keys(plan.fields).length ? [JSON.stringify(plan.fields)] : [];
-  const system = kidSystemPrompt();
+  const { data: ageGroup } = await admin.rpc("kid_age_group", { p_kid_id: kid.id });
+  const system = kidSystemPrompt(ageGroup || "10-12");
 
   let requestParams;
   try {
