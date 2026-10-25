@@ -126,7 +126,7 @@ Deno.test("market: open trade safety margin can refresh a cache younger than fif
 Deno.test("market: Nasdaq fallback uses the option kind or the stored catalogue kind", async () => {
   const watch = await nasdaq();
   for (const kind of [undefined, "etf"] as const) {
-    const admin = createMarketAdmin({ symbols: [{ symbol: "MSFT", kind: "etf", active: true }] });
+    const admin = createMarketAdmin({ symbols: [{ symbol: "MSFT", kind: kind ? "stock" : "etf", active: true }] });
     const mock = fixtureFetch(admin.trace, (_url, index) => index ? Response.json(watch) : new Response("", { status: 429 }));
     await getQuote(admin, "MSFT", { now: openNow, fetchFn: mock.fetchFn, kind });assert(mock.urls[1].endsWith("msft%7Cetf"));
   }
