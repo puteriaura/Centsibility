@@ -307,6 +307,7 @@ function TopBar({
     };
     return (
       <header className="shell-topbar shell-topbar--home">
+        <img src="/icons/centsibility-app.svg" alt="Centsibility" width={36} height={36} className="shell-topbar__logo" />
         {/* Left: avatar opens the account menu (profile, switch view, sign out) */}
         <div className="shell-topbar__left relative" ref={menuRef}>
           <button

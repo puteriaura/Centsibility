@@ -148,6 +148,7 @@ button[data-variant="secondary"] { background: var(--surface); border: 2px solid
 .shell-topbar--home .shell-icon-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--surface); }
 .shell-topbar--home [aria-label="Ask Penny"] { background: transparent; }
 .shell-topbar--home [aria-label="Ask Penny"] svg { width: 44px; height: 44px; }
+.shell-topbar__logo { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: 36px; height: 36px; border-radius: 10px; } /* centred on the 44px icon row, whatever sits left or right */
 .balance-hero { min-height: 158px; border-radius: 26px; padding: 20px 22px; }
 .balance-hero__amount { margin-top: 6px; }
 .balance-hero__tag { margin-top: 12px; }
