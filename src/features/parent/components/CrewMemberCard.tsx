@@ -515,6 +515,7 @@ export function CrewMemberCard({
                 <input
                   id={`freeze-toggle-${kid.id}`}
                   type="checkbox"
+                  role="switch"
                   aria-label={`Freeze card for ${kid.name}`}
                   checked={cardFrozen}
                   disabled={savingFrozen}
@@ -584,6 +585,7 @@ export function CrewMemberCard({
                 <input
                   id={`online-toggle-${kid.id}`}
                   type="checkbox"
+                  role="switch"
                   aria-label={`Allow online purchases for ${kid.name}`}
                   checked={onlineEnabled}
                   disabled={savingOnline}
@@ -608,6 +610,7 @@ export function CrewMemberCard({
                 <input
                   id={`lock-controls-${kid.id}`}
                   type="checkbox"
+                  role="switch"
                   aria-label={`Lock card controls for ${kid.name}`}
                   checked={controlsLocked}
                   disabled={savingLock}
@@ -634,6 +637,7 @@ export function CrewMemberCard({
             <input
               id={`market-tracker-toggle-${kid.id}`}
               type="checkbox"
+                  role="switch"
               aria-label={`Market Tracker for ${kid.name}`}
               checked={marketTrackerEnabled}
               disabled={savingMarketTracker}

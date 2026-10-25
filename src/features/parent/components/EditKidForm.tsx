@@ -153,6 +153,7 @@ export function EditKidForm({ kid, onCancel, onSuccess }: EditKidFormProps) {
         <input
           id={`edit-market-tracker-${kid.id}`}
           type="checkbox"
+                  role="switch"
           checked={marketEnabled}
           onChange={(e) => {
             setMarketEnabled(e.target.checked);

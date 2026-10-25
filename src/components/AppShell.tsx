@@ -55,7 +55,7 @@ export function AppShell({
 }) {
   const nav = useNavigate();
   const { session, loading } = useAuth();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
   const [kid, setKid] = useState<KidSession | null | undefined>(undefined);
   const [kidAvatar, setKidAvatar] = useState<string | undefined>(undefined);
   const [parentAvatar, setParentAvatar] = useState<string | undefined>(
@@ -246,7 +246,7 @@ function TopBar({
   const { user } = useAuth();
   const nav = useNavigate();
   const { openPenny } = usePenny();
-  const currentPath = useRouterState({ select: (s) => s.location.pathname });
+  const currentPath = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const title = pageTitle(currentPath, mode);
@@ -475,7 +475,7 @@ function TopBar({
 }
 
 function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
   const items = NAV[mode];
 
   return (

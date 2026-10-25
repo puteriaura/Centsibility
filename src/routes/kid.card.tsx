@@ -357,6 +357,7 @@ function KidCard() {
                 <input
                   id="online-purchases-toggle"
                   type="checkbox"
+                  role="switch"
                   aria-label="Online Purchases"
                   checked={onlineEnabled}
                   disabled={isControlsLocked && !parentOnline}
