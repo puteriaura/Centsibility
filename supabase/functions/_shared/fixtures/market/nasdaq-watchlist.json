@@ -1,0 +1,20 @@
+{
+  "data": [
+    {
+      "symbol": "MSFT",
+      "companyName": "Microsoft Corporation Common Stock",
+      "lastSalePrice": "$531.52",
+      "netChange": "6.42",
+      "percentageChange": "1.22%",
+      "deltaIndicator": "up",
+      "marketStatus": "Closed",
+      "volume": "18,203,441"
+    }
+  ],
+  "message": null,
+  "status": {
+    "rCode": 200,
+    "bCodeMessage": null,
+    "developerMessage": null
+  }
+}
