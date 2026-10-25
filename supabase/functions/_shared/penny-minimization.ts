@@ -64,7 +64,10 @@ export function cleanPennyQuestion(message: string, knownNames: string[]): { tex
     /\+?\d(?:[\s-]?\d){7,}/g,
     /\d{6,}/g,
     /(?<![\p{L}\p{N}])(?!rm)(?=[a-hj-np-z2-9]*[2-9])(?=[a-hj-np-z2-9]*[a-hj-np-z])[a-hj-np-z2-9]{6}(?![\p{L}\p{N}])/giu,
-    /\b(?:jalan|jln|lorong|lrg|taman|tmn|blok|block|apartment|kondo|condo|street|road|no\.\s*\d+)[^,.]*/gi,
+    /(?<![\p{L}\p{N}])(?:jalan|jln|lorong|lrg|taman|tmn|persiaran|lebuh|blok|block|apartment|pangsapuri|kondo|condo)\s+(?:[^\s,.]+\s+){0,2}(?!rm\d)[^\s,.]*\d[^,.]*/giu,
+    /(?<![\p{L}\p{N}])(?:[Jj]alan|[Jj]ln|[Ll]orong|[Ll]rg|[Tt]aman|[Tt]mn|[Pp]ersiaran|[Ll]ebuh)\s+\p{Lu}[^,.]*/gu,
+    /(?:\p{Lu}\p{L}*\s+){1,3}(?:Street|Road|Avenue|Lane|Drive)\b[^,.]*/gu,
+    /(?<![\p{L}\p{N}])[Nn]o\.\s*\d+[^,.]*/gu,
     /\b(?:poskod|postcode|postal code)\s*:?\s*\d{5}\b/gi,
     /\b\d{5}(?=\s+\p{Lu})(?!\s+(?:Ringgit|RM|Sen)\b)/gu,
   ]) text = text.replace(rule, () => { removed++;return "[removed]"; });

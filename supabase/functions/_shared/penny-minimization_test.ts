@@ -35,10 +35,29 @@ Deno.test("penny-cleaned: removes spaced and dashed long numbers, short PINs and
   assertEquals(cleanPennyQuestion("Saving with ABCDEF is fine.", []).removed, 0);
 });
 Deno.test("penny-cleaned: removes every specified street-address prefix through punctuation", () => {
-  for (const prefix of ["Jalan", "jln", "Lorong", "lrg", "Taman", "tmn", "blok", "block", "apartment", "kondo", "condo", "street", "road", "No. 4"]) {
+  for (const prefix of ["Jalan", "jln", "Lorong", "lrg", "Taman", "tmn", "blok", "block", "apartment", "kondo", "condo", "No. 4"]) {
     const result = cleanPennyQuestion(`Can I save near ${prefix} Example 12, each week?`, []);
     assertEquals(result.text, "Can I save near [removed], each week?");assertEquals(result.removed, 1);
   }
+});
+Deno.test("penny-cleaned: everyday street words stay and actual addresses are removed", () => {
+  for (const question of [
+    "Why did my parent block my card?", "Kad saya tak jalan, kenapa?",
+    "Boleh saya simpan duit untuk pergi taman tema?", "Is street food cheaper than the canteen?",
+    "Jalan-jalan ke Melaka perlu RM50, macam mana nak simpan?", "How much should I save for the road trip?",
+    "Can I buy a lego block set for RM60?", "What is a condo?",
+    "Jalan kaki ke sekolah jimat duit?", "Taman permainan baru ada RM5 tiket",
+  ]) assertEquals(cleanPennyQuestion(question, []).text, question);
+  for (const [question, expected] of [
+    ["Saya tinggal di Jalan Mawar 5, Taman Desa.", "Saya tinggal di [removed], [removed]."],
+    ["my house is at no. 12 jalan mawar 3, 47500 Subang Jaya", "my house is at [removed], [removed] Subang Jaya"],
+    ["I live at Lorong 3 near the shop", "I live at [removed]"],
+    ["rumah saya jln ss2/24 petaling jaya", "rumah saya [removed]"],
+    ["We live on Baker Street, near the park.", "We live on [removed], near the park."],
+    ["alamat saya Blok C 12, Pangsapuri Seri 3", "alamat saya [removed], [removed]"],
+    ["Can I save near Example Street 12, each week?", "Can I save near [removed], each week?"],
+    ["Can I save near Example Road 12, each week?", "Can I save near [removed], each week?"],
+  ]) assertEquals(cleanPennyQuestion(question, []).text, expected);
 });
 Deno.test("penny-cleaned: removes labelled and capital-place postcodes while preserving small money questions", () => {
   for (const label of ["poskod", "postcode", "postal code"]) {
