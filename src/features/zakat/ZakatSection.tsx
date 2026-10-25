@@ -84,7 +84,7 @@ export function ZakatSection() {
     setCalculated(false);
   };
 
-  if (missingValuation) return <Card className="p-5 space-y-3"><p role="status">A market quote is missing. Your wallet total and estimated Zakat are unavailable.</p><Button type="button" onClick={() => { setUseWallet(false); setCalculated(false); }}>Calculate without wallet</Button></Card>;
+  if (missingValuation) return <Card className="p-5 space-y-3"><p role="status">Missing quote. Wallet total and Zakat estimates unavailable.</p><Button type="button" onClick={() => { setUseWallet(false); setCalculated(false); }}>Calculate without wallet</Button></Card>;
 
   return (
     <div className="space-y-6 pb-12">
@@ -114,7 +114,8 @@ export function ZakatSection() {
         </div>
       </section>
 
-      <div className="p-3 rounded-xl bg-[var(--surface-pink)] border border-[var(--primary-soft)] text-center">
+      <details className="short-details p-3 rounded-xl bg-[var(--surface-pink)] border border-[var(--primary-soft)] text-center">
+        <summary className="font-bold">Details</summary>
         <p className="text-sm font-bold text-[var(--primary-text)] m-0">
           &ldquo;Take from their wealth a charity by which you purify
           them.&rdquo;
@@ -122,7 +123,7 @@ export function ZakatSection() {
         <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
           Quran 9:103
         </p>
-      </div>
+      </details>
 
       {/* Info Banner */}
       <Card
@@ -137,13 +138,9 @@ export function ZakatSection() {
             How Zakat on Wealth Works
           </h2>
           <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed mb-0">
-            Zakat is due once per lunar year at{" "}
-            <strong className="text-[var(--ink)]">2.5%</strong> on total wealth
-            exceeding the{" "}
-            <strong className="text-[var(--primary-text)]">Nisab</strong>{" "}
-            threshold (approx. RM{NISAB_RM.toLocaleString()}, the value of 85g
-            gold).
+            Due each lunar year, at 2.5%, above Nisab.
           </p>
+          <details className="short-details text-xs"><summary>Details</summary><p>Nisab approximates 85g gold: RM{NISAB_RM.toLocaleString()}.</p></details>
         </div>
       </Card>
 
@@ -288,9 +285,9 @@ export function ZakatSection() {
               <Money amount={missingValuation ? null : zakatDue} />
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
-              {missingValuation ? "A market quote is missing. We cannot calculate your total wealth or Zakat yet." : aboveNisab
-                ? "This amount purifies your wealth and supports eligible recipients in the community."
-                : "Your net wealth is below the Nisab threshold; no Zakat is obligatory at this time."}
+              {missingValuation ? "Missing quote. Wealth and Zakat estimates unavailable." : aboveNisab
+                ? "This supports eligible recipients in your community."
+                : "Below Nisab; no Zakat is due now."}
             </p>
           </div>
 
@@ -351,15 +348,15 @@ export function ZakatSection() {
           {[
             {
               en: "The Poor (Fuqara)",
-              desc: "Individuals with wealth well below the basic poverty threshold.",
+              desc: "People well below the basic poverty threshold.",
             },
             {
               en: "The Needy (Masakeen)",
-              desc: "Those who have insufficient income to cover daily necessities.",
+              desc: "People whose income cannot cover daily necessities.",
             },
             {
               en: "Zakat Administrators",
-              desc: "Those appointed to collect, manage, and distribute Zakat funds.",
+              desc: "Appointed to collect, manage and distribute Zakat funds.",
             },
             {
               en: "New Muslims / Reconciled",
@@ -371,7 +368,7 @@ export function ZakatSection() {
             },
             {
               en: "Debtors (Gharimin)",
-              desc: "Those burdened by overwhelming debt incurred for basic survival.",
+              desc: "People with overwhelming debt for basic survival.",
             },
             {
               en: "In the Cause of Allah",
@@ -379,7 +376,7 @@ export function ZakatSection() {
             },
             {
               en: "Stranded Wayfarers",
-              desc: "Travelers in distress with no access to their resources.",
+              desc: "Stranded travelers unable to access their resources.",
             },
           ].map((r) => (
             <Card
@@ -400,8 +397,7 @@ export function ZakatSection() {
 
       <p className="text-xs text-[var(--text-muted)] text-center flex items-center justify-center gap-1">
         <AppIcon name="shield" size={14} />
-        This calculator is provided for educational and interactive learning
-        purposes.
+        Educational calculator for interactive learning.
       </p>
     </div>
   );

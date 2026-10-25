@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/ui/app-icon";
 
 export function PracticeCardHeader({ onHelp }: { onHelp: () => void }) {
@@ -36,8 +37,8 @@ export function PracticeCardTips({ onSettings }: { onSettings: () => void; onHel
     <h2 className="m-0 text-base font-bold text-[var(--ink)]">Penny's tip</h2>
     <div className="mt-3 flex items-center gap-3">
       <div className="min-w-0 flex-1"><h3 className="m-0 text-sm font-bold text-[var(--ink)]">Set a daily limit</h3>
-        <p className="my-2 text-sm leading-relaxed text-[var(--text-secondary)]">Choose how much you can give or ask to withdraw in a day. Your parent can see your limit.</p>
-        <button type="button" onClick={onSettings} className="min-h-11 rounded-full bg-[var(--primary)] px-4 text-sm font-bold text-white">Open settings</button>
+        <p className="my-2 text-sm leading-relaxed text-[var(--text-secondary)]">Pick a daily limit. Your parent sees it.</p>
+        <Button variant="secondary" onClick={onSettings}>Open settings</Button>
       </div>
       <span className="shrink-0"><AppIcon name="penny" size={42} aria-label="Penny" /></span>
     </div>
@@ -45,11 +46,18 @@ export function PracticeCardTips({ onSettings }: { onSettings: () => void; onHel
 }
 
 export function PracticeCardHelp() {
-  return <section id="practice-card-help" tabIndex={-1} className="rounded-2xl bg-[var(--surface)] p-5 space-y-2" aria-labelledby="practice-card-help-title">
-    <h2 id="practice-card-help-title" className="m-0 text-base font-bold text-[var(--ink)]">What this practice card can do</h2>
-    <p className="text-xs leading-relaxed text-[var(--text-secondary)]">This is a practice card for learning. The number, CVV and expiry are samples. It cannot pay in shops, online or at an ATM.</p>
-    <p className="text-xs leading-relaxed text-[var(--text-secondary)]">Lock and daily limits control sadaqah and cash withdrawal requests in Centsibility. They do not control a bank card. Your parent approves cash requests.</p>
-    <p className="text-xs leading-relaxed text-[var(--text-secondary)]">Your PIN protects your account. Keep it secret, even from friends.</p>
-    <p className="text-xs leading-relaxed text-[var(--text-secondary)]">To reset your account PIN or unlock parent-managed settings, ask your parent in their app. There is no separate card PIN or lost-card report service.</p>
-  </section>;
+  return <details id="practice-card-help" tabIndex={-1} className="short-details ui-card p-5 space-y-2" aria-labelledby="practice-card-help-title">
+    <summary id="practice-card-help-title" className="font-bold">Details</summary>
+    <p>Practice only. It can't pay anywhere.</p>
+    <p>The number, CVV and expiry are samples.</p>
+    <p>Limits cover sadaqah and cash withdrawal requests.</p>
+    <p>These controls don't change a bank card.</p>
+    <p>Your parent approves cash requests.</p>
+    <p>Keep your account PIN secret.</p>
+    <p>Ask your parent to reset your PIN.</p>
+    <p>They reset it from your profile.</p>
+    <p>Ask your parent to unlock managed settings.</p>
+    <p>There is no separate card PIN.</p>
+    <p>There is no lost-card report service.</p>
+  </details>;
 }

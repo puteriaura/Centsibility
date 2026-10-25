@@ -225,10 +225,7 @@ function KidSadaqah() {
               <h2 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
                 Give sadaqah and earn reward points - start with RM1
               </h2>
-              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">
-                Your kindness reaches local masjids, orphans, and clean water
-                projects.
-              </p>
+              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">Help local masjids, orphans and clean water projects.</p>
             </div>
             <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0">
               <AppIcon name="heart" size={28} />
@@ -365,7 +362,7 @@ function KidSadaqah() {
             <AppIcon name="heart" size={28} />
           </div>
           <p className="text-sm text-[var(--ink)]">
-            Are you sure you want to give{" "}
+            Give{" "}
             <strong className="text-base text-[var(--primary-text)] font-extrabold tabular-nums">
               {formatRM(pendingAmount ?? 0 /* privacy-ok: typing */)}
             </strong>{" "}
@@ -375,9 +372,7 @@ function KidSadaqah() {
             </strong>{" "}
             as Sadaqah?
           </p>
-          <p className="text-xs text-[var(--text-secondary)]">
-            This amount will be deducted from your active wallet balance.
-          </p>
+          <p className="text-xs text-[var(--text-secondary)]">This leaves your active wallet balance.</p>
           {modalError && (
             <div className="p-2.5 rounded-lg bg-[var(--surface)] text-[var(--error-text)] text-xs font-semibold text-center border border-[var(--error)]">
               {modalError}

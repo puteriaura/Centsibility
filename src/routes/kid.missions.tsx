@@ -1,3 +1,4 @@
+import { kidLevel } from "@/lib/kid-level";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -76,8 +77,7 @@ function KidMissionsPage() {
 
   const kid = kidState?.kid;
   const coins = Number(kid?.coins ?? 0);
-  const xp = Number(kid?.xp ?? 0);
-  const level = Number(kid?.level ?? 1 + Math.floor(xp / 100));
+  const { level } = kidLevel(kid);
   const streak = Number(kid?.streak ?? 1);
   const ageGroup = String(
     boardAgeGroup || (kidState as Record<string, unknown>)?.ageGroup || "10-12",

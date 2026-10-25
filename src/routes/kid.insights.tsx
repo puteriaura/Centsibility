@@ -1,5 +1,7 @@
+import { BalanceCard } from "@/components/banking/BalanceCard";
+import { Progress } from "@/components/ui/progress";
 import { SlidingPill } from "@/components/ui/sliding-pill";
-import { insightMonth, insightPeriod } from "@/lib/insight-period";
+import { insightMonth, insightPeriod, isInsightTransaction, weeklyBars } from "@/lib/insight-period";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useKidData } from "@/hooks/use-kid-data";
@@ -46,7 +48,7 @@ function formatDateHeader(dateStr: string) {
 
 function KidInsights() {
   const { data, loading, error, refresh } = useKidData();
-  const { isMasked: locked, openUnlockSheet } = useMoney();
+  const { isMasked: locked, openUnlockSheet, format: formatMoney } = useMoney();
   const { openPenny } = usePenny();
 
   const [metric, setMetric] = useState<"spending" | "income">("spending");
@@ -129,6 +131,13 @@ function KidInsights() {
   const previousMonth = insightMonth(previousDate);
   const previousData = insightPeriod(data?.txs ?? [], previousMonth, metric);
   const monthIndex = activeMonths.indexOf(selectedMonth);
+  const week = weeklyBars((data?.txs ?? []).filter(t => isInsightTransaction(t, metric)));
+  const weekMax = Math.max(0, ...week.map(day => day.amount));
+  const currentMonth = selectedMonth === insightMonth(new Date());
+  const monthName = new Date(selectedMonth + "-01T12:00:00").toLocaleDateString("en-MY", { month: "long" });
+  const summaryTitle = metric === "spending" ? currentMonth ? "Spent this month" : `Spent in ${monthName}`
+    : currentMonth ? "Came in this month" : `Came in during ${monthName}`;
+
 
   // Group transactions for the receipt sheet
   const groupedPeriodTxs = useMemo(() => {
@@ -272,140 +281,26 @@ function KidInsights() {
             <AppIcon name="chevron" size={20} />
           </button>
         </div>
-        <div>
-          <p className="m-0 text-sm text-[var(--text-2)]">Total {metric}</p>
-          <strong className="text-3xl tabular-nums">
-            <Money amount={monthData.totalOut} />
-          </strong>
-        </div>
-        {previousData.hasData && monthData.hasData && (
-          <p className="m-0 text-sm text-[var(--text-2)]">
-            {locked ? (
-              "Comparison hidden"
-            ) : (
-              <>
-                <Money
-                  amount={Math.abs(monthData.totalOut - previousData.totalOut)}
-                />{" "}
-                {monthData.totalOut >= previousData.totalOut ? "more" : "less"}{" "}
-                than{" "}
-                {previousDate.toLocaleDateString("en-MY", {
-                  month: "short",
-                  year: "numeric",
-                })}
-              </>
-            )}
-          </p>
-        )}
-        <Card variant="default" className="p-5 space-y-4">
-          <div className="insights-donut-wrap" aria-hidden="true">
-            <svg
-              viewBox="0 0 120 120"
-              className="insights-donut-svg"
-              width="160"
-              height="160"
-            >
-              <circle
-                cx="60"
-                cy="60"
-                r="50"
-                fill="none"
-                style={{ stroke: "var(--line)" }}
-                strokeWidth="14"
-              />
-              {!locked &&
-                monthData.topCategories.length > 0 &&
-                (() => {
-                  const r = 50;
-                  const c = 2 * Math.PI * r;
-                  let offset = 0;
-                  return monthData.topCategories.map((cat, i) => {
-                    const len = (cat.pct / 100) * c;
-                    const el = (
-                      <circle
-                        key={cat.key}
-                        cx="60"
-                        cy="60"
-                        r={r}
-                        fill="none"
-                        style={{ stroke: CAT_COLORS[i % CAT_COLORS.length] }}
-                        strokeWidth="14"
-                        strokeDasharray={`${len} ${c - len}`}
-                        strokeDashoffset={-offset}
-                        transform="rotate(-90 60 60)"
-                      />
-                    );
-                    offset += len;
-                    return el;
-                  });
-                })()}
-            </svg>
-            <div
-              className="insights-donut__hole insights-donut__hole--overlay"
-              onClick={locked ? openUnlockSheet : undefined}
-              style={locked ? { cursor: "pointer" } : undefined}
-            >
-              <span className="text-sm text-[var(--text-secondary)]">
-                {metric === "spending" ? "Spending" : "Income"}
-              </span>
-              {locked ? (
-                <LogInToView className="mt-2 text-base" />
-              ) : (
-                <strong className="tabular-nums text-[var(--ink)] text-2xl font-bold">
-                  <Money amount={monthData.totalOut} />
-                </strong>
-              )}
-            </div>
-          </div>
-
-          <ul className="insights-cat-list">
-            {monthData.topCategories.length === 0 ? (
-              <li className="text-sm text-[var(--text-muted)] text-center py-4">
-                No {metric} in this month.
-              </li>
-            ) : (
-              monthData.topCategories.map((c, i) => (
-                <li key={c.key} className="insights-cat-row">
-                  <span
-                    className="category-dot"
-                    style={{ background: CAT_COLORS[i % CAT_COLORS.length] }}
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <strong className="text-sm text-[var(--ink)] block">
-                      {c.label}
-                    </strong>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {c.count} transaction{c.count === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-[var(--ink)] tabular-nums">
-                    <Money amount={c.amount} />
-                    <span className="ml-3 text-xs text-[var(--text-2)]">
-                      {locked ? "•••" : `${Math.round(c.pct)}%`}
-                    </span>
-                  </span>
-                </li>
-              ))
-            )}
-          </ul>
+        <BalanceCard className="insights-summary" title={summaryTitle} balance={monthData.totalOut}
+          tag={previousData.hasData && !locked ? <><Money amount={Math.abs(monthData.totalOut - previousData.totalOut)} /> {monthData.totalOut >= previousData.totalOut ? "more" : "less"} than {previousDate.toLocaleDateString("en-MY", { month: "short" })}</> : undefined} />
+        <Card className="p-5 insights-week"><h2>This week</h2>
+          {locked ? <LogInToView /> : <div className="insights-week__days">{week.map(day => <div key={day.date} className="insights-week__day">
+            <div className="insights-week__slot" role="img" aria-label={`${day.day}${day.today ? ", today" : ""}: ${formatMoney(day.amount)}`}>
+              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--action)" : "var(--action-tint-strong)" } as React.CSSProperties} />
+            </div><span aria-hidden="true">{day.day[0]}</span>
+          </div>)}</div>}
         </Card>
-
-        <button
-          type="button"
-          className="insights-recap"
-          onClick={() => openPenny({ context: { page: "Insights" } })}
-        >
-          <AppIcon name="penny" size={40} />
-          <span className="text-sm">
-            {maskAmounts(summary.highlight, locked)}
-          </span>
-          <AppIcon name="chevron" size={20} />
-        </button>
+        <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
+          {locked ? <LogInToView /> : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
+            <div><span><strong>{category.label}</strong> <small>{Math.round(category.pct)}%</small></span><Money amount={category.amount} /></div>
+            <Progress value={category.pct} indicatorColor={CAT_COLORS[i % CAT_COLORS.length]} />
+          </div>)}
+        </Card>
+        <section className="insights-tip"><AppIcon name="penny" size={32} /><p>Small steps count.</p><Button variant="selected" size="sm" onClick={() => openPenny({ context: { page: "Insights" } })}>Ask Penny</Button></section>
         <div className="flex gap-2 pt-2">
           <Button
             type="button"
-            variant="primary"
+            variant="secondary"
             className="flex-1 justify-center font-bold"
             onClick={openStory}
           >

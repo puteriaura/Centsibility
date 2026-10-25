@@ -1,3 +1,4 @@
+import { PretendTap } from "@/features/kid/PretendTap";
 // The card face uses embossed-style capitals like a real debit card.
 // avoid-ai-design-ignore-file: SD4
 import { createFileRoute } from "@tanstack/react-router";
@@ -81,13 +82,14 @@ function KidCard() {
   const isControlsLocked = Boolean(k.card_controls_locked);
   const parentLimit = k.card_daily_limit != null ? Number(k.card_daily_limit) : 50;
   const sliderMax = isControlsLocked ? parentLimit : 200;
+  const effectiveLimit = isControlsLocked ? Math.min(dailyLimit, parentLimit) : dailyLimit;
   const parentOnline = k.card_online_enabled !== undefined ? Boolean(k.card_online_enabled) : true;
 
   const toggleLock = async () => {
     if (savingFreeze) return;
     sfx.pop();
     if (isControlsLocked && isLocked) {
-      setLockFeedback({ error: true, text: "Your parent manages these settings. Ask them to unlock." });
+      setLockFeedback({ error: true, text: "Ask your parent to unlock these settings." });
       toast.error("Your parent manages these card settings. You can still make them stricter.");
       return;
     }
@@ -106,7 +108,7 @@ function KidCard() {
     try {
       await edgeKidSetCardControls({ code, frozen: nextLocked });
       setIsLocked(nextLocked);
-      setLockFeedback({ error: false, text: nextLocked ? "Practice card locked. Sadaqah and cash requests are blocked." : "Practice card unlocked." });
+      setLockFeedback({ error: false, text: nextLocked ? "Locked. Sadaqah and cash requests are blocked." : "Practice card unlocked." });
       toast.success(
         nextLocked
           ? "Card frozen. Sadaqah and cash withdrawal requests are blocked until you unfreeze it."
@@ -169,6 +171,7 @@ function KidCard() {
 
   function showHelp() {
     const help = document.getElementById("practice-card-help");
+    if (help instanceof HTMLDetailsElement) help.open = true;
     help?.focus({ preventScroll: true });
     help?.scrollIntoView({ behavior: reduceAnimations() ? "instant" : "smooth", block: "center" });
   }
@@ -176,10 +179,15 @@ function KidCard() {
   return (
     <div className="space-y-6 pb-12 max-w-[420px] mx-auto">
       <PracticeCardHero name={k.name} revealed={showDetails} locked={isLocked} />
-      <p className="text-xs text-center text-[var(--text-secondary)]">For learning only. Cannot make bank-card payments.</p>
-      {isControlsLocked && <p role="status" className="text-xs text-center">Parent-managed controls: you can make them stricter, but ask a parent to unlock.</p>}
+      <p className="text-xs text-center text-[var(--text-secondary)]">Practice only. It can't pay anywhere.</p>
+      <ol className="practice-steps">{["Set a limit", "Lock it", "Try a tap"].map((step, i) => <li key={step}><span>{i + 1}</span><strong>{step}</strong></li>)}</ol>
+      <PretendTap locked={isLocked} limit={effectiveLimit} />
+      <div className="practice-summary"><Card><h2>Daily limit</h2><strong><Money amount={effectiveLimit} /></strong></Card>
+        <Card><label htmlFor="practice-lock">Lock</label><input id="practice-lock" type="checkbox" role="switch" aria-label="Lock practice card" checked={isLocked} onChange={() => void toggleLock()} disabled={savingFreeze || (isControlsLocked && isLocked)} className="toggle-switch" /></Card>
+      </div>
+      {isControlsLocked && <p role="status" className="text-xs text-center">Your parent unlocks these controls.</p>}
       {lockFeedback && <p role={lockFeedback.error ? "alert" : "status"} className="rounded-xl bg-[var(--surface-soft)] p-3 text-sm">{lockFeedback.text}</p>}
-      <div className="grid grid-cols-4 gap-2 max-w-[420px] mx-auto text-center">
+      <div className="grid grid-cols-3 gap-2 max-w-[420px] mx-auto text-center">
         <button
           type="button"
           onClick={() => {
@@ -213,37 +221,7 @@ function KidCard() {
           <span className="quick-label">Settings</span>
         </button>
 
-        <button
-          type="button"
-          onClick={toggleLock}
-          disabled={savingFreeze || (isControlsLocked && isLocked)}
-          aria-label={
-            isLocked
-              ? isControlsLocked
-                ? "Card frozen (managed by parent)"
-                : "Unfreeze card (currently frozen)"
-              : "Freeze card"
-          }
-          aria-pressed={isLocked}
-          className={isControlsLocked && isLocked ? "quick-btn opacity-60 cursor-not-allowed" : "quick-btn"}
-        >
-          <span
-            className="quick-circle"
-            style={
-              isLocked
-                ? { background: "var(--error-soft)", color: "var(--error-text)" }
-                : undefined
-            }
-          >
-            <AppIcon name="lock" size={22} />
-          </span>
-          <span
-            className="quick-label"
-            style={isLocked ? { color: "var(--error-text)", fontWeight: 700 } : undefined}
-          >
-            {isLocked ? "Unlock" : "Lock"}
-          </span>
-        </button>
+
 
         <button
           type="button"
@@ -259,15 +237,16 @@ function KidCard() {
           <span className="quick-label">Help</span>
         </button>
       </div>
-      <PrivacyUnlockSheet isOpen={revealPinOpen} onClose={() => setRevealPinOpen(false)} onSuccess={() => { setRevealPinOpen(false); setShowDetails(true); }} mode="kid" title="View sample details" description="Verify your account PIN to reveal the sample card number. This number cannot make payments." />
+      <PrivacyUnlockSheet isOpen={revealPinOpen} onClose={() => setRevealPinOpen(false)} onSuccess={() => { setRevealPinOpen(false); setShowDetails(true); }} mode="kid" title="View sample details" description="Your PIN reveals sample details. They cannot pay." />
       <PracticeCardTips onSettings={() => setShowSettings(true)} onHelp={showHelp} />
-      <Card className="p-4 space-y-2 max-w-[420px] mx-auto">
+      <details className="short-details ui-card p-4 space-y-2 max-w-[420px] mx-auto">
+        <summary className="font-bold" aria-label="Activity details">Details</summary>
         <h2 className="text-sm font-bold">Activity covered by these controls</h2>
-        <p className="text-xs text-[var(--text-secondary)]">Sadaqah and cash withdrawal requests use these limits. These are account activities; there are no bank-card payments.</p>
+        <p className="text-xs text-[var(--text-secondary)]">Limits cover sadaqah and cash withdrawal requests.</p>
         {data.txs.filter(t => t.type === "SADAQAH" || t.type === "WITHDRAWAL").slice(0, 10).map(t => <div key={t.id} className="flex justify-between gap-3 text-xs"><span>{t.label || (t.type === "SADAQAH" ? "Sadaqah" : "Cash withdrawal")} · {new Date(t.created_at).toLocaleDateString("en-MY")}</span><Money amount={Number(t.amount)} /></div>)}
         {!data.txs.some(t => t.type === "SADAQAH" || t.type === "WITHDRAWAL") && <p className="text-xs">No activity yet.</p>}
-        <p className="text-xs text-[var(--text-secondary)]">To change your account PIN, ask your parent to reset it from your profile in their app. Sample card details do not have a separate PIN.</p>
-      </Card>
+        <p className="text-xs text-[var(--text-secondary)]">Ask your parent to reset your account PIN.</p>
+      </details>
 
       {/* Card Settings Modal / Drawer */}
       {showSettings && (
@@ -291,7 +270,7 @@ function KidCard() {
             >
               <AppIcon name="info" size={16} color="var(--primary)" className="shrink-0 mt-0.5" />
               <p className="m-0 font-medium leading-relaxed">
-                Your parent manages these settings. You can still make them stricter.
+                Your parent manages these settings.
               </p>
             </div>
           )}
@@ -305,7 +284,7 @@ function KidCard() {
                     Daily Spending Limit
                   </label>
                   <span className="text-[var(--text-secondary)] text-[11px] block mt-0.5">
-                    Most you can give as sadaqah or ask to withdraw in one day.
+                    Daily cap for sadaqah and cash requests.
                   </span>
                 </div>
                 <strong className="text-sm text-[var(--primary-text)] tabular-nums font-bold">
@@ -351,7 +330,7 @@ function KidCard() {
                     Online Purchases
                   </label>
                   <span className="text-[var(--text-secondary)] text-[11px] block mt-0.5">
-                    Practice setting. There are no online payments in Centsibility yet. Your parent can see this.
+                    Practice setting only. Your parent sees this.
                   </span>
                 </div>
                 <input
@@ -368,7 +347,7 @@ function KidCard() {
               <div className="flex justify-end pt-1">
                 <Button
                   type="button"
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   disabled={
                     savingOnline ||

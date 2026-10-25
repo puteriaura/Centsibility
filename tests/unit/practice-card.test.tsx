@@ -43,7 +43,7 @@ describe("practice card components", () => {
   });
   it("plainly discloses unsupported payments and existing account controls", () => {
     const html = renderToStaticMarkup(<PracticeCardHelp />);
-    expect(html).toContain("cannot pay in shops, online or at an ATM"); expect(html).toContain("sadaqah and cash withdrawal requests"); expect(html).toContain("no separate card PIN or lost-card report service");
+    expect(html).toContain("It can&#x27;t pay anywhere"); expect(html).toContain("sadaqah and cash withdrawal requests"); expect(html).toContain("no separate card PIN"); expect(html).toContain("no lost-card report service");
   });
   it("locks and unlocks through the existing control with visible success feedback", async () => {
     for (const locked of [false, true]) {

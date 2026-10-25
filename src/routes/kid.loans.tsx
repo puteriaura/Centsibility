@@ -177,10 +177,7 @@ function KidLoans() {
             <h2 className="text-base font-bold text-[var(--ink)] m-0">
               Qard Hasan loan
             </h2>
-            <p className="text-sm text-[var(--text-2)] mt-1 mb-4 leading-relaxed">
-              Interest-free support anytime. Repay on schedule to grow your
-              trust score.
-            </p>
+            <p className="text-sm text-[var(--text-2)] mt-1 mb-4 leading-relaxed">Interest-free support anytime.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-sm text-[var(--text-2)] mt-1 mb-4 leading-relaxed">Repay on schedule to grow your trust score.</p></details>
             <Button
               type="button"
               variant="primary"
@@ -211,10 +208,7 @@ function KidLoans() {
               <h3 className="text-base font-bold text-[var(--ink)]">
                 Qard Hasan Agreement
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">
-                100% interest-free. By signing below, you promise to repay the
-                borrowed amount.
-              </p>
+              <p className="text-xs text-[var(--text-secondary)]">Signing promises to repay your interest-free loan.</p>
             </div>
           </div>
 

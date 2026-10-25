@@ -247,9 +247,7 @@ function KidWallet() {
               <h3 className="m-0 text-base font-bold text-[var(--ink)]">
                 Ask a parent for cash
               </h3>
-              <p className="m-0 text-sm text-[var(--text-2)]">
-                They approve it before any money leaves your wallet.
-              </p>
+              <p className="m-0 text-sm text-[var(--text-2)]">They approve it before money leaves your wallet.</p>
             </div>
           </div>
           <MoneyKeypad
@@ -273,10 +271,7 @@ function KidWallet() {
               <h3 className="m-0 text-base font-bold text-[var(--ink)]">
                 Qard Hasan loan
               </h3>
-              <p className="m-0 text-sm text-[var(--text-2)]">
-                Borrow with no interest, sign an agreement, and pay back on a
-                schedule.
-              </p>
+              <p className="m-0 text-sm text-[var(--text-2)]">Interest-free borrowing, with an agreement and scheduled repayments.</p>
             </div>
           </div>
 

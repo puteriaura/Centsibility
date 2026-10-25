@@ -1,3 +1,4 @@
+import { DailyWelcome } from "@/components/DailyWelcome";
 import { Modal } from "@/components/ui/modal";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
@@ -175,6 +176,7 @@ function KidHome() {
 
   return (
     <>
+      <DailyWelcome kidId={k.id} streak={Number(k.streak) || 0} incoming={incoming} />
       <BalanceCard
         className="home-balance"
         title="My balance"
@@ -334,7 +336,7 @@ function KidHome() {
         {walletTxs.length === 0 && (
           <div className="home-empty">
             <PennyMascot size={64} state="guide" />
-            <p>Nothing here yet.</p>
+            <p>Your first coins land here!</p>
             <Link to="/kid/wallet" className="home-secondary-link">Ask for pocket money</Link>
           </div>
         )}

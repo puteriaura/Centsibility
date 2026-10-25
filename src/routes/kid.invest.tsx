@@ -577,10 +577,10 @@ function KidInvest() {
       <p className="m-0 flex items-start gap-2 text-sm leading-relaxed text-[var(--text-2)]">
         <AppIcon name="info" size={18} className="mt-0.5 shrink-0 text-[var(--action)]" />
         <span>
-          <strong className="text-[var(--ink)]">Practice only.</strong> No real market, no real
-          shares. Real share prices help you learn how investing works.
+          <strong className="text-[var(--ink)]">Practice only.</strong> No real market or shares.
         </span>
       </p>
+      <details className="short-details text-xs"><summary>Details</summary><p>Real share prices help you learn investing.</p></details>
 
       {/* Start button */}
       <Button
@@ -760,13 +760,8 @@ function KidInvest() {
                 </div>
 
                 <div className="p-3 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-xs text-[var(--text-secondary)] space-y-1">
-                  <p>
-                    Prices are in US dollars. Your RM play money follows the
-                    same percentage change.
-                  </p>
-                  <p className="text-[var(--text-muted)]">
-                    The US market opens at night in Malaysia.
-                  </p>
+                  <p>Prices in US$. Your RM moves the same %.</p>
+                  <p className="text-[var(--text-muted)]">US market opens at night here.</p>
                 </div>
 
                 {/* Actions */}
@@ -928,15 +923,13 @@ function KidInvest() {
             {selected.mode === "market" ? (
               <>
                 <p className="text-sm text-[var(--ink)] leading-relaxed">
-                  Sell now for about{" "}
+                  Sell for about{" "}
                   <strong>
                     <Money amount={selected.currentValue} />
                   </strong>{" "}
-                  (price from {fmtTime(selected.lastUpdated)}).
+                  (quote: {fmtTime(selected.lastUpdated)}).
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  The payout will be returned to your wallet immediately.
-                </p>
+                <p className="text-xs text-[var(--text-muted)]">The payout returns to your wallet immediately.</p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -960,19 +953,17 @@ function KidInvest() {
             ) : selected.protected ? (
               <>
                 <p className="text-sm text-[var(--ink)]">
-                  You get back{" "}
+                  Returned:{" "}
                   <strong>
                     <Money amount={selected.principal} />
                   </strong>
-                  . The profit so far,{" "}
+                  .</p><p className="text-xs">Profit lost:{" "}
                   <strong>
                     <Money amount={selected.profitRm === null ? null : Math.abs(selected.profitRm)} />
                   </strong>
-                  , is lost.
+                  .
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  Only use this if you really need the money now.
-                </p>
+                <p className="text-xs text-[var(--text-muted)]">Use only when you need money now.</p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -996,15 +987,13 @@ function KidInvest() {
             ) : (
               <>
                 <p className="text-sm text-[var(--ink)]">
-                  You get back about{" "}
+                  Current value returned:{" "}
                   <strong>
                     <Money amount={selected.currentValue} />
                   </strong>
-                  , the value now.
+                  .
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  The payout will be returned to your wallet immediately.
-                </p>
+                <p className="text-xs text-[var(--text-muted)]">The payout returns to your wallet immediately.</p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -1038,7 +1027,7 @@ function KidInvest() {
       >
         {halalModalSymbol && (
           <div className="space-y-3 pb-2 text-sm text-[var(--ink)]">
-            <p>The moon marks an investment with Shariah screening evidence. Screening checks businesses and finances against Islamic rules. It does not promise a profit, and status can change.</p>
+            <p>The moon marks Shariah screening evidence.</p><details className="short-details text-xs"><summary>Details</summary><p>Screening checks businesses and finances against Islamic rules.</p><p>It never promises a profit.</p><p>Screening status can change.</p></details>
             <div>
               <strong className="block text-base font-bold">
                 {halalModalSymbol.symbol}
@@ -1125,9 +1114,7 @@ function KidInvest() {
                     Centsibility Fund
                   </strong>
                 </div>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  Centsibility Fund. Practice ups and downs with made-up prices.
-                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Centsibility Fund uses made-up prices.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-muted)] mt-1">Prices can rise or fall.</p></details>
               </button>
 
               {/* Market Option */}
@@ -1141,12 +1128,8 @@ function KidInvest() {
                       Locked
                     </Badge>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Market Tracker. Follows a real share price. It can go down.
-                  </p>
-                  <p className="text-xs font-semibold text-[var(--primary)] pt-1">
-                    Ask your parent to switch on Market Tracker. They can do it on your card in the parent app.
-                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">Market Tracker follows share prices, including falls.</p>
+                  <p className="text-xs font-semibold text-[var(--primary)] pt-1">Ask your parent to enable Market Tracker.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs font-semibold text-[var(--primary)] pt-1">They use your card in their app.</p></details>
                 </div>
               ) : marketData === null || marketData.symbols.length === 0 ? (
                 <div className="w-full p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] opacity-80 space-y-1">
@@ -1158,12 +1141,8 @@ function KidInvest() {
                       Locked
                     </Badge>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Market Tracker. Follows a real share price. It can go down.
-                  </p>
-                  <p className="text-xs font-semibold text-[var(--primary)] pt-1">
-                    Ask your parent to switch on Market Tracker. They can do it on your card in the parent app.
-                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">Market Tracker follows share prices, including falls.</p>
+                  <p className="text-xs font-semibold text-[var(--primary)] pt-1">Ask your parent to enable Market Tracker.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs font-semibold text-[var(--primary)] pt-1">They use your card in their app.</p></details>
                 </div>
               ) : (
                 <button
@@ -1187,9 +1166,7 @@ function KidInvest() {
                       Real prices
                     </Badge>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Market Tracker. Follows a real share price. It can go down.
-                  </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Market Tracker follows share prices, including falls.</p>
                 </button>
               )}
             </div>
@@ -1200,10 +1177,7 @@ function KidInvest() {
             <>
               {fundStep === 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Like a real market, nobody knows which way it goes. You can
-                    lose some of what you put in.
-                  </p>
+                  <p className="text-xs text-[var(--text-secondary)]">You can lose some money you put in.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-secondary)]">Price moves are unpredictable.</p></details>
                   {tierKeys.map((t) => {
                     const tierCards: Record<string, string> = {
                       low: "Low: moves up to 0.5% each update",
@@ -1254,9 +1228,7 @@ function KidInvest() {
 
               {fundStep === 1 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    How often do you want your fund to update?
-                  </p>
+                  <p className="text-xs text-[var(--text-secondary)]">How often should your Fund update?</p>
                   {freqKeys.map((f) => (
                     <button
                       key={f}
@@ -1373,9 +1345,7 @@ function KidInvest() {
               {fundStep === 4 && preview && (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-1">
-                    <p className="text-sm text-[var(--ink)]">
-                      The value can go up or down. Higher risk means bigger moves.
-                    </p>
+                    <p className="text-sm text-[var(--ink)]">Values can rise or fall.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-sm text-[var(--ink)]">Higher risk means bigger moves.</p></details>
                   </div>
                   <div className="text-xs text-[var(--text-secondary)] space-y-0.5">
                     <div className="flex justify-between">
@@ -1436,11 +1406,12 @@ function KidInvest() {
                     </strong>
                     <p className="text-xs text-[var(--ink)] leading-relaxed">
                       {ageGroup === "6-9"
-                        ? "Prices go up and down every day. Your play money can go down too."
+                        ? "Changing prices can lower your play money."
                         : ageGroup === "10-12"
-                          ? "Share prices change every day. Your play money can go down, even below what you put in. What happened before doesn't tell us what happens next."
-                          : "This follows a real market price. Your play money can fall below what you put in. Past results don't predict the future. This is practice, not advice."}
+                          ? "Your play money can fall below your deposit."
+                          : "Your play money can fall below your deposit."}
                     </p>
+                    <details className="short-details text-xs"><summary>Details</summary><p>Share prices change every day.</p><p>Past results don't predict future prices.</p><p>Practice only. This isn't investment advice.</p></details>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
@@ -1476,7 +1447,8 @@ function KidInvest() {
                       <MarketPickerStatus state={catalogueMarketState} updatedAt={latestQuoteTime} />
                     </div>
 
-                    {(quotaDegraded || marketUsage?.monitoringAvailable === false) && <p role="status" className="text-xs text-[var(--text-muted)]">{quotaDegraded ? "Quote limit reached. Showing saved prices; affected rows are marked stale. Missing data stays unavailable." : "Quote monitoring unavailable. Refreshes needing a new quote are paused; affected saved prices are marked stale."}</p>}
+                    {(quotaDegraded || marketUsage?.monitoringAvailable === false) && <p role="status" className="text-xs text-[var(--text-muted)]">{quotaDegraded ? "Quote limit reached; affected saved prices are stale." : "Monitoring unavailable; affected saved prices are stale."}</p>}
+                    {(quotaDegraded || marketUsage?.monitoringAvailable === false) && <details className="short-details text-xs"><summary>Details</summary><p>Missing data stays unavailable.</p>{!quotaDegraded && <p>Refreshes needing new quotes are paused.</p>}</details>}
 
                     {/* Search box */}
                     <div className="bg-[var(--surface)]">
@@ -1612,8 +1584,8 @@ function KidInvest() {
                     <MarketQuoteLine state={selectedMarketState} price={selectedPrice} lastClose={symbolDetail ? symbolDetail.lastClose : selectedSymbol.last_close} stale={symbolDetail?.stale ?? selectedSymbol.stale} updatedAt={symbolDetail?.quote?.price_time ?? symbolDetail?.quote?.fetched_at ?? selectedSymbol.last_updated} />
                   </div>
 
-                  {symbolDetail?.lastCloseAsOf && <p className="text-xs text-[var(--text-muted)]">Close known as of {fmtTime(symbolDetail.lastCloseAsOf)}. Entry uses the saved trading quote shown at confirmation.</p>}
-                  {symbolDetail?.degradedReason && <p role="status" className="text-xs text-[var(--text-muted)]">Quote refresh unavailable ({symbolDetail.degradedReason === "monitor_unavailable" ? "monitoring unavailable" : "quote limit reached"}). Showing stale saved data where available.</p>}
+                  {symbolDetail?.lastCloseAsOf && <><p className="text-xs text-[var(--text-muted)]">Close saved {fmtTime(symbolDetail.lastCloseAsOf)}.</p><p className="text-xs">Entry uses your confirmed saved trading quote.</p></>}
+                  {symbolDetail?.degradedReason && <><p role="status" className="text-xs text-[var(--text-muted)]">Refresh unavailable: {symbolDetail.degradedReason === "monitor_unavailable" ? "monitoring unavailable" : "quote limit reached"}.</p><p className="text-xs">Available saved prices are marked stale.</p></>}
 
                   {/* 90-day price chart */}
                   {symbolDetailLoading ? (
@@ -1652,17 +1624,12 @@ function KidInvest() {
                   ) : null}
 
                   <div className="p-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[11px] text-[var(--text-secondary)] space-y-0.5">
-                    <p>
-                      Prices are in US dollars. Your RM play money follows the
-                      same percentage change.
-                    </p>
-                    <p className="text-[var(--text-muted)]">
-                      The US market opens at night in Malaysia.
-                    </p>
+                    <p>Prices in US$. Your RM moves the same %.</p>
+                    <p className="text-[var(--text-muted)]">US market opens at night here.</p>
                   </div>
 
                   {selectedPrice === null || symbolDetailLoading ? (
-                    <p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Loading quote..." : selectedMarketState === "closed" ? "No saved price is available yet. A price is needed to start a position. Try this stock again shortly." : "No quote is available yet. Try again shortly; a quote is needed to start a position."}</p>
+                    <><p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Loading quote..." : selectedMarketState === "closed" ? "No saved price. Try this stock shortly." : "No quote yet. Try again shortly."}</p><p className="text-xs">A quote is needed to start.</p></>
                   ) : activeMarketInvs.length >= 5 ? (
                     <div className="p-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)]">
                       You already have 5 open market investments (maximum). Sell
@@ -1710,20 +1677,17 @@ function KidInvest() {
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-2">
                     <p className="text-sm text-[var(--ink)] leading-relaxed">
-                      Practice investing{" "}
+                      Practice{" "}
                       <strong>
                         <Money amount={marketAmount} />
                       </strong>{" "}
-                      in <strong>{selectedSymbol.symbol}</strong> using the saved trading quote of{" "}
+                      in <strong>{selectedSymbol.symbol}</strong>.</p><p className="text-xs">Saved trading quote:{" "}
                       <strong>
                         {selectedPrice === null ? "Data unavailable" : `US$${selectedPrice.toFixed(2)}`}
                       </strong>
                       .
                     </p>
-                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                      Your play money will follow real share prices. It can go
-                      down.
-                    </p>
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">Your play money follows prices, including falls.</p>
                   </div>
 
                   <div className="text-xs text-[var(--text-secondary)] space-y-0.5">

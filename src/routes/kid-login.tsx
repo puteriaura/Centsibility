@@ -156,7 +156,7 @@ function KidLogin() {
             Young Saver Vault
           </h1>
           <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "var(--text-secondary)" }}>
-            Enter your secret PIN or one-time access code to open your vault!
+            Sign in with your PIN or code.
           </p>
         </div>
 

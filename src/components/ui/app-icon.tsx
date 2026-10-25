@@ -12,6 +12,9 @@ import Baby01Icon from "@hugeicons/core-free-icons/Baby01Icon";
 import BalanceScaleIcon from "@hugeicons/core-free-icons/BalanceScaleIcon";
 import BicycleIcon from "@hugeicons/core-free-icons/BicycleIcon";
 import BirdIcon from "@hugeicons/core-free-icons/BirdIcon";
+import IceCream01Icon from "@hugeicons/core-free-icons/IceCream01Icon";
+import Book01Icon from "@hugeicons/core-free-icons/Book01Icon";
+import Robot01Icon from "@hugeicons/core-free-icons/Robot01Icon";
 import BookOpen01Icon from "@hugeicons/core-free-icons/BookOpen01Icon";
 import Brain01Icon from "@hugeicons/core-free-icons/Brain01Icon";
 import Briefcase01Icon from "@hugeicons/core-free-icons/Briefcase01Icon";
@@ -106,6 +109,9 @@ import { PennyFace } from "@/components/PennyFace";
 /** Shared free-icon map. Legacy saving keys all use the sprout. */
 const ICONS: Record<string, IconSvgElement> = {
   more: MoreHorizontalIcon,
+  icecream: IceCream01Icon,
+  bookclosed: Book01Icon,
+  robot: Robot01Icon,
   home: Home01Icon,
   wallet: Wallet01Icon,
   back: ArrowLeft01Icon,

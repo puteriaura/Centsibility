@@ -1,3 +1,8 @@
+import { Skeleton } from "@/components/ui/skeleton";
+import { kidLevel } from "@/lib/kid-level";
+import { Progress } from "@/components/ui/progress";
+import { Card } from "@/components/ui/card";
+import { usePenny } from "@/features/penny";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppIcon } from "@/components/ui/app-icon";
@@ -20,17 +25,17 @@ const groups = [
   {
     title: "Money",
     items: [
-      { to: "/kid/goals", label: "Tabung", icon: "save" },
-      { to: "/kid/loans", label: "Qard Hasan loans", icon: "loan" },
-      { to: "/kid/card", label: "Practice card", icon: "card" },
-      { to: "/kid/invest", label: "Investment", icon: "trend" },
+      { to: "/kid/goals", label: "Tabung", icon: "sprout" },
+      { to: "/kid/loans", label: "Qard", icon: "loan" },
+      { to: "/kid/card", label: "Card", icon: "card" },
+      { to: "/kid/invest", label: "Invest", icon: "trend" },
       { to: "/kid/sadaqah", label: "Sadaqah", icon: "sadaqah" },
       { to: "/kid/zakat", label: "Zakat", icon: "scale" },
       { to: "/kid/history", label: "History", icon: "history" },
     ],
   },
   {
-    title: "Learning & rewards",
+    title: "Play and learn",
     items: [
       { to: "/kid/missions", label: "Missions", icon: "missions" },
       { to: "/kid/rewards", label: "Rewards", icon: "gift" },
@@ -38,16 +43,18 @@ const groups = [
     ],
   },
   {
-    title: "Help & information",
+    title: "Help",
     items: [
       { to: "/kid/chat", label: "Ask Penny", icon: "chat" },
-      { to: "/kid/notifications", label: "Notifications", icon: "bell" },
+      { to: "/kid/notifications", label: "Alerts", icon: "bell" },
     ],
   },
 ] as const;
 
 function KidMore() {
   const { data, refresh } = useKidData();
+  const { openPenny } = usePenny();
+  const { level, progress } = kidLevel(data?.kid);
   const { busy, run } = useMoneyAction();
   const [muted, setMuted] = useState(isMuted());
   const [preferences, setPreferences] = useState(false);
@@ -62,6 +69,10 @@ function KidMore() {
   };
   return (
     <div className="settings-groups">
+      {data ? <Card variant="brand" className="more-level balance-hero">
+        <p>Level {level}</p><strong>{Number(data?.kid.coins) || 0} pts</strong>
+        {progress !== null && <><Progress value={progress} indicatorColor="var(--on-brand-card)" /><small>{100 - progress} XP to Level {level + 1}</small></>}
+      </Card> : <Skeleton style={{ height: 120, borderRadius: 26 }} />}
       {unclaimed > 0 && (
         <Button
           onClick={claim}
@@ -75,21 +86,11 @@ function KidMore() {
       {groups.map((group) => (
         <section key={group.title}>
           <h2 className="settings-group-title">{group.title}</h2>
-          <ul className="settings-list">
-            {group.items.map((item) => (
-              <li key={item.to}>
-                <Link to={item.to} className="settings-list__item">
-                  <span className="settings-list__icon">
-                    <AppIcon name={item.icon} size={24} />
-                  </span>
-                  {item.label}
-                  <span className="settings-list__chevron">
-                    <AppIcon name="chevron" size={20} />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="more-grid">
+            {group.items.map(item => item.to === "/kid/chat" ?
+              <button key={item.to} type="button" className="more-tile" onClick={() => openPenny()}><span className="more-tile__icon"><AppIcon name={item.icon} size={24} /></span><span>{item.label}</span></button> :
+              <Link key={item.to} to={item.to} className="more-tile"><span className="more-tile__icon"><AppIcon name={item.icon} size={24} /></span><span>{item.label}</span></Link>)}
+          </div>
         </section>
       ))}
       <section>
