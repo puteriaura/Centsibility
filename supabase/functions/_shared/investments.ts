@@ -143,7 +143,7 @@ export async function formatInvestmentList(
           price: Number(c.close),
         }));
 
-        const lastDay = (qRow?.fetched_at || nowIso).slice(0, 10);
+        const lastDay = new Date(qRow?.price_time ?? qRow?.fetched_at ?? nowIso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
         if (currentPrice && !chartPoints.some((p) => p.day === lastDay)) {
           chartPoints.push({ day: lastDay, price: currentPrice });
         }

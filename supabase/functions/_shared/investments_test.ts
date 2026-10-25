@@ -1,6 +1,6 @@
 // supabase/functions/_shared/investments_test.ts
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { currentInvestmentValues } from "./investments.ts";
+import { currentInvestmentValues, formatInvestmentList } from "./investments.ts";
 import { buildKidCoachContext } from "./penny-ai.ts";
 
 function createStubAdmin(options: {
@@ -40,6 +40,11 @@ function createStubAdmin(options: {
             };
           },
         };
+      }
+      if (table === "market_daily_closes") {
+        const chain = { select() { return chain; }, eq() { return chain; }, gte() { return chain; },
+          async order() { return { data: [], error: null }; } };
+        return chain;
       }
       return {};
     },
@@ -133,4 +138,13 @@ Deno.test("investments: Penny context lines contain 'Investment Centsibility Fun
     `Expected context lines to contain "Investment Centsibility Fund (low)", found: ${JSON.stringify(contextLines)}`
   );
   assert(matchingLine.includes("put in RM10.00"));
+});
+
+Deno.test("market: investment chart appends the New York price day, not the next UTC fetch day", async () => {
+  const admin = createStubAdmin({ investments: [], quotes: { MSFT: {
+    price: 531.52, price_time: "2026-10-26T20:00:00Z", fetched_at: "2026-10-27T02:00:00Z", is_market_open: false,
+  } } });
+  const results = await formatInvestmentList(admin, [{ id: "fixture", mode: "market", symbol: "MSFT", principal: 5,
+    entry_price: 527.19, status: "active", created_at: "2026-10-07T14:00:00Z" }], new Date("2026-10-27T02:00:00Z"));
+  assertEquals(results[0].chartPoints, [{ day: "2026-10-26", price: 531.52 }]);
 });
