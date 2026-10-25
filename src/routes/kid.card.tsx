@@ -240,7 +240,7 @@ function KidCard() {
       <PrivacyUnlockSheet isOpen={revealPinOpen} onClose={() => setRevealPinOpen(false)} onSuccess={() => { setRevealPinOpen(false); setShowDetails(true); }} mode="kid" title="View sample details" description="Your PIN reveals sample details. They cannot pay." />
       <PracticeCardTips onSettings={() => setShowSettings(true)} onHelp={showHelp} />
       <details className="short-details ui-card p-4 space-y-2 max-w-[420px] mx-auto">
-        <summary className="font-bold" aria-label="Activity details">Details</summary>
+        <summary className="font-bold" aria-label="About limits">About limits</summary>
         <h2 className="text-sm font-bold">Activity covered by these controls</h2>
         <p className="text-xs text-[var(--text-secondary)]">Limits cover sadaqah and cash withdrawal requests.</p>
         {data.txs.filter(t => t.type === "SADAQAH" || t.type === "WITHDRAWAL").slice(0, 10).map(t => <div key={t.id} className="flex justify-between gap-3 text-xs"><span>{t.label || (t.type === "SADAQAH" ? "Sadaqah" : "Cash withdrawal")} · {new Date(t.created_at).toLocaleDateString("en-MY")}</span><Money amount={Number(t.amount)} /></div>)}

@@ -48,8 +48,9 @@ function formatDateHeader(dateStr: string) {
 
 function KidInsights() {
   const { data, loading, error, refresh } = useKidData();
-  const { isMasked: locked, openUnlockSheet, format: formatMoney } = useMoney();
+  const { isMasked: locked, locked: pinLocked, openUnlockSheet, format: formatMoney } = useMoney();
   const { openPenny } = usePenny();
+  const hiddenAmounts = pinLocked ? <LogInToView /> : <p className="text-sm text-[var(--text-2)]">Amounts hidden.</p>;
 
   const [metric, setMetric] = useState<"spending" | "income">("spending");
 
@@ -131,6 +132,7 @@ function KidInsights() {
   const previousMonth = insightMonth(previousDate);
   const previousData = insightPeriod(data?.txs ?? [], previousMonth, metric);
   const monthIndex = activeMonths.indexOf(selectedMonth);
+  // Focus matches today's chart mark in both approved themes.
   const week = weeklyBars((data?.txs ?? []).filter(t => isInsightTransaction(t, metric)));
   const weekMax = Math.max(0, ...week.map(day => day.amount));
   const currentMonth = selectedMonth === insightMonth(new Date());
@@ -284,14 +286,14 @@ function KidInsights() {
         <BalanceCard className="insights-summary" title={summaryTitle} balance={monthData.totalOut}
           tag={previousData.hasData && !locked ? <><Money amount={Math.abs(monthData.totalOut - previousData.totalOut)} /> {monthData.totalOut >= previousData.totalOut ? "more" : "less"} than {previousDate.toLocaleDateString("en-MY", { month: "short" })}</> : undefined} />
         <Card className="p-5 insights-week"><h2>This week</h2>
-          {locked ? <LogInToView /> : <div className="insights-week__days">{week.map(day => <div key={day.date} className="insights-week__day">
+          {locked ? hiddenAmounts : <div className="insights-week__days">{week.map(day => <div key={day.date} className="insights-week__day">
             <div className="insights-week__slot" role="img" aria-label={`${day.day}${day.today ? ", today" : ""}: ${formatMoney(day.amount)}`}>
-              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--action)" : "var(--action-tint-strong)" } as React.CSSProperties} />
+              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--focus)" : "var(--action-tint-strong)" } as React.CSSProperties} />
             </div><span aria-hidden="true">{day.day[0]}</span>
           </div>)}</div>}
         </Card>
         <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
-          {locked ? <LogInToView /> : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
+          {locked ? hiddenAmounts : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
             <div><span><strong>{category.label}</strong> <small>{Math.round(category.pct)}%</small></span><Money amount={category.amount} /></div>
             <Progress value={category.pct} indicatorColor={CAT_COLORS[i % CAT_COLORS.length]} />
           </div>)}
@@ -306,26 +308,7 @@ function KidInsights() {
           >
             Open Daily Wrap
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex-1 justify-center font-bold"
-            onClick={() => {
-              sfx.tap();
-              openPenny({
-                context: {
-                  page: "Insights",
-                  detail:
-                    `${selectedMonth}; in RM${summary.moneyIn.toFixed(2)}, out RM${summary.moneyOut.toFixed(2)}${summary.topCategories[0] ? `; top category ${summary.topCategories[0].label}` : ""}`.slice(
-                      0,
-                      600,
-                    ),
-                },
-              });
-            }}
-          >
-            Chat Penny
-          </Button>
+
         </div>
       </div>
 

@@ -47,7 +47,7 @@ export function PracticeCardTips({ onSettings }: { onSettings: () => void; onHel
 
 export function PracticeCardHelp() {
   return <details id="practice-card-help" tabIndex={-1} className="short-details ui-card p-5 space-y-2" aria-labelledby="practice-card-help-title">
-    <summary id="practice-card-help-title" className="font-bold">Details</summary>
+    <summary id="practice-card-help-title" className="font-bold">About this card</summary>
     <p>Practice only. It can't pay anywhere.</p>
     <p>The number, CVV and expiry are samples.</p>
     <p>Limits cover sadaqah and cash withdrawal requests.</p>
