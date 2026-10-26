@@ -60,7 +60,7 @@ import Mail01Icon from "@hugeicons/core-free-icons/Mail01Icon";
 import Menu01Icon from "@hugeicons/core-free-icons/Menu01Icon";
 import MinusSignIcon from "@hugeicons/core-free-icons/MinusSignIcon";
 import MoneyAdd01Icon from "@hugeicons/core-free-icons/MoneyAdd01Icon";
-import Moon01Icon from "@hugeicons/core-free-icons/Moon01Icon";
+import Moon02Icon from "@hugeicons/core-free-icons/Moon02Icon";
 import MoreHorizontalIcon from "@hugeicons/core-free-icons/MoreHorizontalIcon";
 import Mosque01Icon from "@hugeicons/core-free-icons/Mosque01Icon";
 import Music01Icon from "@hugeicons/core-free-icons/Music01Icon";
@@ -141,9 +141,9 @@ const ICONS: Record<string, IconSvgElement> = {
   music: Music01Icon,
   palette: PaletteIcon,
   lightning: FlashIcon,
-  moon: Moon01Icon,
+  moon: Moon02Icon,
   sun: Sun01Icon,
-  dark: Moon01Icon,
+  dark: Moon02Icon,
   light: Sun01Icon,
   identificationcard: IdCardIcon,
   info: InformationCircleIcon,

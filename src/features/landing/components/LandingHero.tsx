@@ -1,57 +1,47 @@
 import { Link } from "@tanstack/react-router";
+import pennySaved from "@/assets/penny/saved.svg";
 
 export function LandingHero() {
   return (
-    <div className="landing-hero-scene">
-      <img
-        className="landing-hero-background"
-        src="/images/bicycle-park.webp"
-        alt=""
-        fetchPriority="high"
-        width={1774}
-        height={887}
-      />
-      <section
-        className="landing-hero landing-wrap"
-        aria-labelledby="landing-title"
-      >
-        <div className="landing-hero-copy">
-          <p className="landing-kicker">Money lessons for the whole family</p>
-          <h1 id="landing-title">
-            Small savings.
-            <br />
-            Big life lessons.
-          </h1>
-          <p className="landing-lead">
-            The first bicycle. A gift for someone else. A little set aside each
-            week. Help your child learn to save, borrow, and give with Islamic
-            values at the heart.
-          </p>
-          <div className="landing-actions">
-            <Link to="/login" className="landing-button">
-              Parent sign in
-            </Link>
-            <Link to="/kid-login" className="landing-text-link">
-              Young saver sign in
-            </Link>
-          </div>
-          <p className="landing-hero-note">
-            Their own goals. Your guidance. One family app.
-          </p>
+    <section
+      className="landing-hero landing-wrap"
+      aria-labelledby="landing-title"
+    >
+      <div className="landing-hero-copy">
+        <span className="landing-kicker">For kids aged 6 to 17</span>
+        <h1 id="landing-title">Pocket money that teaches.</h1>
+        <p className="landing-lead">
+          Your child saves for something they want, gives a little to others and
+          borrows from family without interest. You see every step and approve
+          what leaves their wallet.
+        </p>
+        <div className="landing-actions">
+          <Link className="landing-button landing-sun" to="/login">
+            Parent sign in
+          </Link>
+          <Link className="landing-button landing-outline" to="/kid-login">
+            Young saver sign in
+          </Link>
         </div>
-        <figure className="landing-goal">
+      </div>
+      <figure className="landing-photo">
+        <img
+          src="/images/bicycle-park.webp"
+          alt="A child's blue bicycle with a yellow helmet, parked by a lake"
+          width={1774}
+          height={887}
+          fetchPriority="high"
+        />
+        <div className="landing-goal">
           <div className="landing-goal-heading">
-            <span>Aiman’s tabung</span>
-            <span className="landing-goal-tag">Saving for a bicycle</span>
-          </div>
-          <div className="landing-goal-total">
-            <strong>
-              RM261<span> / RM300</span>
-            </strong>
-            <span>87% saved</span>
+            <img src={pennySaved} alt="" width={52} height={52} />
+            <div>
+              <small>Aiman's tabung</small>
+              <b>New bicycle</b>
+            </div>
           </div>
           <div
-            className="landing-goal-track"
+            className="landing-track"
             role="progressbar"
             aria-label="Bicycle savings goal"
             aria-valuenow={87}
@@ -60,13 +50,15 @@ export function LandingHero() {
           >
             <span />
           </div>
-          <div className="landing-goal-bottom">
-            <span>Just RM39 to go.</span>
-            <span>A little closer, every deposit.</span>
+          <div className="landing-goal-values">
+            <strong>RM174 of RM200</strong>
+            <span>RM26 to go</span>
           </div>
-          <figcaption>Illustrative goal and amounts</figcaption>
-        </figure>
-      </section>
-    </div>
+        </div>
+        <figcaption className="landing-caption">
+          Example goal. Amounts are made up.
+        </figcaption>
+      </figure>
+    </section>
   );
 }

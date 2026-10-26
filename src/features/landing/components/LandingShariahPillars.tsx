@@ -1,57 +1,57 @@
+import { AppIcon } from "@/components/ui/app-icon";
+
 const pillars = [
   {
+    icon: "loan",
     name: "Qard al-Hasan",
-    meaning: "Borrow without interest",
-    text: "A family loan with agreed terms and a digital signature. Repay what was borrowed, with no interest or penalty fees.",
+    meaning: "Loans without interest",
+    text: "Repay exactly what you borrowed. No interest, no penalty fees.",
   },
   {
+    icon: "gift",
     name: "Hibah",
-    meaning: "Give without a guarantee",
-    text: "Parents can choose to give a gift to encourage saving. It is voluntary, rather than a promised return.",
+    meaning: "Gifts, not returns",
+    text: "Parents can reward saving with a gift. It's voluntary, so no profit is promised.",
   },
   {
+    icon: "heart",
     name: "Sadaqah",
-    meaning: "Share what you can",
-    text: "Make charitable giving part of everyday money habits, and learn why a little generosity matters.",
+    meaning: "Give what you can",
+    text: "Small amounts count. Kids choose a cause and give from their own wallet.",
   },
   {
+    icon: "scale",
     name: "Zakat",
-    meaning: "Understand the obligation",
-    text: "Explore Nisab, the qualifying period, and the amount due with the app’s Zakat calculator.",
+    meaning: "Know what's due",
+    text: "The calculator explains Nisab, the lunar year and the 2.5% rate.",
   },
 ];
-
 export function LandingShariahPillars() {
   return (
     <section
-      id="pillars"
-      className="landing-principles"
+      id="principles"
+      className="landing-section landing-wrap"
       aria-labelledby="pillars-title"
     >
-      <div className="landing-wrap landing-principles-inner">
-        <div>
-          <p className="landing-kicker">Rooted in Islamic finance</p>
-          <h2 id="pillars-title">
-            Values they can
-            <br />
-            put into practice.
-          </h2>
-          <p>
-            Not just words to remember. Principles to use when saving,
-            borrowing, and sharing.
-          </p>
-        </div>
-        <dl>
-          {pillars.map((pillar) => (
-            <div key={pillar.name}>
-              <dt>
-                {pillar.name}
-                <span>{pillar.meaning}</span>
-              </dt>
-              <dd>{pillar.text}</dd>
-            </div>
-          ))}
-        </dl>
+      <div className="landing-section-intro">
+        <span className="landing-kicker">Our principles</span>
+        <h2 id="pillars-title">The rules money follows here.</h2>
+        <p>
+          Four ideas from Islamic finance decide how money moves in
+          Centsibility.
+        </p>
+      </div>
+      <div className="landing-principles-grid">
+        {pillars.map((p) => (
+          <article className="landing-principle" key={p.name}>
+            <span className="landing-principle-icon">
+              <AppIcon name={p.icon} size={24} />
+            </span>
+            <h3>{p.name}</h3>
+            <span className="landing-principle-meaning">{p.meaning}</span>
+            <p>{p.text}</p>
+          </article>
+        ))}
       </div>
     </section>
   );

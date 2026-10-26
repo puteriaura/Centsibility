@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppIcon } from "@/components/ui/app-icon";
+import { LandingThemeToggle } from "./LandingThemeToggle";
 
 export function LandingNav() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,31 +12,42 @@ export function LandingNav() {
       </a>
       <div className="landing-wrap landing-nav">
         <Link to="/" className="landing-brand" aria-label="Centsibility home">
-          <span className="landing-brand-mark" aria-hidden="true">
-            c.
-          </span>
-          Centsibility
+          <img
+            className="landing-app-icon"
+            src="/icons/centsibility-app.svg"
+            alt=""
+            width={38}
+            height={38}
+          />
+          <span>Centsibility</span>
         </Link>
         <nav className="landing-desktop-nav" aria-label="Main navigation">
-          <a href="#features">How it helps</a>
-          <a href="#showcase">Inside the app</a>
-          <a href="#pillars">Our principles</a>
+          <a href="#how">How it works</a>
+          <a href="#app">Inside the app</a>
+          <a href="#principles">Our principles</a>
         </nav>
-        <Link to="/login" className="landing-nav-login">
-          Parent sign in
-        </Link>
-        <button
-          type="button"
-          className="landing-menu-toggle"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-expanded={menuOpen}
-          aria-controls="landing-mobile-menu"
-          aria-label={
-            menuOpen ? "Close navigation menu" : "Open navigation menu"
-          }
-        >
-          <AppIcon name={menuOpen ? "close" : "menu"} size={23} />
-        </button>
+        <div className="landing-nav-actions">
+          <LandingThemeToggle />
+          <Link className="landing-link" to="/kid-login">
+            Young saver sign in
+          </Link>
+          <Link className="landing-button landing-sun" to="/login">
+            Parent sign in
+          </Link>
+        </div>
+        <div className="landing-mobile-actions">
+          <LandingThemeToggle />
+          <button
+            type="button"
+            className="landing-menu-toggle"
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+            aria-controls="landing-mobile-menu"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            <AppIcon name={menuOpen ? "close" : "menu"} size={24} />
+          </button>
+        </div>
       </div>
       {menuOpen && (
         <nav
@@ -43,13 +55,13 @@ export function LandingNav() {
           className="landing-mobile-menu landing-wrap"
           aria-label="Mobile navigation"
         >
-          <a href="#features" onClick={() => setMenuOpen(false)}>
-            How it helps
+          <a href="#how" onClick={() => setMenuOpen(false)}>
+            How it works
           </a>
-          <a href="#showcase" onClick={() => setMenuOpen(false)}>
+          <a href="#app" onClick={() => setMenuOpen(false)}>
             Inside the app
           </a>
-          <a href="#pillars" onClick={() => setMenuOpen(false)}>
+          <a href="#principles" onClick={() => setMenuOpen(false)}>
             Our principles
           </a>
           <Link to="/kid-login" onClick={() => setMenuOpen(false)}>

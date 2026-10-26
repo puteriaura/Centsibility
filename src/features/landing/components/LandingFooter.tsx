@@ -3,14 +3,18 @@ import { Link } from "@tanstack/react-router";
 export function LandingFooter() {
   return (
     <footer className="landing-footer">
-      <div className="landing-wrap">
+      <div className="landing-wrap landing-footer-inner">
         <Link to="/" className="landing-brand">
-          <span className="landing-brand-mark" aria-hidden="true">
-            c.
-          </span>
-          Centsibility
+          <img
+            className="landing-app-icon"
+            src="/icons/centsibility-app.svg"
+            alt=""
+            width={38}
+            height={38}
+          />
+          <span>Centsibility</span>
         </Link>
-        <p>Money habits, learned together.</p>
+        <p>A family money app for kids in Malaysia.</p>
         <small>© 2026 Centsibility</small>
       </div>
     </footer>

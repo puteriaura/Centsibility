@@ -24,8 +24,8 @@ function Index() {
         <LandingHero />
         <LandingTrustStrip />
         <LandingFeatures />
-        <LandingDualMode />
         <LandingShowcase />
+        <LandingDualMode />
         <LandingShariahPillars />
         <LandingCTA />
       </main>

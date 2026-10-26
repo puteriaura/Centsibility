@@ -1,23 +1,18 @@
 export function LandingTrustStrip() {
   return (
-    <section className="landing-facts" aria-label="About Centsibility">
+    <section className="landing-facts" aria-label="Quick facts">
       <div className="landing-wrap landing-facts-inner">
-        <p>
-          Good habits start with
-          <br />
-          <strong>real choices.</strong>
+        <p className="landing-fact">
+          <b>6 to 17</b>
+          <span>The ages it's made for.</span>
         </p>
-        <p>
-          <strong>6 to 17</strong>
-          <span>Young savers, growing at their own pace</span>
+        <p className="landing-fact">
+          <b>RM0</b>
+          <span>Interest on a family loan. No late fees either.</span>
         </p>
-        <p>
-          <strong>Interest-free</strong>
-          <span>Family loans built around Qard al-Hasan</span>
-        </p>
-        <p>
-          <strong>Together</strong>
-          <span>Separate views for children and parents</span>
+        <p className="landing-fact">
+          <b>Your say</b>
+          <span>Withdrawals, loans and rewards wait for a parent's OK.</span>
         </p>
       </div>
     </section>
