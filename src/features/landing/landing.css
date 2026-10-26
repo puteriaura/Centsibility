@@ -152,10 +152,11 @@
   align-items: center;
   gap: 20px;
 }
+/* Sized from the app's touch minimum, which every button already gets as min-height, so both stay square. */
 .landing-menu-toggle {
   display: none;
-  width: 44px;
-  height: 44px;
+  width: var(--touch-min);
+  height: var(--touch-min);
   border-radius: 14px;
   align-items: center;
   justify-content: center;
@@ -163,8 +164,8 @@
   box-shadow: 0 3px 0 var(--edge);
 }
 .landing-theme-toggle {
-  width: 44px;
-  height: 44px;
+  width: var(--touch-min);
+  height: var(--touch-min);
   border-radius: 50%;
   border: 0;
   background: var(--surface);
