@@ -288,8 +288,8 @@ function KidInsights() {
         <Card className="p-5 insights-week"><h2>This week</h2>
           {locked ? hiddenAmounts : <div className="insights-week__days">{week.map(day => <div key={day.date} className="insights-week__day">
             <div className="insights-week__slot" role="img" aria-label={`${day.day}${day.today ? ", today" : ""}: ${formatMoney(day.amount)}`}>
-              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--focus)" : "var(--action-tint-strong)" } as React.CSSProperties} />
-            </div><span aria-hidden="true">{day.day[0]}</span>
+              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--focus)" : "var(--blue-500)" } as React.CSSProperties} />
+            </div><span aria-hidden="true" className={day.today ? "insights-week__today" : undefined}>{day.day[0]}</span>
           </div>)}</div>}
         </Card>
         <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
