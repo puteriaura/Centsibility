@@ -1292,14 +1292,6 @@ export async function edgeParentSetMarketTracker(params: {
   );
 }
 
-export async function edgeExecuteScheduledHibahs() {
-  // Cron trigger — no user session needed, parent-finance handles this action
-  // before the JWT check so it works with just the anon key.
-  return invoke<{ processed: number }>("parent-finance", {
-    action: "execute-scheduled-hibahs",
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Kid Finance Edge Functions — verify_jwt=false, anon key only
 // ---------------------------------------------------------------------------

@@ -12,8 +12,6 @@ declare global {
   }
 }
 
-import { edgeExecuteScheduledHibahs } from "@/lib/edge";
-
 if (typeof window !== "undefined") {
   window.AsyncLocalStorage = class {
     getStore() {
@@ -23,17 +21,6 @@ if (typeof window !== "undefined") {
       return callback();
     }
   };
-
-  // Trigger the edge function cron for auto-Hibah on app load and every hour
-  setTimeout(() => {
-    edgeExecuteScheduledHibahs().catch(() => {});
-  }, 5000);
-  setInterval(
-    () => {
-      edgeExecuteScheduledHibahs().catch(() => {});
-    },
-    60 * 60 * 1000,
-  );
 }
 
 const router = getRouter();
