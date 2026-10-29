@@ -1,6 +1,6 @@
 // PIN and onboarding screens centre on the keypad by convention (AEON's PIN screen does too).
 // avoid-ai-design-ignore-file: L1, SD4w
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { edgeParentGetPin, edgeParentSetPin, edgeParentVerifyPin, edgeParentGetProfile, clearParentPinSession } from "@/lib/edge";
 import { useAuth } from "@/providers/auth";
@@ -242,8 +242,8 @@ function ParentLayout() {
     return <ParentLoadingState />;
   }
 
-  // No user: let child routes render their own auth guards
-  if (!user) return <Outlet />;
+  // Signed out (expired session, another tab, a bookmark): child routes have no guard of their own.
+  if (!user) return <Navigate to="/login" replace />;
 
   // PIN not yet verified: show Onboarding (if setting PIN) or PIN unlock screen
   if (!pinVerified) {
