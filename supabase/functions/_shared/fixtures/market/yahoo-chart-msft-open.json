@@ -1,0 +1,71 @@
+{
+  "chart": {
+    "error": null,
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "MSFT",
+          "exchangeName": "NMS",
+          "instrumentType": "EQUITY",
+          "regularMarketPrice": 528.0,
+          "regularMarketTime": 1793026770,
+          "chartPreviousClose": 480.0,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "currentTradingPeriod": {
+            "regular": {
+              "start": 1793021400,
+              "end": 1793044800,
+              "timezone": "EDT",
+              "gmtoffset": -14400
+            }
+          }
+        },
+        "timestamp": [
+          1792589400,
+          1792675800,
+          1792762200,
+          1793021400
+        ],
+        "indicators": {
+          "quote": [
+            {
+              "open": [
+                519,
+                522,
+                523.5,
+                526
+              ],
+              "high": [
+                523,
+                524,
+                526,
+                532.8
+              ],
+              "low": [
+                517.5,
+                520,
+                522,
+                524.9
+              ],
+              "close": [
+                521.1,
+                null,
+                525.1,
+                528
+              ],
+              "volume": [
+                20100000,
+                0,
+                19800000,
+                18203441
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

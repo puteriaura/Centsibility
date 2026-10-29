@@ -10,3 +10,6 @@ verify_jwt = false
 # verification ON as an extra layer of protection.
 [functions.parent-finance]
 verify_jwt = true
+[functions.market-refresh]
+# Called only by the scheduled job; the function checks its own x-market-refresh-token header.
+verify_jwt = false

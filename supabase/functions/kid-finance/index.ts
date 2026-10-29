@@ -653,10 +653,12 @@ async function handleMarketSymbol(admin: Admin, params: Record<string, unknown>,
   const symbol = typeof params.symbol === "string" ? params.symbol.trim().toUpperCase() : "";
   if (!symbol) return jsonError("Missing symbol", 400);
   const catalogue = await getCuratedSymbols(admin);
-  if (!catalogue.some(s => s.symbol === symbol)) return jsonError("Instrument not in our verified catalogue", 400);
+  const instrument = catalogue.find(s => s.symbol === symbol);
+  if (!instrument) return jsonError("Instrument not in our verified catalogue", 400);
+  const { kind } = instrument;
 
-  const quoteRes = await getQuote(admin, symbol, { allowClosedBootstrap: true });
-  const closesRes = await getDailyCloses(admin, symbol);
+  const quoteRes = await getQuote(admin, symbol, { allowClosedBootstrap: true, kind });
+  const closesRes = await getDailyCloses(admin, symbol, { kind });
 
   return jsonOk({
     symbol,
@@ -687,7 +689,7 @@ async function handleMarketOpen(admin: Admin, params: Record<string, unknown>, r
   if (isNaN(amount) || amount < 1.00) return jsonError("Invalid amount", 400);
 
   // Refresh quote if stale
-  await getQuote(admin, symbol);
+  await getQuote(admin, symbol, { forTrade: "open" });
 
   const { data, error } = await admin.rpc("kid_market_open", {
     p_kid_id: kid.id,
@@ -715,7 +717,7 @@ async function handleMarketSell(admin: Admin, params: Record<string, unknown>, r
   if (!inv) return jsonError("Not found", 404);
 
   if (inv.symbol) {
-    await getQuote(admin, inv.symbol);
+    await getQuote(admin, inv.symbol, { forTrade: "sell" });
   }
 
   const { data, error } = await admin.rpc("kid_investment_close", {

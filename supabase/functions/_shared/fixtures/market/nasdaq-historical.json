@@ -1,0 +1,38 @@
+{
+  "data": {
+    "symbol": "MSFT",
+    "totalRecords": 3,
+    "tradesTable": {
+      "rows": [
+        {
+          "date": "10/26/2026",
+          "close": "$531.52",
+          "volume": "18,203,441",
+          "open": "$526.00",
+          "high": "$532.80",
+          "low": "$524.90"
+        },
+        {
+          "date": "10/23/2026",
+          "close": "$525.10",
+          "volume": "19,800,000",
+          "open": "$523.50",
+          "high": "$526.00",
+          "low": "$522.00"
+        },
+        {
+          "date": "10/22/2026",
+          "close": "N/A",
+          "volume": "N/A",
+          "open": "N/A",
+          "high": "N/A",
+          "low": "N/A"
+        }
+      ]
+    }
+  },
+  "message": null,
+  "status": {
+    "rCode": 200
+  }
+}
