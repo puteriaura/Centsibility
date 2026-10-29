@@ -4,7 +4,7 @@ import { genCode } from "../_shared/access-code.ts";
 import { actorLimit, pennyGlobalLimit, hit, tooMany } from "../_shared/rate-limit.ts";
 import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
-import { minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
+import { getPennyKnownNames, minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/parent-finance/index.ts
 // Handles: all parent-initiated actions
@@ -893,7 +893,8 @@ async function handlePennyChat(
     if (error || !data) return jsonError("Child not available", 404);
     selectedKid = data;
   }
-  const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {});
+  const knownNames = await getPennyKnownNames(admin, parentId, user);
+  const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {}, undefined, { asker: "parent", knownNames });
   logEvent(plan.audit);
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)

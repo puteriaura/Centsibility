@@ -358,8 +358,8 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             {/* Disclaimer */}
             <p className="penny-chat__disclaimer">
               {mode === "kid"
-                ? "Content is educational and not financial advice. Subject to our Terms of Use."
-                : "Penny gives general guidance, not financial, legal or religious rulings."}
+                ? "Penny's AI sees your question with names and numbers removed. Content is educational and not financial advice. Subject to our Terms of Use."
+                : "Penny's AI sees your question with names and numbers removed. Penny gives general guidance, not financial, legal or religious rulings."}
             </p>
 
             {/* Link to Insights on full-page kid chat only */}
