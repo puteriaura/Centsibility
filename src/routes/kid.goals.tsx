@@ -23,7 +23,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRM } from "@/lib/format";
 import { getBalanceSummary } from "@/lib/finance";
-import { Money } from "@/features/privacy";
+import { Money, HideAmountsButton } from "@/features/privacy";
 
 import { useMoneyAction } from "@/hooks/use-money-action";
 import { PennyMascot } from "@/components/PennyMascot";
@@ -206,7 +206,7 @@ function KidGoals() {
       {/* 1. Hero: Total in Tabung */}
       <section className="deposit-hero" aria-label="Tabung summary">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Total in Tabung</p>
+          <div className="flex items-center justify-between gap-2"><p className="deposit-hero__label">Total in Tabung</p><HideAmountsButton variant="dark" /></div>
           <p className="deposit-hero__amount tabular-nums">
             <Money amount={totalInTabung} />
           </p>

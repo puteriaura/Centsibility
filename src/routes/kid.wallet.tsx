@@ -17,7 +17,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { formatDate, formatRM } from "@/lib/format";
 import { transactionTitle, transactionTypeLabel } from "@/lib/labels";
 import { useMoneyAction } from "@/hooks/use-money-action";
-import { Money } from "@/features/privacy";
+import { Money, HideAmountsButton } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/wallet")({
   head: () => ({ meta: [{ title: "Wallet | Centsibility" }] }),
@@ -90,6 +90,7 @@ function KidWallet() {
 
   return (
     <div className="space-y-5 pb-8">
+      <div className="flex items-center justify-between"><h2 className="m-0 text-lg font-semibold">My accounts</h2><HideAmountsButton /></div>
       <div className="deposit-account-stack">
         <button
           type="button"

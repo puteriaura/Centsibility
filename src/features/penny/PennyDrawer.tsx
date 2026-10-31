@@ -1,5 +1,6 @@
 import { Drawer } from "vaul";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { useRef } from "react";
 import { usePenny } from "./PennyProvider";
 import { PennyChat } from "./PennyChat";
 import { AppIcon } from "@/components/ui/app-icon";
@@ -7,12 +8,21 @@ import { sfx } from "@/lib/sounds";
 
 export function PennyDrawer() {
   const { isOpen, closePenny, mode } = usePenny();
+  const navigate = useNavigate();
+  const target = useRef<"/kid/chat" | "/parent/penny" | null>(null);
 
   return (
     <Drawer.Root
       open={isOpen}
       onOpenChange={(open) => {
         if (!open) closePenny();
+      }}
+      onAnimationEnd={(open) => {
+        if (!open && target.current) {
+          const to = target.current;
+          target.current = null;
+          void navigate({ to });
+        }
       }}
       shouldScaleBackground={false}
     >
@@ -38,16 +48,20 @@ export function PennyDrawer() {
               <span className="penny-chat__beta">Beta</span>
             </div>
             <div className="penny-drawer__header-actions">
-              <Link
-                to={mode === "kid" ? "/kid/chat" : "/parent/penny"}
+              <Drawer.Close asChild>
+              <button
+                type="button"
+                data-vaul-no-drag
                 className="penny-drawer__full-link"
                 onClick={() => {
+                  target.current = mode === "kid" ? "/kid/chat" : "/parent/penny";
                   sfx.tap();
                   closePenny();
                 }}
               >
                 Open full chat ↗
-              </Link>
+              </button>
+              </Drawer.Close>
               <Drawer.Close asChild>
                 <button
                   type="button"

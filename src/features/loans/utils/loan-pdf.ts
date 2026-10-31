@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { formatDate } from "@/lib/format";
 
-export function exportLoanPdf(loan: {
+export async function exportLoanPdf(loan: {
   amount: number;
   due_date: string;
   reason: string | null;
@@ -107,5 +107,15 @@ export function exportLoanPdf(loan: {
   doc.text(loan.kidName, 70, 282);
 
   const safeName = loan.kidName.replace(/[^a-z0-9-_]/gi, "_");
-  doc.save(`my-super-promise-${safeName}-${loan.due_date}.pdf`);
+  const name = `my-super-promise-${safeName}-${loan.due_date}.pdf`;
+  const file = new File([doc.output("blob")], name, { type: "application/pdf" });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+    }
+  }
+  doc.save(name);
 }

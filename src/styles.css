@@ -3,6 +3,11 @@
 @source "../index.html";
 @source not "../.agents";
 
+/* Keep iOS form focus readable without disabling pinch zoom. */
+input, textarea, select {
+  font-size: max(16px, 1rem);
+}
+
 /* avoid-ai-design-ignore-file: C8 (one brand hue is the brief; chart-1 reuses it on purpose) */
 
 /* Centsibility design system (October 2026 redesign).
@@ -2749,7 +2754,7 @@
 
   .penny-drawer__body {
     flex: 1;
-    min-height: 0;
+    min-height: 40%;
     overflow: hidden;
     display: flex;
     flex-direction: column;

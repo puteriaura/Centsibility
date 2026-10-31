@@ -4,6 +4,7 @@ import type { MarketUsage } from "../../supabase/functions/_shared/market-types"
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
@@ -41,8 +42,8 @@ import {
   XAxis,
   Tooltip,
 } from "recharts";
-import { formatRM } from "@/lib/format";
-import { Money, useMoney } from "@/features/privacy";
+import { formatDate, formatRM } from "@/lib/format";
+import { Money, HideAmountsButton, useMoney } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
@@ -556,7 +557,7 @@ function KidInvest() {
       {/* Hero: total value */}
       <section className="deposit-hero" aria-label="Investment summary">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Total investment value</p>
+          <div className="flex items-center justify-between gap-2"><p className="deposit-hero__label">Total investment value</p><HideAmountsButton variant="dark" /></div>
           <p className="deposit-hero__amount tabular-nums">
             <Money amount={totalValue} />
           </p>
@@ -1042,8 +1043,10 @@ function KidInvest() {
                   Screening standard
                 </span>
                 <span className="font-semibold text-[var(--ink)]">
-                  {halalModalSymbol.halal_source}
-                  {halalModalSymbol.halal_url && <a className="block underline" href={halalModalSymbol.halal_url} target="_blank" rel="noreferrer">Read the source</a>}
+                  In the SPUS Shariah ETF holdings dated {formatDate(halalModalSymbol.halal_checked_on)}. Holdings can change.
+                  {halalModalSymbol.halal_url && <a className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface)] px-4 text-sm text-[var(--action-text)]" href={halalModalSymbol.halal_url} target="_blank" rel="noreferrer" data-vaul-no-drag>
+                    View SPUS holdings <AppIcon name="outgoing" size={18} aria-hidden="true" />
+                  </a>}
                 </span>
               </div>
               <div>
@@ -1452,12 +1455,12 @@ function KidInvest() {
 
                     {/* Search box */}
                     <div className="bg-[var(--surface)]">
-                      <input
+                      <Input
                         type="text"
                         placeholder="Search symbols or names..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                        aria-label="Search symbols or names"
                       />
                     </div>
                   </div>

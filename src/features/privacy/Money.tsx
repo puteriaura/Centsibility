@@ -97,18 +97,24 @@ export function LogInToView({
   );
 }
 
-export function EyeToggle({
+export function HideAmountsButton({
   className = "",
   variant = "light",
+  masked,
+  onToggleHide,
 }: {
   className?: string;
   variant?: "light" | "dark";
+  masked?: boolean;
+  onToggleHide?: () => void;
 }) {
   const { locked, hidden, toggleHidden, openUnlockSheet } = usePrivacy();
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (locked) {
+    if (onToggleHide) {
+      onToggleHide();
+    } else if (locked) {
       openUnlockSheet();
     } else {
       toggleHidden();
@@ -116,6 +122,7 @@ export function EyeToggle({
   };
 
   const isDark = variant === "dark";
+  const isMasked = masked ?? (hidden || locked);
 
   return (
     <button
@@ -124,17 +131,18 @@ export function EyeToggle({
       aria-label={
         locked
           ? "Unlock to see amounts"
-          : hidden
+          : isMasked
             ? "Show amounts"
             : "Hide amounts"
       }
+      aria-pressed={isMasked}
       className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full transition-colors ${
         isDark
-          ? "text-white/80 hover:text-white hover:bg-white/10"
+          ? "text-[var(--on-brand-card)] hover:bg-white/15"
           : "text-[var(--text-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-soft)]"
       } ${className}`.trim()}
     >
-      <AppIcon name={hidden || locked ? "show" : "hide"} size={18} />
+      <AppIcon name={isMasked ? "show" : "hide"} size={18} />
     </button>
   );
 }
