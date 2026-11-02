@@ -1,0 +1,134 @@
+[
+  {
+    "name": "neutral",
+    "label": "Neutral",
+    "duration": 0,
+    "playback": "static",
+    "purpose": "A still, ready pose. No unnecessary idle motion.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/neutral.svg",
+    "reducedMotion": "static/neutral.svg"
+  },
+  {
+    "name": "welcome",
+    "label": "Welcome",
+    "duration": 1.1,
+    "playback": "one-shot",
+    "purpose": "A clear two-part wave with a friendly lean, settling into a greeting.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/welcome.svg",
+    "reducedMotion": "static/welcome.svg"
+  },
+  {
+    "name": "guide",
+    "label": "Guide",
+    "duration": 0.7,
+    "playback": "one-shot",
+    "purpose": "Extend one simple arm toward the next action.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/guide.svg",
+    "reducedMotion": "static/guide.svg"
+  },
+  {
+    "name": "happy",
+    "label": "Happy",
+    "duration": 0.6,
+    "playback": "one-shot",
+    "purpose": "A visible little hop and a relaxed happy face.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/happy.svg",
+    "reducedMotion": "static/happy.svg"
+  },
+  {
+    "name": "encouraging",
+    "label": "Encouraging",
+    "duration": 0.7,
+    "playback": "one-shot",
+    "purpose": "A clear supportive nod, without exaggerated approval.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/encouraging.svg",
+    "reducedMotion": "static/encouraging.svg"
+  },
+  {
+    "name": "attentive",
+    "label": "Attentive",
+    "duration": 0.5,
+    "playback": "one-shot",
+    "purpose": "A calm attentive glance for information that needs review.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/attentive.svg",
+    "reducedMotion": "static/attentive.svg"
+  },
+  {
+    "name": "proud",
+    "label": "Proud",
+    "duration": 0.8,
+    "playback": "one-shot",
+    "purpose": "Straighten gently into a quietly proud pose.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/proud.svg",
+    "reducedMotion": "static/proud.svg"
+  },
+  {
+    "name": "celebrate",
+    "label": "Celebrate",
+    "duration": 1.2,
+    "playback": "one-shot",
+    "purpose": "One clear celebratory hop and raised arms for a confirmed milestone.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/celebrate.svg",
+    "reducedMotion": "static/celebrate.svg"
+  },
+  {
+    "name": "reassuring",
+    "label": "Reassuring",
+    "duration": 0.9,
+    "playback": "one-shot",
+    "purpose": "Open simple arms to offer support without judgment.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/reassuring.svg",
+    "reducedMotion": "static/reassuring.svg"
+  },
+  {
+    "name": "loading",
+    "label": "Loading",
+    "duration": 1.6,
+    "playback": "loop",
+    "purpose": "A visible repeating side-to-side rock while an operation is genuinely pending.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/loading.svg",
+    "reducedMotion": "static/loading.svg"
+  },
+  {
+    "name": "saved",
+    "label": "Saved",
+    "duration": 0.5,
+    "playback": "one-shot",
+    "purpose": "A clear confirmation nod and a separate check for any confirmed save.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/saved.svg",
+    "reducedMotion": "static/saved.svg"
+  },
+  {
+    "name": "unavailable",
+    "label": "Unavailable",
+    "duration": 0.5,
+    "playback": "one-shot",
+    "purpose": "Settle into a calm neutral pose for offline or failed operations.",
+    "tool": "Native SVG + CSS, rendered by Chromium",
+    "toolReason": "Editable vector shapes and native transform animation without a library.",
+    "animated": "animated/unavailable.svg",
+    "reducedMotion": "static/unavailable.svg"
+  }
+]

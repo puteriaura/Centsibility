@@ -1,0 +1,300 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Penny — motion library</title><style>
+body{margin:0;background:#fff;color:#29251f;font:16px/1.5 system-ui,sans-serif}main{max-width:1080px;margin:40px auto;padding:0 24px}h1{font-size:28px;font-weight:600;margin-bottom:8px}header p{max-width:680px}.controls{display:flex;gap:24px;flex-wrap:wrap;padding:18px 0;border-bottom:1px solid #ddd}.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:36px 24px;margin-top:24px}article{min-width:0}.stage{background:#fff;aspect-ratio:1}.stage svg{width:100%;height:100%;display:block}h2{font-size:18px;font-weight:600;margin:8px 0}article p{font-size:14px;margin:6px 0;min-height:22px}button{font:inherit;font-size:14px;background:#fff;color:#29251f;border:1px solid #bcb6aa;border-radius:3px;padding:5px 12px;cursor:pointer}button:disabled{opacity:.45;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #44836c;outline-offset:3px}a{color:#315e50;font-size:14px}.dark .stage{background:#202529}.reduced .penny *{animation:none!important}.paused .penny *{animation-play-state:paused!important}@media(max-width:550px){main{margin-top:24px}.gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 12px}article p{min-height:0}}
+</style></head><body><main><header><h1>Penny, in motion</h1><p>Twelve reusable states. Flat gold, simple limbs, no perimeter stroke. Essential status stays in the app's text; Penny adds a quiet human cue.</p></header><div class="controls"><label><input id="reduce" type="checkbox"> Reduced motion</label><label><input id="dark" type="checkbox"> Dark background</label><label><input id="pause" type="checkbox"> Pause</label><button id="replay-all" type="button">Replay all</button></div><section class="gallery" aria-label="Penny animation states"><article><div class="stage" data-state="neutral"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-neutral-title penny-neutral-desc" class="penny penny-neutral">
+<title id="penny-neutral-title">Penny — Neutral</title><desc id="penny-neutral-desc">A still, ready pose. No unnecessary idle motion.</desc>
+<style>
+.penny-neutral{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-neutral .character{transform-origin:256px 430px}.penny-neutral .left-arm{transform-origin:101px 250px;transform:rotate(0deg)}.penny-neutral .right-arm{transform-origin:410px 250px;transform:rotate(0deg)}
+.penny-neutral .left-leg{transform-origin:217px 367px}.penny-neutral .right-leg{transform-origin:291px 367px}.penny-neutral .face{transform-origin:252px 239px}
+
+.penny-neutral.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-neutral *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-neutral .shoe{fill:#856591}.penny-neutral .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Neutral</h2><p>Static</p><p>A still, ready pose. No unnecessary idle motion.</p><button type="button" data-replay="neutral" disabled>Replay</button> <a href="animated/neutral.svg" download>SVG</a> · <a href="static/neutral.svg" download>Still</a></article>
+<article><div class="stage" data-state="welcome"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-welcome-title penny-welcome-desc" class="penny penny-welcome">
+<title id="penny-welcome-title">Penny — Welcome</title><desc id="penny-welcome-desc">A clear two-part wave with a friendly lean, settling into a greeting.</desc>
+<style>
+.penny-welcome{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-welcome .character{transform-origin:256px 430px}.penny-welcome .left-arm{transform-origin:101px 250px;transform:rotate(108deg)}.penny-welcome .right-arm{transform-origin:410px 250px;transform:rotate(0deg)}
+.penny-welcome .left-leg{transform-origin:217px 367px}.penny-welcome .right-leg{transform-origin:291px 367px}.penny-welcome .face{transform-origin:252px 239px}
+.penny-welcome .left-arm{animation:wave 1.1s var(--move) both}.penny-welcome .character{animation:greet-lean 1.1s var(--move) both}@keyframes wave{0%{transform:rotate(0deg)}24%{transform:rotate(142deg)}40%{transform:rotate(62deg)}57%{transform:rotate(142deg)}73%{transform:rotate(62deg)}90%,100%{transform:rotate(108deg)}}@keyframes greet-lean{0%,100%{transform:rotate(0deg)}28%,65%{transform:rotate(-4deg)}}
+.penny-welcome.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-welcome *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-welcome .shoe{fill:#856591}.penny-welcome .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Welcome</h2><p>1.1s · one-shot</p><p>A clear two-part wave with a friendly lean, settling into a greeting.</p><button type="button" data-replay="welcome" >Replay</button> <a href="animated/welcome.svg" download>SVG</a> · <a href="static/welcome.svg" download>Still</a></article>
+<article><div class="stage" data-state="guide"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-guide-title penny-guide-desc" class="penny penny-guide">
+<title id="penny-guide-title">Penny — Guide</title><desc id="penny-guide-desc">Extend one simple arm toward the next action.</desc>
+<style>
+.penny-guide{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-guide .character{transform-origin:256px 430px}.penny-guide .left-arm{transform-origin:101px 250px;transform:rotate(0deg)}.penny-guide .right-arm{transform-origin:410px 250px;transform:rotate(-96deg)}
+.penny-guide .left-leg{transform-origin:217px 367px}.penny-guide .right-leg{transform-origin:291px 367px}.penny-guide .face{transform-origin:252px 239px}
+.penny-guide .right-arm{animation:point .7s var(--move) both}.penny-guide .character{animation:guide-lean .7s var(--move) both}@keyframes point{0%{transform:rotate(0deg)}38%{transform:rotate(-112deg) translateX(12px)}65%{transform:rotate(-88deg)}100%{transform:rotate(-96deg)}}@keyframes guide-lean{0%,100%{transform:rotate(0deg)}45%{transform:rotate(4deg)}}
+.penny-guide.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-guide *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-guide .shoe{fill:#856591}.penny-guide .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Guide</h2><p>0.7s · one-shot</p><p>Extend one simple arm toward the next action.</p><button type="button" data-replay="guide" >Replay</button> <a href="animated/guide.svg" download>SVG</a> · <a href="static/guide.svg" download>Still</a></article>
+<article><div class="stage" data-state="happy"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-happy-title penny-happy-desc" class="penny penny-happy">
+<title id="penny-happy-title">Penny — Happy</title><desc id="penny-happy-desc">A visible little hop and a relaxed happy face.</desc>
+<style>
+.penny-happy{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-happy .character{transform-origin:256px 430px}.penny-happy .left-arm{transform-origin:101px 250px;transform:rotate(60deg)}.penny-happy .right-arm{transform-origin:410px 250px;transform:rotate(-60deg)}
+.penny-happy .left-leg{transform-origin:217px 367px}.penny-happy .right-leg{transform-origin:291px 367px}.penny-happy .face{transform-origin:252px 239px}
+.penny-happy .character{animation:lift .6s var(--move) both}@keyframes lift{0%,100%{transform:translateY(0)}45%{transform:translateY(-20px)}}
+.penny-happy.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-happy *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-happy .shoe{fill:#856591}.penny-happy .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M231 254Q249 263 267 253C265 278 236 278 231 254Z" fill="#211D17"/>
+</g>
+
+</g></svg></div><h2>Happy</h2><p>0.6s · one-shot</p><p>A visible little hop and a relaxed happy face.</p><button type="button" data-replay="happy" >Replay</button> <a href="animated/happy.svg" download>SVG</a> · <a href="static/happy.svg" download>Still</a></article>
+<article><div class="stage" data-state="encouraging"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-encouraging-title penny-encouraging-desc" class="penny penny-encouraging">
+<title id="penny-encouraging-title">Penny — Encouraging</title><desc id="penny-encouraging-desc">A clear supportive nod, without exaggerated approval.</desc>
+<style>
+.penny-encouraging{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-encouraging .character{transform-origin:256px 430px}.penny-encouraging .left-arm{transform-origin:101px 250px;transform:rotate(35deg)}.penny-encouraging .right-arm{transform-origin:410px 250px;transform:rotate(0deg)}
+.penny-encouraging .left-leg{transform-origin:217px 367px}.penny-encouraging .right-leg{transform-origin:291px 367px}.penny-encouraging .face{transform-origin:252px 239px}
+.penny-encouraging .character{animation:nod .7s var(--move) both}.penny-encouraging .left-arm{animation:encourage-arm .7s var(--move) both}@keyframes nod{0%,100%{transform:rotate(0deg) translateY(0)}45%{transform:rotate(5deg) translateY(6px)}70%{transform:rotate(-2deg)}}@keyframes encourage-arm{0%,100%{transform:rotate(35deg)}45%{transform:rotate(80deg)}}
+.penny-encouraging.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-encouraging *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-encouraging .shoe{fill:#856591}.penny-encouraging .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Encouraging</h2><p>0.7s · one-shot</p><p>A clear supportive nod, without exaggerated approval.</p><button type="button" data-replay="encouraging" >Replay</button> <a href="animated/encouraging.svg" download>SVG</a> · <a href="static/encouraging.svg" download>Still</a></article>
+<article><div class="stage" data-state="attentive"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-attentive-title penny-attentive-desc" class="penny penny-attentive">
+<title id="penny-attentive-title">Penny — Attentive</title><desc id="penny-attentive-desc">A calm attentive glance for information that needs review.</desc>
+<style>
+.penny-attentive{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-attentive .character{transform-origin:256px 430px}.penny-attentive .left-arm{transform-origin:101px 250px;transform:rotate(0deg)}.penny-attentive .right-arm{transform-origin:410px 250px;transform:rotate(-45deg)}
+.penny-attentive .left-leg{transform-origin:217px 367px}.penny-attentive .right-leg{transform-origin:291px 367px}.penny-attentive .face{transform-origin:252px 239px}
+.penny-attentive .character{animation:attend .5s var(--move) both}@keyframes attend{0%,100%{transform:rotate(0deg)}45%{transform:rotate(-6deg)}}
+.penny-attentive.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-attentive *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-attentive .shoe{fill:#856591}.penny-attentive .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M237 261h23" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Attentive</h2><p>0.5s · one-shot</p><p>A calm attentive glance for information that needs review.</p><button type="button" data-replay="attentive" >Replay</button> <a href="animated/attentive.svg" download>SVG</a> · <a href="static/attentive.svg" download>Still</a></article>
+<article><div class="stage" data-state="proud"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-proud-title penny-proud-desc" class="penny penny-proud">
+<title id="penny-proud-title">Penny — Proud</title><desc id="penny-proud-desc">Straighten gently into a quietly proud pose.</desc>
+<style>
+.penny-proud{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-proud .character{transform-origin:256px 430px}.penny-proud .left-arm{transform-origin:101px 250px;transform:rotate(40deg)}.penny-proud .right-arm{transform-origin:410px 250px;transform:rotate(-40deg)}
+.penny-proud .left-leg{transform-origin:217px 367px}.penny-proud .right-leg{transform-origin:291px 367px}.penny-proud .face{transform-origin:252px 239px}
+.penny-proud .character{animation:proud-straighten .8s var(--out) both}.penny-proud .left-arm{animation:proud-left .8s var(--move) both}.penny-proud .right-arm{animation:proud-right .8s var(--move) both}@keyframes proud-straighten{0%{transform:rotate(5deg)}55%{transform:rotate(-2deg)}100%{transform:rotate(0deg)}}@keyframes proud-left{0%{transform:rotate(0deg)}50%{transform:rotate(75deg)}100%{transform:rotate(40deg)}}@keyframes proud-right{0%{transform:rotate(0deg)}50%{transform:rotate(-75deg)}100%{transform:rotate(-40deg)}}
+.penny-proud.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-proud *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-proud .shoe{fill:#856591}.penny-proud .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M192 225q9-13 19 0M285 225q9-13 19 0" fill="none" stroke="#211D17" stroke-width="4" stroke-linecap="round"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Proud</h2><p>0.8s · one-shot</p><p>Straighten gently into a quietly proud pose.</p><button type="button" data-replay="proud" >Replay</button> <a href="animated/proud.svg" download>SVG</a> · <a href="static/proud.svg" download>Still</a></article>
+<article><div class="stage" data-state="celebrate"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-celebrate-title penny-celebrate-desc" class="penny penny-celebrate">
+<title id="penny-celebrate-title">Penny — Celebrate</title><desc id="penny-celebrate-desc">One clear celebratory hop and raised arms for a confirmed milestone.</desc>
+<style>
+.penny-celebrate{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-celebrate .character{transform-origin:256px 430px}.penny-celebrate .left-arm{transform-origin:101px 250px;transform:rotate(108deg)}.penny-celebrate .right-arm{transform-origin:410px 250px;transform:rotate(-108deg)}
+.penny-celebrate .left-leg{transform-origin:217px 367px}.penny-celebrate .right-leg{transform-origin:291px 367px}.penny-celebrate .face{transform-origin:252px 239px}
+.penny-celebrate .character{animation:hop 1.2s var(--move) both}.penny-celebrate .left-arm{animation:raise-left 1.2s var(--move) both}.penny-celebrate .right-arm{animation:raise-right 1.2s var(--move) both}@keyframes hop{0%,15%,75%,100%{transform:translateY(0) rotate(0deg)}42%{transform:translateY(-44px) rotate(-4deg)}62%{transform:translateY(-12px) rotate(3deg)}}@keyframes raise-left{0%{transform:rotate(0deg)}35%{transform:rotate(142deg)}58%{transform:rotate(86deg)}80%,100%{transform:rotate(108deg)}}@keyframes raise-right{0%{transform:rotate(0deg)}35%{transform:rotate(-142deg)}58%{transform:rotate(-86deg)}80%,100%{transform:rotate(-108deg)}}
+.penny-celebrate.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-celebrate *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-celebrate .shoe{fill:#856591}.penny-celebrate .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M192 225q9-13 19 0M285 225q9-13 19 0" fill="none" stroke="#211D17" stroke-width="4" stroke-linecap="round"/>
+<path d="M231 254Q249 263 267 253C265 278 236 278 231 254Z" fill="#211D17"/>
+</g>
+
+</g></svg></div><h2>Celebrate</h2><p>1.2s · one-shot</p><p>One clear celebratory hop and raised arms for a confirmed milestone.</p><button type="button" data-replay="celebrate" >Replay</button> <a href="animated/celebrate.svg" download>SVG</a> · <a href="static/celebrate.svg" download>Still</a></article>
+<article><div class="stage" data-state="reassuring"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-reassuring-title penny-reassuring-desc" class="penny penny-reassuring">
+<title id="penny-reassuring-title">Penny — Reassuring</title><desc id="penny-reassuring-desc">Open simple arms to offer support without judgment.</desc>
+<style>
+.penny-reassuring{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-reassuring .character{transform-origin:256px 430px}.penny-reassuring .left-arm{transform-origin:101px 250px;transform:rotate(62deg)}.penny-reassuring .right-arm{transform-origin:410px 250px;transform:rotate(-62deg)}
+.penny-reassuring .left-leg{transform-origin:217px 367px}.penny-reassuring .right-leg{transform-origin:291px 367px}.penny-reassuring .face{transform-origin:252px 239px}
+.penny-reassuring .left-arm{animation:offer-left .9s var(--move) both}.penny-reassuring .right-arm{animation:offer-right .9s var(--move) both}.penny-reassuring .character{animation:offer-lean .9s var(--move) both}@keyframes offer-left{0%{transform:rotate(0deg)}45%{transform:rotate(95deg)}100%{transform:rotate(62deg)}}@keyframes offer-right{0%{transform:rotate(0deg)}45%{transform:rotate(-95deg)}100%{transform:rotate(-62deg)}}@keyframes offer-lean{0%,100%{transform:rotate(0deg)}45%{transform:rotate(-4deg)}}
+.penny-reassuring.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-reassuring *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-reassuring .shoe{fill:#856591}.penny-reassuring .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Reassuring</h2><p>0.9s · one-shot</p><p>Open simple arms to offer support without judgment.</p><button type="button" data-replay="reassuring" >Replay</button> <a href="animated/reassuring.svg" download>SVG</a> · <a href="static/reassuring.svg" download>Still</a></article>
+<article><div class="stage" data-state="loading"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-loading-title penny-loading-desc" class="penny penny-loading">
+<title id="penny-loading-title">Penny — Loading</title><desc id="penny-loading-desc">A visible repeating side-to-side rock while an operation is genuinely pending.</desc>
+<style>
+.penny-loading{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-loading .character{transform-origin:256px 430px}.penny-loading .left-arm{transform-origin:101px 250px;transform:rotate(0deg)}.penny-loading .right-arm{transform-origin:410px 250px;transform:rotate(0deg)}
+.penny-loading .left-leg{transform-origin:217px 367px}.penny-loading .right-leg{transform-origin:291px 367px}.penny-loading .face{transform-origin:252px 239px}
+.penny-loading .character{animation:wait 1.6s var(--move) infinite}@keyframes wait{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.penny-loading.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-loading *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-loading .shoe{fill:#856591}.penny-loading .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Loading</h2><p>1.6s · pending-only loop</p><p>A visible repeating side-to-side rock while an operation is genuinely pending.</p><button type="button" data-replay="loading" >Replay</button> <a href="animated/loading.svg" download>SVG</a> · <a href="static/loading.svg" download>Still</a></article>
+<article><div class="stage" data-state="saved"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-saved-title penny-saved-desc" class="penny penny-saved">
+<title id="penny-saved-title">Penny — Saved</title><desc id="penny-saved-desc">A clear confirmation nod and a separate check for any confirmed save.</desc>
+<style>
+.penny-saved{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-saved .character{transform-origin:256px 430px}.penny-saved .left-arm{transform-origin:101px 250px;transform:rotate(0deg)}.penny-saved .right-arm{transform-origin:410px 250px;transform:rotate(0deg)}
+.penny-saved .left-leg{transform-origin:217px 367px}.penny-saved .right-leg{transform-origin:291px 367px}.penny-saved .face{transform-origin:252px 239px}
+.penny-saved .character{animation:saved-nod .5s var(--move) both}.penny-saved .check{transform-origin:390px 125px;animation:check-in .5s var(--out) both}@keyframes saved-nod{0%,100%{transform:rotate(0deg) translateY(0)}45%{transform:rotate(5deg) translateY(5px)}}@keyframes check-in{0%{opacity:0;transform:translateY(12px) scale(.95)}65%{opacity:1;transform:translateY(0) scale(1.25)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.penny-saved.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-saved *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-saved .shoe{fill:#856591}.penny-saved .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M235 255Q249 279 265 254" fill="none" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+<g class="check"><path d="M378 125l10 10 20-25" fill="none" stroke="#44836C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
+</g></svg></div><h2>Saved</h2><p>0.5s · one-shot</p><p>A clear confirmation nod and a separate check for any confirmed save.</p><button type="button" data-replay="saved" >Replay</button> <a href="animated/saved.svg" download>SVG</a> · <a href="static/saved.svg" download>Still</a></article>
+<article><div class="stage" data-state="unavailable"><svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-unavailable-title penny-unavailable-desc" class="penny penny-unavailable">
+<title id="penny-unavailable-title">Penny — Unavailable</title><desc id="penny-unavailable-desc">Settle into a calm neutral pose for offline or failed operations.</desc>
+<style>
+.penny-unavailable{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-unavailable .character{transform-origin:256px 430px}.penny-unavailable .left-arm{transform-origin:101px 250px;transform:rotate(0deg)}.penny-unavailable .right-arm{transform-origin:410px 250px;transform:rotate(0deg)}
+.penny-unavailable .left-leg{transform-origin:217px 367px}.penny-unavailable .right-leg{transform-origin:291px 367px}.penny-unavailable .face{transform-origin:252px 239px}
+.penny-unavailable .character{animation:settle .5s var(--out) both}@keyframes settle{from{transform:rotate(6deg) translateY(-8px)}to{transform:rotate(0deg) translateY(0)}}
+.penny-unavailable.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-unavailable *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-unavailable .shoe{fill:#856591}.penny-unavailable .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M237 261h23" stroke="#211D17" stroke-width="3.5" stroke-linecap="round"/>
+</g>
+
+</g></svg></div><h2>Unavailable</h2><p>0.5s · one-shot</p><p>Settle into a calm neutral pose for offline or failed operations.</p><button type="button" data-replay="unavailable" >Replay</button> <a href="animated/unavailable.svg" download>SVG</a> · <a href="static/unavailable.svg" download>Still</a></article></section><p>SVG + CSS · scalable 512 × 512 viewBox · no runtime dependencies. Loading is the only loop. OS reduced-motion settings are respected automatically.</p></main><script>
+const replay=stage=>{const svg=stage.querySelector('svg');svg.replaceWith(svg.cloneNode(true));stage.dataset.replayedAt=String(performance.now())};
+document.querySelectorAll('[data-replay]').forEach(button=>button.addEventListener('click',()=>replay(document.querySelector('[data-state="'+button.dataset.replay+'"]'))));
+document.getElementById('replay-all').addEventListener('click',()=>document.querySelectorAll('.stage').forEach(replay));
+for(const [id,cls] of [['reduce','reduced'],['dark','dark'],['pause','paused']])document.getElementById(id).addEventListener('change',event=>{document.body.classList.toggle(cls,event.target.checked);if(id==='dark'){document.querySelectorAll('.shoe').forEach(node=>node.style.fill=event.target.checked?'#856591':'');document.querySelectorAll('.limb').forEach(node=>node.style.stroke=event.target.checked?'#BA9557':'')}});
+document.addEventListener('visibilitychange',()=>document.body.classList.toggle('paused',document.hidden||document.getElementById('pause').checked));
+const observer=new IntersectionObserver(entries=>entries.forEach(entry=>entry.target.querySelectorAll('svg *').forEach(node=>node.style.animationPlayState=entry.isIntersecting?'':'paused')),{threshold:.01});document.querySelectorAll('.stage').forEach(stage=>observer.observe(stage));
+const repeatLabel=document.createElement('label');repeatLabel.innerHTML='<input id="repeat" type="checkbox" checked> Repeat previews';document.querySelector('.controls').append(repeatLabel);
+const previewStates=[{"name":"welcome","duration":1.1},{"name":"guide","duration":0.7},{"name":"happy","duration":0.6},{"name":"encouraging","duration":0.7},{"name":"attentive","duration":0.5},{"name":"proud","duration":0.8},{"name":"celebrate","duration":1.2},{"name":"reassuring","duration":0.9},{"name":"saved","duration":0.5},{"name":"unavailable","duration":0.5}];
+setInterval(()=>{if(!document.getElementById('repeat').checked||document.hidden||document.body.matches('.paused,.reduced')||matchMedia('(prefers-reduced-motion:reduce)').matches)return;for(const state of previewStates){const stage=document.querySelector('[data-state="'+state.name+'"]'),rect=stage.getBoundingClientRect(),animations=stage.querySelector('svg').getAnimations({subtree:true});if(rect.bottom>0&&rect.top<innerHeight&&animations.length&&animations.every(animation=>animation.playState==='finished')&&performance.now()-Number(stage.dataset.replayedAt||0)>state.duration*1000+900)replay(stage)}},400);
+</script></body></html>

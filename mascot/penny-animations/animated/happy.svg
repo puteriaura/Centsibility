@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="penny-happy-title penny-happy-desc" class="penny penny-happy">
+<title id="penny-happy-title">Penny — Happy</title><desc id="penny-happy-desc">A visible little hop and a relaxed happy face.</desc>
+<style>
+.penny-happy{--move:cubic-bezier(.77,0,.175,1);--out:cubic-bezier(.23,1,.32,1)}
+.penny-happy .character{transform-origin:256px 430px}.penny-happy .left-arm{transform-origin:101px 250px;transform:rotate(60deg)}.penny-happy .right-arm{transform-origin:410px 250px;transform:rotate(-60deg)}
+.penny-happy .left-leg{transform-origin:217px 367px}.penny-happy .right-leg{transform-origin:291px 367px}.penny-happy .face{transform-origin:252px 239px}
+.penny-happy .character{animation:lift .6s var(--move) both}@keyframes lift{0%,100%{transform:translateY(0)}45%{transform:translateY(-20px)}}
+.penny-happy.still *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penny-happy *{animation:none!important}}
+@media(prefers-color-scheme:dark){.penny-happy .shoe{fill:#856591}.penny-happy .limb{stroke:#BA9557}}
+</style>
+<g class="character">
+<g class="left-leg"><path class="limb" d="M217 366L210 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M185 423C183 414 205 413 215 416C226 420 225 431 213 434C202 437 183 434 185 423Z" fill="#302046"/></g>
+<g class="right-leg"><path class="limb" d="M291 366L300 422" fill="none" stroke="#82602D" stroke-width="9" stroke-linecap="round"/><path class="shoe" d="M288 421C289 414 306 413 316 418C328 423 330 433 315 435C302 437 286 432 288 421Z" fill="#302046"/></g>
+<g class="left-arm"><path class="limb" d="M101 250Q89 264 75 287" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<g class="right-arm"><path class="limb" d="M410 250Q426 263 438 290" fill="none" stroke="#82602D" stroke-width="7" stroke-linecap="round"/></g>
+<path d="M269 74C351 72 410 137 413 222C418 309 353 377 274 380L254 373L250 81Z" fill="#CBA951"/>
+<path d="M249 73C329 72 391 134 392 218C395 302 337 374 254 379C166 383 104 323 101 239C96 151 156 77 249 73Z" fill="#E2C66B"/>
+<g class="face">
+<path d="M210 225c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10M304 224c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10" fill="#211D17"/>
+<path d="M231 254Q249 263 267 253C265 278 236 278 231 254Z" fill="#211D17"/>
+</g>
+
+</g></svg>
