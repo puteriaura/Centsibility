@@ -1,8 +1,9 @@
+import { quoteOlderThanTradingDay } from "@/lib/market-presentation";
 import { MarketQuoteLine } from "@/features/kid/MarketQuoteLine";
 import { marketSession } from "../../supabase/functions/_shared/market-calendar";
 import type { MarketUsage } from "../../supabase/functions/_shared/market-types";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,22 +35,18 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import {
-  AreaChart,
-  Area,
-  ResponsiveContainer,
-  YAxis,
-  XAxis,
-  Tooltip,
-} from "recharts";
+import { InvestmentChart } from "@/components/charts/investment-chart";
+import { MoneyDonut } from "@/components/charts/money-donut";
 import { formatDate, formatRM } from "@/lib/format";
-import { Money, HideAmountsButton, useMoney } from "@/features/privacy";
+import { Money, HideAmountsButton } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
 import { filterMarketSymbols, marketCatalogueNeedsUpdate } from "@/lib/market-search";
 import { MarketPickerStatus } from "@/features/kid/MarketPickerStatus";
 import { MarketCatalogueNotice } from "@/features/kid/MarketCatalogueNotice";
+
+const InvestmentSparkline = lazy(() => import("@/features/kid/InvestmentSparkline"));
 
 export const Route = createFileRoute("/kid/invest")({
   head: () => ({ meta: [{ title: "Investment | Centsibility" }] }),
@@ -154,7 +151,6 @@ const MARKET_LIMITS: Record<
 function KidInvest() {
   const { data, loading, error, refresh } = useKidData();
   const { openPenny } = usePenny();
-  const { format: formatMoney } = useMoney();
 
   const [investments, setInvestments] = useState<InvestmentItem[] | null>(null);
   const [listLoading, setListLoading] = useState(true);
@@ -169,6 +165,7 @@ function KidInvest() {
   const [visibleSymbols, setVisibleSymbols] = useState<string[]>([]);
   const [marketUsage, setMarketUsage] = useState<MarketUsage>();
   const [catalogueMarketState, setCatalogueMarketState] = useState(marketSession());
+  const [refreshingQuotes, setRefreshingQuotes] = useState(false);
   const [quoteRows, setQuoteRows] = useState<Record<string, Partial<MarketSymbolItem>>>({});
 
   // Detail / Close modals
@@ -289,12 +286,13 @@ function KidInvest() {
   }, [filteredSymbols, showStart, chosenMode, marketStep, loading]);
 
   useEffect(() => {
-    if (!visibleSymbols.length) return;
+    if (!visibleSymbols.length) { setRefreshingQuotes(false); return; }
     let cancelled = false;
     let busy = false;
     const refreshQuotes = async () => {
       if (document.hidden || busy) return;
       busy = true;
+      setRefreshingQuotes(true);
       try {
         const result = await edgeKidMarketQuotes({ code: code ?? undefined, symbols: visibleSymbols.slice(0, 12) });
         if (cancelled) return;
@@ -306,7 +304,7 @@ function KidInvest() {
         })) }));
       } catch {
         if (!cancelled) setQuoteRows(previous => ({ ...previous, ...Object.fromEntries(visibleSymbols.map(symbol => [symbol, { ...previous[symbol], stale: true }])) }));
-      } finally { busy = false; }
+      } finally { busy = false; if (!cancelled) setRefreshingQuotes(false); }
     };
     void refreshQuotes();
     const timer = window.setInterval(refreshQuotes, 60000);
@@ -573,6 +571,14 @@ function KidInvest() {
           <AppIcon name="invest" size={32} color="#fff" />
         </div>
       </section>
+      {totalValue !== null && totalValue > 0 && <Card className="space-y-3 p-4">
+        <h2 className="m-0 text-base font-semibold">Where your money is</h2>
+        <MoneyDonut label="Investment allocation" data={[
+          { label: "Funds", value: activeInvs.filter(i => i.mode === "fund").reduce((sum, i) => sum + (i.currentValue ?? 0), 0) },
+          { label: "Shares", value: activeMarketInvs.reduce((sum, i) => sum + (i.currentValue ?? 0), 0) },
+        ]} />
+      </Card>}
+
 
       {/* Disclaimer */}
       <p className="m-0 flex items-start gap-2 text-sm leading-relaxed text-[var(--text-2)]">
@@ -679,7 +685,7 @@ function KidInvest() {
                       {selected.symbol}
                     </Badge>
                   </div>
-                  {selected.stale && <Badge variant="warning">Stale data</Badge>}
+
                   {selected.currentValue === null && <Badge variant="warning">Data unavailable</Badge>}
                   {selected.isMarketOpen === false && (
                     <Badge variant="warning" className="text-[11px]">
@@ -689,41 +695,14 @@ function KidInvest() {
                 </div>
 
                 <p className="text-xs text-[var(--text-muted)]">
-                  {selected.isMarketOpen === false ? "Market closed · saved quote" : "Delayed price"} · updated {fmtTime(selected.lastUpdated)}
+                  {quoteOlderThanTradingDay(selected.lastUpdated) ? <Badge variant="warning">Price from {fmtTime(selected.lastUpdated)}</Badge> : <>Price from {fmtTime(selected.lastUpdated)}</>}
                 </p>
 
                 {/* Price chart */}
                 {selected.chartPoints && selected.chartPoints.length > 1 && (
-                  <div className="h-28 -mx-1 pt-1">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={selected.chartPoints.map((p) => ({
-                          name: p.day,
-                          value: p.price,
-                        }))}
-                        margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
-                      >
-                        <XAxis dataKey="name" hide />
-                        <YAxis domain={["auto", "auto"]} hide />
-                        <Tooltip
-                          formatter={(v: number) => [
-                            `US$${v.toFixed(2)}`,
-                            "Price",
-                          ]}
-                          contentStyle={{ fontSize: 11 }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke="var(--primary)"
-                          strokeWidth={2}
-                          fill="var(--primary-soft)"
-                          fillOpacity={0.25}
-                          isAnimationActive={false}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <InvestmentChart data={selected.chartPoints.map((point, index) => ({
+                    date: new Date(point.day), value: point.price, note: index === 0 ? "Bought" : undefined,
+                  }))} label="Holding price" dollars entry={selected.entryPrice ?? selected.entry_price} />
                 )}
 
                 {/* Stats */}
@@ -816,36 +795,10 @@ function KidInvest() {
 
                 {/* Growth chart */}
                 {selected.path && selected.path.length > 1 && (
-                  <div className="h-28 -mx-1 pt-1">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={selected.path.map((p) => ({
-                          name: `Upd ${p.tick}`,
-                          value: p.value,
-                        }))}
-                        margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
-                      >
-                        <XAxis dataKey="name" hide />
-                        <YAxis domain={["auto", "auto"]} hide />
-                        <Tooltip
-                          formatter={(v: number) => [
-                            formatMoney(v),
-                            "Value",
-                          ]}
-                          contentStyle={{ fontSize: 11 }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke="var(--primary)"
-                          strokeWidth={2}
-                          fill="var(--primary-soft)"
-                          fillOpacity={0.25}
-                          isAnimationActive={false}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <InvestmentChart data={selected.path.map((point) => ({
+                    date: new Date(point.tickAt), value: point.value,
+                    note: point.tickAt === selected.endsAt ? "Deadline" : undefined,
+                  }))} label="Fund value" deadline={selected.endsAt} />
                 )}
 
                 {/* Stats */}
@@ -1025,6 +978,7 @@ function KidInvest() {
         isOpen={!!halalModalSymbol}
         onClose={() => setHalalModalSymbol(null)}
         title="Halal screening"
+        variant="sheet"
       >
         {halalModalSymbol && (
           <div className="space-y-3 pb-2 text-sm text-[var(--ink)]">
@@ -1042,12 +996,10 @@ function KidInvest() {
                 <span className="text-[var(--text-muted)] block">
                   Screening standard
                 </span>
-                <span className="font-semibold text-[var(--ink)]">
-                  {halalModalSymbol.halal_source}
-                  {halalModalSymbol.halal_url && <a className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface)] px-4 text-sm text-[var(--action-text)]" href={halalModalSymbol.halal_url} target="_blank" rel="noreferrer" data-vaul-no-drag>
+                <p className="m-0 font-semibold text-[var(--ink)]">{halalModalSymbol.halal_source}</p>
+                {halalModalSymbol.halal_url && <a className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface)] px-4 text-sm text-[var(--action-text)]" href={halalModalSymbol.halal_url} target="_blank" rel="noreferrer" data-vaul-no-drag>
                     View source · {new URL(halalModalSymbol.halal_url).host} <AppIcon name="outgoing" size={18} aria-hidden="true" />
-                  </a>}
-                </span>
+                </a>}
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block">
@@ -1448,6 +1400,7 @@ function KidInvest() {
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
                       <span>Search our selected stocks and ETFs</span>
                       <MarketPickerStatus state={catalogueMarketState} updatedAt={latestQuoteTime} />
+                      {refreshingQuotes && <span role="status" className="text-xs text-[var(--text-2)]">Refreshing</span>}
                     </div>
 
                     {(quotaDegraded || marketUsage?.monitoringAvailable === false) && <p role="status" className="text-xs text-[var(--text-muted)]">{quotaDegraded ? "Quote limit reached; affected saved prices are stale." : "Monitoring unavailable; affected saved prices are stale."}</p>}
@@ -1507,6 +1460,7 @@ function KidInvest() {
 
                         <button
                           type="button"
+                          aria-label="Screening information"
                           className="inline-flex min-h-11 min-w-11 shrink-0 justify-center items-center"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1525,7 +1479,7 @@ function KidInvest() {
                         </button>
 
                         <div className="col-span-3 flex flex-wrap justify-between gap-2 text-xs">
-                          <MarketQuoteLine state={s.is_market_open === undefined ? "unknown" : s.is_market_open ? "open" : "closed"} price={s.price} lastClose={s.last_close} stale={s.stale} />
+                          <MarketQuoteLine state={s.is_market_open === undefined ? "unknown" : s.is_market_open ? "open" : "closed"} price={s.price} lastClose={s.last_close} stale={s.stale} updatedAt={s.last_updated} />
                           {s.change_percent != null && s.price != null && s.is_market_open !== false ? (
                             <span
                               className={s.change_percent >= 0 ? "text-xs font-semibold tabular-nums text-[var(--success-text)]" : "text-xs font-semibold tabular-nums text-[var(--error-text)]"}
@@ -1588,7 +1542,7 @@ function KidInvest() {
                   </div>
 
                   {symbolDetail?.lastCloseAsOf && <><p className="text-xs text-[var(--text-muted)]">Close saved {fmtTime(symbolDetail.lastCloseAsOf)}.</p><p className="text-xs">Entry uses your confirmed saved trading quote.</p></>}
-                  {symbolDetail?.degradedReason && <><p role="status" className="text-xs text-[var(--text-muted)]">Refresh unavailable: {symbolDetail.degradedReason === "monitor_unavailable" ? "monitoring unavailable" : "quote limit reached"}.</p><p className="text-xs">Available saved prices are marked stale.</p></>}
+                  {symbolDetail?.degradedReason && <><p role="status" className="text-xs text-[var(--text-muted)]">Refresh unavailable: {symbolDetail.degradedReason === "monitor_unavailable" ? "monitoring unavailable" : "quote limit reached"}.</p><p className="text-xs">You can still see the last saved price.</p></>}
 
                   {/* 90-day price chart */}
                   {symbolDetailLoading ? (
@@ -1597,33 +1551,9 @@ function KidInvest() {
                     />
                   ) : symbolDetail?.dailyCloses &&
                     symbolDetail.dailyCloses.length > 1 ? (
-                    <div className="h-28 -mx-1">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                          data={symbolDetail.dailyCloses}
-                          margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
-                        >
-                          <XAxis dataKey="day" hide />
-                          <YAxis domain={["auto", "auto"]} hide />
-                          <Tooltip
-                            formatter={(v: number) => [
-                              `US$${v.toFixed(2)}`,
-                              "Close",
-                            ]}
-                            contentStyle={{ fontSize: 11 }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="close"
-                            stroke="var(--primary)"
-                            strokeWidth={2}
-                            fill="var(--primary-soft)"
-                            fillOpacity={0.25}
-                            isAnimationActive={false}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <InvestmentChart data={symbolDetail.dailyCloses.map((point) => ({
+                      date: new Date(point.day), value: point.close,
+                    }))} label="Closing price" dollars />
                   ) : null}
 
                   <div className="p-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[11px] text-[var(--text-secondary)] space-y-0.5">
@@ -1632,7 +1562,7 @@ function KidInvest() {
                   </div>
 
                   {selectedPrice === null || symbolDetailLoading ? (
-                    <><p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Loading quote..." : selectedMarketState === "closed" ? "No saved price. Try this stock shortly." : "No quote yet. Try again shortly."}</p><p className="text-xs">A quote is needed to start.</p></>
+                    <><p role="status" className="text-xs text-[var(--text-muted)]">{symbolDetailLoading ? "Refreshing" : selectedMarketState === "closed" ? "No saved price. Try this stock shortly." : "No quote yet. Try again shortly."}</p><p className="text-xs">A quote is needed to start.</p></>
                   ) : activeMarketInvs.length >= 5 ? (
                     <div className="p-3 rounded-xl bg-[var(--accent-amber-soft)] border border-[var(--accent-amber)] text-xs text-[var(--ink)]">
                       You already have 5 open market investments (maximum). Sell
@@ -1818,6 +1748,7 @@ export function FundCard({
           </span>
         )}
       </div>
+      <Suspense fallback={null}><InvestmentSparkline investment={inv} /></Suspense>
     </Card>
   );
 }
@@ -1848,7 +1779,7 @@ function MarketCard({
           <Badge variant="default" className="text-[11px]">
             {inv.symbol || "SPUS"}
           </Badge>
-          {inv.stale && <Badge variant="warning">Stale data</Badge>}
+
           {inv.currentValue === null && <Badge variant="warning">Data unavailable</Badge>}
           {inv.isMarketOpen === false && (
             <Badge variant="warning" className="text-[11px]">
@@ -1892,8 +1823,9 @@ function MarketCard({
           Entry US${(inv.entryPrice ?? inv.entry_price ?? 0).toFixed(2)} ·{" "}
           {fmtDate(inv.entryDate || inv.created_at)}
         </span>
-        <span>Delayed · {fmtTime(inv.lastUpdated)}</span>
+        {quoteOlderThanTradingDay(inv.lastUpdated) ? <Badge variant="warning">Price from {fmtTime(inv.lastUpdated)}</Badge> : <span>Price from {fmtTime(inv.lastUpdated)}</span>}
       </div>
+      <Suspense fallback={null}><InvestmentSparkline investment={inv} /></Suspense>
     </Card>
   );
 }

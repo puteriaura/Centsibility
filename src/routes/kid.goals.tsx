@@ -1,3 +1,6 @@
+import { RingChart } from "@/components/charts/ring-chart";
+import { Ring } from "@/components/charts/ring";
+import { useTheme } from "@/lib/theme";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -23,7 +26,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRM } from "@/lib/format";
 import { getBalanceSummary } from "@/lib/finance";
-import { Money, HideAmountsButton } from "@/features/privacy";
+import { Money, HideAmountsButton, useMoney } from "@/features/privacy";
 
 import { useMoneyAction } from "@/hooks/use-money-action";
 import { PennyMascot } from "@/components/PennyMascot";
@@ -67,6 +70,8 @@ function iconName(key: string) {
 }
 
 function KidGoals() {
+  const { reduced } = useTheme();
+  const { isMasked } = useMoney();
   const { data, loading, error, refresh } = useKidData();
   const [activeGoal, setActiveGoal] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -312,6 +317,21 @@ function KidGoals() {
           </Card>
         )}
 
+        {data.goals.length > 0 && <div className="flex flex-wrap justify-center gap-3">
+          {data.goals.slice(0, 3).map((goal) => {
+            const percent = Math.min(100, Math.max(0, Math.round(100 * Number(goal.saved) / Number(goal.target)))) || 0;
+            return <figure key={goal.id} className="m-0 text-center">
+              <div className="relative" role="img" aria-label={isMasked ? `${goal.name}: progress hidden` : `${goal.name}: ${percent}% saved`}>
+                <RingChart data={[{ label: goal.name, value: percent, maxValue: 100 }]}
+                  size={84} baseInnerRadius={27} strokeWidth={6} animationDuration={reduced ? 0 : 450}>
+                  <Ring index={0} animate={!reduced} />
+                </RingChart>
+                <strong className="pointer-events-none absolute inset-0 grid place-items-center text-sm">{isMasked ? "•••" : `${percent}%`}</strong>
+              </div>
+              <figcaption className="max-w-[90px] truncate text-xs">{goal.name}</figcaption>
+            </figure>;
+          })}
+        </div>}
         {/* 3. One card per Tabung */}
         {data.goals.map((g: (typeof data.goals)[number], index: number) => {
           const pct = Math.min(

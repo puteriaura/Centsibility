@@ -9,6 +9,7 @@ import { sfx } from "@/lib/sounds";
 export function PennyDrawer() {
   const { isOpen, closePenny, mode } = usePenny();
   const navigate = useNavigate();
+  const returnFocus = useRef<HTMLElement | null>(null);
   const target = useRef<"/kid/chat" | "/parent/penny" | null>(null);
 
   return (
@@ -31,6 +32,15 @@ export function PennyDrawer() {
         <Drawer.Content
           className="penny-drawer__content"
           aria-describedby={undefined}
+          onOpenAutoFocus={() => {
+            returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            if (!target.current && returnFocus.current?.isConnected) {
+              event.preventDefault();
+              returnFocus.current.focus();
+            }
+          }}
         >
           {/* Hidden title for screen reader accessibility */}
           <Drawer.Title className="sr-only">Penny</Drawer.Title>

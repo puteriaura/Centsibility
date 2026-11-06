@@ -10,7 +10,7 @@ it("shows one unavailable price state, separate from market closure", () => {
 });
 it("uses the last close while closed and identifies stale saved data", () => {
   const html = renderToStaticMarkup(<MarketQuoteLine state="closed" price={100} lastClose={95} stale />);
-  expect(html).toContain("95.00"); expect(html).not.toContain("100.00"); expect(html).toContain("Saved data (stale)");
+  expect(html).toContain("95.00"); expect(html).not.toContain("100.00"); expect(html).toContain("Saved price");
 });
 it("keeps unknown status separate from open-market missing quotes", () => {
   expect(renderToStaticMarkup(<MarketQuoteLine state="unknown" />)).toContain("Market status unavailable");
@@ -20,11 +20,11 @@ it("keeps unknown status separate from open-market missing quotes", () => {
 it("omits the entire updated clause for missing or invalid timestamps", () => {
   for (const updatedAt of [undefined, null, "", "invalid"]) {
     const html = renderToStaticMarkup(<MarketQuoteLine state="closed" updatedAt={updatedAt} />);
-    expect(html).not.toContain("updated");
+    expect(html).not.toContain("Price from");
     expect(html.match(/data unavailable/g)).toHaveLength(1);
   }
 });
 it("shows a timestamp only with a real quote", () => {
-  expect(renderToStaticMarkup(<MarketQuoteLine state="open" price={100} updatedAt="2026-10-09T14:00:00Z" />)).toContain("updated");
-  expect(renderToStaticMarkup(<MarketQuoteLine state="closed" updatedAt="2026-10-09T14:00:00Z" />)).not.toContain("updated");
+  expect(renderToStaticMarkup(<MarketQuoteLine state="open" price={100} updatedAt="2026-10-09T14:00:00Z" />)).toContain("Price from");
+  expect(renderToStaticMarkup(<MarketQuoteLine state="closed" updatedAt="2026-10-09T14:00:00Z" />)).not.toContain("Price from");
 });

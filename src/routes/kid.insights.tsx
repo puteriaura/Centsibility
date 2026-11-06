@@ -1,3 +1,6 @@
+import { BarChart } from "@/components/charts/bar-chart";
+import { Bar } from "@/components/charts/bar";
+import { MoneyDonut } from "@/components/charts/money-donut";
 import { BalanceCard } from "@/components/banking/BalanceCard";
 import { Progress } from "@/components/ui/progress";
 import { SlidingPill } from "@/components/ui/sliding-pill";
@@ -134,7 +137,6 @@ function KidInsights() {
   const monthIndex = activeMonths.indexOf(selectedMonth);
   // Focus matches today's chart mark in both approved themes.
   const week = weeklyBars((data?.txs ?? []).filter(t => isInsightTransaction(t, metric)));
-  const weekMax = Math.max(0, ...week.map(day => day.amount));
   const currentMonth = selectedMonth === insightMonth(new Date());
   const monthName = new Date(selectedMonth + "-01T12:00:00").toLocaleDateString("en-MY", { month: "long" });
   const summaryTitle = metric === "spending" ? currentMonth ? "Spent this month" : `Spent in ${monthName}`
@@ -286,13 +288,28 @@ function KidInsights() {
         <BalanceCard className="insights-summary" title={summaryTitle} balance={monthData.totalOut}
           tag={previousData.hasData && !locked ? <><Money amount={Math.abs(monthData.totalOut - previousData.totalOut)} /> {monthData.totalOut >= previousData.totalOut ? "more" : "less"} than {previousDate.toLocaleDateString("en-MY", { month: "short" })}</> : undefined} />
         <Card className="p-5 insights-week"><h2>This week</h2>
-          {locked ? hiddenAmounts : <div className="insights-week__days">{week.map(day => <div key={day.date} className="insights-week__day">
-            <div className="insights-week__slot" role="img" aria-label={`${day.day}${day.today ? ", today" : ""}: ${formatMoney(day.amount)}`}>
-              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--focus)" : "var(--blue-500)" } as React.CSSProperties} />
-            </div><span aria-hidden="true" className={day.today ? "insights-week__today" : undefined}>{day.day[0]}</span>
-          </div>)}</div>}
+          <div role="img" aria-label={locked ? "This week, amounts hidden" : "This week's daily activity"} className="weekly-bars">
+            <BarChart data={week.map(day => ({
+              name: day.date, regular: day.today ? 0 : day.amount, today: day.today ? day.amount : 0,
+            }))} stacked margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+              aspectRatio="3 / 1" animationDuration={reducedMotion ? 0 : 450}
+              enterTransition={{ type: "spring", bounce: 0, duration: 0.45 }}>
+              <Bar dataKey="regular" animate={!reducedMotion} fill="var(--chart-1)" />
+              <Bar dataKey="today" animate={!reducedMotion} fill="var(--chart-2)" />
+            </BarChart>
+          </div>
+          <div className="grid grid-cols-7 text-center" aria-hidden="true">
+            {week.map(day => <span key={day.date} className={day.today ? "font-bold" : undefined}>{day.day[0]}</span>)}
+          </div>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            {week.map(day => <div key={day.date} className="flex justify-between gap-2">
+              <dt className={day.today ? "font-bold" : undefined}>{day.day.slice(0, 3)}</dt>
+              <dd className="m-0 tabular-nums">{locked ? "•••" : formatMoney(day.amount)}</dd>
+            </div>)}
+          </dl>
         </Card>
         <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
+          <MoneyDonut label="Activity by category" data={monthData.topCategories.map(category => ({ label: category.label, value: category.amount }))} />
           {locked ? hiddenAmounts : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
             <div><span><strong>{category.label}</strong> <small>{Math.round(category.pct)}%</small></span><Money amount={category.amount} /></div>
             <Progress value={category.pct} indicatorColor={CAT_COLORS[i % CAT_COLORS.length]} />

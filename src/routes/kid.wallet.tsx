@@ -1,3 +1,4 @@
+import { Gauge } from "@/components/charts/gauge";
 import { edgeKidRequestApproval } from "@/lib/edge";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -276,6 +277,10 @@ function KidWallet() {
             </div>
           </div>
 
+          <div role="img" aria-label={`Trust score: ${k.trust_score ?? 100} out of 100`}>
+            <Gauge value={Number(k.trust_score ?? 100)} orientation="linear" minWidth={0}
+              activeFill="var(--chart-3)" />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Trust Score"

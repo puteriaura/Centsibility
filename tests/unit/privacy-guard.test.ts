@@ -5,7 +5,7 @@ import path from "node:path";
 const SCAN_DIRS = ["src/routes", "src/features", "src/components"];
 const ALLOWED_DIR = path.normalize("src/features/privacy");
 
-const ALLOWED_REASONS = new Set(["typing", "limit", "toast", "penny"]);
+const ALLOWED_REASONS = new Set(["typing", "limit", "toast", "penny", "explicit pdf export"]);
 
 function getFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];

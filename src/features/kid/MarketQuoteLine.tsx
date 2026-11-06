@@ -1,4 +1,4 @@
-import { marketPricePresentation } from "@/lib/market-presentation";
+import { marketPricePresentation, quoteOlderThanTradingDay } from "@/lib/market-presentation";
 
 export function MarketQuoteLine({ state, price, lastClose, stale, updatedAt }: {
   state: "open" | "closed" | "unknown";
@@ -10,5 +10,6 @@ export function MarketQuoteLine({ state, price, lastClose, stale, updatedAt }: {
   const presentation = marketPricePresentation(state, price, lastClose);
   const time = updatedAt ? new Date(updatedAt) : null;
   const updated = presentation.price !== null && time && Number.isFinite(time.getTime()) ? time.toLocaleString("en-MY", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase() : null;
-  return <span>{presentation.price !== null ? <>US${presentation.price.toFixed(2)} · </> : null}{presentation.label}{stale && presentation.price !== null ? " · Saved data (stale)" : ""}{updated ? ` · updated ${updated}` : null}</span>;
+  const old = stale && presentation.price !== null && quoteOlderThanTradingDay(updatedAt);
+  return <span className={old ? "text-[var(--warn)] font-semibold" : undefined}>{presentation.price !== null ? <>US${presentation.price.toFixed(2)} · </> : null}{presentation.label}{stale && presentation.price !== null ? " · Saved price" : ""}{updated ? ` · Price from ${updated}` : null}</span>;
 }

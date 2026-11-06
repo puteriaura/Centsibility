@@ -1,4 +1,3 @@
-import { useTheme } from "@/lib/theme";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
@@ -6,13 +5,7 @@ import { edgeParentGetStatement } from "@/lib/edge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { MoneyDonut } from "@/components/charts/money-donut";
 import {
   isDebitTransaction,
   isWalletTransaction,
@@ -47,10 +40,8 @@ function groupByDate(txs: Tx[]): Record<string, Tx[]> {
 }
 
 // Category colours are paired with names and amounts in the legend.
-const PIE_COLORS = [1, 2, 3, 4, 5, 6].map(n => `var(--chart-${n})`);
 
 function Reports() {
-  const { reduced } = useTheme();
   const {
     kids,
     loans,
@@ -465,35 +456,7 @@ function Reports() {
               <h3 className="text-base font-bold text-[var(--ink)]">
                 Expense Category Breakdown
               </h3>
-              <div className="h-52 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      isAnimationActive={!reduced}
-                      data={chartCategories}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {chartCategories.map((_, index) => (
-                        <Cell key={`cell-${index}`} style={{ fill: PIE_COLORS[index % PIE_COLORS.length] }} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      formatter={(value: number) => money.format(value)}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <ul className="insights-cat-list">
-                {chartCategories.map((category, index) => <li key={category.name} className="insights-cat-row">
-                  <span className="category-dot" aria-hidden="true" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />
-                  <span className="flex-1">{category.name}</span><Money amount={category.value} />
-                </li>)}
-              </ul>
+              <MoneyDonut label="Expense categories" data={chartCategories.map(({ name, value }) => ({ label: name, value }))} />
             </Card>
           )}
 

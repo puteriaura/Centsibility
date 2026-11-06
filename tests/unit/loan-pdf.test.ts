@@ -4,8 +4,8 @@ import { exportLoanPdf } from "../../src/features/loans/utils/loan-pdf";
 const { save } = vi.hoisted(() => ({ save: vi.fn() }));
 vi.mock("jspdf", () => ({ jsPDF: class {
   setDrawColor() {} setLineWidth() {} roundedRect() {} setFillColor() {}
-  setFont() {} setFontSize() {} setTextColor() {} text() {} line() {}
-  splitTextToSize(value: string) { return value; }
+  setFont() {} setFontSize() {} setTextColor() {} text() {} line() {} ellipse() {}
+  splitTextToSize(value: string) { return [value]; }
   output() { return new Blob(["synthetic PDF"], { type: "application/pdf" }); }
   save = save;
 } }));

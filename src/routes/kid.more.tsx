@@ -1,3 +1,4 @@
+import { InstallHint } from "@/components/InstallHint";
 import { Skeleton } from "@/components/ui/skeleton";
 import { kidLevel } from "@/lib/kid-level";
 import { Progress } from "@/components/ui/progress";
@@ -69,6 +70,7 @@ function KidMore() {
   };
   return (
     <div className="settings-groups">
+      <InstallHint />
       {data ? <Card variant="brand" className="more-level balance-hero">
         <p>Level {level}</p><strong>{Number(data?.kid.coins) || 0} pts</strong>
         {progress !== null && <><Progress value={progress} indicatorColor="var(--on-brand-card)" /><small>{100 - progress} XP to Level {level + 1}</small></>}
