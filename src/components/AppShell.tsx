@@ -320,7 +320,7 @@ function TopBar({
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-label="Account menu"
-            className="h-11 w-11 rounded-full"
+            className="shell-icon-btn"
           >
             <AvatarBubble
               emoji={
@@ -331,8 +331,7 @@ function TopBar({
                       : "phosphor:Smiley")
                   : parentAvatar || "phosphor:User"
               }
-              size={36}
-              ring
+              size={30}
               kind={isKid ? "kid" : "parent"}
             />
           </button>

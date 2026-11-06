@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/format";
 import { marketPricePresentation, quoteOlderThanTradingDay } from "@/lib/market-presentation";
 
 export function MarketQuoteLine({ state, price, lastClose, stale, updatedAt }: {
@@ -8,8 +9,7 @@ export function MarketQuoteLine({ state, price, lastClose, stale, updatedAt }: {
   updatedAt?: string | null;
 }) {
   const presentation = marketPricePresentation(state, price, lastClose);
-  const time = updatedAt ? new Date(updatedAt) : null;
-  const updated = presentation.price !== null && time && Number.isFinite(time.getTime()) ? time.toLocaleString("en-MY", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase() : null;
+  const updated = presentation.price !== null ? formatDateTime(updatedAt) : "";
   const old = stale && presentation.price !== null && quoteOlderThanTradingDay(updatedAt);
   return <span className={old ? "text-[var(--warn)] font-semibold" : undefined}>{presentation.price !== null ? <>US${presentation.price.toFixed(2)} · </> : null}{presentation.label}{stale && presentation.price !== null ? " · Saved price" : ""}{updated ? ` · Price from ${updated}` : null}</span>;
 }

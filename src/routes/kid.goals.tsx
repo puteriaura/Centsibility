@@ -210,8 +210,9 @@ function KidGoals() {
     <div className="space-y-6 pb-12">
       {/* 1. Hero: Total in Tabung */}
       <section className="deposit-hero" aria-label="Tabung summary">
+        <HideAmountsButton variant="dark" className="deposit-hero__eye" />
         <div className="deposit-hero__copy">
-          <div className="flex items-center justify-between gap-2"><p className="deposit-hero__label">Total in Tabung</p><HideAmountsButton variant="dark" /></div>
+          <p className="deposit-hero__label">Total in Tabung</p>
           <p className="deposit-hero__amount tabular-nums">
             <Money amount={totalInTabung} />
           </p>

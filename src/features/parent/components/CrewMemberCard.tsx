@@ -307,7 +307,7 @@ export function CrewMemberCard({
         }}
       >
         <AvatarBubble emoji={avatar} size={40} ring />
-        <strong className="crew-card__name truncate min-w-0">{kid.name}</strong>
+        <strong className="crew-card__name min-w-0">{kid.name}</strong>
       </button>
 
       <div className="crew-card__status">

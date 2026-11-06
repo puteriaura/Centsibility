@@ -137,6 +137,8 @@ function KidInsights() {
   const monthIndex = activeMonths.indexOf(selectedMonth);
   // Focus matches today's chart mark in both approved themes.
   const week = weeklyBars((data?.txs ?? []).filter(t => isInsightTransaction(t, metric)));
+  const [selectedWeekDate, setSelectedWeekDate] = useState<string>();
+  const selectedDay = week.find(day => day.date === selectedWeekDate) ?? week.find(day => day.today) ?? week[0];
   const currentMonth = selectedMonth === insightMonth(new Date());
   const monthName = new Date(selectedMonth + "-01T12:00:00").toLocaleDateString("en-MY", { month: "long" });
   const summaryTitle = metric === "spending" ? currentMonth ? "Spent this month" : `Spent in ${monthName}`
@@ -288,28 +290,42 @@ function KidInsights() {
         <BalanceCard className="insights-summary" title={summaryTitle} balance={monthData.totalOut}
           tag={previousData.hasData && !locked ? <><Money amount={Math.abs(monthData.totalOut - previousData.totalOut)} /> {monthData.totalOut >= previousData.totalOut ? "more" : "less"} than {previousDate.toLocaleDateString("en-MY", { month: "short" })}</> : undefined} />
         <Card className="p-5 insights-week"><h2>This week</h2>
-          <div role="img" aria-label={locked ? "This week, amounts hidden" : "This week's daily activity"} className="weekly-bars">
-            <BarChart data={week.map(day => ({
-              name: day.date, regular: day.today ? 0 : day.amount, today: day.today ? day.amount : 0,
-            }))} stacked margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
-              aspectRatio="3 / 1" animationDuration={reducedMotion ? 0 : 450}
-              enterTransition={{ type: "spring", bounce: 0, duration: 0.45 }}>
-              <Bar dataKey="regular" animate={!reducedMotion} fill="var(--chart-1)" />
-              <Bar dataKey="today" animate={!reducedMotion} fill="var(--chart-2)" />
-            </BarChart>
+          {selectedDay && <p aria-live="polite" className="mt-2 text-sm text-[var(--text-2)]">
+            {selectedDay.today ? "Today" : selectedDay.day} · <strong>{locked ? "•••" : formatMoney(selectedDay.amount)}</strong>
+          </p>}
+          <div className="weekly-bars relative">
+            <div aria-hidden="true">
+              <BarChart data={week.map(day => ({
+                name: day.date, regular: day.date === selectedDay?.date ? 0 : day.amount,
+                selected: day.date === selectedDay?.date ? day.amount : 0,
+              }))} stacked barGap={0.2} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+                aspectRatio="3 / 1" animationDuration={reducedMotion ? 0 : 450}
+                enterTransition={{ type: "spring", bounce: 0, duration: 0.45 }}>
+                <Bar dataKey="regular" animate={!reducedMotion} fill="var(--chart-1)" />
+                <Bar dataKey="selected" animate={!reducedMotion} fill="var(--chart-2)" />
+              </BarChart>
+            </div>
+            <div role="group" aria-label="Select a day" className="absolute inset-0 grid grid-cols-7">
+              {week.map(day => <button key={day.date} type="button"
+                className="min-w-0 rounded-md"
+                aria-label={day.today ? `${day.day}, today` : day.day}
+                aria-pressed={day.date === selectedDay?.date}
+                onClick={() => setSelectedWeekDate(day.date)} />)}
+            </div>
           </div>
           <div className="grid grid-cols-7 text-center" aria-hidden="true">
-            {week.map(day => <span key={day.date} className={day.today ? "font-bold" : undefined}>{day.day[0]}</span>)}
+            {week.map(day => <span key={day.date} className={day.date === selectedDay?.date ? "font-bold" : undefined}>{day.day[0]}</span>)}
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            {week.map(day => <div key={day.date} className="flex justify-between gap-2">
-              <dt className={day.today ? "font-bold" : undefined}>{day.day.slice(0, 3)}</dt>
-              <dd className="m-0 tabular-nums">{locked ? "•••" : formatMoney(day.amount)}</dd>
-            </div>)}
-          </dl>
+          <table className="sr-only">
+            <caption>Daily amounts this week</caption>
+            <tbody>{week.map(day => <tr key={day.date}>
+              <th scope="row">{day.day}</th>
+              <td>{locked ? "•••" : formatMoney(day.amount)}</td>
+            </tr>)}</tbody>
+          </table>
         </Card>
         <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
-          <MoneyDonut label="Activity by category" data={monthData.topCategories.map(category => ({ label: category.label, value: category.amount }))} />
+          <MoneyDonut showLegend={false} label="Activity by category" data={monthData.topCategories.map(category => ({ label: category.label, value: category.amount }))} />
           {locked ? hiddenAmounts : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
             <div><span><strong>{category.label}</strong> <small>{Math.round(category.pct)}%</small></span><Money amount={category.amount} /></div>
             <Progress value={category.pct} indicatorColor={CAT_COLORS[i % CAT_COLORS.length]} />

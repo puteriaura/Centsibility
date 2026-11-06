@@ -4,8 +4,9 @@ import { PieChart } from "./pie-chart";
 import { PieSlice } from "./pie-slice";
 import { Legend, LegendItem, LegendLabel, LegendMarker, LegendValue } from "./legend";
 
-export function MoneyDonut({ label, data }: {
+export function MoneyDonut({ label, data, showLegend = true }: {
   label: string;
+  showLegend?: boolean;
   data: { label: string; value: number }[];
 }) {
   const { reduced } = useTheme();
@@ -22,13 +23,13 @@ export function MoneyDonut({ label, data }: {
           {slices.map((slice, index) => <PieSlice key={slice.label} index={index} animate={!reduced} hoverEffect={reduced ? "none" : "translate"} />)}
         </PieChart>
       </div>
-      <Legend items={slices}>
+      {showLegend && <Legend items={slices}>
         <LegendItem className="flex items-center gap-2">
           <LegendMarker />
           <LegendLabel className="flex-1 text-[var(--ink)]" />
           <LegendValue className="text-[var(--text-2)]" formatValue={(value) => isMasked ? "•••" : format(value)} />
         </LegendItem>
-      </Legend>
+      </Legend>}
     </div>
   );
 }

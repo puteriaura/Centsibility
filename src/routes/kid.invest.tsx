@@ -37,7 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { InvestmentChart } from "@/components/charts/investment-chart";
 import { MoneyDonut } from "@/components/charts/money-donut";
-import { formatDate, formatRM } from "@/lib/format";
+import { formatDate, formatDateTime, formatRM } from "@/lib/format";
 import { Money, HideAmountsButton } from "@/features/privacy";
 import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
@@ -70,30 +70,6 @@ function profitColor(n: number | null) {
     : n < 0
       ? "text-[var(--ink)]"
       : "text-[var(--ink)]";
-}
-
-function fmtDate(iso?: string | null) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString("en-MY", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function fmtTime(iso?: string | null) {
-  if (!iso) return "unavailable";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "unavailable";
-  return d
-    .toLocaleString("en-MY", {
-      day: "numeric", month: "short",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })
-    .toLowerCase();
 }
 
 function fmtRelative(iso: string) {
@@ -317,7 +293,7 @@ function KidInvest() {
   const latestQuoteTime = useMemo(() => {
     const list = Object.values(quoteRows);
     for (const s of list) {
-      if (s.last_updated) return fmtTime(s.last_updated);
+      if (s.last_updated) return formatDateTime(s.last_updated);
     }
     return null;
   }, [quoteRows]);
@@ -554,8 +530,9 @@ function KidInvest() {
     <div className="space-y-5 pb-12">
       {/* Hero: total value */}
       <section className="deposit-hero" aria-label="Investment summary">
+        <HideAmountsButton variant="dark" className="deposit-hero__eye" />
         <div className="deposit-hero__copy">
-          <div className="flex items-center justify-between gap-2"><p className="deposit-hero__label">Total investment value</p><HideAmountsButton variant="dark" /></div>
+          <p className="deposit-hero__label">Total investment value</p>
           <p className="deposit-hero__amount tabular-nums">
             <Money amount={totalValue} />
           </p>
@@ -695,7 +672,7 @@ function KidInvest() {
                 </div>
 
                 <p className="text-xs text-[var(--text-muted)]">
-                  {quoteOlderThanTradingDay(selected.lastUpdated) ? <Badge variant="warning">Price from {fmtTime(selected.lastUpdated)}</Badge> : <>Price from {fmtTime(selected.lastUpdated)}</>}
+                  {quoteOlderThanTradingDay(selected.lastUpdated) ? <Badge variant="warning">Price from {formatDateTime(selected.lastUpdated) || "unavailable"}</Badge> : <>Price from {formatDateTime(selected.lastUpdated) || "unavailable"}</>}
                 </p>
 
                 {/* Price chart */}
@@ -735,7 +712,7 @@ function KidInvest() {
                   />
                   <StatLine
                     label="Started"
-                    value={fmtDate(selected.entryDate || selected.created_at)}
+                    value={formatDateTime(selected.entryDate || selected.created_at)}
                   />
                 </div>
 
@@ -820,7 +797,7 @@ function KidInvest() {
                       </span>
                     }
                   />
-                  <StatLine label="Ends" value={fmtDate(selected.endsAt)} />
+                  <StatLine label="Ends" value={formatDateTime(selected.endsAt)} />
                   {selected.nextUpdate && (
                     <StatLine
                       label="Next update"
@@ -881,7 +858,7 @@ function KidInvest() {
                   <strong>
                     <Money amount={selected.currentValue} />
                   </strong>{" "}
-                  (quote: {fmtTime(selected.lastUpdated)}).
+                  (quote: {formatDateTime(selected.lastUpdated)}).
                 </p>
                 <p className="text-xs text-[var(--text-muted)]">The payout returns to your wallet immediately.</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -1541,7 +1518,7 @@ function KidInvest() {
                     <MarketQuoteLine state={selectedMarketState} price={selectedPrice} lastClose={symbolDetail ? symbolDetail.lastClose : selectedSymbol.last_close} stale={symbolDetail?.stale ?? selectedSymbol.stale} updatedAt={symbolDetail?.quote?.price_time ?? symbolDetail?.quote?.fetched_at ?? selectedSymbol.last_updated} />
                   </div>
 
-                  {symbolDetail?.lastCloseAsOf && <><p className="text-xs text-[var(--text-muted)]">Close saved {fmtTime(symbolDetail.lastCloseAsOf)}.</p><p className="text-xs">Entry uses your confirmed saved trading quote.</p></>}
+                  {symbolDetail?.lastCloseAsOf && <><p className="text-xs text-[var(--text-muted)]">Close saved {formatDateTime(symbolDetail.lastCloseAsOf)}.</p><p className="text-xs">Entry uses your confirmed saved trading quote.</p></>}
                   {symbolDetail?.degradedReason && <><p role="status" className="text-xs text-[var(--text-muted)]">Refresh unavailable: {symbolDetail.degradedReason === "monitor_unavailable" ? "monitoring unavailable" : "quote limit reached"}.</p><p className="text-xs">You can still see the last saved price.</p></>}
 
                   {/* 90-day price chart */}
@@ -1673,6 +1650,10 @@ function KidInvest() {
 
 // ── Fund card (active Centsibility Fund) ──────────────────────────────────────
 
+function profitLabel(change: number | null) {
+  return change === null ? "Change" : change < 0 ? "Loss" : "Profit";
+}
+
 export function FundCard({
   inv,
   onClick,
@@ -1714,25 +1695,25 @@ export function FundCard({
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-xs">
+      <div className="grid grid-cols-3 gap-2 text-[13px]">
         <div>
           <p className="text-[var(--text-muted)]">Put in</p>
-          <p className="font-semibold tabular-nums text-[var(--ink)]">
+          <p className="text-[15px] font-semibold tabular-nums text-[var(--ink)]">
             <Money amount={inv.principal} />
           </p>
         </div>
         <div>
           <p className="text-[var(--text-muted)]">Value now</p>
-          <p className="font-semibold tabular-nums text-[var(--ink)]">
+          <p className="text-[15px] font-semibold tabular-nums text-[var(--ink)]">
             <Money amount={inv.currentValue} />
           </p>
         </div>
         <div>
           <p className="text-[var(--text-muted)]">
-            {(inv.profitRm ?? 0) < 0 ? "Loss" : "Profit"}
+            {profitLabel(inv.profitRm)}
           </p>
           <p
-            className={inv.profitRm === null ? "font-semibold tabular-nums text-[var(--text-muted)]" : inv.profitRm >= 0 ? "font-semibold tabular-nums text-[var(--success-text)]" : "font-semibold tabular-nums text-[var(--error-text)]"}
+            className={inv.profitRm === null ? "text-[15px] font-semibold tabular-nums text-[var(--text-muted)]" : inv.profitRm >= 0 ? "text-[15px] font-semibold tabular-nums text-[var(--success-text)]" : "text-[15px] font-semibold tabular-nums text-[var(--error-text)]"}
           >
             {pct(inv.profitPct)}
           </p>
@@ -1740,7 +1721,7 @@ export function FundCard({
       </div>
 
       <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
-        <span>Ends {fmtDate(inv.endsAt)}</span>
+        <span>Ends {formatDateTime(inv.endsAt)}</span>
         {inv.nextUpdate && (
           <span>
             {isMinute ? "Next update " : "Next "}
@@ -1794,23 +1775,23 @@ function MarketCard({
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-xs">
+      <div className="grid grid-cols-3 gap-2 text-[13px]">
         <div>
           <p className="text-[var(--text-muted)]">Put in</p>
-          <p className="font-semibold tabular-nums text-[var(--ink)]">
+          <p className="text-[15px] font-semibold tabular-nums text-[var(--ink)]">
             <Money amount={inv.principal} />
           </p>
         </div>
         <div>
           <p className="text-[var(--text-muted)]">Value now</p>
-          <p className="font-semibold tabular-nums text-[var(--ink)]">
+          <p className="text-[15px] font-semibold tabular-nums text-[var(--ink)]">
             <Money amount={inv.currentValue} />
           </p>
         </div>
         <div>
-          <p className="text-[var(--text-muted)]">Gain or loss</p>
+          <p className="text-[var(--text-muted)]">{profitLabel(inv.profitRm)}</p>
           <p
-            className={inv.profitRm === null ? "font-semibold tabular-nums text-[var(--text-muted)]" : inv.profitRm >= 0 ? "font-semibold tabular-nums text-[var(--success-text)]" : "font-semibold tabular-nums text-[var(--error-text)]"}
+            className={inv.profitRm === null ? "text-[15px] font-semibold tabular-nums text-[var(--text-muted)]" : inv.profitRm >= 0 ? "text-[15px] font-semibold tabular-nums text-[var(--success-text)]" : "text-[15px] font-semibold tabular-nums text-[var(--error-text)]"}
           >
             {inv.profitRm === null ? "" : inv.profitRm >= 0 ? "+" : "−"}
             <Money amount={inv.profitRm === null ? null : Math.abs(inv.profitRm)} />
@@ -1821,9 +1802,9 @@ function MarketCard({
       <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
         <span>
           Entry US${(inv.entryPrice ?? inv.entry_price ?? 0).toFixed(2)} ·{" "}
-          {fmtDate(inv.entryDate || inv.created_at)}
+          {formatDateTime(inv.entryDate || inv.created_at)}
         </span>
-        {quoteOlderThanTradingDay(inv.lastUpdated) ? <Badge variant="warning">Price from {fmtTime(inv.lastUpdated)}</Badge> : <span>Price from {fmtTime(inv.lastUpdated)}</span>}
+        {quoteOlderThanTradingDay(inv.lastUpdated) ? <Badge variant="warning">Price from {formatDateTime(inv.lastUpdated) || "unavailable"}</Badge> : <span>Price from {formatDateTime(inv.lastUpdated) || "unavailable"}</span>}
       </div>
       <Suspense fallback={null}><InvestmentSparkline investment={inv} /></Suspense>
     </Card>
@@ -1848,15 +1829,15 @@ function PastFundCard({ inv }: { inv: InvestmentItem }) {
         </div>
         <p className="text-[var(--text-muted)]">
           {inv.close_reason === "early" ? "Closed early" : "Matured"} ·{" "}
-          {fmtDate(inv.closed_at ?? inv.endsAt)}
+          {formatDateTime(inv.closed_at ?? inv.endsAt)}
         </p>
       </div>
-      <div className="text-right tabular-nums">
-        <p className="font-bold text-[var(--ink)]">
+      <div className="text-right text-[15px] font-semibold tabular-nums">
+        <p className="text-[15px] font-semibold text-[var(--ink)]">
           <Money amount={inv.payout ?? inv.principal} />
         </p>
         {inv.close_reason !== "early" && (
-          <p className={profitColor(inv.profitRm)}>{pct(inv.profitPct)}</p>
+          <p className={profitColor(inv.profitRm)}><span className="text-[13px]">{profitLabel(inv.profitRm)} </span>{pct(inv.profitPct)}</p>
         )}
       </div>
     </div>
@@ -1873,14 +1854,15 @@ function PastMarketCard({ inv }: { inv: InvestmentItem }) {
           Market: {inv.symbol || "Ticker"}
         </p>
         <p className="text-[var(--text-muted)]">
-          Sold · {fmtDate(inv.closed_at ?? inv.created_at)}
+          Sold · {formatDateTime(inv.closed_at ?? inv.created_at)}
         </p>
       </div>
-      <div className="text-right tabular-nums">
-        <p className="font-bold text-[var(--ink)]">
+      <div className="text-right text-[15px] font-semibold tabular-nums">
+        <p className="text-[15px] font-semibold text-[var(--ink)]">
           <Money amount={inv.payout ?? inv.currentValue} />
         </p>
         <p className={profitColor(inv.profitRm)}>
+          <span className="text-[13px]">{profitLabel(inv.profitRm)} </span>
           {inv.profitRm === null ? "" : inv.profitRm >= 0 ? "+" : "−"}
           <Money amount={inv.profitRm === null ? null : Math.abs(inv.profitRm)} /> ({pct(inv.profitPct)})
         </p>
