@@ -1043,9 +1043,9 @@ function KidInvest() {
                   Screening standard
                 </span>
                 <span className="font-semibold text-[var(--ink)]">
-                  In the SPUS Shariah ETF holdings dated {formatDate(halalModalSymbol.halal_checked_on)}. Holdings can change.
+                  {halalModalSymbol.halal_source}
                   {halalModalSymbol.halal_url && <a className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface)] px-4 text-sm text-[var(--action-text)]" href={halalModalSymbol.halal_url} target="_blank" rel="noreferrer" data-vaul-no-drag>
-                    View SPUS holdings <AppIcon name="outgoing" size={18} aria-hidden="true" />
+                    View source · {new URL(halalModalSymbol.halal_url).host} <AppIcon name="outgoing" size={18} aria-hidden="true" />
                   </a>}
                 </span>
               </div>
@@ -1054,7 +1054,7 @@ function KidInvest() {
                   Last checked
                 </span>
                 <span className="font-semibold text-[var(--ink)]">
-                  {halalModalSymbol.halal_checked_on}
+                  {formatDate(halalModalSymbol.halal_checked_on)}
                 </span>
               </div>
             </div>
