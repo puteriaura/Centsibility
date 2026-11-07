@@ -36,4 +36,6 @@ export type StatementResult = {
   kid: { id: string; name: string; balance: number };
   transactions: StatementTx[];
   period: { from: string; to: string };
+  openingBalance?: number;
+  closingBalance?: number;
 } | null;

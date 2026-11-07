@@ -1,4 +1,5 @@
-import { jsPDF } from "jspdf";
+import { clampPdfText, colors, createPdf, drawPdfSprout, rasterize, sharePdf } from "@/lib/pdf";
+export { clampPdfText } from "@/lib/pdf";
 import { formatDate, formatRM } from "@/lib/format";
 import proudPenny from "@/assets/penny/proud.svg?raw";
 
@@ -12,63 +13,6 @@ type LoanPromise = {
   kidName: string;
 };
 
-// App ink, navy, secondary ink, action text, periwinkle, soft blue,
-// blue border, tinted surface, mustard and mustard shadow.
-const colors = {
-  ink: "#151E31", navy: "#22355B", secondary: "#344C7B", action: "#47629A",
-  hero: "#A0B0DA", soft: "#C7D0EA", border: "#E2E7F4", tile: "#F1F3FB",
-  mustard: "#DDC518", shadow: "#A6930E",
-};
-
-const faces = [
-  ["baloo-2", 700], ["baloo-2", 800],
-  ["lexend", 400], ["lexend", 500], ["lexend", 600],
-] as const;
-
-async function registerFonts(doc: jsPDF) {
-  try {
-    const fonts = await Promise.all(faces.map(async ([family, weight]) => {
-      const name = `${family}-latin-${weight}-normal.ttf`;
-      const response = await fetch(`/fonts/pdf/${name}`);
-      if (!response.ok) throw new Error("PDF font unavailable");
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      let binary = "";
-      for (let offset = 0; offset < bytes.length; offset += 8192) {
-        binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
-      }
-      return { name, family, weight, binary };
-    }));
-    for (const { name, family, weight, binary } of fonts) {
-      doc.addFileToVFS(name, binary);
-      doc.addFont(name, family, String(weight));
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function rasterize(url: string, sizeMm: number, cornerRadiusMm = 0) {
-  try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = Math.ceil(sizeMm * 96 / 25.4 * 3);
-    const context = canvas.getContext("2d");
-    if (!context) return null;
-    if (cornerRadiusMm) {
-      context.beginPath();
-      context.roundRect(0, 0, canvas.width, canvas.height, canvas.width * cornerRadiusMm / sizeMm);
-      context.clip();
-    }
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/png");
-  } catch {
-    return null;
-  }
-}
-
 export function loanTermDays(issuedAt: string, dueDate: string) {
   const issued = new Date(issuedAt.length === 10 ? issuedAt + "T12:00:00" : issuedAt);
   const start = Date.UTC(issued.getFullYear(), issued.getMonth(), issued.getDate());
@@ -76,44 +20,19 @@ export function loanTermDays(issuedAt: string, dueDate: string) {
   return Number.isFinite(end - start) ? Math.max(0, Math.round((end - start) / 86400000)) : 0;
 }
 
-export function clampPdfText(doc: jsPDF, value: string, width: number, maxLines = 2) {
-  const lines: string[] = doc.splitTextToSize(value, width);
-  if (lines.length <= maxLines) return lines;
-  const visible = lines.slice(0, maxLines);
-  let tail = visible[maxLines - 1].trimEnd();
-  while (tail && doc.getTextWidth(tail + "…") > width) tail = tail.slice(0, -1).trimEnd();
-  visible[maxLines - 1] = tail + "…";
-  return visible;
-}
-
 export async function buildLoanPdf(loan: LoanPromise) {
-  const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "mm", compress: true, putOnlyUsedFonts: true });
-  doc.setProperties({ title: "Kindness loan promise", creator: "Centsibility" });
   // Freeze the SVG pose so export is independent of animation and system theme.
   const pennySvg = proudPenny.replace(/<style>[\s\S]*?<\/style>/, "");
-  const [embedded, penny, icon] = await Promise.all([
-    registerFonts(doc),
+  const [{ doc, font, tile, brand }, penny] = await Promise.all([
+    createPdf("Kindness loan promise"),
     rasterize("data:image/svg+xml;charset=utf-8," + encodeURIComponent(pennySvg), 62),
-    rasterize("/icons/app-192.png", 11, 2.6),
   ]);
-
-  const font = (size: number, weight = 400, color = colors.ink, family = "lexend") => {
-    doc.setFont(embedded ? family : "helvetica", embedded ? String(weight) : weight >= 600 ? "bold" : "normal");
-    doc.setFontSize(size);
-    doc.setTextColor(color);
-  };
-  const tile = (x: number, y: number, w: number, h: number, radius: number, color: string) => {
-    doc.setFillColor(color);
-    doc.roundedRect(x, y, w, h, radius, radius, "F");
-  };
   const due = formatDate(loan.due_date + (loan.due_date.length === 10 ? "T12:00:00" : ""));
   const issued = formatDate(loan.created_at);
   const amount = formatRM(Number(loan.amount)); // privacy-ok: explicit PDF export
   const days = loanTermDays(loan.created_at, loan.due_date);
 
-  if (icon) doc.addImage(icon, "PNG", 15, 15, 11, 11);
-  font(19, 800, colors.navy, "baloo-2");
-  doc.text("Centsibility", icon ? 29 : 15, 22.3);
+  brand();
   font(8.5, 600, colors.action);
   const reference = `PROMISE NO. KL-${loan.id.slice(0, 4).toUpperCase()}`;
   const tracking = 0.35;
@@ -239,14 +158,7 @@ export async function buildLoanPdf(loan: LoanPromise) {
   font(8.5, 400, colors.action);
   const footer = "Made with Centsibility · Qard Hasan means you pay back exactly what you borrowed.";
   const footerX = (210 - doc.getTextWidth(footer)) / 2 + 3;
-  const sprout = footerX - 4.5;
-  doc.setDrawColor(colors.action);
-  doc.setLineWidth(0.3);
-  doc.line(sprout, 284.6, sprout, 282.6);
-  doc.setFillColor(colors.hero);
-  doc.ellipse(sprout + 0.7, 282.4, 0.9, 0.45, "F");
-  doc.setFillColor(colors.mustard);
-  doc.ellipse(sprout - 0.6, 283, 0.7, 0.42, "F");
+  drawPdfSprout(doc, footerX - 4.5, 283.8);
   doc.text(footer, footerX, 283.8);
   return doc;
 }
@@ -254,14 +166,5 @@ export async function buildLoanPdf(loan: LoanPromise) {
 export async function exportLoanPdf(loan: LoanPromise) {
   const doc = await buildLoanPdf(loan);
   const name = `kindness-promise-${loan.due_date.slice(0, 10)}.pdf`;
-  const file = new File([doc.output("blob")], name, { type: "application/pdf" });
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file] });
-      return;
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") return;
-    }
-  }
-  doc.save(name);
+  await sharePdf(doc, name);
 }

@@ -19,6 +19,7 @@ import {
   DEMO_KIDS,
 } from "@/lib/demo-data";
 import { sanitizeDisplayText } from "@/lib/labels";
+import { walletDeltaCents } from "../../supabase/functions/_shared/wallet-transactions";
 import { getKidSession, clearKidSession } from "@/lib/kid-session";
 import {
   SCREENING,
@@ -88,18 +89,27 @@ export function getMockEdgeResponse<T>(
       const from = String(body.from || "");
       const to = String(body.to || "");
       const startDate = new Date(`${from}T00:00:00+08:00`);
-      const endDate = new Date(`${to}T23:59:59.999+08:00`);
       const startMs = startDate.getTime();
-      const endMs = endDate.getTime();
-      const txs = DEMO_TRANSACTIONS.filter((t) => {
+      const endMs = Date.parse(`${to}T00:00:00+08:00`) + 86400000;
+      let periodNet = 0;
+      let laterNet = 0;
+      const txs = DEMO_TRANSACTIONS.filter(t => {
         if (t.kid_id !== kid.id) return false;
         const txTime = new Date(t.created_at).getTime();
-        return txTime >= startMs && txTime <= endMs;
-      });
+        if (txTime >= endMs) laterNet += walletDeltaCents(t);
+        else if (txTime >= startMs) {
+          periodNet += walletDeltaCents(t);
+          return true;
+        }
+        return false;
+      }).sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id));
+      const closing = Math.round(Number(kid.balance) * 100) - laterNet;
       return {
         kid: { id: kid.id, name: kid.name, balance: kid.balance },
         transactions: txs,
         period: { from, to },
+        openingBalance: (closing - periodNet) / 100,
+        closingBalance: closing / 100,
       } as T;
     }
     case "get-scheduled-hibahs":
@@ -1088,6 +1098,8 @@ export async function edgeParentGetStatement(params: {
     kid: { id: string; name: string; balance: number };
     transactions: TransactionRow[];
     period: { from: string; to: string };
+    openingBalance?: number;
+    closingBalance?: number;
   }>("parent-finance", { action: "get-statement", ...params });
 }
 

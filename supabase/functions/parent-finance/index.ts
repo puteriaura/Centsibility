@@ -15,7 +15,7 @@ import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import { isValidPinFormat, hashPin, verifyStoredPin } from "./pin.ts";
 import { verifyKidOwnership, OwnershipError } from "./ownership.ts";
 import { setMarketTracker } from "./market_tracker.ts";
-import { mytRange, StatementError } from "./statement.ts";
+import { getStatement, StatementError } from "./statement.ts";
 import {
   buildPennyRequest,
   callPenny,
@@ -669,18 +669,7 @@ async function handleDeposit(admin: Admin, parentId: string, params: { kidId: st
 }
 
 async function handleGetStatement(admin: Admin, parentId: string, params: { kidId: string; from: string; to: string }) {
-  const { kidId, from, to } = params;
-  const kid = await verifyKidOwnership(admin, kidId, parentId, "id, name, balance");
-  const { startIso, endIso } = mytRange(from, to);
-  const { data: txs, error } = await admin
-    .from("transactions")
-    .select("*")
-    .eq("kid_id", kidId)
-    .gte("created_at", startIso)
-    .lte("created_at", endIso)
-    .order("created_at", { ascending: false });
-  if (error) return jsonError(error.message, 500);
-  return jsonOk({ kid: { id: kid.id, name: kid.name, balance: kid.balance }, transactions: txs ?? [], period: { from, to } });
+  return jsonOk(await getStatement(admin, parentId, params));
 }
 
 async function handleSetKidCardControls(
