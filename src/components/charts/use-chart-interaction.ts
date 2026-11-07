@@ -53,10 +53,10 @@ interface ChartInteractionResult {
    */
   hoverStore: ChartHoverStore;
   interactionHandlers: {
-    onMouseMove?: (event: React.MouseEvent<SVGGElement>) => void;
-    onMouseLeave?: () => void;
-    onMouseDown?: (event: React.MouseEvent<SVGGElement>) => void;
-    onMouseUp?: () => void;
+    onPointerMove?: (event: React.PointerEvent<SVGGElement>) => void;
+    onPointerLeave?: (event: React.PointerEvent<SVGGElement>) => void;
+    onPointerDown?: (event: React.PointerEvent<SVGGElement>) => void;
+    onPointerUp?: (event: React.PointerEvent<SVGGElement>) => void;
     onTouchStart?: (event: React.TouchEvent<SVGGElement>) => void;
     onTouchMove?: (event: React.TouchEvent<SVGGElement>) => void;
     onTouchEnd?: () => void;
@@ -264,7 +264,6 @@ export function useChartInteraction({
   const handleTouchStart = useCallback(
     (event: React.TouchEvent<SVGGElement>) => {
       if (event.touches.length === 1) {
-        event.preventDefault();
         const chartX = getChartX(event, 0);
         if (chartX === null) {
           return;
@@ -308,7 +307,6 @@ export function useChartInteraction({
   const handleTouchMove = useCallback(
     (event: React.TouchEvent<SVGGElement>) => {
       if (event.touches.length === 1) {
-        event.preventDefault();
         const chartX = getChartX(event, 0);
         if (chartX === null) {
           return;
@@ -346,9 +344,8 @@ export function useChartInteraction({
   );
 
   const handleTouchEnd = useCallback(() => {
-    clearTooltip();
     setSelection(null);
-  }, [clearTooltip, setSelection]);
+  }, [setSelection]);
 
   // Re-anchor tooltip/crosshair when x-scale or visible data changes (e.g. brush zoom commit).
   useEffect(() => {
@@ -365,10 +362,10 @@ export function useChartInteraction({
 
   const interactionHandlers = canInteract
     ? {
-        onMouseMove: handleMouseMove,
-        onMouseLeave: handleMouseLeave,
-        onMouseDown: handleMouseDown,
-        onMouseUp: handleMouseUp,
+        onPointerMove: (event: React.PointerEvent<SVGGElement>) => { if (event.pointerType === "mouse") handleMouseMove(event); },
+        onPointerLeave: (event: React.PointerEvent<SVGGElement>) => { if (event.pointerType === "mouse") handleMouseLeave(); },
+        onPointerDown: (event: React.PointerEvent<SVGGElement>) => { if (event.pointerType === "mouse") handleMouseDown(event); },
+        onPointerUp: (event: React.PointerEvent<SVGGElement>) => { if (event.pointerType === "mouse") handleMouseUp(); },
         onTouchStart: handleTouchStart,
         onTouchMove: handleTouchMove,
         onTouchEnd: handleTouchEnd,
@@ -377,7 +374,7 @@ export function useChartInteraction({
 
   const interactionStyle: React.CSSProperties = {
     cursor: canInteract ? "crosshair" : "default",
-    touchAction: "none",
+    touchAction: "pan-y",
   };
 
   return {

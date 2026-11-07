@@ -42,12 +42,14 @@ const SHORTCUTS: Array<{ to: string; label: string; icon: string }> = [
 ];
 
 export const Route = createFileRoute("/kid/")({
+  validateSearch: (search: Record<string, unknown>): { profile?: boolean } => ({ profile: search.profile === true || search.profile === "true" ? true : undefined }),
   head: () => ({ meta: [{ title: "Kid Home | Centsibility" }] }),
   component: KidHome,
 });
 
 function KidHome() {
   const nav = useNavigate();
+  const { profile } = Route.useSearch();
   const { data, loading, error, refresh } = useKidData();
 
   const [showProfile, setShowProfile] = useState(false);
@@ -84,16 +86,11 @@ function KidHome() {
   }, [data]);
 
   useEffect(() => {
-    const handleOpenProfile = () => {
+    if (profile && data?.kid) {
       openProfile();
-    };
-    window.addEventListener("centsibility:open-profile", handleOpenProfile);
-    return () =>
-      window.removeEventListener(
-        "centsibility:open-profile",
-        handleOpenProfile,
-      );
-  }, [openProfile]);
+      void nav({ to: "/kid", search: { profile: undefined }, replace: true });
+    }
+  }, [profile, data?.kid, openProfile, nav]);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data)
@@ -176,6 +173,8 @@ function KidHome() {
 
   return (
     <>
+      <div className="page-split">
+      <div className="page-split__summary">
       <DailyWelcome kidId={k.id} streak={Number(k.streak) || 0} incoming={incoming} />
       <BalanceCard
         className="home-balance"
@@ -232,6 +231,8 @@ function KidHome() {
         </Link>
       </div>
 
+      </div>
+      <div className="page-split__details">
       {/* Anything waiting on the kid or on a parent, in one list */}
       {hasUpdates && (
         <details className="home-alert">
@@ -342,6 +343,8 @@ function KidHome() {
         )}
       </Card>
 
+      </div>
+      </div>
       {showProfile && (
         <Modal
           isOpen={showProfile}

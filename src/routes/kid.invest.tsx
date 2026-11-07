@@ -527,7 +527,8 @@ function KidInvest() {
   const marketMaxStr = formatRM(maxLim /* privacy-ok: limit */);
 
   return (
-    <div className="space-y-5 pb-12">
+    <div className="space-y-5 pb-12 page-split">
+      <div className="page-split__summary">
       {/* Hero: total value */}
       <section className="deposit-hero" aria-label="Investment summary">
         <HideAmountsButton variant="dark" className="deposit-hero__eye" />
@@ -577,6 +578,8 @@ function KidInvest() {
         Start an investment
       </Button>
 
+      </div>
+      <div className="page-split__details">
       {/* Active investments */}
       {listLoading && !investments && (
         <div className="space-y-3">
@@ -586,7 +589,7 @@ function KidInvest() {
       )}
 
       {activeInvs.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 responsive-card-grid">
           <div className="section-tag">
             <span>ACTIVE INVESTMENTS</span>
           </div>
@@ -621,7 +624,7 @@ function KidInvest() {
       )}
 
       {closedInvs.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 responsive-card-grid">
           <div className="section-tag">
             <span>PAST INVESTMENTS</span>
           </div>
@@ -637,6 +640,7 @@ function KidInvest() {
         </div>
       )}
 
+      </div>
       {/* ── Detail sheet ───────────────────────────────────────────── */}
       <Modal
         isOpen={!!selected && !showClose}

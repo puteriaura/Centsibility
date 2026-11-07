@@ -488,8 +488,9 @@ export const PieSlice = memo(function PieSlice({
       <path
         d={hitboxPath}
         fill="transparent"
-        onMouseEnter={() => setHoveredIndex(index)}
-        onMouseLeave={() => setHoveredIndex(null)}
+        onPointerEnter={event => { if (event.pointerType === "mouse") setHoveredIndex(index); }}
+        onPointerLeave={event => { if (event.pointerType === "mouse") setHoveredIndex(null); }}
+        onPointerDown={() => setHoveredIndex(index)}
       />
 
       {/* Visible slice - animates based on hover effect, no pointer events */}

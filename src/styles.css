@@ -377,8 +377,11 @@ input, textarea, select {
     text-underline-offset: 0.18em;
   }
 
+  @media (hover: hover){
+
   a:hover {
     color: var(--blue-800);
+  }
   }
 
   h1,
@@ -777,8 +780,11 @@ input, textarea, select {
     cursor: pointer;
   }
 
+  @media (hover: hover){
+
   .tab-pill:hover:not(:disabled) {
     color: var(--ink);
+  }
   }
 
   .tab-pill.is-active,
@@ -1006,8 +1012,11 @@ input, textarea, select {
     color: #fff;
   }
 
+  @media (hover: hover){
+
   .app-shell:has(.app-shell__main > .deposit-hero:first-child, .app-shell__main > :first-child > .deposit-hero:first-child) .shell-topbar .shell-icon-btn:hover {
     background: rgb(255 255 255 / 0.14);
+  }
   }
 
   .app-shell:has(.app-shell__main > .deposit-hero:first-child, .app-shell__main > :first-child > .deposit-hero:first-child) .shell-topbar .shell-icon-btn svg {
@@ -1064,9 +1073,12 @@ input, textarea, select {
     flex-shrink: 0;
   }
 
+  @media (hover: hover){
+
   .shell-icon-btn:hover {
     background: var(--surface-sunken);
     color: var(--ink);
+  }
   }
 
   .shell-count {
@@ -1104,8 +1116,11 @@ input, textarea, select {
     cursor: pointer;
   }
 
+  @media (hover: hover){
+
   .shell-mascot-pill:hover {
     box-shadow: 0 0 0 5px var(--blue-100), 0 4px 16px rgb(31 79 209 / 0.18);
+  }
   }
 
   /* Account menu (opens from the avatar) */
@@ -1137,14 +1152,23 @@ input, textarea, select {
     justify-content: flex-start;
   }
 
+  @media (hover: hover){
+
   .shell-menu__item:hover {
     background: var(--surface-hover);
     color: var(--ink);
   }
+  }
 
-  .shell-menu__item--danger,
+  .shell-menu__item--danger {
+    color: var(--neg);
+  }
+
+  @media (hover: hover){
+
   .shell-menu__item--danger:hover {
     color: var(--neg);
+  }
   }
 
   .shell-menu__divider {
@@ -1193,14 +1217,24 @@ input, textarea, select {
     letter-spacing: 0.01em;
   }
 
+  @media (hover: hover){
+
   .shell-navitem:hover {
     color: var(--ink);
   }
+  }
 
-  .shell-navitem--active,
+  .shell-navitem--active {
+    color: var(--action-text);
+    font-weight: 700;
+  }
+
+  @media (hover: hover){
+
   .shell-navitem--active:hover {
     color: var(--action-text);
     font-weight: 700;
+  }
   }
 
   .shell-navitem--center {
@@ -1222,14 +1256,24 @@ input, textarea, select {
     color: var(--on-action);
   }
 
+  @media (hover: hover){
+
   .shell-navitem--center:hover .shell-navitem__center-pill {
     background: var(--action-pressed);
   }
+  }
 
-  .shell-navitem--center .shell-navitem__label,
+  .shell-navitem--center .shell-navitem__label {
+    color: var(--action-text);
+    font-weight: 700;
+  }
+
+  @media (hover: hover){
+
   .shell-navitem--center:hover .shell-navitem__label {
     color: var(--action-text);
     font-weight: 700;
+  }
   }
 
   .shell-navitem__icon-wrap {
@@ -1364,8 +1408,11 @@ input, textarea, select {
     text-decoration: none;
   }
 
+  @media (hover: hover){
+
   .points-card:hover {
     color: var(--ink);
+  }
   }
 
   .points-card__label {
@@ -1453,8 +1500,11 @@ input, textarea, select {
     color: var(--action-text);
   }
 
+  @media (hover: hover){
+
   .quick-btn:hover .quick-circle {
     background: var(--action-tint);
+  }
   }
 
   .quick-circle__dot {
@@ -1513,8 +1563,11 @@ input, textarea, select {
     cursor: pointer;
   }
 
+  @media (hover: hover){
+
   .promo-banner__btn:hover {
     background: var(--action-pressed);
+  }
   }
 
   .promo-banner__art {
@@ -1545,8 +1598,11 @@ input, textarea, select {
     cursor: pointer;
   }
 
+  @media (hover: hover){
+
   .insights-recap:hover {
     background: var(--surface-hover);
+  }
   }
 
   .insights-recap__avatar {
@@ -1597,10 +1653,13 @@ input, textarea, select {
     border-top: 1px solid var(--line);
   }
 
+  @media (hover: hover){
+
   a.list-row:hover,
   button.list-row:hover {
     background: var(--surface-hover);
     color: var(--ink);
+  }
   }
 
   .list-row__icon {
@@ -1666,9 +1725,12 @@ input, textarea, select {
     text-decoration: none;
   }
 
+  @media (hover: hover){
+
   .month-panel:hover {
     background: var(--surface-hover);
     color: var(--ink);
+  }
   }
 
   .month-panel__label {
@@ -1753,9 +1815,12 @@ input, textarea, select {
     font-weight: 400;
   }
 
+  @media (hover: hover){
+
   .action-tile:hover {
     border-color: var(--action);
     background: var(--action-tint);
+  }
   }
 
   .action-tile__icon {
@@ -1796,8 +1861,11 @@ input, textarea, select {
     text-decoration: none;
   }
 
+  @media (hover: hover){
+
   .quick-action-tile:hover {
     background: var(--surface-hover);
+  }
   }
 
   .quick-action-tile--soft,
@@ -1927,9 +1995,12 @@ input, textarea, select {
     cursor: pointer;
   }
 
+  @media (hover: hover){
+
   .deposit-hero__link:hover {
     color: #fff;
     text-decoration: underline;
+  }
   }
 
   .deposit-hero__mascot {
@@ -1982,9 +2053,12 @@ input, textarea, select {
     -webkit-box-orient: vertical;
   }
 
+  @media (hover: hover){
+
   .deposit-quick-tile:hover {
     background: var(--surface-hover);
     color: var(--ink);
+  }
   }
 
   .deposit-account-stack {
@@ -2010,9 +2084,12 @@ input, textarea, select {
     font-weight: 400;
   }
 
+  @media (hover: hover){
+
   .deposit-account-card:hover {
     background: var(--surface-hover);
     color: var(--ink);
+  }
   }
 
   .account-icon {
@@ -2192,9 +2269,12 @@ input, textarea, select {
     border-bottom: none;
   }
 
+  @media (hover: hover){
+
   .settings-list__item:hover {
     background: var(--surface-hover);
     color: var(--ink);
+  }
   }
 
   .settings-list__icon {
@@ -2246,10 +2326,13 @@ input, textarea, select {
     text-decoration: none;
   }
 
+  @media (hover: hover){
+
   .settings-logout:hover {
     background: var(--neg-bg);
     border-color: var(--neg);
     color: var(--neg);
+  }
   }
 
   .notif-item__meta {
@@ -2346,9 +2429,12 @@ input, textarea, select {
     cursor: pointer;
   }
 
+  @media (hover: hover){
+
   .insights-ask-chip:hover {
     background: var(--action-tint);
     color: var(--action-text);
+  }
   }
 
   .insights-ask-chip svg {
@@ -2641,9 +2727,12 @@ input, textarea, select {
     color: var(--text-3);
   }
 
+  @media (hover: hover){
+
   .penny-assistant__actions button:hover {
     background: var(--surface-sunken);
     color: var(--ink);
+  }
   }
 
   .penny-starters {
@@ -2784,9 +2873,12 @@ input, textarea, select {
     background: var(--action-tint);
   }
 
+  @media (hover: hover){
+
   .penny-drawer__full-link:hover {
     background: var(--action-tint-strong);
     color: var(--action-text);
+  }
   }
 
   .penny-drawer__body {
@@ -2844,8 +2936,11 @@ input, textarea, select {
     font-variant-numeric: tabular-nums;
   }
 
+  @media (hover: hover){
+
   .pin-btn:hover:not(:disabled) {
     background: var(--surface-sunken);
+  }
   }
 
   .pin-btn:active:not(:disabled) {
@@ -2897,8 +2992,11 @@ input, textarea, select {
     font-variant-numeric: tabular-nums;
   }
 
+  @media (hover: hover){
+
   .keypad-key:hover:not(:disabled) {
     background: var(--surface-sunken);
+  }
   }
 
   .keypad-key:active:not(:disabled) {
@@ -2941,8 +3039,11 @@ input, textarea, select {
     font-weight: 400;
   }
 
+  @media (hover: hover){
+
   .crew-card__summary:hover {
     background: var(--surface-hover);
+  }
   }
 
   .crew-card__name {

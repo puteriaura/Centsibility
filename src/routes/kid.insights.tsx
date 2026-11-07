@@ -65,6 +65,19 @@ function KidInsights() {
   const [receiptSheetOpen, setReceiptSheetOpen] = useState(false);
   const { reduced: reducedMotion } = useTheme();
   const pointerStartedAt = useRef<number | null>(null);
+  const storyTrigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!storyOpen) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (receiptSheetOpen) { setReceiptSheetOpen(false); setIsPaused(false); }
+      else { setStoryOpen(false); storyTrigger.current?.focus(); }
+    };
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
+  }, [storyOpen, receiptSheetOpen]);
 
   // Dynamically compute active months (from user's earliest transaction to current month)
   const activeMonths = useMemo(() => {
@@ -232,7 +245,8 @@ function KidInsights() {
 
   return (
     <div className="insights-page pb-12">
-      <div className="space-y-5">
+      <div className="space-y-5 page-split">
+        <div className="page-split__summary">
         <div
           className="insights-segment"
           role="group"
@@ -310,6 +324,8 @@ function KidInsights() {
                 className="min-w-0 rounded-md"
                 aria-label={day.today ? `${day.day}, today` : day.day}
                 aria-pressed={day.date === selectedDay?.date}
+                onMouseEnter={() => setSelectedWeekDate(day.date)}
+                onFocus={() => setSelectedWeekDate(day.date)}
                 onClick={() => setSelectedWeekDate(day.date)} />)}
             </div>
           </div>
@@ -324,6 +340,8 @@ function KidInsights() {
             </tr>)}</tbody>
           </table>
         </Card>
+        </div>
+        <div className="page-split__details">
         <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
           <MoneyDonut showLegend={false} label="Activity by category" data={monthData.topCategories.map(category => ({ label: category.label, value: category.amount }))} />
           {locked ? hiddenAmounts : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
@@ -338,6 +356,7 @@ function KidInsights() {
             variant="secondary"
             className="flex-1 justify-center font-bold"
             onClick={openStory}
+            ref={storyTrigger}
           >
             Open Daily Wrap
           </Button>
@@ -345,6 +364,7 @@ function KidInsights() {
         </div>
       </div>
 
+      </div>
       {/* Instagram Stories Modal */}
       {storyOpen && (
         <div
@@ -353,6 +373,12 @@ function KidInsights() {
           aria-modal="true"
           aria-label="Daily wrap"
           onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              const controls = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input, select, textarea, [tabindex="0"]'));
+              const first = controls[0], last = controls[controls.length - 1];
+              if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+              else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+            }
             if (receiptSheetOpen) return;
             if (e.key === "ArrowLeft") {
               e.preventDefault();
@@ -366,7 +392,7 @@ function KidInsights() {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 100,
+            zIndex: 200,
             background: "#000",
             display: "flex",
             flexDirection: "column",

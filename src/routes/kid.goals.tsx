@@ -78,6 +78,7 @@ function KidGoals() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showHeroInfo, setShowHeroInfo] = useState(false);
+  const [selectedRing, setSelectedRing] = useState<string | null>(null);
 
   const [newName, setNewName] = useState("");
   const [newTarget, setNewTarget] = useState("");
@@ -272,7 +273,7 @@ function KidGoals() {
       </div>
 
       {/* Tabung List */}
-      <div className="space-y-3">
+      <div className="space-y-3 responsive-card-grid">
         {/* Investment link note */}
         <Link
           to="/kid/invest"
@@ -318,17 +319,22 @@ function KidGoals() {
           </Card>
         )}
 
-        {data.goals.length > 0 && <div className="flex flex-wrap justify-center gap-3">
+        {data.goals.length > 0 && <div className="responsive-card-grid__summary flex flex-wrap justify-center gap-3">
           {data.goals.slice(0, 3).map((goal) => {
             const percent = Math.min(100, Math.max(0, Math.round(100 * Number(goal.saved) / Number(goal.target)))) || 0;
             return <figure key={goal.id} className="m-0 text-center">
-              <div className="relative" role="img" aria-label={isMasked ? `${goal.name}: progress hidden` : `${goal.name}: ${percent}% saved`}>
+              <button type="button" className="relative border-0 bg-transparent p-0 text-[var(--ink)]" aria-label={isMasked ? `${goal.name}: progress hidden` : `${goal.name}: ${percent}% saved`}
+                onPointerEnter={event => { if (event.pointerType === "mouse") setSelectedRing(goal.id); }}
+                onPointerLeave={event => { if (event.pointerType === "mouse") setSelectedRing(null); }}
+                onFocus={() => setSelectedRing(goal.id)} onBlur={() => setSelectedRing(null)}
+                onClick={() => setSelectedRing(goal.id)}>
                 <RingChart data={[{ label: goal.name, value: percent, maxValue: 100 }]}
                   size={84} baseInnerRadius={27} strokeWidth={6} animationDuration={reduced ? 0 : 450}>
                   <Ring index={0} animate={!reduced} />
                 </RingChart>
                 <strong className="pointer-events-none absolute inset-0 grid place-items-center text-sm">{isMasked ? "•••" : `${percent}%`}</strong>
-              </div>
+                {selectedRing === goal.id && <span role="status" className="donut-tooltip">{isMasked ? "Progress hidden" : `${percent}% saved`}</span>}
+              </button>
               <figcaption className="max-w-[90px] truncate text-xs">{goal.name}</figcaption>
             </figure>;
           })}

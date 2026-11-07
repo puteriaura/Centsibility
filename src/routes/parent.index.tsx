@@ -169,7 +169,8 @@ function ParentHome() {
   }, 0 as number | null);
 
   return (
-    <div className="parent-page mobile-stack pb-4">
+    <div className="parent-page mobile-stack pb-4 page-split parent-home">
+      <div className="page-split__summary">
       {error && hasLoaded && (
         <ParentLoadError
           variant="banner"
@@ -186,6 +187,8 @@ function ParentHome() {
           <Link key={item.label} to={item.to} className="quick-btn" onClick={() => sfx.tap()}><span className="quick-circle"><AppIcon name={item.icon} size={28} /></span><span className="quick-label">{item.label}</span></Link>)}
         <button type="button" className="quick-btn" onClick={openRecruit}><span className="quick-circle"><AppIcon name="userplus" size={28} /></span><span className="quick-label">Add child</span></button>
       </nav>
+      </div>
+      <div className="page-split__details">
       {/* Anything waiting on the parent, first */}
       {(pendingCount > 0 || needsComfortName) && (
         <div>
@@ -250,11 +253,14 @@ function ParentHome() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="parent-home__reflection"><QuoteCard variant="parent" /></div>
+      </div>
+
+      <div className="parent-home__children space-y-3">
         <SectionTitle
           className="mb-0"
           action={
-            <Button type="button" variant="ghost" size="sm" onClick={openRecruit} className="-mr-3">
+            <Button type="button" variant="ghost" size="sm" onClick={openRecruit}>
               <AppIcon name="plus" size={16} /> Add child
             </Button>
           }
@@ -329,8 +335,6 @@ function ParentHome() {
           </>
         )}
       </div>
-
-      <QuoteCard variant="parent" />
 
       <Modal
         isOpen={Boolean(deletingKidId)}

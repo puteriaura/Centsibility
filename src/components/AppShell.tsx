@@ -161,10 +161,6 @@ export function AppShell({
         <TopBar
           mode={mode}
           kind={kind}
-          kidName={kid?.name}
-          kidAvatar={kidAvatar}
-          parentAvatar={parentAvatar}
-          unread={unread}
         />
       )}
       <main
@@ -177,7 +173,8 @@ export function AppShell({
       >
         {children}
       </main>
-      {showDock && <BottomNav mode={mode} unread={unread} />}
+      <BottomNav mode={mode} unread={unread} hiddenOnPhone={!showDock} />
+      <ShellAccount mode={mode} kind={immersive ? "immersive" : kind} kidName={kid?.name} kidAvatar={kidAvatar} parentAvatar={parentAvatar} unread={unread} />
       <AppearanceDialog />
     </div>
   );
@@ -227,29 +224,13 @@ function PennyButton({ title }: { title: string }) {
   );
 }
 
-function TopBar({
-  mode,
-  kind,
-  kidName,
-  kidAvatar,
-  parentAvatar,
-  unread,
-}: {
-  mode: Mode;
-  kind: "home" | "root" | "detail";
-  kidName?: string;
-  kidAvatar?: string;
-  parentAvatar?: string;
-  unread: number;
+function ShellAccount({ mode, kind, kidName, kidAvatar, parentAvatar, unread }: {
+  mode: Mode; kind: string; kidName?: string; kidAvatar?: string; parentAvatar?: string; unread: number;
 }) {
   const isKid = mode === "kid";
-  const { user } = useAuth();
   const nav = useNavigate();
-  const { openPenny } = usePenny();
-  const currentPath = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const title = pageTitle(currentPath, mode);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -293,24 +274,10 @@ function TopBar({
     }
   };
 
-  if (isKid && trimSlash(currentPath) === "/kid/card") {
-    return (
-      <PracticeCardHeader
-        onHelp={() => openPenny({ context: { page: "Card" } })}
-      />
-    );
-  }
-
-  if (kind === "home") {
-    const closeThen = (fn: () => void) => () => {
-      setMenuOpen(false);
-      fn();
-    };
-    return (
-      <header className="shell-topbar shell-topbar--home">
-        <img src="/icons/centsibility-app.svg" alt="Centsibility" width={36} height={36} className="shell-topbar__logo" />
+  const closeThen = (fn: () => void) => () => { setMenuOpen(false); fn(); };
+  return <div className={`shell-account ${kind === "home" ? "shell-account--home" : ""}`}>
         {/* Left: avatar opens the account menu (profile, switch view, sign out) */}
-        <div className="shell-topbar__left relative" ref={menuRef}>
+        <div className="shell-account__profile relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => {
@@ -334,6 +301,7 @@ function TopBar({
               size={30}
               kind={isKid ? "kid" : "parent"}
             />
+            <span className="shell-account__label">Profile</span>
           </button>
 
           {menuOpen && (
@@ -344,9 +312,7 @@ function TopBar({
                   role="menuitem"
                   className="shell-menu__item"
                   onClick={closeThen(() =>
-                    window.dispatchEvent(
-                      new CustomEvent("centsibility:open-profile"),
-                    ),
+                    void nav({ to: "/kid", search: { profile: true } }),
                   )}
                 >
                   <AppIcon name="user" size={18} />
@@ -401,9 +367,7 @@ function TopBar({
           )}
         </div>
 
-        {/* Right: notifications (the parent's live on the Approvals Activity tab) */}
-        <div className="shell-topbar__right">
-          {isKid && <PennyButton title={title} />}
+        <div className="shell-account__notifications">
           {isKid ? (
             <Link
               to="/kid/notifications"
@@ -412,6 +376,7 @@ function TopBar({
               onClick={() => sfx.tap()}
             >
               <AppIcon name="bell" size={22} />
+              <span className="shell-account__label">Notifications</span>
               {unread > 0 && (
                 <span className="shell-count" aria-hidden="true">
                   {unread > 9 ? "9+" : unread}
@@ -427,6 +392,7 @@ function TopBar({
               onClick={() => sfx.tap()}
             >
               <AppIcon name="bell" size={22} />
+              <span className="shell-account__label">Notifications</span>
               {unread > 0 && (
                 <span className="shell-count" aria-hidden="true">
                   {unread > 9 ? "9+" : unread}
@@ -435,6 +401,36 @@ function TopBar({
             </Link>
           )}
         </div>
+  </div>;
+}
+
+function TopBar({
+  mode,
+  kind,
+}: {
+  mode: Mode;
+  kind: "home" | "root" | "detail";
+}) {
+  const isKid = mode === "kid";
+  const { openPenny } = usePenny();
+  const currentPath = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
+  const title = pageTitle(currentPath, mode);
+
+  if (isKid && trimSlash(currentPath) === "/kid/card") {
+    return (
+      <PracticeCardHeader
+        onHelp={() => openPenny({ context: { page: "Card" } })}
+      />
+    );
+  }
+
+  if (kind === "home") {
+    return (
+      <header className="shell-topbar shell-topbar--home">
+        <img src="/icons/centsibility-app.svg" alt="Centsibility" width={36} height={36} className="shell-topbar__logo" />
+        <h1 className="shell-home-title">Home</h1>
+        <div className="shell-topbar__left" />
+        <div className="shell-topbar__right">{isKid && <PennyButton title={title} />}</div>
       </header>
     );
   }
@@ -473,12 +469,13 @@ function TopBar({
   );
 }
 
-function BottomNav({ mode, unread }: { mode: Mode; unread: number }) {
+function BottomNav({ mode, unread, hiddenOnPhone }: { mode: Mode; unread: number; hiddenOnPhone: boolean }) {
   const pathname = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
   const items = NAV[mode];
 
   return (
-    <nav className="shell-bottomnav" aria-label="Main">
+    <nav className={`shell-bottomnav ${hiddenOnPhone ? "shell-bottomnav--phone-hidden" : ""}`} aria-label="Main">
+      <img className="shell-nav-logo" src="/icons/centsibility-app.svg" alt="Centsibility" width={40} height={40} />
       <div
         className="shell-bottomnav__inner"
         style={{ "--nav-cols": items.length } as CSSProperties}
