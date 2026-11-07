@@ -4,6 +4,47 @@ import { createMarketAdmin, marketFixture, fixtureFetch } from "../_shared/fixtu
 const now = new Date("2026-10-27T02:00:00Z");
 const catalogue = (symbols: string[]) => symbols.map(symbol => ({ symbol, kind: "stock", active: true }));
 
+Deno.test("market: held refresh uses the 15-minute cutoff in both US seasons and skips closed sessions", async () => {
+  const admin = createMarketAdmin();
+  const cutoffs: string[] = [];
+  const mock = fixtureFetch(admin.trace, () => { throw new Error("Unexpected provider request"); });
+  const db = { ...admin, rpc(name: string, args: { p_cutoff: string }) {
+    assertEquals(name, "market_held_refresh_candidates");
+    cutoffs.push(args.p_cutoff);
+    return { data: [], error: null };
+  } };
+  for (const time of ["2026-10-26T13:30:00Z", "2026-11-09T14:30:00Z"]) {
+    const result = await runMarketRefresh(db, { held: true, now: new Date(time), fetchFn: mock.fetchFn });
+    assert("due" in result);
+    assertEquals(result.due, 0);
+  }
+  for (const time of ["2026-11-09T13:30:00Z", "2026-11-26T16:00:00Z", "2026-11-27T18:00:00Z"]) {
+    assertEquals(await runMarketRefresh(db, { held: true, now: new Date(time), fetchFn: mock.fetchFn }),
+      { ran: false, reason: "market_closed" });
+  }
+  assertEquals(cutoffs, ["2026-10-26T13:15:00.000Z", "2026-11-09T14:15:00.000Z"]);
+  assertEquals(mock.urls, []);
+});
+
+Deno.test("market: held refresh takes the first six candidates and stops at the shared budget", async () => {
+  const open = new Date("2026-11-09T16:00:00Z");
+  const data = await marketFixture("yahoo-chart-msft-closed");
+  const symbols = ["NVDA", "MSFT", "AAPL", "GOOGL", "TSLA", "AVGO", "HLAL"];
+  for (const used of [0, 4]) {
+    const admin = createMarketAdmin({ calls: Array.from({ length: used }, () => ({ called_at: open.toISOString() })) });
+    const mock = fixtureFetch(admin.trace, url => {
+      const copy = structuredClone(data);
+      copy.chart.result[0].meta.symbol = new URL(url).pathname.split("/").at(-1);
+      return Response.json(copy);
+    });
+    const result = await runMarketRefresh({ ...admin, rpc: () => ({ data: catalogue(symbols), error: null }) },
+      { held: true, now: open, fetchFn: mock.fetchFn });
+    assert("stoppedForBudget" in result);
+    assertEquals(mock.urls.map(url => new URL(url).pathname.split("/").at(-1)), symbols.slice(0, 6 - used));
+    assertEquals(result.stoppedForBudget, used > 0);
+  }
+});
+
 Deno.test("market: refresh authorization rejects configuration, method and header failures", async () => {
   const expected = "fixture-only".repeat(4);
   const request = (value?: string, method = "POST") => new Request("https://fixture.invalid", { method, headers: value ? { "x-market-refresh-token": value } : {} });

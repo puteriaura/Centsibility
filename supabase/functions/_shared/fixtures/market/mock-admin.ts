@@ -15,11 +15,12 @@ export function createMarketAdmin(initial: {
     const filters: Array<(row: any) => boolean> = [];
     const orders: Array<[string, boolean]> = [];
     let count = false;
+    let limit = Infinity;
     const rows = () => state[table].filter(row => filters.every(filter => filter(row))).sort((a, b) => {
       for (const [key, ascending] of orders) {
         if (a[key] !== b[key]) return (a[key] < b[key] ? -1 : 1) * (ascending ? 1 : -1);
       }return 0;
-    });
+    }).slice(0, limit);
     const result = () => initial.countError && table === "market_api_calls"
       ? { data: null, count: null, error: { message: "fixture monitor failure" } }
       : { data: rows(), count: count ? rows().length : null, error: null };
@@ -29,6 +30,7 @@ export function createMarketAdmin(initial: {
       in(key: string, values: any[]) { filters.push(row => values.includes(row[key]));return chain; },
       gte(key: string, value: any) { filters.push(row => row[key] >= value);return chain; },
       order(key: string, options?: { ascending?: boolean }) { orders.push([key, options?.ascending !== false]);return chain; },
+      limit(value: number) { limit = value; return chain; },
       async maybeSingle() { return { ...result(), data: rows()[0] ?? null }; },
       then(resolve: (value: any) => any, reject?: (error: any) => any) { return Promise.resolve(result()).then(resolve, reject); },
       delete() { return { async lt(key: string, value: string) { state[table] = state[table].filter(row => row[key] >= value);return { error: null }; } }; },

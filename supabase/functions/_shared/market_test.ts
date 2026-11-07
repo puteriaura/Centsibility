@@ -149,11 +149,27 @@ Deno.test("market: failed history attempts are not repeated on the same UTC day"
   assertEquals((await getDailyCloses(admin, "MSFT", { now: closedNow, fetchFn: mock.fetchFn })).available, false);
   await getDailyCloses(admin, "MSFT", { now: closedNow, fetchFn: mock.fetchFn });assertEquals(mock.urls.length, 1);
 });
-Deno.test("market: catalogue limits and screening stay enforced, and visible rows carry catalogue kinds", async () => {
-  const admin = createMarketAdmin({ symbols: [{ symbol: "MSFT", kind: "etf", active: true }, { symbol: "NOTVERIFIED", kind: "stock", active: true }] });
-  assertEquals((await getCuratedSymbols(admin)).map(r => r.symbol), ["MSFT"]);
+Deno.test("market: visible rows use cached quotes and the newest 30 closes without provider calls", async () => {
+  const closes = Array.from({ length: 31 }, (_, i) => ({
+    symbol: "MSFT",
+    day: new Date(Date.UTC(2026, 8, i + 1)).toISOString().slice(0, 10),
+    close: String(100 + i),
+  }));
+  const admin = createMarketAdmin({
+    symbols: [{ symbol: "MSFT", kind: "stock", active: true }, { symbol: "HLAL", kind: "etf", active: true }, { symbol: "NOTVERIFIED", kind: "stock", active: true }],
+    quotes: [{ symbol: "MSFT", price: 150, fetched_at: "2026-09-01T00:00Z" }],
+    closes,
+  });
+  assertEquals((await getCuratedSymbols(admin)).map(r => r.symbol), ["HLAL", "MSFT"]);
   await assertRejects(() => getVisibleQuotes(admin, Array(13).fill("MSFT")), Error, "at most 12");
   await assertRejects(() => getVisibleQuotes(admin, ["NOTVERIFIED"]), Error, "verified catalogue");
-  const data = await nasdaq();const mock = fixtureFetch(admin.trace, (_url, index) => index ? Response.json(data) : new Response("", { status: 500 }));
-  await getVisibleQuotes(admin, [" msft ", "MSFT"], { now: openNow, fetchFn: mock.fetchFn });assertEquals(mock.urls.length, 2);assert(mock.urls[1].endsWith("msft%7Cetf"));
+  const mock = fixtureFetch(admin.trace, () => { throw new Error("Unexpected provider request"); });
+  const result = await getVisibleQuotes(admin, [" msft ", "MSFT", "HLAL"], { now: openNow, fetchFn: mock.fetchFn });
+  assertEquals(Object.keys(result.quotes), ["MSFT", "HLAL"]);
+  assertEquals(result.quotes.MSFT.quote?.price, 150);
+  assertEquals(result.quotes.MSFT.stale, true);
+  assertEquals(result.quotes.MSFT.dailyCloses, closes.slice(1).map(({ day, close }) => ({ day, close: Number(close) })));
+  assertEquals(result.quotes.HLAL.dailyCloses, []);
+  assertEquals(mock.urls.length, 0);
+  assertEquals(admin.trace, []);
 });

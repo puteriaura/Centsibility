@@ -1,5 +1,5 @@
 export const PENNY_ALLOWLIST = {
-  education: [], navigation: ["screen"], numeric: [],
+  education: [], navigation: ["screen"], numeric: [], memory: [], family: [],
   spending: ["period", "totalSpent", "categoryTotals"],
   comparison: ["periods"], frequency: ["period", "categoryCounts"],
   budget: ["period", "availableSpending", "expectedIncome", "selectedObligations"],
@@ -13,7 +13,7 @@ export type PennyIntent = keyof typeof PENNY_ALLOWLIST;
 
 // Only a canonical topic label may cross the history boundary. It grants no data access.
 export function canonicalPreviousIntent(value: unknown): PennyIntent | undefined {
-  return typeof value === "string" && Object.hasOwn(PENNY_ALLOWLIST, value)
+  return typeof value === "string" && value !== "memory" && value !== "family" && Object.hasOwn(PENNY_ALLOWLIST, value)
     ? value as PennyIntent : undefined;
 }
 export function previousTurnIntent(turns: ReadonlyArray<{ role: string; intent?: unknown }>): PennyIntent | undefined {

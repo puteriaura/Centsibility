@@ -1893,7 +1893,8 @@ export interface MarketQuotesResponse {
   marketState: "open" | "closed" | "unknown";
   quotes: Record<
     string,
-    Omit<MarketSymbolDetailResponse, "dailyCloses" | "symbol">
+    Omit<MarketSymbolDetailResponse, "dailyCloses" | "symbol"> &
+      Partial<Pick<MarketSymbolDetailResponse, "dailyCloses">>
   >;
 }
 export async function edgeKidMarketQuotes(params: {

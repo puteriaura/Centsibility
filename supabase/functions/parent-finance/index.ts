@@ -4,7 +4,7 @@ import { genCode } from "../_shared/access-code.ts";
 import { actorLimit, pennyGlobalLimit, hit, tooMany } from "../_shared/rate-limit.ts";
 import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
-import { getPennyKnownNames, minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
+import { familyPennyReply, getPennyKnownNames, minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 // supabase/functions/parent-finance/index.ts
 // Handles: all parent-initiated actions
@@ -886,15 +886,19 @@ async function handlePennyChat(
 
 
   const intent = routePennyQuestion(message);
+  if (intent === "family") {
+    const reply = await familyPennyReply(admin, parentId);
+    logEvent({ intent, fields: [] });
+    return jsonOk({ reply, thinking: false, intent });
+  }
   let selectedKid = {};
-  if (intent !== "education" && intent !== "navigation") {
+  if (intent !== "education" && intent !== "navigation" && intent !== "memory") {
     if (typeof params.kidId !== "string") return jsonOk({ reply: "Choose one child before asking about their account.", thinking: false, intent });
     const { data, error } = await admin.from("kids").select("id, name, comfort_name, balance, streak, card_frozen, card_controls_locked").eq("id", params.kidId).eq("parent_id", parentId).maybeSingle();
     if (error || !data) return jsonError("Child not available", 404);
     selectedKid = data;
   }
-  const knownNames = await getPennyKnownNames(admin, parentId, user);
-  const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {}, undefined, { asker: "parent", knownNames });
+  const plan = await minimizePennyQuestion(admin, selectedKid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {}, undefined, { asker: "parent", knownNames: () => getPennyKnownNames(admin, parentId, user) });
   logEvent(plan.audit);
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)
