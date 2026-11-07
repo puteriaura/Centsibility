@@ -136,7 +136,7 @@ export function isQuoteStale(quote: MarketQuote, now = new Date()): boolean {
   return close ? fetched < close.getTime() + CLOSE_SETTLE_MS : now.getTime() - fetched > CLOSED_FALLBACK_STALE_MS;
 }
 
-type QuoteOptions = { fetchFn?: typeof fetch; now?: Date; allowClosedBootstrap?: boolean; forTrade?: "open" | "sell"; kind?: "etf" | "stock" };
+type QuoteOptions = { fetchFn?: typeof fetch; now?: Date; allowClosedBootstrap?: boolean; forTrade?: "open" | "sell"; kind?: "etf" | "stock"; cacheOnly?: boolean };
 async function symbolKind(admin: any, symbol: string, kind?: "etf" | "stock"): Promise<"etf" | "stock"> {
   if (kind) return kind;
   const { data } = await admin.from("market_symbols").select("kind").eq("symbol", symbol).maybeSingle();
@@ -164,7 +164,7 @@ export async function getQuote(admin: any, symbol: string, options: QuoteOptions
     : settled === null || now.getTime() < settled ? false
     : fetched < settled || tradeDue;
   const presentation = cached ? { ...cached, is_market_open: state === "closed" ? false : cached.is_market_open } : null;
-  if (!refresh) {
+  if (options.cacheOnly || !refresh) {
     const lastClose = cached ? cached.is_market_open || isMarketHoursWindow(new Date(cached.fetched_at)) ? cached.previous_close : cached.price : null;
     return cached ? { available: true, stale: isQuoteStale(cached, now), fetchedAt: cached.fetched_at, quote: presentation!, marketState: state,
       ...(state === "closed" && Number.isFinite(lastClose) && Number(lastClose) > 0 ? { lastClose: Number(lastClose), lastCloseAsOf: cached.price_time ?? cached.fetched_at } : {}) }
@@ -243,8 +243,19 @@ export async function getVisibleQuotes(admin: Parameters<typeof getQuote>[0], re
   const allowed = new Set(catalogue.map(s => s.symbol));
   const symbols = [...new Set(requested.map(s => s.trim().toUpperCase()))];
   if (symbols.some(s => !allowed.has(s))) throw new Error("Instrument not in our verified catalogue");
-  const quotes: Record<string, MarketQuoteResult> = {};
-  for (const symbol of symbols) quotes[symbol] = await getQuote(admin, symbol, { ...options, kind: catalogue.find(s => s.symbol === symbol)!.kind });
+  const quotes = Object.fromEntries(await Promise.all(symbols.map(async symbol => {
+    const [quote, history] = await Promise.all([
+      getQuote(admin, symbol, { ...options, cacheOnly: true }),
+      admin.from("market_daily_closes").select("day, close").eq("symbol", symbol)
+        .order("day", { ascending: false }).limit(30),
+    ]);
+    if (history.error) throw new Error("Market close cache is unavailable");
+    const dailyCloses = (history.data ?? []).map((bar: { day: string; close: number | string }) => ({
+      day: bar.day,
+      close: Number(bar.close),
+    })).reverse();
+    return [symbol, { ...quote, dailyCloses }] as const;
+  })));
   const usage = await getMarketUsage(admin, options?.now);
   return { quotes, marketState: marketSession(options?.now), usage };
 }

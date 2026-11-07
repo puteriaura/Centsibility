@@ -14,9 +14,15 @@ export function routePennyQuestion(message: string): PennyIntent {
   if (filterPennyInput(message)) return "sensitive";
   const q = message.normalize("NFKC").toLowerCase();
   const personal = /\b(my|mine|i|me|saya|aku|anak saya|my child)\b/.test(q);
+  if (/\b(?:what do you (?:know|remember) about me|apa yang awak tahu tentang saya)\b/.test(q)) return "memory";
+  if (/\bhow my (?:kids|children) are doing\b|\bhow are my (?:kids|children) doing\b/.test(q)) return "family";
+  if (personal && /\b(?:goal|goals|tabung)\b/.test(q) &&
+    /\b(?:progress|doing|how much (?:have i|i have) saved|kemajuan)\b/.test(q)) return "numeric";
   if (/\b(how much|what is|what's|berapa|show|check)\b/.test(q) && /\b(balance|baki|owe|outstanding|progress)\b/.test(q) && personal) return "numeric";
   if (/\b(where|which screen|where do|how do i (open|find|tap|freeze)|di mana|cara buka)\b/.test(q)) return "navigation";
   if (!personal) return "education";
+  if (/\b(?:my (?:spending |wallet )?balance|baki saya)\b/.test(q) &&
+    !/\b(?:budget|bajet|transfer|move|add|withdraw|hide|top up)\b/.test(q)) return "numeric";
   if (/\b(card|kad|payment|bayaran)\b/.test(q) && /\b(frozen|declined|blocked|not working|trouble|ditolak|beku)\b/.test(q)) return "card";
   if (/\b(streak|quest|mission|misi)\b/.test(q)) return "quest";
   if (/\b(investment|fund|position|pelaburan)\b/.test(q) && /\b(perform|performance|return|profit|loss|doing|prestasi|untung|rugi)\b/.test(q)) return "investment";
@@ -30,7 +36,7 @@ export function routePennyQuestion(message: string): PennyIntent {
 }
 
 const QUESTIONS: Record<PennyIntent, string> = {
-  education: "", navigation: "", numeric: "", sensitive: "",
+  education: "", navigation: "", numeric: "", sensitive: "", memory: "", family: "",
   spending: "Explain my spending in the requested period using only these aggregates.",
   comparison: "Compare spending in these two periods using only these aggregates.",
   frequency: "Explain my transaction frequency in the requested period.",
@@ -92,13 +98,43 @@ export async function getPennyKnownNames(admin: SupabaseClient, parentId: string
 }
 
 const cents = (v: unknown) => Math.round((Number(v) || 0) * 100);
+const ringgit = (amountInCents: number) => `RM${(amountInCents / 100).toFixed(2)}`;
+
+async function readTransactions(admin: SupabaseClient, kidId: string | undefined, start: number, end: number) {
+  if (!kidId) throw new Error("Penny context unavailable");
+  const transactions: { type: string; amount: number | string; label: string | null; created_at: string }[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await contextQuery(admin, "transactions", "type, amount, label, created_at", kidId)
+      .gte("created_at", new Date(start).toISOString()).lt("created_at", new Date(end).toISOString())
+      .order("id").range(offset, offset + pageSize - 1);
+    if (error || !data) throw new Error("Penny context unavailable");
+    transactions.push(...data as typeof transactions);
+    if (data.length < pageSize) return transactions;
+  }
+}
+
+export async function familyPennyReply(admin: SupabaseClient, parentId: string, now = new Date()) {
+  const { data: kids, error } = await admin.from("kids").select("id, name, balance")
+    .eq("parent_id", parentId).order("name").order("id");
+  if (error || !kids) throw new Error("Penny context unavailable");
+  if (!kids.length) return "There are no child accounts to review yet.";
+  const { thisWeekStartMs, nowMs } = getMytDateInfo(now);
+  const lines = await Promise.all(kids.map(async kid => {
+    const transactions = await readTransactions(admin, kid.id, thisWeekStartMs, nowMs);
+    const spent = transactions.filter(t => isSpendingTransaction(t.type, t.label))
+      .reduce((total, t) => total + cents(t.amount), 0);
+    return `${kid.name}: ${ringgit(cents(kid.balance))} to spend, ${ringgit(spent)} spent this week.`;
+  }));
+  return ["Here’s how your kids are doing this week:", ...lines].join("\n");
+}
 const daysLeft = (value: unknown, now: Date) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? Math.ceil((Date.parse(value) - now.getTime()) / 86400000) : null;
 const moneyInput = (q: string, label: string) => {
   const match = q.match(new RegExp(`(?:${label})\\s*(?:of|is|:)?\\s*RM\\s*(\\d+(?:\\.\\d{1,2})?)`, "i"));
   return match ? Number(match[1]) : null;
 };
 
-export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAccount, message: string, selection: Record<string, unknown> = {}, now = new Date(), options: { asker: "child" | "parent"; knownNames: string[] } = { asker: "child", knownNames: [] }) {
+export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAccount, message: string, selection: Record<string, unknown> = {}, now = new Date(), options: { asker: "child" | "parent"; knownNames: string[] | (() => Promise<string[]>) } = { asker: "child", knownNames: [] }) {
   const intent = routePennyQuestion(message);
   let fields: Record<string, unknown> = {};
   let localReply: string | undefined;
@@ -125,11 +161,21 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
   const periodRange = (label: string) => label === "this month" ? [info.thisMonthStartMs, now.getTime()] : label === "last week" ? [info.lastWeekStartMs, info.thisWeekStartMs] : [info.thisWeekStartMs, now.getTime()];
   if (intent === "navigation") { const screen = formatPageContext(selection); if (screen) fields = { screen }; }
   else if (intent === "sensitive") localReply = filterPennyInput(message)!.reply;
-  else if (intent === "numeric") {
-    if (/\b(balance|baki)\b/i.test(message)) localReply = `Your spending balance is RM${(cents(kid.balance) / 100).toFixed(2)}.`;
-    else if (/\b(goal|tabung|progress)\b/i.test(message)) {
-      const goal = await selected("goals", "id, target, saved", "goalId");
-      if (goal) localReply = `Your selected Tabung has RM${(cents(goal.saved) / 100).toFixed(2)} saved toward RM${(cents(goal.target) / 100).toFixed(2)}.`;
+  else if (intent === "memory") {
+    localReply = "I can use the account you’re viewing to answer questions about its spending balance, transactions and Tabung. I don’t need private details like a PIN or login code.";
+    if (kid.id && kid.balance != null) localReply += ` Your spending balance is ${ringgit(cents(kid.balance))}.`;
+  } else if (intent === "family") {
+    localReply = "A parent can ask about their children from the parent view.";
+  } else if (intent === "numeric") {
+    if (/\b(balance|baki)\b/i.test(message)) localReply = `Your spending balance is ${ringgit(cents(kid.balance))}.`;
+    else if (/\b(goal|goals|tabung|progress)\b/i.test(message)) {
+      const goals = await read("goals", "target, saved", q =>
+        typeof selection.goalId === "string" ? q.eq("id", selection.goalId) : q);
+      const saved = goals.reduce((sum, goal) => sum + cents(goal.saved), 0);
+      const target = goals.reduce((sum, goal) => sum + cents(goal.target), 0);
+      localReply = goals.length === 0
+        ? typeof selection.goalId === "string" ? "I couldn’t find that Tabung in this account." : "You haven’t started a Tabung yet."
+        : `${goals.length === 1 ? "Your Tabung has" : `Across ${goals.length} Tabung, you have`} ${ringgit(saved)} saved toward ${ringgit(target)}.`;
     } else {
       const loans = await read("loans", "amount, repaid", q => q.eq("status", "active"));
       localReply = `Your outstanding loans total RM${(loans.reduce((s: number, l: Record<string, unknown>) => s + Math.max(0, cents(l.amount) - cents(l.repaid)), 0) / 100).toFixed(2)}.`;
@@ -137,7 +183,7 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
   } else if (["spending", "comparison", "frequency"].includes(intent)) {
     const periods = intent === "comparison" ? ["last week", "this week"] : [period];
     const ranges = periods.map(periodRange);
-    const transactions = await read("transactions", "type, amount, label, created_at", q => q.gte("created_at", new Date(Math.min(...ranges.map(r => r[0]))).toISOString()).lt("created_at", now.toISOString()));
+    const transactions = await readTransactions(admin, kid.id, Math.min(...ranges.map(r => r[0])), now.getTime());
     const aggregate = (label: string) => {
       const [start, end] = periodRange(label);
       const totals: Record<string, number> = {}, counts: Record<string, number> = {};
@@ -156,6 +202,7 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
       return intent === "frequency" ? { period: label, categoryCounts: requestedCategory ? { [requestedCategory]: counts[requestedCategory] ?? 0 } : counts } : { period: label, totalSpent: Object.values(totals).reduce((a, b) => a + b, 0) / 100, categoryTotals: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, v / 100])) };
     };
     fields = intent === "comparison" ? { periods: periods.map(aggregate) } : aggregate(periods[0]);
+    if (intent === "spending") localReply = `You spent ${ringgit(cents(fields.totalSpent))} ${period}.`;
   } else if (intent === "budget") {
     fields = { period, availableSpending: cents(kid.balance) / 100, expectedIncome: moneyInput(message, "income|pendapatan"), selectedObligations: moneyInput(message, "obligations|commitments|komitmen") };
   } else if (intent === "goal") {
@@ -186,7 +233,8 @@ export async function minimizePennyQuestion(admin: SupabaseClient, kid: PennyAcc
   for (const field of Object.keys(fields)) if (!(PENNY_ALLOWLIST[intent] as readonly string[]).includes(field)) throw new Error("Unapproved Penny field");
   let question = "";
   if (!localReply) {
-    const knownNames = [...options.knownNames, kid.name, kid.comfort_name, kid.username].filter((name): name is string => typeof name === "string");
+    const names = typeof options.knownNames === "function" ? await options.knownNames() : options.knownNames;
+    const knownNames = [...names, kid.name, kid.comfort_name, kid.username].filter((name): name is string => typeof name === "string");
     const { text } = cleanPennyQuestion(message, knownNames);
     const words = text.replace(/\[(?:name|removed)\]/g, " ").match(/[\p{L}\p{N}]+/gu) ?? [];
     if (words.length < 2) localReply = "Ask again without names or numbers.";

@@ -6,6 +6,10 @@ const { minimizePennyQuestion, routePennyQuestion, PENNY_ALLOWLIST } = await imp
 const { buildPennyRequest } = await import(await sourceUrl('supabase/functions/_shared/penny-ai.ts'));
 const { canonicalPreviousIntent, previousTurnIntent } = await import(await sourceUrl('supabase/functions/_shared/penny-intents.ts'));
 for (const label of Object.keys(PENNY_ALLOWLIST)) {
+  if (['memory','family'].includes(label)) {
+    assert.equal(canonicalPreviousIntent(label), undefined);
+    continue;
+  }
   assert.equal(canonicalPreviousIntent(label), label);
   const request = buildPennyRequest({message:'Offer generic money help.',previousIntent:label,history:[{role:'user',content:'Secret Name RM9876.54'}]});
   assert.ok(JSON.stringify(request).includes(`Previous turn intent: ${label}.`));
@@ -29,11 +33,13 @@ const tables = {
   investments:[{id:'i',mode:'market',status:'active',symbol:'HLAL',principal:10,entry_price:100,created_at:'2026-10-01T00:00:00Z'}],
   market_quotes:[], quests:[{summary:'Learn about needs and wants.'}], quest_completions:[],
 };
-const admin={from(table){let filters=[]; const chain={select(cols){reads.push([table,cols]);return this},returns(){return this},eq(k,v){filters.push([k,v]);return this},gte(){return this},lt(){return this},limit(){return this},order(){return this},maybeSingle(){return Promise.resolve({data:tables[table]?.[0]??null,error:null})},then(resolve,reject){const data=(tables[table]??[]).filter(row=>filters.every(([k,v])=>!(k in row)||row[k]===v));return Promise.resolve({data,error:null}).then(resolve,reject)}};return chain}};
+const admin={from(table){let filters=[]; const chain={select(cols){reads.push([table,cols]);return this},returns(){return this},eq(k,v){filters.push([k,v]);return this},gte(){return this},lt(){return this},limit(){return this},order(){return this},range(){return this},maybeSingle(){return Promise.resolve({data:tables[table]?.[0]??null,error:null})},then(resolve,reject){const data=(tables[table]??[]).filter(row=>filters.every(([k,v])=>!(k in row)||row[k]===v));return Promise.resolve({data,error:null}).then(resolve,reject)}};return chain}};
 const cases=[
   ['education','Explain saving with RM10',{},[]],
   ['navigation','Where do I freeze my card?',{page:'Card'},['screen']],
   ['numeric','What is my balance?',{},[]],
+  ['memory','What do you know about me?',{},[]],
+  ['family','How are my kids doing?',{},[]],
   ['spending','Summarise my spending this week',{},['period','totalSpent','categoryTotals']],
   ['comparison','Compare my spending this week and last week',{},['periods']],
   ['frequency','How often did I spend on food this week?',{},['period','categoryCounts']],

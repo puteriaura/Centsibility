@@ -43,6 +43,7 @@ import { usePenny } from "@/features/penny";
 import { sfx } from "@/lib/sounds";
 import { getBalanceSummary } from "@/lib/finance";
 import { filterMarketSymbols, marketCatalogueNeedsUpdate } from "@/lib/market-search";
+import { LineSparkline } from "@/components/charts/sparkline";
 import { MarketPickerStatus } from "@/features/kid/MarketPickerStatus";
 import { MarketCatalogueNotice } from "@/features/kid/MarketCatalogueNotice";
 
@@ -142,7 +143,7 @@ function KidInvest() {
   const [marketUsage, setMarketUsage] = useState<MarketUsage>();
   const [catalogueMarketState, setCatalogueMarketState] = useState(marketSession());
   const [refreshingQuotes, setRefreshingQuotes] = useState(false);
-  const [quoteRows, setQuoteRows] = useState<Record<string, Partial<MarketSymbolItem>>>({});
+  const [quoteRows, setQuoteRows] = useState<Record<string, Partial<MarketSymbolItem & Pick<MarketSymbolDetailResponse, "dailyCloses">>>>({});
 
   // Detail / Close modals
   const [selected, setSelected] = useState<InvestmentItem | null>(null);
@@ -276,7 +277,7 @@ function KidInvest() {
         setCatalogueMarketState(result.marketState);
         setQuoteRows(previous => ({ ...previous, ...Object.fromEntries(Object.entries(result.quotes).map(([symbol, row]) => {
           const state = row.marketState ?? (result.marketState === "open" && row.quote ? row.quote.is_market_open ? "open" : "closed" : result.marketState);
-          return [symbol, { price: row.available ? row.quote?.price ?? null : null, last_close: row.lastClose, last_close_as_of: row.lastCloseAsOf, degraded_reason: row.degradedReason, change_percent: row.quote?.change_percent ?? null, last_updated: row.quote?.price_time ?? row.quote?.fetched_at ?? null, stale: row.stale ?? false, is_market_open: state === "unknown" ? undefined : state === "open" }];
+          return [symbol, { price: row.available ? row.quote?.price ?? null : null, last_close: row.lastClose, last_close_as_of: row.lastCloseAsOf, degraded_reason: row.degradedReason, change_percent: row.quote?.change_percent ?? null, last_updated: row.quote?.price_time ?? row.quote?.fetched_at ?? null, stale: row.stale ?? false, is_market_open: state === "unknown" ? undefined : state === "open", dailyCloses: row.dailyCloses }];
         })) }));
       } catch {
         if (!cancelled) setQuoteRows(previous => ({ ...previous, ...Object.fromEntries(visibleSymbols.map(symbol => [symbol, { ...previous[symbol], stale: true }])) }));
@@ -1461,6 +1462,13 @@ function KidInvest() {
 
                         <div className="col-span-3 flex flex-wrap justify-between gap-2 text-xs">
                           <MarketQuoteLine state={s.is_market_open === undefined ? "unknown" : s.is_market_open ? "open" : "closed"} price={s.price} lastClose={s.last_close} stale={s.stale} updatedAt={s.last_updated} />
+                          <div className="w-16 shrink-0">
+                            {s.dailyCloses && s.dailyCloses.length > 1 && (
+                              <LineSparkline data={s.dailyCloses} dataKey="close" height={24}
+                                animate={false} interactive={false} color="var(--chart-1)"
+                                aria-label={`${s.symbol} recent daily closing prices`} />
+                            )}
+                          </div>
                           {s.change_percent != null && s.price != null && s.is_market_open !== false ? (
                             <span
                               className={s.change_percent >= 0 ? "text-xs font-semibold tabular-nums text-[var(--success-text)]" : "text-xs font-semibold tabular-nums text-[var(--error-text)]"}

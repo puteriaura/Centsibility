@@ -7,7 +7,7 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await req.json().catch(() => ({}));
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    return Response.json(await runMarketRefresh(admin, { probe: body?.probe === true }));
+    return Response.json(await runMarketRefresh(admin, { probe: body?.probe === true, held: body?.mode === "held" }));
   } catch {
     return Response.json({ error: "market_refresh_failed" }, { status: 500 });
   }

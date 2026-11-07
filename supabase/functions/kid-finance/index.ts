@@ -1057,8 +1057,7 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     : undefined;
 
 
-  const knownNames = await getPennyKnownNames(admin, kid.parent_id);
-  const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {}, undefined, { asker: "child", knownNames });
+  const plan = await minimizePennyQuestion(admin, kid, message, params.context && typeof params.context === "object" ? params.context as Record<string, unknown> : {}, undefined, { asker: "child", knownNames: () => getPennyKnownNames(admin, kid.parent_id) });
   logEvent(plan.audit);
   if (plan.localReply) return jsonOk({ reply: plan.localReply, thinking: false, intent: plan.intent });
   // 1. Check API key (503 if not set up; do not burn quota)

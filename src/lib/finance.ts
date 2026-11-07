@@ -1,35 +1,8 @@
 import { formatRM } from "./format";
-
-export const DEBIT_TYPES = new Set([
-  "WITHDRAWAL",
-  "SADAQAH",
-  "INVEST_IN",
-  "FEE",
-  "QARD_REPAY",
-  "GOAL_IN",
-  "TRANSFER_OUT",
-]);
-
-export const POT_ONLY_TYPES = new Set(["INVEST_GAIN", "INVEST_LOSS"]);
+import { isDebitTransaction, isWalletTransaction } from "../../supabase/functions/_shared/wallet-transactions";
+export { DEBIT_TYPES, POT_ONLY_TYPES, isDebitTransaction, isWalletTransaction, walletDeltaCents } from "../../supabase/functions/_shared/wallet-transactions";
 
 export const SAVINGS_MOVE_TYPES = new Set(["INVEST_IN", "GOAL_IN"]);
-
-/**
- * Checks whether a transaction belongs to the kid's wallet ledger (balance movement).
- * Pot-only transactions (INVEST_GAIN, INVEST_LOSS) are excluded.
- */
-export function isWalletTransaction(type: string): boolean {
-  return !POT_ONLY_TYPES.has(type);
-}
-
-/**
- * Checks whether a transaction represents an outflow (debit) from the kid's wallet balance.
- */
-export function isDebitTransaction(type: string, label?: string | null): boolean {
-  if (DEBIT_TYPES.has(type)) return true;
-  // Rows written before QARD_REPAY existed; the ledger migration backfills them.
-  return type === "QARD" && label === "Loan repayment";
-}
 
 /**
  * Returns "+" or "-" sign according to the transaction direction.
