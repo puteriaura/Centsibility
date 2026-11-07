@@ -1,3 +1,4 @@
+import { InstallHint } from "@/components/InstallHint";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -226,6 +227,7 @@ function Settings() {
 
   return (
     <div className="parent-page settings-page mobile-stack pb-4">
+      <InstallHint />
       {error && hasLoaded && (
         <ParentLoadError
           variant="banner"

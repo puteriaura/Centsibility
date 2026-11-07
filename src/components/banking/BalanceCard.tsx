@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Card } from "@/components/ui/card";
 import { AppIcon } from "@/components/ui/app-icon";
-import { Money } from "@/features/privacy";
+import { Money, HideAmountsButton } from "@/features/privacy";
 
 export interface BalanceCardProps {
   title?: string;
@@ -80,20 +80,9 @@ export function BalanceCard({
       <Card variant={variant} className={`balance-hero${glow ? " balance-hero--glow" : ""}`}>
         <div className="flex items-center justify-between gap-2">
           <span className={`balance-hero__label ${soft}`}>{title}</span>
-          {onToggleHide && (
-            <button
-              type="button"
-              onClick={onToggleHide}
-              className={`-my-2.5 -mr-2.5 h-11 w-11 shrink-0 rounded-full ${
-                isDark
-                  ? "text-[var(--on-brand-card)] hover:bg-white/15"
-                  : "text-[var(--text-2)] hover:bg-[var(--surface-sunken)]"
-              }`}
-              aria-label={hideBalance ? "Show balance" : "Hide balance"}
-            >
-              <AppIcon name={hideBalance ? "show" : "hide"} size={20} />
-            </button>
-          )}
+          <HideAmountsButton variant={isDark ? "dark" : "light"}
+            masked={onToggleHide ? hideBalance : undefined} onToggleHide={onToggleHide}
+            className="-my-2.5 -mr-2.5 shrink-0" />
         </div>
 
         <div className="mt-1 flex items-end justify-between gap-3">
@@ -221,7 +210,7 @@ export function BalanceCard({
             )}
           </div>
         )}
-        {tag && <div className="balance-hero__tag">{tag}</div>}
+        {tag && <div className="balance-hero__tag"><span>{tag}</span></div>}
       </Card>
     </div>
   );

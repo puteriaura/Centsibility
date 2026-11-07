@@ -1,3 +1,4 @@
+import { Modal } from "@/components/ui/modal";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
@@ -56,7 +57,7 @@ export function CrewMemberCard({
   const { isMasked, locked, openUnlockSheet } = usePrivacy();
   const [open, setOpen] = useState(defaultOpen);
   const [codeVisible, setCodeVisible] = useState(false);
-  useEffect(() => { if (!open || isMasked) setCodeVisible(false); }, [open, isMasked]);
+  useEffect(() => { if (isMasked) setCodeVisible(false); }, [isMasked]);
 
   useEffect(() => {
     if (defaultOpen) setOpen(true);
@@ -305,48 +306,24 @@ export function CrewMemberCard({
           setOpen((v) => !v);
         }}
       >
-        <AvatarBubble emoji={avatar} size={44} ring />
-        <div className="crew-card__meta min-w-0 flex-1 text-left">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <strong className="crew-card__name truncate">{kid.name}</strong>
-            {kid.has_pin && <span className="text-xs text-[var(--text-2)]">PIN set</span>}
-            {(open || cardFrozen) && <Badge
-              variant={cardFrozen ? "error" : "default"}
-              className="text-[11px] px-2 py-0.5 font-medium"
-            >
-              {cardFrozen ? "Card frozen" : `Card limit RM${dailyLimit}/day`}
-              {controlsLocked && (
-                <AppIcon name="lock" size={12} aria-label="Locked" />
-              )}
-            </Badge>}
-          </div>
-          <span className="crew-card__sub truncate">
-            {kid.username ? `@${kid.username}` : "Child account"}
-            {" · "}
-            Trust {kid.trust_score}
-            {" · "}
-            {kid.coins ?? 0} pts
-          </span>
-
-        </div>
-        <div className="crew-card__balance text-right shrink-0">
-          <span className="tabular-nums font-extrabold text-[var(--ink)]">
-            <Money amount={total} />
-          </span>
-          <span
-            className={`crew-card__chevron${open ? " is-open" : ""}`}
-            aria-hidden="true"
-          >
-            <AppIcon name="chevron" size={18} />
-          </span>
-        </div>
+        <AvatarBubble emoji={avatar} size={40} ring />
+        <strong className="crew-card__name min-w-0">{kid.name}</strong>
       </button>
 
-      {activeCode && <div className="crew-card__access">
-        <Button type="button" variant="ghost" size="sm" aria-expanded={codeVisible && !isMasked}
-          onClick={() => { if (locked) { openUnlockSheet(); return; } setOpen(true); setCodeVisible(v => !v); }}>
-          {codeVisible && !isMasked ? "Hide code" : "Show code"}
-        </Button>
+      <div className="crew-card__status">
+        {cardFrozen ? (
+          <span className="inline-flex items-center gap-1"><AppIcon name="lock" size={14} />Card frozen</span>
+        ) : activeCode ? (
+          <button type="button" className="crew-card__setup" onClick={() => {
+            if (locked) openUnlockSheet();
+            else if (!isMasked) setCodeVisible(true);
+          }}>Setup needed</button>
+        ) : null}
+      </div>
+      <div className="crew-card__balance"><Money amount={total} /></div>
+
+      {activeCode && <Modal variant="sheet" title="Set up sign-in"
+        isOpen={codeVisible && !isMasked} onClose={() => setCodeVisible(false)}>
         {codeVisible && !isMasked && <div className="crew-card__revealed-code">
           <strong className="crew-access-code font-mono" aria-label="Access code">{activeCode}</strong>
           <Button type="button" variant="secondary" size="sm" onClick={async () => {
@@ -355,10 +332,14 @@ export function CrewMemberCard({
           }}><AppIcon name="copy" size={16} />Copy code</Button>
           <p className="w-full m-0 text-xs text-[var(--text-2)]">Valid for 3 days. Your child enters it once on the login screen.</p>
         </div>}
-      </div>}
+      </Modal>}
 
       {open && (
         <div className="crew-card__body space-y-3">
+          {activeCode && cardFrozen && <Button variant="outline" onClick={() => {
+            if (locked) openUnlockSheet();
+            else if (!isMasked) setCodeVisible(true);
+          }}>Set up sign-in</Button>}
           <div className="flex items-center justify-between gap-2">
             {isEditing ? (
               <EditKidForm

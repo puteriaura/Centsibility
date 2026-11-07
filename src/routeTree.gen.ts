@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as KidRouteImport } from './routes/kid'
 import { Route as KidLoginRouteImport } from './routes/kid-login'
+import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ParentRouteImport } from './routes/parent'
 import { Route as KidIndexRouteImport } from './routes/kid.index'
@@ -53,6 +54,11 @@ const KidRoute = KidRouteImport.update({
 const KidLoginRoute = KidLoginRouteImport.update({
   id: '/kid-login',
   path: '/kid-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaunchRoute = LaunchRouteImport.update({
+  id: '/launch',
+  path: '/launch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kid': typeof KidRouteWithChildren
   '/kid-login': typeof KidLoginRoute
+  '/launch': typeof LaunchRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
   '/kid/card': typeof KidCardRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kid-login': typeof KidLoginRoute
+  '/launch': typeof LaunchRoute
   '/login': typeof LoginRoute
   '/kid/card': typeof KidCardRoute
   '/kid/chat': typeof KidChatRoute
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/kid': typeof KidRouteWithChildren
   '/kid-login': typeof KidLoginRoute
+  '/launch': typeof LaunchRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
   '/kid/card': typeof KidCardRoute
@@ -292,6 +301,7 @@ export interface FileRouteTypes {
     | '/'
     | '/kid'
     | '/kid-login'
+    | '/launch'
     | '/login'
     | '/parent'
     | '/kid/card'
@@ -323,6 +333,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/kid-login'
+    | '/launch'
     | '/login'
     | '/kid/card'
     | '/kid/chat'
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/'
     | '/kid'
     | '/kid-login'
+    | '/launch'
     | '/login'
     | '/parent'
     | '/kid/card'
@@ -387,6 +399,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   KidRoute: typeof KidRouteWithChildren
   KidLoginRoute: typeof KidLoginRoute
+  LaunchRoute: typeof LaunchRoute
   LoginRoute: typeof LoginRoute
   ParentRoute: typeof ParentRouteWithChildren
 }
@@ -412,6 +425,13 @@ declare module '@tanstack/react-router' {
       path: '/kid-login'
       fullPath: '/kid-login'
       preLoaderRoute: typeof KidLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/launch': {
+      id: '/launch'
+      path: '/launch'
+      fullPath: '/launch'
+      preLoaderRoute: typeof LaunchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -677,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KidRoute: KidRouteWithChildren,
   KidLoginRoute: KidLoginRoute,
+  LaunchRoute: LaunchRoute,
   LoginRoute: LoginRoute,
   ParentRoute: ParentRouteWithChildren,
 }

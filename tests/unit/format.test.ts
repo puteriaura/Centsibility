@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatRM } from "@/lib/format";
+import { formatDate, formatDateTime, formatRM } from "@/lib/format";
 
 describe("formatRM", () => {
   it("uses one tight format with thousands separators", () => {
@@ -21,11 +21,17 @@ describe("formatRM", () => {
 
 describe("formatDate", () => {
   it("renders day, short month and year", () => {
-    expect(formatDate(new Date(2026, 8, 5))).toBe("05 Sep 2026");
+    expect(formatDate(new Date(2026, 8, 5))).toBe("5 Sep 2026");
     expect(formatDate("2026-10-10T16:15:11.093Z")).toMatch(/^1[01] Oct 2026$/);
   });
 
   it("returns an empty string for invalid dates", () => {
     expect(formatDate("not a date")).toBe("");
   });
+});
+
+it("formats date-times without padded days or hours and with lowercase meridiem", () => {
+  expect(formatDateTime(new Date(2026, 10, 7, 2, 57))).toBe("7 Nov, 2:57 am");
+  expect(formatDateTime(new Date(2026, 10, 7, 14, 5))).toBe("7 Nov, 2:05 pm");
+  expect(formatDateTime("invalid")).toBe("");
 });

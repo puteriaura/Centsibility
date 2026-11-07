@@ -1,3 +1,6 @@
+import { BarChart } from "@/components/charts/bar-chart";
+import { Bar } from "@/components/charts/bar";
+import { MoneyDonut } from "@/components/charts/money-donut";
 import { BalanceCard } from "@/components/banking/BalanceCard";
 import { Progress } from "@/components/ui/progress";
 import { SlidingPill } from "@/components/ui/sliding-pill";
@@ -62,6 +65,19 @@ function KidInsights() {
   const [receiptSheetOpen, setReceiptSheetOpen] = useState(false);
   const { reduced: reducedMotion } = useTheme();
   const pointerStartedAt = useRef<number | null>(null);
+  const storyTrigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!storyOpen) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (receiptSheetOpen) { setReceiptSheetOpen(false); setIsPaused(false); }
+      else { setStoryOpen(false); storyTrigger.current?.focus(); }
+    };
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
+  }, [storyOpen, receiptSheetOpen]);
 
   // Dynamically compute active months (from user's earliest transaction to current month)
   const activeMonths = useMemo(() => {
@@ -134,7 +150,8 @@ function KidInsights() {
   const monthIndex = activeMonths.indexOf(selectedMonth);
   // Focus matches today's chart mark in both approved themes.
   const week = weeklyBars((data?.txs ?? []).filter(t => isInsightTransaction(t, metric)));
-  const weekMax = Math.max(0, ...week.map(day => day.amount));
+  const [selectedWeekDate, setSelectedWeekDate] = useState<string>();
+  const selectedDay = week.find(day => day.date === selectedWeekDate) ?? week.find(day => day.today) ?? week[0];
   const currentMonth = selectedMonth === insightMonth(new Date());
   const monthName = new Date(selectedMonth + "-01T12:00:00").toLocaleDateString("en-MY", { month: "long" });
   const summaryTitle = metric === "spending" ? currentMonth ? "Spent this month" : `Spent in ${monthName}`
@@ -228,7 +245,8 @@ function KidInsights() {
 
   return (
     <div className="insights-page pb-12">
-      <div className="space-y-5">
+      <div className="space-y-5 page-split">
+        <div className="page-split__summary">
         <div
           className="insights-segment"
           role="group"
@@ -286,13 +304,46 @@ function KidInsights() {
         <BalanceCard className="insights-summary" title={summaryTitle} balance={monthData.totalOut}
           tag={previousData.hasData && !locked ? <><Money amount={Math.abs(monthData.totalOut - previousData.totalOut)} /> {monthData.totalOut >= previousData.totalOut ? "more" : "less"} than {previousDate.toLocaleDateString("en-MY", { month: "short" })}</> : undefined} />
         <Card className="p-5 insights-week"><h2>This week</h2>
-          {locked ? hiddenAmounts : <div className="insights-week__days">{week.map(day => <div key={day.date} className="insights-week__day">
-            <div className="insights-week__slot" role="img" aria-label={`${day.day}${day.today ? ", today" : ""}: ${formatMoney(day.amount)}`}>
-              <div className="motion-bar" style={{ "--progress": weekMax ? day.amount / weekMax : 0, background: day.today ? "var(--focus)" : "var(--blue-500)" } as React.CSSProperties} />
-            </div><span aria-hidden="true" className={day.today ? "insights-week__today" : undefined}>{day.day[0]}</span>
-          </div>)}</div>}
+          {selectedDay && <p aria-live="polite" className="mt-2 text-sm text-[var(--text-2)]">
+            {selectedDay.today ? "Today" : selectedDay.day} · <strong>{locked ? "•••" : formatMoney(selectedDay.amount)}</strong>
+          </p>}
+          <div className="weekly-bars relative">
+            <div aria-hidden="true">
+              <BarChart data={week.map(day => ({
+                name: day.date, regular: day.date === selectedDay?.date ? 0 : day.amount,
+                selected: day.date === selectedDay?.date ? day.amount : 0,
+              }))} stacked barGap={0.2} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+                aspectRatio="3 / 1" animationDuration={reducedMotion ? 0 : 450}
+                enterTransition={{ type: "spring", bounce: 0, duration: 0.45 }}>
+                <Bar dataKey="regular" animate={!reducedMotion} fill="var(--chart-1)" />
+                <Bar dataKey="selected" animate={!reducedMotion} fill="var(--chart-2)" />
+              </BarChart>
+            </div>
+            <div role="group" aria-label="Select a day" className="absolute inset-0 grid grid-cols-7">
+              {week.map(day => <button key={day.date} type="button"
+                className="min-w-0 rounded-md"
+                aria-label={day.today ? `${day.day}, today` : day.day}
+                aria-pressed={day.date === selectedDay?.date}
+                onMouseEnter={() => setSelectedWeekDate(day.date)}
+                onFocus={() => setSelectedWeekDate(day.date)}
+                onClick={() => setSelectedWeekDate(day.date)} />)}
+            </div>
+          </div>
+          <div className="grid grid-cols-7 text-center" aria-hidden="true">
+            {week.map(day => <span key={day.date} className={day.date === selectedDay?.date ? "font-bold" : undefined}>{day.day[0]}</span>)}
+          </div>
+          <table className="sr-only">
+            <caption>Daily amounts this week</caption>
+            <tbody>{week.map(day => <tr key={day.date}>
+              <th scope="row">{day.day}</th>
+              <td>{locked ? "•••" : formatMoney(day.amount)}</td>
+            </tr>)}</tbody>
+          </table>
         </Card>
+        </div>
+        <div className="page-split__details">
         <Card className="p-5 insights-categories"><h2>{metric === "spending" ? "Where it went" : "Where it came from"}</h2>
+          <MoneyDonut showLegend={false} label="Activity by category" data={monthData.topCategories.map(category => ({ label: category.label, value: category.amount }))} />
           {locked ? hiddenAmounts : monthData.topCategories.length === 0 ? <p>No {metric} this month.</p> : monthData.topCategories.map((category, i) => <div key={category.key} className="insights-category">
             <div><span><strong>{category.label}</strong> <small>{Math.round(category.pct)}%</small></span><Money amount={category.amount} /></div>
             <Progress value={category.pct} indicatorColor={CAT_COLORS[i % CAT_COLORS.length]} />
@@ -305,6 +356,7 @@ function KidInsights() {
             variant="secondary"
             className="flex-1 justify-center font-bold"
             onClick={openStory}
+            ref={storyTrigger}
           >
             Open Daily Wrap
           </Button>
@@ -312,6 +364,7 @@ function KidInsights() {
         </div>
       </div>
 
+      </div>
       {/* Instagram Stories Modal */}
       {storyOpen && (
         <div
@@ -320,6 +373,12 @@ function KidInsights() {
           aria-modal="true"
           aria-label="Daily wrap"
           onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              const controls = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input, select, textarea, [tabindex="0"]'));
+              const first = controls[0], last = controls[controls.length - 1];
+              if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+              else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+            }
             if (receiptSheetOpen) return;
             if (e.key === "ArrowLeft") {
               e.preventDefault();
@@ -333,7 +392,7 @@ function KidInsights() {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 100,
+            zIndex: 200,
             background: "#000",
             display: "flex",
             flexDirection: "column",

@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/format";
 import { useState } from "react";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ export function ParentLoadError({
 
   if (variant === "banner") {
     const timeStr = lastLoadedAt
-      ? lastLoadedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      ? formatDateTime(lastLoadedAt)
       : null;
     const bannerText =
       message ||

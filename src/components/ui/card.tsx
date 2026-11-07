@@ -34,7 +34,7 @@ export function Card({
 }: CardProps) {
   return (
     <section
-      className={`ui-card ${VARIANT_CLASS[variant] ?? ""} ${className}`.trim()}
+      className={`ui-card ${VARIANT_CLASS[variant] ?? ""} ${props.onClick ? "press-feedback" : ""} ${className}`.trim()}
       style={style}
       {...props}
     >

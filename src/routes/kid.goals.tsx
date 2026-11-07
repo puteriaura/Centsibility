@@ -1,3 +1,6 @@
+import { RingChart } from "@/components/charts/ring-chart";
+import { Ring } from "@/components/charts/ring";
+import { useTheme } from "@/lib/theme";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -23,7 +26,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRM } from "@/lib/format";
 import { getBalanceSummary } from "@/lib/finance";
-import { Money } from "@/features/privacy";
+import { Money, HideAmountsButton, useMoney } from "@/features/privacy";
 
 import { useMoneyAction } from "@/hooks/use-money-action";
 import { PennyMascot } from "@/components/PennyMascot";
@@ -67,12 +70,15 @@ function iconName(key: string) {
 }
 
 function KidGoals() {
+  const { reduced } = useTheme();
+  const { isMasked } = useMoney();
   const { data, loading, error, refresh } = useKidData();
   const [activeGoal, setActiveGoal] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showHeroInfo, setShowHeroInfo] = useState(false);
+  const [selectedRing, setSelectedRing] = useState<string | null>(null);
 
   const [newName, setNewName] = useState("");
   const [newTarget, setNewTarget] = useState("");
@@ -205,6 +211,7 @@ function KidGoals() {
     <div className="space-y-6 pb-12">
       {/* 1. Hero: Total in Tabung */}
       <section className="deposit-hero" aria-label="Tabung summary">
+        <HideAmountsButton variant="dark" className="deposit-hero__eye" />
         <div className="deposit-hero__copy">
           <p className="deposit-hero__label">Total in Tabung</p>
           <p className="deposit-hero__amount tabular-nums">
@@ -266,7 +273,7 @@ function KidGoals() {
       </div>
 
       {/* Tabung List */}
-      <div className="space-y-3">
+      <div className="space-y-3 responsive-card-grid">
         {/* Investment link note */}
         <Link
           to="/kid/invest"
@@ -312,6 +319,26 @@ function KidGoals() {
           </Card>
         )}
 
+        {data.goals.length > 0 && <div className="responsive-card-grid__summary flex flex-wrap justify-center gap-3">
+          {data.goals.slice(0, 3).map((goal) => {
+            const percent = Math.min(100, Math.max(0, Math.round(100 * Number(goal.saved) / Number(goal.target)))) || 0;
+            return <figure key={goal.id} className="m-0 text-center">
+              <button type="button" className="relative border-0 bg-transparent p-0 text-[var(--ink)]" aria-label={isMasked ? `${goal.name}: progress hidden` : `${goal.name}: ${percent}% saved`}
+                onPointerEnter={event => { if (event.pointerType === "mouse") setSelectedRing(goal.id); }}
+                onPointerLeave={event => { if (event.pointerType === "mouse") setSelectedRing(null); }}
+                onFocus={() => setSelectedRing(goal.id)} onBlur={() => setSelectedRing(null)}
+                onClick={() => setSelectedRing(goal.id)}>
+                <RingChart data={[{ label: goal.name, value: percent, maxValue: 100 }]}
+                  size={84} baseInnerRadius={27} strokeWidth={6} animationDuration={reduced ? 0 : 450}>
+                  <Ring index={0} animate={!reduced} />
+                </RingChart>
+                <strong className="pointer-events-none absolute inset-0 grid place-items-center text-sm">{isMasked ? "•••" : `${percent}%`}</strong>
+                {selectedRing === goal.id && <span role="status" className="donut-tooltip">{isMasked ? "Progress hidden" : `${percent}% saved`}</span>}
+              </button>
+              <figcaption className="max-w-[90px] truncate text-xs">{goal.name}</figcaption>
+            </figure>;
+          })}
+        </div>}
         {/* 3. One card per Tabung */}
         {data.goals.map((g: (typeof data.goals)[number], index: number) => {
           const pct = Math.min(

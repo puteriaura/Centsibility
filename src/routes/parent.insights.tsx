@@ -75,7 +75,8 @@ function ParentInsights() {
   const selectedKid = kids.find((k) => k.id === kidFilter);
 
   return (
-    <div className="parent-page mobile-stack pb-4">
+    <div className="parent-page mobile-stack pb-4 page-split">
+      <div className="page-split__summary">
       {error && hasLoaded && (
         <ParentLoadError
           variant="banner"
@@ -122,6 +123,8 @@ function ParentInsights() {
         </p>
       </Card>
 
+      </div>
+      <div className="page-split__details">
       <div className="space-y-2">
         <SectionTitle>Children</SectionTitle>
         {kids.length > 4 && (
@@ -230,6 +233,7 @@ function ParentInsights() {
       >
         View monthly statements
       </Button>
+      </div>
     </div>
   );
 }

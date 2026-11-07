@@ -3,7 +3,7 @@
   "name": "Centsibility",
   "short_name": "Centsibility",
   "description": "Shariah family finance for kids",
-  "start_url": "/",
+  "start_url": "/launch",
   "display": "standalone",
   "background_color": "#F5F6FA",
   "theme_color": "#A0B0DA",

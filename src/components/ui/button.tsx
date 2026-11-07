@@ -50,7 +50,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
-        className={buttonVariants({ variant, size, className })}
+        className={buttonVariants({ variant, size, className: `press-feedback ${className ?? ""}` })}
         data-variant={variant ?? "primary"}
         {...props}
       >

@@ -1,5 +1,8 @@
+import { useWideLayout } from "@/hooks/use-wide-layout";
 import { Drawer } from "vaul";
-import { Link } from "@tanstack/react-router";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useNavigate } from "@tanstack/react-router";
+import { useRef } from "react";
 import { usePenny } from "./PennyProvider";
 import { PennyChat } from "./PennyChat";
 import { AppIcon } from "@/components/ui/app-icon";
@@ -7,69 +10,118 @@ import { sfx } from "@/lib/sounds";
 
 export function PennyDrawer() {
   const { isOpen, closePenny, mode } = usePenny();
+  const navigate = useNavigate();
+  const wide = useWideLayout();
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const target = useRef<"/kid/chat" | "/parent/penny" | null>(null);
 
-  return (
-    <Drawer.Root
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) closePenny();
-      }}
-      shouldScaleBackground={false}
-    >
-      <Drawer.Portal>
-        <Drawer.Overlay className="penny-drawer__overlay" />
-        <Drawer.Content
-          className="penny-drawer__content"
-          aria-describedby={undefined}
-        >
-          {/* Hidden title for screen reader accessibility */}
-          <Drawer.Title className="sr-only">Penny</Drawer.Title>
+  const content = (
+    <Drawer.Portal>
+      {!wide && <Drawer.Overlay className="penny-drawer__overlay" />}
+      <Drawer.Content
+        className="penny-drawer__content"
+        aria-describedby={undefined}
+        onOpenAutoFocus={() => {
+          returnFocus.current =
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          if (!target.current && returnFocus.current?.isConnected) {
+            event.preventDefault();
+            returnFocus.current.focus();
+          }
+        }}
+      >
+        {/* Hidden title for screen reader accessibility */}
+        <Drawer.Title className="sr-only">Penny</Drawer.Title>
 
-          {/* Grab handle */}
-          <div className="penny-drawer__handle-bar" aria-hidden="true">
-            <div className="penny-drawer__handle" />
+        {/* Grab handle */}
+        <div className="penny-drawer__handle-bar" aria-hidden="true">
+          <div className="penny-drawer__handle" />
+        </div>
+
+        {/* Drawer header */}
+        <header className="penny-drawer__header">
+          <div className="penny-drawer__title-group">
+            <AppIcon name="penny" size={32} />
+            <span className="penny-drawer__title-text">Penny</span>
+            <span className="penny-chat__beta">Beta</span>
           </div>
-
-          {/* Drawer header */}
-          <header className="penny-drawer__header">
-            <div className="penny-drawer__title-group">
-              <AppIcon name="penny" size={32} />
-              <span className="penny-drawer__title-text">Penny</span>
-              <span className="penny-chat__beta">Beta</span>
-            </div>
-            <div className="penny-drawer__header-actions">
-              <Link
-                to={mode === "kid" ? "/kid/chat" : "/parent/penny"}
+          <div className="penny-drawer__header-actions">
+            <Drawer.Close asChild>
+              <button
+                type="button"
+                data-vaul-no-drag
                 className="penny-drawer__full-link"
+                onClick={() => {
+                  const to = mode === "kid" ? "/kid/chat" : "/parent/penny";
+                  target.current = wide ? null : to;
+                  sfx.tap();
+                  closePenny();
+                  if (wide) void navigate({ to });
+                }}
+              >
+                Open full chat ↗
+              </button>
+            </Drawer.Close>
+            <Drawer.Close asChild>
+              <button
+                type="button"
+                className="shell-icon-btn min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+                aria-label="Close Penny"
                 onClick={() => {
                   sfx.tap();
                   closePenny();
                 }}
               >
-                Open full chat ↗
-              </Link>
-              <Drawer.Close asChild>
-                <button
-                  type="button"
-                  className="shell-icon-btn min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
-                  aria-label="Close Penny"
-                  onClick={() => {
-                    sfx.tap();
-                    closePenny();
-                  }}
-                >
-                  <AppIcon name="close" size={20} />
-                </button>
-              </Drawer.Close>
-            </div>
-          </header>
-
-          {/* Drawer body */}
-          <div className="penny-drawer__body">
-            <PennyChat inDrawer={true} mode={mode} />
+                <AppIcon name="close" size={20} />
+              </button>
+            </Drawer.Close>
           </div>
-        </Drawer.Content>
-      </Drawer.Portal>
+        </header>
+
+        {/* Drawer body */}
+        <div className="penny-drawer__body">
+          <PennyChat inDrawer={true} mode={mode} />
+        </div>
+      </Drawer.Content>
+    </Drawer.Portal>
+  );
+
+  return (
+    <Drawer.Root
+      direction={wide ? "right" : "bottom"}
+      modal={!wide}
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) closePenny();
+      }}
+      onAnimationEnd={(open) => {
+        if (!open && target.current) {
+          const to = target.current;
+          target.current = null;
+          void navigate({ to });
+        }
+      }}
+      shouldScaleBackground={false}
+    >
+      {/* Vaul 1.1.2 does not forward modal to its Radix root. Supply the nonmodal
+        context here so the wide panel neither traps focus nor hides the page. */}
+      {wide ? (
+        <Dialog.Root
+          open={isOpen}
+          modal={false}
+          onOpenChange={(open) => {
+            if (!open) closePenny();
+          }}
+        >
+          {content}
+        </Dialog.Root>
+      ) : (
+        content
+      )}
     </Drawer.Root>
   );
 }

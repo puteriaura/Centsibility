@@ -3,6 +3,7 @@ import {
   type PennyIntent,
 } from "../../../supabase/functions/_shared/penny-intents";
 import * as React from "react";
+import { useLocation } from "@tanstack/react-router";
 import {
   type ChatMessage,
   type PennyPageContext,
@@ -88,12 +89,18 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
 
   const [messages, setMessages] = React.useState<ChatMessage[]>(() => {
     const cached = loadCachedMessages(mode);
-    if (cached && cached.length > 0) return cached;
+    if (cached && cached.length > 0) {
+      return cached.some((message) => message.id === "welcome")
+        ? cached
+        : [getInitialGreeting(mode, parentComfortName), ...cached];
+    }
     return [getInitialGreeting(mode, parentComfortName)];
   });
 
   const [busy, setBusy] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
+  const pathname = useLocation({ select: (location) => location.pathname });
+  React.useEffect(() => { setIsOpen(false); }, [pathname]);
   const [pageContext, setPageContext] = React.useState<PennyPageContext | null>(
     null,
   );
