@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import {
+  endParentUnlock,
   isParentBypassed,
   setParentBypassed,
   setKidBypassed,
@@ -253,11 +254,11 @@ function ShellAccount({ mode, kind, kidName, kidAvatar, parentAvatar, unread }: 
 
   const switchMode = async () => {
     sfx.swoosh();
+    endParentUnlock();
     if (isKid) {
       await signOutKid();
       nav({ to: "/login" });
     } else {
-      setParentBypassed(false);
       nav({ to: "/kid-login" });
     }
   };
