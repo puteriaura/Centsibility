@@ -1,7 +1,7 @@
 import { normalizeUsername, isValidNewUsername } from "../_shared/username.ts";
 import { revokeAllKidSessions } from "../_shared/kid-session.ts";
 import { genCode } from "../_shared/access-code.ts";
-import { actorLimit, pennyGlobalLimit, hit, tooMany } from "../_shared/rate-limit.ts";
+import { actorLimit, pennyGlobalLimit } from "../_shared/rate-limit.ts";
 import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
 import { familyPennyReply, getPennyKnownNames, minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
@@ -44,17 +44,10 @@ Deno.serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Some actions might be public/cron, like execute-scheduled-hibahs
     const body = await req.json();
     const { action, ...params } = body;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    if (action === "execute-scheduled-hibahs") {
-      const limited = await hit(adminClient, "scheduled-hibahs-global", "all", 120, 60);
-      if (!limited.allowed) return tooMany(limited.retryAfter, corsHeaders);
-      return await handleExecuteScheduledHibahs(adminClient);
-    }
 
     // --- Authenticate the calling parent ---
     const authHeader = req.headers.get("Authorization");
@@ -643,12 +636,6 @@ async function handleDeactivateScheduledHibah(admin: Admin, parentId: string, pa
   if (!hibah) return jsonError("Not found", 404);
   await admin.from("scheduled_hibahs").update({ is_active: false }).eq("id", params.hibahId);
   return jsonOk({ ok: true });
-}
-
-async function handleExecuteScheduledHibahs(admin: Admin) {
-  const { data: processed, error } = await admin.rpc("execute_due_hibahs");
-  if (error) return resolveError(error);
-  return jsonOk({ processed: processed ?? 0 });
 }
 
 // ---------------------------------------------------------------------------
