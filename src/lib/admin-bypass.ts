@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { edgeKidLogin } from "@/lib/edge";
+import { clearParentPinSession, edgeKidLogin } from "@/lib/edge";
 import { setKidSession } from "@/lib/kid-session";
 import type { Session, User } from "@supabase/supabase-js";
 
@@ -68,6 +68,12 @@ export function setParentBypassed(active: boolean) {
     sessionStorage.removeItem(PARENT_BYPASS_KEY);
   }
   window.dispatchEvent(new Event("centsibility:auth-bypass-change"));
+}
+
+export function endParentUnlock() {
+  sessionStorage.removeItem("parentSessionValidUntil");
+  clearParentPinSession();
+  setParentBypassed(false);
 }
 
 export function isKidBypassed(): boolean {

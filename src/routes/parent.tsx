@@ -2,7 +2,7 @@
 // avoid-ai-design-ignore-file: L1, SD4w
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { edgeParentGetPin, edgeParentSetPin, edgeParentVerifyPin, edgeParentGetProfile, clearParentPinSession } from "@/lib/edge";
+import { edgeParentGetPin, edgeParentSetPin, edgeParentVerifyPin, edgeParentGetProfile } from "@/lib/edge";
 import { useAuth } from "@/providers/auth";
 import { AppShell } from "@/components/AppShell";
 import { PrivacyProvider, markJustUnlocked } from "@/features/privacy";
@@ -14,7 +14,7 @@ import { NumericKeypad, PIN_KEYPAD_KEYS } from "@/components/ui/numeric-keypad";
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { isParentBypassed, setParentBypassed } from "@/lib/admin-bypass";
+import { endParentUnlock, isParentBypassed } from "@/lib/admin-bypass";
 import { usePinStatus } from "@/hooks/use-pin-status";
 
 export const Route = createFileRoute("/parent")({
@@ -25,17 +25,10 @@ export const Route = createFileRoute("/parent")({
 // Helpers (outside component so they're stable references)
 // ---------------------------------------------------------------------------
 
-/** Clear every parent-session flag from sessionStorage. */
-function clearParentSession() {
-  sessionStorage.removeItem("parentSessionValidUntil");
-  clearParentPinSession();
-  setParentBypassed(false);
-}
-
 /** Sign out + redirect — returns a never-resolving promise so callers can
  *  `return await ejectUser(…)` and TypeScript knows nothing runs after it. */
 async function ejectUser(message: string, to = "/kid-login"): Promise<never> {
-  clearParentSession();
+  endParentUnlock();
   await supabase.auth.signOut();
   toast.error(message);
   window.location.href = to;
@@ -75,7 +68,7 @@ function ParentLayout() {
   // -----------------------------------------------------------------------
   useEffect(() => {
     const handlePinRequired = () => {
-      clearParentSession();
+      endParentUnlock();
       setPinVerified(false);
       setPinInput("");
       toast.error("Enter your PIN to continue");
@@ -443,7 +436,7 @@ function ParentLayout() {
           <button
             type="button"
             onClick={() => {
-              clearParentSession();
+              endParentUnlock();
               supabase.auth.signOut().then(() => {
                 window.location.href = "/kid-login";
               });
@@ -500,7 +493,7 @@ function ParentLayout() {
           <button
             type="button"
             onClick={() => {
-              clearParentSession();
+              endParentUnlock();
               supabase.auth.signOut().then(() => {
                 window.location.href = "/login";
               });
