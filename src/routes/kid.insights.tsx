@@ -274,10 +274,10 @@ function KidInsights() {
           >
             <AppIcon name="back" size={20} />
           </button>
-          <label>
+          <label className="flex min-w-0 flex-1 justify-center">
             <span className="sr-only">Month</span>
             <select
-              className="bg-transparent text-center font-bold max-w-full"
+              className="w-full max-w-[14rem] bg-transparent text-center font-bold max-[359px]:px-2"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
             >
