@@ -253,6 +253,12 @@
     max-width: 1120px;
     padding-inline: 24px;
   }
+  @layer components {
+    .app-shell__main > :not(.page-wide, .page-split, :has(.page-split)) {
+      max-width: 760px;
+      margin-inline: auto;
+    }
+  }
   .shell-bottomnav,
   :root[data-audience="parent"] .shell-bottomnav {
     padding-inline: 20px;
@@ -326,6 +332,37 @@
   }
   .parent-home__children {
     grid-area: 2 / 1;
+  }
+}
+
+@media (768px <= width < 1180px) and (max-height: 560px) {
+  .shell-bottomnav,
+  :root[data-audience="parent"] .shell-bottomnav {
+    padding-block: 8px 104px;
+    overflow-y: clip;
+  }
+  .shell-nav-logo {
+    display: none;
+  }
+  .shell-bottomnav__inner {
+    gap: 4px;
+  }
+  .shell-navitem {
+    min-height: 44px;
+    padding-block: 0;
+  }
+  .shell-navitem__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+  }
+  .shell-account {
+    gap: 4px;
+    padding-block: 6px;
+  }
+  .shell-account .shell-icon-btn {
+    min-height: 44px;
   }
 }
 

@@ -183,7 +183,7 @@ function Reports() {
   );
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="page-wide space-y-6 pb-12">
       {error && hasLoaded && (
         <ParentLoadError
           variant="banner"
@@ -197,11 +197,11 @@ function Reports() {
           Monthly statements for each child: categories, entries and a copy you can save or share.
         </p>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           <select
             value={kidId}
             onChange={(e) => setKidId(e.target.value)}
-            className="h-10 px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
+            className="h-10 min-w-[8rem] flex-1 px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
           >
             <option value="">Select Child</option>
             {kids.map((k) => (
@@ -218,7 +218,7 @@ function Reports() {
               if (e.target.value)
                 setMonth(startOfMonth(new Date(e.target.value + "-01")));
             }}
-            className="h-10 px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
+            className="h-10 min-w-[10rem] flex-[1_1_12rem] px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] outline-none focus:border-[var(--primary)]"
           />
         </div>
       </div>
