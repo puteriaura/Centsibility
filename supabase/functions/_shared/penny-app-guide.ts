@@ -2,43 +2,31 @@
 export const PENNY_APP_GUIDE = [
   {
     "path": "/kid/card",
-    "title": "Card",
+    "title": "Practice Card",
     "buttons": [
-      "Ask Penny about cards",
       "Hide details",
       "View details",
       "Card settings",
       "Settings",
-      "Unfreeze",
-      "Freeze",
       "Practice card help",
       "Help",
       "Close card controls",
       "Done",
       "Save limit",
       "Save setting",
-      "Open card settings to set daily limit",
-      "Set limit",
+      "Cancel",
       "Trying again…",
       "Try again",
-      "Cancel",
-      "Close Penny",
-      "New chat",
-      "Helpful",
-      "Not helpful",
-      "Copy"
+      "Ask Penny about practice cards",
+      "Open settings"
     ],
-    "links": [
-      {
-        "to": "/kid/insights",
-        "label": "Insights"
-      }
-    ]
+    "links": []
   },
   {
     "path": "/kid/chat",
     "title": "Penny",
     "buttons": [
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Cancel",
@@ -58,6 +46,7 @@ export const PENNY_APP_GUIDE = [
     "title": "Tabung",
     "buttons": [
       "Create your first Tabung",
+      "•••",
       "Cancel",
       "Saving…",
       "Save Tabung",
@@ -78,7 +67,7 @@ export const PENNY_APP_GUIDE = [
   },
   {
     "path": "/kid/history",
-    "title": "Transaction history",
+    "title": "Transactions",
     "buttons": [
       "Retry",
       "Cancel"
@@ -89,8 +78,6 @@ export const PENNY_APP_GUIDE = [
     "path": "/kid/",
     "title": "Home",
     "buttons": [
-      "Give now",
-      "Close",
       "Change Picture",
       "Saving...",
       "Save Profile",
@@ -101,55 +88,35 @@ export const PENNY_APP_GUIDE = [
     "links": [
       {
         "to": "/kid/transfer",
-        "label": "Transfer"
-      },
-      {
-        "to": "/kid/wallet",
-        "label": "Request"
+        "label": "Send"
       },
       {
         "to": "/kid/goals",
         "label": "Tabung"
       },
       {
-        "to": "/kid/invest",
-        "label": "Investment"
+        "to": "/kid/wallet",
+        "label": "Ask"
       },
       {
-        "to": "/kid/sadaqah",
-        "label": "Sadaqah"
+        "to": "/kid/more",
+        "label": "More"
       },
       {
-        "to": "/kid/missions",
-        "label": "Missions"
-      },
-      {
-        "to": "/kid/history",
-        "label": "History"
-      },
-      {
-        "to": "/kid/insights",
-        "label": "Insights"
-      },
-      {
-        "to": "/kid/missions",
-        "label": "Reward points Level · XP · Trust"
+        "to": "/kid/goals",
+        "label": ""
       },
       {
         "to": "/kid/loans",
         "label": "Due Repay"
       },
       {
-        "to": "/kid/insights",
-        "label": "Insights"
-      },
-      {
-        "to": "/kid/insights",
-        "label": "Spent so far"
-      },
-      {
         "to": "/kid/history",
         "label": "See all"
+      },
+      {
+        "to": "/kid/wallet",
+        "label": "Ask for pocket money"
       },
       {
         "to": "/kid",
@@ -160,16 +127,16 @@ export const PENNY_APP_GUIDE = [
         "label": "Wallet"
       },
       {
-        "to": "/kid/goals",
-        "label": "Tabung"
+        "to": "/kid/transfer",
+        "label": "Send"
       },
       {
-        "to": "/kid/loans",
-        "label": "Loans"
+        "to": "/kid/insights",
+        "label": "Insights"
       },
       {
-        "to": "/kid/card",
-        "label": "Card"
+        "to": "/kid/more",
+        "label": "More"
       }
     ]
   },
@@ -178,18 +145,12 @@ export const PENNY_APP_GUIDE = [
     "title": "Insights",
     "buttons": [
       "Spending",
-      "Savings",
-      "Surprise me",
-      "Release to open chat",
-      "Pull down to chat",
-      "Create Tabung",
+      "Income",
+      "Previous month",
+      "Next month",
       "Ask Penny",
       "Open Daily Wrap",
-      "Chat Penny",
       "Close story",
-      "Previous slide",
-      "Finish",
-      "Next slide",
       "View transaction history for this period",
       "View transactions",
       "Ask Penny to deep dive on this insight",
@@ -198,6 +159,7 @@ export const PENNY_APP_GUIDE = [
       "Trying again…",
       "Try again",
       "Cancel",
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Helpful",
@@ -205,10 +167,6 @@ export const PENNY_APP_GUIDE = [
       "Copy"
     ],
     "links": [
-      {
-        "to": "/kid/goals",
-        "label": "Create Tabung"
-      },
       {
         "to": "/kid/insights",
         "label": "Insights"
@@ -239,6 +197,7 @@ export const PENNY_APP_GUIDE = [
       "Trying again…",
       "Try again",
       "Cancel",
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Helpful",
@@ -254,7 +213,7 @@ export const PENNY_APP_GUIDE = [
   },
   {
     "path": "/kid/loans",
-    "title": "Loans",
+    "title": "My Loans",
     "buttons": [
       "Ask for a loan",
       "Change Amount",
@@ -287,6 +246,77 @@ export const PENNY_APP_GUIDE = [
     ]
   },
   {
+    "path": "/kid/more",
+    "title": "More",
+    "buttons": [
+      "Off",
+      "On",
+      "Appearance",
+      "Sign out",
+      "Open full chat ↗",
+      "Close Penny",
+      "New chat",
+      "Cancel",
+      "Helpful",
+      "Not helpful",
+      "Copy"
+    ],
+    "links": [
+      {
+        "to": "/kid/goals",
+        "label": "Tabung"
+      },
+      {
+        "to": "/kid/loans",
+        "label": "Qard"
+      },
+      {
+        "to": "/kid/card",
+        "label": "Card"
+      },
+      {
+        "to": "/kid/invest",
+        "label": "Invest"
+      },
+      {
+        "to": "/kid/sadaqah",
+        "label": "Sadaqah"
+      },
+      {
+        "to": "/kid/zakat",
+        "label": "Zakat"
+      },
+      {
+        "to": "/kid/history",
+        "label": "Transactions"
+      },
+      {
+        "to": "/kid/missions",
+        "label": "Missions"
+      },
+      {
+        "to": "/kid/rewards",
+        "label": "Rewards"
+      },
+      {
+        "to": "/kid/quiz",
+        "label": "Quizzes"
+      },
+      {
+        "to": "/kid/chat",
+        "label": "Ask Penny"
+      },
+      {
+        "to": "/kid/notifications",
+        "label": "Alerts"
+      },
+      {
+        "to": "/kid/insights",
+        "label": "Insights"
+      }
+    ]
+  },
+  {
     "path": "/kid/notifications",
     "title": "Notifications",
     "buttons": [
@@ -306,6 +336,7 @@ export const PENNY_APP_GUIDE = [
       "Ask Penny why",
       "See results",
       "Next question",
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Cancel",
@@ -355,14 +386,11 @@ export const PENNY_APP_GUIDE = [
   },
   {
     "path": "/kid/transfer",
-    "title": "Transfer Money",
+    "title": "Send",
     "buttons": [
       "Send another",
       "Continue",
-      "Clear",
-      "Back",
-      "Review",
-      "Edit Amount",
+      "Edit transfer",
       "Enter PIN to Confirm",
       "← Cancel and go back",
       "Cancel"
@@ -374,6 +402,7 @@ export const PENNY_APP_GUIDE = [
     "title": "Home",
     "buttons": [
       "Cancel",
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Helpful",
@@ -394,16 +423,16 @@ export const PENNY_APP_GUIDE = [
         "label": "Wallet"
       },
       {
-        "to": "/kid/goals",
-        "label": "Tabung"
+        "to": "/kid/transfer",
+        "label": "Send"
       },
       {
-        "to": "/kid/loans",
-        "label": "Loans"
+        "to": "/kid/insights",
+        "label": "Insights"
       },
       {
-        "to": "/kid/card",
-        "label": "Card"
+        "to": "/kid/more",
+        "label": "More"
       }
     ]
   },
@@ -411,8 +440,6 @@ export const PENNY_APP_GUIDE = [
     "path": "/kid/wallet",
     "title": "Wallet",
     "buttons": [
-      "Hide breakdown",
-      "Show breakdown",
       "Go to Loans",
       "Trying again…",
       "Try again",
@@ -420,24 +447,32 @@ export const PENNY_APP_GUIDE = [
     ],
     "links": [
       {
-        "to": "/kid/history",
-        "label": "History"
+        "to": "/kid/goals",
+        "label": "Tabung savings goal"
+      },
+      {
+        "to": "/kid/loans",
+        "label": "Qard Hasan Outstanding borrowing · active loan"
+      },
+      {
+        "to": "/kid/goals",
+        "label": "Explore Tabung →"
       },
       {
         "to": "/kid/transfer",
         "label": "Transfer"
       },
       {
-        "to": "/kid/insights",
-        "label": "Insights"
+        "to": "/kid/history",
+        "label": "Transactions"
       },
       {
-        "to": "/kid/goals",
-        "label": "Tabung Tabung Savings Account balance"
+        "to": "/kid/invest",
+        "label": "Investment"
       },
       {
-        "to": "/kid/loans",
-        "label": "Qard Hasan active placement(s) 0% interest Outstanding"
+        "to": "/kid/card",
+        "label": "Card"
       },
       {
         "to": "/kid/loans",
@@ -480,10 +515,9 @@ export const PENNY_APP_GUIDE = [
       "Copy code",
       "Done",
       "Create account",
-      "Card frozen",
-      "Child account",
+      "Setup needed",
+      "Set up sign-in",
       "Generate new access code / reset PIN",
-      "Copy Code",
       "Hide card controls",
       "Card controls",
       "Close card controls",
@@ -503,8 +537,20 @@ export const PENNY_APP_GUIDE = [
     ],
     "links": [
       {
+        "to": "/parent/transfer",
+        "label": "Send"
+      },
+      {
         "to": "/parent/approvals",
-        "label": "Review all"
+        "label": "Approve"
+      },
+      {
+        "to": "/parent/reports",
+        "label": "Statements"
+      },
+      {
+        "to": "/parent/approvals",
+        "label": "See all"
       },
       {
         "to": "/parent/approvals",
@@ -513,10 +559,6 @@ export const PENNY_APP_GUIDE = [
       {
         "to": "/parent/approvals",
         "label": "· Reward pts"
-      },
-      {
-        "to": "/parent/approvals",
-        "label": "more waiting"
       },
       {
         "to": "/parent/settings",
@@ -532,7 +574,7 @@ export const PENNY_APP_GUIDE = [
       },
       {
         "to": "/parent/transfer",
-        "label": "Transfer"
+        "label": "Send"
       },
       {
         "to": "/parent/insights",
@@ -560,6 +602,7 @@ export const PENNY_APP_GUIDE = [
     "path": "/parent/penny",
     "title": "Penny",
     "buttons": [
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Cancel",
@@ -581,7 +624,7 @@ export const PENNY_APP_GUIDE = [
       "Add child",
       "Retry",
       "All entries",
-      "Print / Save PDF",
+      "Save PDF",
       "Share to WhatsApp",
       "Send via Email",
       "Retrying…",
@@ -607,25 +650,29 @@ export const PENNY_APP_GUIDE = [
       "Save PIN",
       "Unmute sounds",
       "Mute sounds",
-      "Light mode",
-      "Dark mode",
       "Custom",
       "Retrying…",
       "Try again",
       "Trying again…"
     ],
-    "links": []
+    "links": [
+      {
+        "to": "/parent/penny",
+        "label": "Ask Penny"
+      },
+      {
+        "to": "/parent/reports",
+        "label": "Monthly statements"
+      }
+    ]
   },
   {
     "path": "/parent/transfer",
-    "title": "Transfer",
+    "title": "Send",
     "buttons": [
       "Send another",
       "Continue",
-      "Clear",
-      "Back",
-      "Review",
-      "Edit Amount",
+      "Edit transfer",
       "Enter PIN to Confirm",
       "← Cancel and go back",
       "Cancel"
@@ -643,6 +690,7 @@ export const PENNY_APP_GUIDE = [
       "Help information",
       "Sign in with Google instead",
       "Cancel",
+      "Open full chat ↗",
       "Close Penny",
       "New chat",
       "Helpful",
@@ -664,7 +712,7 @@ export const PENNY_APP_GUIDE = [
       },
       {
         "to": "/parent/transfer",
-        "label": "Transfer"
+        "label": "Send"
       },
       {
         "to": "/parent/insights",
