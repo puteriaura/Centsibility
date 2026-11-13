@@ -267,7 +267,7 @@ Deno.test("penny-ai: page context uses verified screen only and excludes free-fo
   assertEquals(formatPageContext({page:"Insights",detail:"Private text"}), "Current screen: Insights (/kid/insights).");
   for (const value of [null, undefined, "not-an-object", {page:123}, {page:""}, {page:"Invented screen"}]) assertEquals(formatPageContext(value), null);
   const request = buildPennyRequest({message:"Explain this screen.",context:{page:"Card",detail:"Private text"}});
-  assertEquals(request.system.includes("Current screen: Card (/kid/card)."), true);
+  assertEquals(request.system.includes("Current screen: Practice Card (/kid/card)."), true);
   assertEquals(request.system.includes("Private text"), false);
 });
 Deno.test("penny-ai: child safety configuration slot has no default", () => {
