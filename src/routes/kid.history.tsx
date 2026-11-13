@@ -16,7 +16,7 @@ import { sfx } from "@/lib/sounds";
 import { useMoney, Money, MASKED_AMOUNT } from "@/features/privacy";
 
 export const Route = createFileRoute("/kid/history")({
-  head: () => ({ meta: [{ title: "Transaction history | Centsibility" }] }),
+  head: () => ({ meta: [{ title: "Transactions | Centsibility" }] }),
   component: KidHistoryPage,
 });
 

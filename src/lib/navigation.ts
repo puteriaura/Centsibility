@@ -74,7 +74,7 @@ const TITLES: Record<Mode, Array<[string, string]>> = {
     ["/kid/missions", "Missions"],
     ["/kid/quest", "Quest"],
     ["/kid/notifications", "Notifications"],
-    ["/kid/history", "History"],
+    ["/kid/history", "Transactions"],
     ["/kid/sadaqah", "Sadaqah"],
     ["/kid/invest", "Investment"],
   ],

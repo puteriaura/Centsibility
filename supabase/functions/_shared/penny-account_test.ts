@@ -14,6 +14,7 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
   };
   const saved = Object.keys(settings).map(key => [key, Deno.env.get(key)] as const);
   const unexpected: string[] = [];
+  const notifications: unknown[] = [];
   const now = new Date();
   const { thisWeekStartMs, thisMonthStartMs } = getMytDateInfo(now);
   const sessionToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte =>
@@ -25,7 +26,7 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
       value: (handler: (request: Request) => Promise<Response>) => handlers.push(handler),
     });
     for (const [key, value] of Object.entries(settings)) Deno.env.set(key, value);
-    globalThis.fetch = async (input) => {
+    globalThis.fetch = async (input, init) => {
       const url = new URL(input instanceof Request ? input.url : input);
       const query = url.searchParams;
       const path = url.pathname;
@@ -40,7 +41,7 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
           }]);
         }
         if (path === "/rest/v1/kids" && query.get("id") === "eq.kid-a") {
-          return Response.json([{ id: "kid-a", parent_id: "parent-a", balance: "12.34", hashed_pin: "fixture" }]);
+          return Response.json([{ id: "kid-a", parent_id: "parent-a", name: "Demo Saver", balance: "12.34", coins: 100, hashed_pin: "fixture" }]);
         }
         if (path === "/rest/v1/kids" && query.get("parent_id") === "eq.parent-a") {
           return Response.json([
@@ -50,6 +51,13 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
         }
         if (path === "/rest/v1/goals" && query.get("kid_id") === "eq.kid-a") {
           return Response.json(query.get("id") ? [] : [{ target: "25.00", saved: "8.50" }]);
+        }
+        if (["/rest/v1/approvals", "/rest/v1/rewards", "/rest/v1/rpc/kid_request_withdrawal"].includes(path)) {
+          return Response.json(null);
+        }
+        if (path === "/rest/v1/notifications") {
+          notifications.push(input instanceof Request ? await input.json() : JSON.parse(String(init?.body)));
+          return Response.json(null);
         }
         if (path === "/rest/v1/transactions" && query.has("order")) {
           const start = query.getAll("created_at").find(value => value.startsWith("gte."));
@@ -105,6 +113,28 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
       const text = await reply(parent, "Give me an overview of how my kids are doing with their spending and savings habits.");
       assert.match(text, /Demo A: RM12\.34 to spend, RM2\.00 spent this week/);
       assert.match(text, /Demo B: RM56\.78 to spend, RM3\.00 spent this week/);
+    });
+    await t.step("child requests deliver the exact parent notifications", async () => {
+      const requests = [
+        [{ action: "request-approval", kind: "DEPOSIT", amount: 5, reason: "Allowance" },
+          "DEPOSIT", "Demo Saver asked for a deposit of RM5.00: Allowance"],
+        [{ action: "request-approval", kind: "WITHDRAWAL", amount: 5, reason: "Lunch" },
+          "WITHDRAWAL", "Demo Saver asked for a withdrawal of RM5.00: Lunch"],
+        [{ action: "request-loan", amount: 10, reason: "Books", signature: "fixture" },
+          "QARD", "Demo Saver requested a Qard loan of RM10"],
+        [{ action: "request-reward", name: "Test reward", cost: 5 },
+          "REWARD", 'Demo Saver wants "Test reward" (5 🪙)'],
+      ] as const;
+      for (const [request] of requests) {
+        const response = await kid(new Request("https://account-fixture.invalid", {
+          method: "POST",
+          body: JSON.stringify({ ...request, code: sessionToken }),
+        }));
+        assert.equal(response.status, 200);
+      }
+      assert.deepEqual(notifications, requests.map(([, kind, message]) => ({
+        parent_id: "parent-a", kid_id: "kid-a", kind, message, link: "/parent/approvals",
+      })));
     });
     assert.deepEqual(unexpected, [], "Account replies must make no provider or model quota calls");
   } finally {

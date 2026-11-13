@@ -32,7 +32,7 @@ const groups = [
       { to: "/kid/invest", label: "Invest", icon: "trend" },
       { to: "/kid/sadaqah", label: "Sadaqah", icon: "sadaqah" },
       { to: "/kid/zakat", label: "Zakat", icon: "scale" },
-      { to: "/kid/history", label: "History", icon: "history" },
+      { to: "/kid/history", label: "Transactions", icon: "history" },
     ],
   },
   {

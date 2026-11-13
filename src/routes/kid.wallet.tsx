@@ -174,7 +174,7 @@ function KidWallet() {
         {(
           [
             { to: "/kid/transfer", label: "Transfer", icon: "transfer" },
-            { to: "/kid/history", label: "History", icon: "history" },
+            { to: "/kid/history", label: "Transactions", icon: "history" },
             { to: "/kid/invest", label: "Investment", icon: "trend" },
             { to: "/kid/card", label: "Card", icon: "card" },
           ] as const

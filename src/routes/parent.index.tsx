@@ -183,7 +183,7 @@ function ParentHome() {
         hideBalance={isMasked} onToggleHide={() => locked ? openUnlockSheet() : toggleHidden()}
         tag={pendingCount > 0 ? `${pendingCount} to approve` : undefined} />
       <nav className="quick-grid" aria-label="Shortcuts">
-        {[{ to: "/parent/transfer", label: "Send", icon: "send" }, { to: "/parent/approvals", label: "Approve", icon: "approve" }, { to: "/parent/reports", label: "Reports", icon: "reports" }].map(item =>
+        {[{ to: "/parent/transfer", label: "Send", icon: "send" }, { to: "/parent/approvals", label: "Approve", icon: "approve" }, { to: "/parent/reports", label: "Statements", icon: "reports" }].map(item =>
           <Link key={item.label} to={item.to} className="quick-btn" onClick={() => sfx.tap()}><span className="quick-circle"><AppIcon name={item.icon} size={28} /></span><span className="quick-label">{item.label}</span></Link>)}
         <button type="button" className="quick-btn" onClick={openRecruit}><span className="quick-circle"><AppIcon name="userplus" size={28} /></span><span className="quick-label">Add child</span></button>
       </nav>
