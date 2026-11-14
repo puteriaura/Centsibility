@@ -513,5 +513,5 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.increment_quiz_total_correct() FROM PUBLIC, anon, authenticated;
 
 ALTER TABLE public.profiles
-  ADD COLUMN child_privacy_consent_at timestamptz,
-  ADD COLUMN child_privacy_consent_version text;
+  ADD COLUMN IF NOT EXISTS child_privacy_consent_at timestamptz,
+  ADD COLUMN IF NOT EXISTS child_privacy_consent_version text;

@@ -97,9 +97,9 @@ const FREQ_NAMES: Record<string, string> = {
 };
 
 const TIER_DESCS: Record<string, string> = {
-  low: "Can move up to 0.5% each update",
-  medium: "Can move up to 1% each update",
-  high: "Can move up to 2% each update",
+  low: "Can grow up to 1% each update",
+  medium: "Can grow up to 3% each update",
+  high: "Can grow up to 5% each update",
 };
 
 const FREQ_DESCS: Record<string, string> = {
@@ -1116,11 +1116,6 @@ function KidInvest() {
                 <div className="space-y-2">
                   <p className="text-xs text-[var(--text-secondary)]">Your practice savings can only grow.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-secondary)]">Real funds can fall. See Shares in the Market Tracker to learn about risk.</p></details>
                   {tierKeys.map((t) => {
-                    const tierCards: Record<string, string> = {
-                      low: "Low: moves up to 0.5% each update",
-                      medium: "Medium: up to 1%",
-                      high: "High: up to 2%",
-                    };
                     return (
                       <button
                         key={t}
@@ -1133,7 +1128,7 @@ function KidInvest() {
                       >
                         <div className="flex items-center justify-between">
                           <strong className="text-sm text-[var(--ink)]">
-                            {tierCards[t] ?? TIER_NAMES[t] ?? t}
+                            {TIER_NAMES[t] ?? t}: {TIER_DESCS[t]?.toLowerCase()}
                           </strong>
                         </div>
                       </button>

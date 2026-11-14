@@ -53,7 +53,7 @@ import {
 import { FundCard } from "../../src/routes/kid.invest";
 
 describe("T39 investment features", () => {
-  it("the preview minimum can be below the principal", () => {
+  it("the practice fund preview grows within the live low-tier range", () => {
     const preview = getMockEdgeResponse<InvestmentPreviewResponse>(
       "kid-finance",
       {
@@ -64,9 +64,8 @@ describe("T39 investment features", () => {
         amount: 10,
       }
     );
-    // With low tier rate of -0.5% each update, 10 * (1 - 0.005)^5 = ~9.75
-    expect(preview.minValue).toBeLessThan(10);
-    expect(preview.minValue).toBeCloseTo(9.75, 1);
+    expect(preview.maxValue).toBe(10.51);
+    expect(preview.minValue).toBe(10.05);
   });
 
   it("the card shows Protected only for protected funds", () => {

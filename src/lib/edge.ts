@@ -434,9 +434,9 @@ export function getMockEdgeResponse<T>(
       const lockTicks = Number(body.lockTicks || 5);
       const amount = Number(body.amount || 10);
       const rates: Record<string, [number, number]> = {
-        low: [-0.005, 0.005],
-        medium: [-0.01, 0.01],
-        high: [-0.02, 0.02],
+        low: [0.001, 0.01],
+        medium: [0.001, 0.03],
+        high: [0, 0.05],
       };
       const [lo, hi] = rates[tier] || rates.low;
       const minVal = amount * Math.pow(1 + lo, lockTicks);
@@ -467,7 +467,7 @@ export function getMockEdgeResponse<T>(
         },
       ];
       const sampleRates = [
-        -0.004, -0.003, -0.002, -0.004, 0.001, -0.002, -0.003,
+        0.004, 0.003, 0.002, 0.004, 0.001, 0.002, 0.003,
       ];
       for (let k = 1; k <= elapsed; k++) {
         const rate = sampleRates[(k - 1) % sampleRates.length];

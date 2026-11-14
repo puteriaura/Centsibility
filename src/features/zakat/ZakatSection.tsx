@@ -103,11 +103,11 @@ export function ZakatSection() {
             )}
           </p>
           <p
-            className="deposit-hero__link"
-            style={{ cursor: "default", textDecoration: "none" }}
+            className="m-0 text-sm leading-snug"
           >
-            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ. Rate{" "}
-            {(ZAKAT_RATE * 100).toFixed(1)}%
+            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ.
+          </p>
+          <p className="m-0 text-sm">Rate {(ZAKAT_RATE * 100).toFixed(1)}%
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">
