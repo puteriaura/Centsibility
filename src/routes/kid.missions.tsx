@@ -10,9 +10,14 @@ import { getKidSession } from "@/lib/kid-session";
 import { isKidBypassed } from "@/lib/admin-bypass";
 import {
   edgeKidQuestBoard,
+  edgeKidCompleteChore,
   extractEdgeErrorMessage,
   type QuestNode,
 } from "@/lib/edge";
+import { toast } from "sonner";
+import { Money } from "@/features/privacy";
+import { useTheme } from "@/lib/theme";
+import { getKidCopy } from "@/lib/i18n";
 import { sfx } from "@/lib/sounds";
 import { RewardsPanel } from "@/features/kid/RewardsPanel";
 import { StreakBadge } from "@/components/StreakBadge";
@@ -32,7 +37,26 @@ export const Route = createFileRoute("/kid/missions")({
 function KidMissionsPage() {
   const { tab = "quests" } = Route.useSearch();
   const navigate = useNavigate();
+  const { lang } = useTheme();
   const { data: kidState, loading: kidLoading, refresh } = useKidData();
+  const copy = getKidCopy(lang, kidState?.ageGroup);
+  const [choreBusyId, setChoreBusyId] = useState<string | null>(null);
+
+  const handleMarkChoreDone = async (choreId: string) => {
+    const code = getKidSession()?.code || (isKidBypassed() ? "demo-code" : "");
+    if (!code) return;
+    setChoreBusyId(choreId);
+    try {
+      await edgeKidCompleteChore({ code, choreId });
+      sfx.success();
+      toast.success("Chore marked done! Waiting for parent.");
+      await refresh();
+    } catch (err) {
+      toast.error(await extractEdgeErrorMessage(err));
+    } finally {
+      setChoreBusyId(null);
+    }
+  };
 
   const [quests, setQuests] = useState<QuestNode[]>([]);
   const [boardAgeGroup, setBoardAgeGroup] = useState<string>("10-12");
@@ -211,7 +235,44 @@ function KidMissionsPage() {
               </button>
             </Card>
           ) : (
-            <div className="space-y-3" aria-label="Quest track">
+            <div className="space-y-4">
+              {(kidState?.chores?.length ?? 0) > 0 && (
+                <section aria-label={copy.choresTitle} className="space-y-2.5">
+                  <h2 className="text-sm font-bold text-[var(--ink)] m-0">{copy.choresTitle}</h2>
+                  {kidState!.chores!.map((chore) => (
+                    <Card key={chore.id} className="p-3.5 border border-[var(--border)] flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[var(--ink)] truncate m-0">{chore.title}</p>
+                        <p className="text-xs font-semibold text-[var(--text-2)] m-0">
+                          <Money amount={Number(chore.amount)} /> ·{" "}
+                          {chore.status === "OPEN"
+                            ? copy.open
+                            : chore.status === "DONE"
+                              ? copy.waitingParent
+                              : chore.status === "APPROVED"
+                                ? copy.approved
+                                : copy.declined}
+                        </p>
+                      </div>
+                      {chore.status === "OPEN" ? (
+                        <button
+                          type="button"
+                          disabled={choreBusyId === chore.id}
+                          onClick={() => void handleMarkChoreDone(chore.id)}
+                          className="min-h-[44px] shrink-0 rounded-xl bg-[#DDC518] px-3.5 py-2 text-xs font-bold text-[#262101]"
+                        >
+                          {choreBusyId === chore.id ? "Saving..." : copy.markDone}
+                        </button>
+                      ) : (
+                        <Badge variant={chore.status === "APPROVED" ? "success" : "default"}>
+                          {chore.status === "DONE" ? "Pending" : chore.status === "APPROVED" ? "Paid" : "Declined"}
+                        </Badge>
+                      )}
+                    </Card>
+                  ))}
+                </section>
+              )}
+              <div className="space-y-3" aria-label="Quest track">
               {quests.map((q, idx) => {
                 const isLocked = q.status === "locked";
                 const isDone = q.status === "done";
@@ -299,6 +360,7 @@ function KidMissionsPage() {
                   </Link>
                 );
               })}
+            </div>
             </div>
           )}
         </div>

@@ -19,6 +19,11 @@ import { formatDate, formatRM } from "@/lib/format";
 import { computeQardPayout } from "@/lib/qard";
 import { useMoneyAction } from "@/hooks/use-money-action";
 import { Money } from "@/features/privacy";
+import { LessonCard } from "@/components/LessonCard";
+import { Term } from "@/components/ui/Term";
+import { SpeakButton } from "@/components/ui/SpeakButton";
+import { useTheme } from "@/lib/theme";
+import { getKidCopy } from "@/lib/i18n";
 
 export const Route = createFileRoute("/kid/loans")({
   head: () => ({ meta: [{ title: "My Loans | Centsibility" }] }),
@@ -28,6 +33,7 @@ export const Route = createFileRoute("/kid/loans")({
 function KidLoans() {
   const { data, loading, error, refresh } = useKidData();
   const [active, setActive] = useState<string | null>(null);
+  const [showLoanLesson, setShowLoanLesson] = useState(false);
   const [selectedTab, setSelectedTab] = useState<"active" | "closed">("active");
 
   const [requesting, setRequesting] = useState(false);
@@ -38,6 +44,7 @@ function KidLoans() {
   const [signStep, setSignStep] = useState(false);
 
   const { busy, run } = useMoneyAction();
+  const { lang } = useTheme();
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -49,6 +56,7 @@ function KidLoans() {
     );
   }
   const code = getKidSession()?.code;
+  const copy = getKidCopy(lang, data.ageGroup ?? "10-12");
   const kidBalance = Number(data.kid.balance);
 
   const activeLoans = data.loans.filter(
@@ -81,6 +89,7 @@ function KidLoans() {
       failure: "Repayment didn't go through",
       onSuccess: () => {
         setActive(null);
+        setShowLoanLesson(true);
       },
       refresh,
     });
@@ -124,7 +133,7 @@ function KidLoans() {
     <div className="space-y-4 pb-12">
       <section className="deposit-hero" aria-label="Loan balance">
         <div className="deposit-hero__copy">
-          <p className="deposit-hero__label">Loan balance</p>
+          <p className="deposit-hero__label">{copy.outstandingBorrowing}</p>
           <p className="deposit-hero__amount tabular-nums">
             <Money amount={totalOutstanding} />
           </p>
@@ -132,13 +141,20 @@ function KidLoans() {
             className="deposit-hero__link"
             style={{ cursor: "default", textDecoration: "none" }}
           >
-            Trust {data.kid.trust_score} · 0% interest (Halal)
+            Trust {data.kid.trust_score} · 0% interest (<Term termKey="qard_hasan" />, <Term termKey="amanah" />)
           </p>
         </div>
-        <div className="deposit-hero__mascot" aria-hidden="true">
-          <AppIcon name="loan" size={32} color="#fff" />
+        <div className="flex flex-col items-end gap-2">
+          <div className="deposit-hero__mascot" aria-hidden="true">
+            <AppIcon name="loan" size={32} color="#fff" />
+          </div>
+          <SpeakButton text="Qard Hasan is an interest-free loan. Repaying on time keeps your amanah." />
         </div>
       </section>
+
+      {showLoanLesson && (
+        <LessonCard kind="qard" onDone={() => setShowLoanLesson(false)} />
+      )}
 
       <div className="segment-tabs" role="tablist" aria-label="Loan status">
         <button

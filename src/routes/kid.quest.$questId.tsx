@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
+import { SpeakButton } from "@/components/ui/SpeakButton";
 import { SuccessState } from "@/components/SuccessState";
 import { getKidSession } from "@/lib/kid-session";
 import { isKidBypassed } from "@/lib/admin-bypass";
@@ -301,9 +302,12 @@ function KidQuestRunnerPage() {
 
       {/* Question Card */}
       <Card variant="default" className="p-5 sm:p-6 border border-[var(--border)] space-y-5">
-        <h2 className="text-base sm:text-lg font-bold text-[var(--ink)] leading-snug m-0">
-          {currentQ.prompt}
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-base sm:text-lg font-bold text-[var(--ink)] leading-snug m-0">
+            {currentQ.prompt}
+          </h2>
+          <SpeakButton text={currentQ.prompt} className="shrink-0" />
+        </div>
 
         {/* Choice Buttons */}
         <div className="space-y-2.5" role="radiogroup" aria-label="Choices">

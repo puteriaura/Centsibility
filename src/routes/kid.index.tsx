@@ -15,6 +15,11 @@ import { edgeKidUpdateProfile, edgeKidUploadAvatar } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { FeatureIcon } from "@/components/FeatureIcon";
 import { PennyMascot } from "@/components/PennyMascot";
+import { SproutIllustration, getSproutStage } from "@/components/SproutIllustration";
+import { useTheme } from "@/lib/theme";
+import { getKidCopy } from "@/lib/i18n";
+import { SpeakButton } from "@/components/ui/SpeakButton";
+import { Term } from "@/components/ui/Term";
 import { ImageUploadCrop } from "@/components/ImageUploadCrop";
 import { toast } from "sonner";
 import { AvatarBubble } from "@/components/AvatarBubble";
@@ -35,12 +40,6 @@ import {
 // Home order follows the AEON pattern: balance first, then shortcuts, then
 // anything waiting on the kid, one promotion, the month, recent activity.
 // Dock items (Wallet, Loans, Card) and Penny (header) are not repeated here.
-const SHORTCUTS: Array<{ to: string; label: string; icon: string }> = [
-  { to: "/kid/transfer", label: "Send", icon: "send" },
-  { to: "/kid/goals", label: "Tabung", icon: "tabung" },
-  { to: "/kid/wallet", label: "Request", icon: "ask" },
-  { to: "/kid/more", label: "More", icon: "more" },
-];
 
 export const Route = createFileRoute("/kid/")({
   validateSearch: (search: Record<string, unknown>): { profile?: boolean } => ({ profile: search.profile === true || search.profile === "true" ? true : undefined }),
@@ -51,7 +50,8 @@ export const Route = createFileRoute("/kid/")({
 function KidHome() {
   const nav = useNavigate();
   const { profile } = Route.useSearch();
-  const { data, loading, error, refresh } = useKidData();
+  const { lang } = useTheme();
+  const { data, loading, error, refresh, pennyMood } = useKidData();
 
   const [showProfile, setShowProfile] = useState(false);
   const [pBio, setPBio] = useState("");
@@ -142,6 +142,15 @@ function KidHome() {
     }
   };
 
+  const ageGroup = data.ageGroup ?? "10-12";
+  const copy = getKidCopy(lang, ageGroup);
+  const shortcuts = [
+    { to: "/kid/transfer", label: copy.send, key: "send" },
+    { to: "/kid/goals", label: copy.goals, key: "tabung" },
+    { to: "/kid/wallet", label: copy.askForMoney, key: "request" },
+    { to: "/kid/more", label: copy.more, key: "more" },
+  ];
+
   const activeLoans = data.loans.filter(
     (l: (typeof data.loans)[number]) => l.status === "active",
   );
@@ -158,17 +167,38 @@ function KidHome() {
 
   return (
     <>
-      <h1 className="sr-only">Home</h1>
+      <h1 className="sr-only">{copy.home}</h1>
       <div className="page-split">
       <div className="page-split__summary">
       <DailyWelcome kidId={k.id} streak={Number(k.streak) || 0} incoming={incoming} />
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <Badge variant="default">Ages {ageGroup}</Badge>
+        <div className="flex items-center gap-2">
+          <PennyMascot state={pennyMood} size={44} />
+          <SpeakButton text={`${copy.myBalance} RM${(summary.total ?? 0).toFixed(2)}. ${copy.spendLabel} RM${summary.spending.toFixed(2)}.`} />
+        </div>
+      </div>
       <BalanceCard
-        className="home-balance"
-        title="My balance"
+        className={`home-balance ${ageGroup === "6-9" ? "home-balance--young" : ""}`}
+        title={copy.myBalance}
         balance={summary.total}
         confirmed={!loading && !error}
-        subtitle={<><Money amount={summary.spending} /> to spend</>}
-        tag={incoming > 0 ? <><Money amount={incoming} sign /> this week</> : undefined}
+        subtitle={
+          ageGroup === "13-17" ? (
+            <>
+              {copy.spendLabel} <Money amount={summary.spending} /> · {copy.tabungLabel} <Money amount={summary.tabung} />
+            </>
+          ) : (
+            <><Money amount={summary.spending} /> to spend</>
+          )
+        }
+        tag={
+          ageGroup === "6-9"
+            ? undefined
+            : incoming > 0
+              ? <><Money amount={incoming} sign /> this week</>
+              : undefined
+        }
         hideBalance={isMasked}
         onToggleHide={() => {
           if (locked) openUnlockSheet();
@@ -176,27 +206,56 @@ function KidHome() {
         }}
       />
 
-      <nav className="quick-grid" aria-label="Shortcuts">
-        {SHORTCUTS.map((item) => (
-          <Link
-            key={item.label}
-            to={item.to}
-            onClick={() => sfx.tap()}
-            className="quick-btn"
-          >
-            <span className="quick-circle">
-              <FeatureIcon
-                feature={
-                  item.label.toLowerCase() as React.ComponentProps<
-                    typeof FeatureIcon
-                  >["feature"]
-                }
-              />
-            </span>
-            <span className="quick-label">{item.label}</span>
+      {ageGroup === "6-9" ? (
+        <div className="space-y-2 mt-3">
+          <nav className="grid grid-cols-2 gap-2.5" aria-label="Shortcuts">
+            {shortcuts.map((item) => (
+              <Link
+                key={item.key}
+                to={item.to}
+                onClick={() => sfx.tap()}
+                className="flex min-h-[72px] items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-3 py-3 font-display text-base font-bold text-[var(--ink)] shadow-sm"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <p className="text-xs text-[var(--text-2)]">{copy.tapSpeakerHint}</p>
+        </div>
+      ) : (
+        <nav className="quick-grid" aria-label="Shortcuts">
+          {shortcuts.map((item) => (
+            <Link
+              key={item.key}
+              to={item.to}
+              onClick={() => sfx.tap()}
+              className="quick-btn"
+            >
+              <span className="quick-circle">
+                <FeatureIcon
+                  feature={
+                    item.key as React.ComponentProps<
+                      typeof FeatureIcon
+                    >["feature"]
+                  }
+                />
+              </span>
+              <span className="quick-label">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      )}
+
+      {ageGroup === "13-17" && (
+        <div className="mt-3 flex items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-xs">
+          <span className="font-semibold text-[var(--text-2)]">
+            {copy.insights}: {copy.spendLabel} <Money amount={summary.spending} /> · {copy.tabungLabel} <Money amount={summary.tabung} />
+          </span>
+          <Link to="/kid/insights" className="font-bold text-[var(--action-text)] underline">
+            View
           </Link>
-        ))}
-      </nav>
+        </div>
+      )}
 
       <div className="home-tiles">
         <Card className="home-tile">
@@ -206,14 +265,12 @@ function KidHome() {
         </Card>
         <Link to="/kid/goals" className="home-tile home-goal" onClick={() => sfx.tap()}>
           {topGoal ? <>
-            <small>{topGoal.name}</small>
+            <small>{topGoal.name} · {getSproutStage(goalPercent).label}</small>
             <strong><Money amount={Number(topGoal.saved)} /> / <Money amount={Number(topGoal.target)} /></strong>
-            <svg className="home-goal-ring" viewBox="0 0 66 66" role="img" aria-label={`${goalPercent}% saved`}>
-              <circle cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--blue-100)" }} strokeWidth="9" />
-              <circle className="motion-ring" cx="33" cy="33" r="26" fill="none" style={{ stroke: "var(--goal-progress)", "--progress-offset": 164 * (1 - goalPercent / 100) } as React.CSSProperties} strokeWidth="9" strokeLinecap="round" strokeDasharray="164" transform="rotate(-90 33 33)" />
-              <text x="33" y="38" textAnchor="middle">{goalPercent}%</text>
-            </svg>
-          </> : <><small>Tabung</small><strong>Start a goal</strong><AppIcon name="sprout" size={48} /></>}
+            <div className="mt-1 flex items-center justify-center">
+              <SproutIllustration pct={goalPercent} size={56} />
+            </div>
+          </> : <><small><Term termKey="tabung" /></small><strong>{copy.saveForGoal}</strong><SproutIllustration pct={0} size={52} /></>}
         </Link>
       </div>
 

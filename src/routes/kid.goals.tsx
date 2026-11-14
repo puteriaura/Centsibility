@@ -30,6 +30,10 @@ import { Money, HideAmountsButton, useMoney } from "@/features/privacy";
 
 import { useMoneyAction } from "@/hooks/use-money-action";
 import { PennyMascot } from "@/components/PennyMascot";
+import { SproutIllustration, getSproutStage } from "@/components/SproutIllustration";
+import { LessonCard } from "@/components/LessonCard";
+import { Term } from "@/components/ui/Term";
+import { SpeakButton } from "@/components/ui/SpeakButton";
 
 export const Route = createFileRoute("/kid/goals")({
   head: () => ({ meta: [{ title: "Tabung | Centsibility" }] }),
@@ -79,6 +83,8 @@ function KidGoals() {
   const [showAdd, setShowAdd] = useState(false);
   const [showHeroInfo, setShowHeroInfo] = useState(false);
   const [selectedRing, setSelectedRing] = useState<string | null>(null);
+  const [celebratedGoalId, setCelebratedGoalId] = useState<string | null>(null);
+  const [showTabungLesson, setShowTabungLesson] = useState(false);
 
   const [newName, setNewName] = useState("");
   const [newTarget, setNewTarget] = useState("");
@@ -121,6 +127,9 @@ function KidGoals() {
       },
       onSuccess: () => {
         setActiveGoal(null);
+        setCelebratedGoalId(goalId);
+        setShowTabungLesson(true);
+        window.setTimeout(() => setCelebratedGoalId((cur) => (cur === goalId ? null : cur)), 1100);
       },
       refresh,
     });
@@ -339,12 +348,16 @@ function KidGoals() {
             </figure>;
           })}
         </div>}
+        {showTabungLesson && (
+          <LessonCard kind="tabung" onDone={() => setShowTabungLesson(false)} />
+        )}
         {/* 3. One card per Tabung */}
         {data.goals.map((g: (typeof data.goals)[number], index: number) => {
           const pct = Math.min(
             100,
             Math.round((Number(g.saved) / Number(g.target)) * 100),
           );
+          const sprout = getSproutStage(pct);
           const remaining = Math.max(0, Number(g.target) - Number(g.saved));
           const complete = pct >= 100;
           const isEditing = editingId === g.id;
@@ -371,12 +384,16 @@ function KidGoals() {
                 aria-expanded={isExpanded}
                 aria-controls={`tabung-actions-${g.id}`}
               >
-                {/* Left: 64px rounded square with soft tint */}
+                {/* Left: Sprout stage illustration */}
                 <div
                   className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
                   style={{ background: SOFT_TINTS[index % SOFT_TINTS.length] }}
                 >
-                  <AppIcon name={iconName(g.emoji || "Target")} size={28} />
+                  <SproutIllustration
+                    pct={pct}
+                    celebrate={celebratedGoalId === g.id}
+                    size={60}
+                  />
                 </div>
 
                 {/* Right: name, RM saved/target, 6px progress bar */}
@@ -385,7 +402,11 @@ function KidGoals() {
                     <h2 className="text-base font-bold text-[var(--ink)] leading-snug truncate m-0">
                       {g.name}
                     </h2>
-                    {complete && <Badge variant="success">Full</Badge>}
+                    {complete ? (
+                      <Badge variant="success">Bloom · 100%</Badge>
+                    ) : (
+                      <Badge variant="default">{sprout.label}</Badge>
+                    )}
                   </div>
 
                   <div className="mt-1">

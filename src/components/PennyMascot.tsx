@@ -21,13 +21,26 @@ export const PENNY_POSES = {
 } as const;
 export type PennyPose = keyof typeof PENNY_POSES;
 export type PennyState =
-  PennyPose | "idle" | "thinking" | "sleepy" | "oops" | "saving";
+  | PennyPose
+  | "idle"
+  | "thinking"
+  | "sleepy"
+  | "oops"
+  | "saving"
+  | "money_in"
+  | "goal_reached"
+  | "declined"
+  | "streak_at_risk";
 const aliases = {
   idle: "neutral",
   thinking: "attentive",
   sleepy: "neutral",
   oops: "unavailable",
   saving: "saved",
+  money_in: "happy",
+  goal_reached: "celebrate",
+  declined: "unavailable",
+  streak_at_risk: "neutral",
 } as const;
 export const pennyPose = (state: PennyState): PennyPose =>
   state in aliases
@@ -234,6 +247,26 @@ export function PennyMascot({
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
+              </g>
+            )}
+            {state === "goal_reached" && (
+              <g data-prop="sparkles" aria-hidden="true">
+                <path d="M25 32L28 24L31 32L39 35L31 38L28 46L25 38L17 35Z" fill="#DDC518" />
+                <path d="M132 28L134 22L136 28L142 30L136 32L134 38L132 32L126 30Z" fill="#A0B0DA" />
+                <path d="M136 74L138 69L140 74L145 76L140 78L138 83L136 78L131 76Z" fill="#DDC518" />
+              </g>
+            )}
+            {state === "streak_at_risk" && (
+              <g data-prop="sleep-z" fill="#58677E" fontSize="14" fontWeight="700" aria-hidden="true">
+                <text x="122" y="34">z</text>
+                <text x="134" y="22" fontSize="11">z</text>
+              </g>
+            )}
+            {state === "thinking" && (
+              <g data-prop="thinking-dots" fill="#47629A" aria-hidden="true">
+                <circle cx="122" cy="30" r="3" />
+                <circle cx="131" cy="24" r="3.5" />
+                <circle cx="141" cy="18" r="4" />
               </g>
             )}
           </motion.g>

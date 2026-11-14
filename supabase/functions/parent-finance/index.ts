@@ -124,6 +124,12 @@ Deno.serve(async (req: Request) => {
         return await handleKidInvestments(adminClient, parentId, params);
       case "set-market-tracker":
         return await handleSetMarketTracker(adminClient, parentId, params);
+      case "list-chores":
+        return await handleListChores(adminClient, parentId);
+      case "create-chore":
+        return await handleCreateChore(adminClient, parentId, params);
+      case "resolve-chore":
+        return await handleResolveChore(adminClient, parentId, params);
       default:
         return jsonError(`Unknown action: ${action}`, 400);
     }
@@ -168,6 +174,8 @@ const PIN_GATED_ACTIONS = new Set([
   "reset-kid-pin",
   "penny-chat",
   "set-market-tracker",
+  "create-chore",
+  "resolve-chore",
 ]);
 
 async function issuePinSession(admin: Admin, parentId: string): Promise<{ pinSession: string; pinSessionExpiresAt: string }> {
@@ -976,4 +984,60 @@ async function handleKidInvestments(
   }
 
   return jsonOk({ investmentsByKid: byKid, byKid });
+}
+
+async function handleListChores(admin: Admin, parentId: string) {
+  const { data, error } = await admin
+    .from("chores")
+    .select("id, kid_id, title, amount, status, completed_at, resolved_at, created_at")
+    .eq("parent_id", parentId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) return jsonError("Failed to fetch chores", 500);
+  return jsonOk({ chores: data ?? [] });
+}
+
+async function handleCreateChore(admin: Admin, parentId: string, params: Record<string, unknown>) {
+  const kid = await verifyKidOwnership(admin, String(params.kidId ?? ""), parentId, "id");
+  const title = typeof params.title === "string" ? params.title.trim() : "";
+  if (title.length < 1 || title.length > 80) return jsonError("Chore title must be 1 to 80 characters", 400);
+  if (!validAmount(params.amount, 0.5, 10000)) return jsonError("Invalid chore amount", 400);
+
+  const { data, error } = await admin.rpc("parent_create_chore", {
+    p_parent_id: parentId,
+    p_kid_id: kid.id,
+    p_title: title,
+    p_amount: Number(params.amount),
+  });
+  if (error) {
+    const msg = error.message || "";
+    if (msg.includes("invalid_title") || msg.includes("invalid_amount")) return jsonError("Invalid chore details", 400);
+    if (msg.includes("not_found")) return jsonError("Not found", 404);
+    return jsonError("Could not create chore", 500);
+  }
+  return jsonOk({ chore: data });
+}
+
+async function handleResolveChore(admin: Admin, parentId: string, params: Record<string, unknown>) {
+  const choreId = typeof params.choreId === "string" ? params.choreId.trim() : "";
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(choreId)) {
+    return jsonError("Invalid chore ID", 400);
+  }
+  const decision = typeof params.decision === "string" ? params.decision.trim().toUpperCase() : "";
+  if (decision !== "APPROVED" && decision !== "DECLINED") {
+    return jsonError("Invalid decision", 400);
+  }
+
+  const { data, error } = await admin.rpc("parent_resolve_chore", {
+    p_parent_id: parentId,
+    p_chore_id: choreId,
+    p_decision: decision,
+  });
+  if (error) {
+    const msg = error.message || "";
+    if (msg.includes("not_found")) return jsonError("Not found", 404);
+    if (msg.includes("already_resolved")) return jsonError("Already resolved", 409);
+    return jsonError("Could not resolve chore", 500);
+  }
+  return jsonOk({ chore: data });
 }

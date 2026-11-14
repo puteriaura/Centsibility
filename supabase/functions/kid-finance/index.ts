@@ -254,6 +254,7 @@ Deno.serve(async (req: Request) => {
       case "penny-chat":       return await handlePennyChat(admin, params, requestId);
       case "transfer-recipients": return await handleTransferRecipients(admin, params, requestId);
       case "transfer":         return await handleTransfer(admin, params, requestId);
+      case "complete-chore":   return await handleCompleteChore(admin, params, requestId);
       case "unlock":           return await handleUnlock(admin, params, requestId);
       case "pin-status": {
         const kid = await getKid(admin, params.code, requestId);
@@ -450,7 +451,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
   const { data: refKid } = await admin.from("kids").select("balance").eq("id", kid.id).maybeSingle();
   if (refKid) kid.balance = refKid.balance;
 
-  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes, investRes, hibahRes] = await Promise.all([
+  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes, investRes, hibahRes, choresRes] = await Promise.all([
     admin.from("goals").select("*").eq("kid_id", kid.id).order("created_at"),
     admin.from("transactions").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(100),
     admin.from("rewards").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }),
@@ -464,6 +465,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     currentInvestmentValues(admin, kid.id),
     admin.from("scheduled_hibahs").select("amount, next_run_at").eq("kid_id", kid.id)
       .eq("is_active", true).order("next_run_at").limit(1).maybeSingle(),
+    admin.from("chores").select("id, title, amount, status, completed_at, resolved_at, created_at").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(50),
   ]);
 
   const investmentsValue = investRes.totalValue;
@@ -487,6 +489,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     notifications: notificationsRes.data ?? [],
     unreadNotifications: unreadRes.count ?? 0,
     nextHibah: hibahRes.data ?? null,
+    chores: choresRes.data ?? [],
     investmentsValue: investmentsValue === null ? null : Number(investmentsValue.toFixed(2)),
   });
 }
@@ -1232,4 +1235,17 @@ async function handleTransfer(admin: Admin, params: Record<string, unknown>, req
   } else {
     return jsonError("Invalid recipient type", 400);
   }
+}
+
+async function handleCompleteChore(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId);
+  const choreId = typeof params.choreId === "string" ? params.choreId.trim() : "";
+  if (!UUID_RE.test(choreId)) return jsonError("Invalid chore ID", 400);
+
+  const { data, error } = await admin.rpc("kid_complete_chore", {
+    p_kid_id: kid.id,
+    p_chore_id: choreId,
+  });
+  if (error) return handleRpcError(error);
+  return jsonOk({ chore: data });
 }

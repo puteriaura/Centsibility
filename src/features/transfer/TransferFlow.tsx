@@ -7,6 +7,8 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import { NumericKeypad, PIN_KEYPAD_KEYS } from "@/components/ui/numeric-keypad";
 import { SuccessState } from "@/components/SuccessState";
+import { motion } from "framer-motion";
+import { useTheme } from "@/lib/theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMoneyAction } from "@/hooks/use-money-action";
 import { usePinStatus } from "@/hooks/use-pin-status";
@@ -64,6 +66,7 @@ export function TransferFlow({
 
   // Compose, review, then PIN authorization. Composition never moves money.
   const [step, setStep] = useState<1 | 3 | 4>(1);
+  const { reduced } = useTheme();
   const attemptStatus = usePinStatus(mode, step === 4);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -313,12 +316,67 @@ export function TransferFlow({
   // Success view
   if (isSuccess) {
     const amountNum = amountValidation.amount || Number(rawAmount) || 0;
+    const initial = (recipientName || "R").trim().charAt(0).toUpperCase();
 
     return (
-      <div className="py-6 px-4 max-w-md mx-auto space-y-3">
+      <div className="py-6 px-4 max-w-md mx-auto space-y-4">
+        <div className="relative flex flex-col items-center justify-between gap-4 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-5">
+          <div className="flex w-full items-center justify-between text-xs font-semibold text-[var(--text-2)]">
+            <span>From you</span>
+            <span>Confirmed</span>
+          </div>
+
+          <motion.div
+            initial={reduced ? { opacity: 0 } : { scale: 1, y: 0, opacity: 1 }}
+            animate={
+              reduced
+                ? { opacity: 1 }
+                : {
+                    scale: [1, 1.08, 0.5],
+                    y: [0, -6, 54],
+                    opacity: [1, 1, 0],
+                  }
+            }
+            transition={
+              reduced
+                ? { duration: 0.12 }
+                : { duration: 0.54, times: [0, 0.22, 1], ease: [0.22, 1, 0.36, 1] }
+            }
+            className="rounded-full bg-[#DDC518] px-4 py-1.5 text-sm font-extrabold text-[#262101]"
+          >
+            RM{amountNum.toFixed(2)}
+          </motion.div>
+
+          <div className="relative flex items-center gap-3">
+            {!reduced && (
+              <motion.span
+                initial={{ scale: 0.8, opacity: 0.8 }}
+                animate={{ scale: 1.5, opacity: 0 }}
+                transition={{ delay: 0.42, duration: 0.5, ease: "easeOut" }}
+                className="pointer-events-none absolute left-0 h-11 w-11 rounded-full border-2 border-[#0E7A4E]"
+                aria-hidden="true"
+              />
+            )}
+            <motion.div
+              initial={reduced ? false : { scale: 1 }}
+              animate={reduced ? undefined : { scale: [1, 1.12, 1] }}
+              transition={{ delay: 0.42, type: "spring", stiffness: 195, damping: 20.1 }}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E6F4EC] font-display text-base font-extrabold text-[#0E7A4E]"
+            >
+              {initial}
+            </motion.div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-[var(--ink)]">{recipientName}</p>
+              <p className="text-xs font-semibold text-[#0E7A4E]">
+                Received RM{amountNum.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <SuccessState
-          title="Transfer sent!"
-          detail={`RM${amountNum.toFixed(2)} is now in ${recipientName}'s account.`}
+          title="Sent!"
+          detail={`RM${amountNum.toFixed(2)} is now with ${recipientName}.`}
           buttonText="Done"
           onAction={handleFinish}
         />

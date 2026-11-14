@@ -1,6 +1,9 @@
+import { StreakLevelCard } from "@/components/StreakLevelCard";
+import { useTheme } from "@/lib/theme";
+import { getKidCopy } from "@/lib/i18n";
 import { InstallHint } from "@/components/InstallHint";
 import { Skeleton } from "@/components/ui/skeleton";
-import { kidLevel } from "@/lib/kid-level";
+import { kidLevel, levelNameFor } from "@/lib/kid-level";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { usePenny } from "@/features/penny";
@@ -44,17 +47,20 @@ const groups = [
   {
     title: "Help and activity",
     items: [
-      { to: "/kid/history", label: "Transactions", icon: "history" },
+      { to: "/kid/history", label: "History", icon: "history" },
       { to: "/kid/chat", label: "Ask Penny", icon: "chat" },
-      { to: "/kid/notifications", label: "Alerts", icon: "bell" },
+      { to: "/kid/notifications", label: "Notifications", icon: "bell" },
     ],
   },
 ] as const;
 
 function KidMore() {
+  const { lang } = useTheme();
   const { data, refresh } = useKidData();
   const { openPenny } = usePenny();
   const { level, progress } = kidLevel(data?.kid);
+  const name = levelNameFor(level);
+  const copy = getKidCopy(lang, data?.ageGroup);
   const { busy, run } = useMoneyAction();
   const [muted, setMuted] = useState(isMuted());
   const [preferences, setPreferences] = useState(false);
@@ -70,10 +76,25 @@ function KidMore() {
   return (
     <div className="settings-groups">
       <InstallHint />
-      {data ? <Card variant="brand" className="more-level balance-hero">
-        <p>Level {level}</p><strong>{Number(data?.kid.coins) || 0} points</strong>
-        {progress !== null && <><Progress value={progress} indicatorColor="var(--on-brand-card)" /><small>{100 - progress} XP to Level {level + 1}</small></>}
-      </Card> : <Skeleton style={{ height: 120, borderRadius: 26 }} />}
+      {data ? (
+        <>
+          <Card variant="brand" className="more-level balance-hero">
+            <p>Level {level} · {name}</p><strong>{Number(data?.kid.coins) || 0} points</strong>
+            {progress !== null && <><Progress value={progress} indicatorColor="var(--on-brand-card)" /><small>{100 - progress} XP to Level {level + 1}</small></>}
+          </Card>
+          <StreakLevelCard
+            streak={Number(data.kid.streak ?? 0)}
+            xp={Number(data.kid.xp ?? 0)}
+            level={data.kid.level}
+            hasFreeze={Number(data.questsCompleted ?? 0) > 0}
+          />
+          {lang === "ms" && (
+            <p className="text-xs font-semibold text-[var(--text-2)]">
+              {copy.tapSpeakerHint}
+            </p>
+          )}
+        </>
+      ) : <Skeleton style={{ height: 120, borderRadius: 26 }} />}
       {unclaimed > 0 && (
         <Button
           onClick={claim}
