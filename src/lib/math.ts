@@ -1,3 +1,5 @@
+import { NISAB } from "./nisab";
+
 export function calculateInvestmentGrowth(
   principal: number,
   rate: number,
@@ -47,7 +49,7 @@ export function calculateLoanRepayment(
   return { newRepaid, fullyRepaid };
 }
 
-export const DEFAULT_NISAB = 22000;
+export const DEFAULT_NISAB = NISAB.amount;
 export const DEFAULT_ZAKAT_RATE = 0.025;
 
 export function calculateZakat(

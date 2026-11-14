@@ -1,3 +1,5 @@
+import { PRIVACY_NOTICE_VERSION } from "../_shared/privacy-version.ts";
+import { malaysiaDay, validChildBirthday, validChildName, validAvatar, validAmount, validHibahDate, HIBAH_FREQUENCIES } from "../_shared/final-check-input.ts";
 import { normalizeUsername, isValidNewUsername } from "../_shared/username.ts";
 import { revokeAllKidSessions } from "../_shared/kid-session.ts";
 import { genCode } from "../_shared/access-code.ts";
@@ -96,8 +98,6 @@ Deno.serve(async (req: Request) => {
         return await handleVerifyPin(adminClient, parentId, params);
       case "clear-pin":
         return await handleClearPin(adminClient, parentId, params);
-      case "set-hibah":
-        return await handleSetHibah(adminClient, parentId, params);
       case "mark-notifications-read":
         return await handleMarkNotificationsRead(adminClient, parentId);
       case "set-avatar":
@@ -148,6 +148,10 @@ function jsonOk(data: unknown) {
   return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
 }
 function jsonError(message: string, status = 400, code?: string) {
+  if (status >= 500) {
+    console.error("parent-finance:", message);
+    message = "Something went wrong. Please try again.";
+  }
   return new Response(JSON.stringify({ error: message, ...(code ? { code } : {}) }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
 }
 
@@ -158,7 +162,6 @@ const PIN_GATED_ACTIONS = new Set([
   "delete-kid",
   "create-kid",
   "update-kid",
-  "set-hibah",
   "create-scheduled-hibah",
   "deactivate-scheduled-hibah",
   "set-kid-card-controls",
@@ -237,7 +240,9 @@ async function handleGetProfile(admin: Admin, parentId: string) {
   return jsonOk(data ?? null);
 }
 
-async function handleCreateKid(admin: Admin, parentId: string, params: { name: string; username: string; birth_date?: string }) {
+async function handleCreateKid(admin: Admin, parentId: string, params: { name: string; username: string; birth_date?: string; consentVersion?: string }) {
+  if (params.consentVersion !== PRIVACY_NOTICE_VERSION) return jsonError("Accept the current privacy notice to add a child.", 400);
+  if (!validChildName(params.name)) return jsonError("Enter a valid child name.", 400);
   const username = typeof params.username === "string" ? normalizeUsername(params.username) : "";
   if (!isValidNewUsername(username)) return jsonError("Username must be 3-24 lowercase letters, numbers, dots, underscores or hyphens.", 400);
   const capacity = await enforceKidLimit(admin, parentId, corsHeaders);
@@ -247,26 +252,10 @@ async function handleCreateKid(admin: Admin, parentId: string, params: { name: s
 
   let birthDate: string | null = null;
   let birthYear: number | null = null;
-  if (params.birth_date) {
-    const bDate = params.birth_date.trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(bDate)) {
-      return jsonError("Birth date must be in YYYY-MM-DD format.", 400);
-    }
-    const parsedDate = new Date(bDate + "T00:00:00Z");
-    if (isNaN(parsedDate.getTime())) {
-      return jsonError("Invalid birth date.", 400);
-    }
-    const today = new Date();
-    let age = today.getUTCFullYear() - parsedDate.getUTCFullYear();
-    const m = today.getUTCMonth() - parsedDate.getUTCMonth();
-    if (m < 0 || (m === 0 && today.getUTCDate() < parsedDate.getUTCDate())) {
-      age--;
-    }
-    if (age < 4 || age > 18) {
-      return jsonError("Age must be between 4 and 18.", 400);
-    }
-    birthDate = bDate;
-    birthYear = parsedDate.getUTCFullYear();
+  if (params.birth_date !== undefined) {
+    if (!validChildBirthday(params.birth_date)) return jsonError("Enter a valid birthday for ages 6 to 17.", 400);
+    birthDate = params.birth_date;
+    birthYear = Number(birthDate.slice(0, 4));
   }
 
   let code = genCode();
@@ -290,6 +279,12 @@ async function handleCreateKid(admin: Admin, parentId: string, params: { name: s
     insertData.birth_date = birthDate;
     insertData.birth_year = birthYear;
   }
+
+  const { error: consentError } = await admin.from("profiles").update({
+    child_privacy_consent_at: new Date().toISOString(),
+    child_privacy_consent_version: PRIVACY_NOTICE_VERSION,
+  }).eq("id", parentId).select("id").single();
+  if (consentError) return jsonError("Could not record consent.", 500);
 
   const { data: kid, error } = await admin.from("kids").insert(insertData).select().single();
   if (error?.message.includes("kid_limit")) return jsonError("You can have up to 10 children.", 400, "kid_limit");
@@ -334,11 +329,18 @@ async function handleUpdateKid(
     if (existing) return jsonError("Username already taken", 400);
   }
 
+  if (params.name !== undefined && !validChildName(params.name)) return jsonError("Enter a valid child name.", 400);
+  if (params.birth_date !== undefined && !validChildBirthday(params.birth_date)) return jsonError("Enter a valid birthday for ages 6 to 17.", 400);
+  if (params.birth_year !== undefined && params.birth_date === undefined) {
+    const age = Number(malaysiaDay().slice(0, 4)) - params.birth_year;
+    if (!Number.isInteger(params.birth_year) || age < 6 || age > 17) return jsonError("Enter a valid birth year for ages 6 to 17.", 400);
+  }
+
   const updates: Record<string, unknown> = {
-    name: params.name,
+    name: params.name?.trim(),
     username,
     birth_date: params.birth_date,
-    birth_year: params.birth_year,
+    birth_year: params.birth_date ? Number(params.birth_date.slice(0, 4)) : params.birth_year,
   };
 
   if (params.age_group_override !== undefined) {
@@ -434,7 +436,7 @@ function parseLoanTerms(reason: string) {
   const dueMatch = reasonPart.match(/\(due (\d+)d\)/);
   const dueDays = dueMatch ? parseInt(dueMatch[1]) : 14;
   return {
-    p_loan_due_date: new Date(Date.now() + dueDays * 86400000).toISOString().slice(0, 10),
+    p_loan_due_date: malaysiaDay(new Date(Date.now() + dueDays * 86400000)),
     p_loan_reason: reasonPart.replace(/\(due \d+d\)$/, "").trim(),
     p_loan_signature: sigPart || null,
   };
@@ -586,26 +588,20 @@ async function handleClearPin(admin: Admin, parentId: string, params: { currentP
   return jsonOk({ ok: true });
 }
 
-async function handleSetHibah(admin: Admin, parentId: string, params: { kidId: string; rate: number }) {
-  await verifyKidOwnership(admin, params.kidId, parentId, "id");
-  await admin.from("kids").update({ hibah_rate: params.rate }).eq("id", params.kidId);
-  return jsonOk({ ok: true });
-}
-
-
-
 async function handleMarkNotificationsRead(admin: Admin, parentId: string) {
   await admin.from("notifications").update({ read: true }).eq("parent_id", parentId).eq("read", false);
   return jsonOk({ ok: true });
 }
 
 async function handleSetAvatar(admin: Admin, parentId: string, params: { kidId: string; avatar: string }) {
+  if (!validAvatar(params.avatar)) return jsonError("Choose a valid avatar.", 400);
   await verifyKidOwnership(admin, params.kidId, parentId, "id");
   await admin.from("kids").update({ avatar: params.avatar }).eq("id", params.kidId);
   return jsonOk({ ok: true });
 }
 
 async function handleSetSelfAvatar(admin: Admin, parentId: string, params: { avatar: string }) {
+  if (!validAvatar(params.avatar)) return jsonError("Choose a valid avatar.", 400);
   await admin.from("profiles").update({ avatar: params.avatar }).eq("id", parentId);
   return jsonOk({ ok: true });
 }
@@ -616,6 +612,11 @@ async function handleGetSelfAvatar(admin: Admin, parentId: string) {
 }
 
 async function handleCreateScheduledHibah(admin: Admin, parentId: string, params: { kidId: string; amount: number; frequency: string; startDate: string; endDate?: string }) {
+  if (!validAmount(params.amount) || !HIBAH_FREQUENCIES.includes(params.frequency) ||
+    !validHibahDate(params.startDate) || malaysiaDay(new Date(params.startDate)) < malaysiaDay() ||
+    (params.endDate !== undefined && (!validHibahDate(params.endDate) || params.endDate < params.startDate))) {
+    return jsonError("Invalid Hibah amount, frequency or dates.", 400);
+  }
   await verifyKidOwnership(admin, params.kidId, parentId, "id");
   const { data: hibah, error } = await admin.from("scheduled_hibahs").insert({
     parent_id: parentId, kid_id: params.kidId, amount: params.amount, frequency: params.frequency,
@@ -643,7 +644,7 @@ async function handleDeactivateScheduledHibah(admin: Admin, parentId: string, pa
 // ---------------------------------------------------------------------------
 async function handleDeposit(admin: Admin, parentId: string, params: { kidId: string; amount: number; label?: string; type: "DEPOSIT" | "WITHDRAWAL" }) {
   const { kidId, amount, label, type } = params;
-  if (!kidId || typeof amount !== "number") return jsonError("Invalid input", 400);
+  if (!kidId || !validAmount(amount, 0.5)) return jsonError("Invalid input", 400);
   const { data: newBalance, error } = await admin.rpc("parent_move_money", {
     p_kid_id: kidId,
     p_parent_id: parentId,
@@ -672,7 +673,7 @@ async function handleSetKidCardControls(
   }
   if (
     params.dailyLimit !== undefined &&
-    (typeof params.dailyLimit !== "number" || isNaN(params.dailyLimit))
+    !validAmount(params.dailyLimit)
   ) {
     return jsonError("Invalid dailyLimit value", 400);
   }

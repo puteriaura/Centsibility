@@ -8,6 +8,7 @@ import { KidLoadError } from "@/features/kid/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
 import { calculateZakat, DEFAULT_NISAB, DEFAULT_ZAKAT_RATE } from "@/lib/math";
+import { NISAB } from "@/lib/nisab";
 import { Money } from "@/features/privacy/Money";
 
 /**
@@ -105,7 +106,7 @@ export function ZakatSection() {
             className="deposit-hero__link"
             style={{ cursor: "default", textDecoration: "none" }}
           >
-            Nisab RM{NISAB_RM.toLocaleString()} · Rate{" "}
+            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ. Rate{" "}
             {(ZAKAT_RATE * 100).toFixed(1)}%
           </p>
         </div>

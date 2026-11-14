@@ -41,7 +41,7 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
           }]);
         }
         if (path === "/rest/v1/kids" && query.get("id") === "eq.kid-a") {
-          return Response.json([{ id: "kid-a", parent_id: "parent-a", name: "Demo Saver", balance: "12.34", coins: 100, hashed_pin: "fixture" }]);
+          return Response.json([{ id: "kid-a", parent_id: "parent-a", name: "Demo Saver", balance: "12.34", coins: 1000, hashed_pin: "fixture" }]);
         }
         if (path === "/rest/v1/kids" && query.get("parent_id") === "eq.parent-a") {
           return Response.json([
@@ -120,10 +120,10 @@ Deno.test("Penny account replies stay on the authenticated Edge Function path wi
           "DEPOSIT", "Demo Saver asked for a deposit of RM5.00: Allowance"],
         [{ action: "request-approval", kind: "WITHDRAWAL", amount: 5, reason: "Lunch" },
           "WITHDRAWAL", "Demo Saver asked for a withdrawal of RM5.00: Lunch"],
-        [{ action: "request-loan", amount: 10, reason: "Books", signature: "fixture" },
+        [{ action: "request-loan", amount: 10, reason: "Books", signature: "data:image/png;base64,YQ==" },
           "QARD", "Demo Saver requested a Qard loan of RM10"],
-        [{ action: "request-reward", name: "Test reward", cost: 5 },
-          "REWARD", 'Demo Saver wants "Test reward" (5 🪙)'],
+        [{ action: "request-reward", name: "Pick the family movie", cost: 5 },
+          "REWARD", 'Demo Saver wants "Pick the family movie" (600 🪙)'],
       ] as const;
       for (const [request] of requests) {
         const response = await kid(new Request("https://account-fixture.invalid", {

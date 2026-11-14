@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { SUGGESTED_REWARDS as SUGGESTED } from "../../../supabase/functions/_shared/reward-catalogue";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SectionTitle } from "@/components/ui/section-title";
 import { useKidData } from "@/hooks/use-kid-data";
@@ -9,21 +8,9 @@ import { edgeKidRequestReward } from "@/lib/edge";
 import { getKidSession } from "@/lib/kid-session";
 import { toast } from "sonner";
 import { sfx } from "@/lib/sounds";
-import { NumericKeypad } from "@/components/ui/numeric-keypad";
 import { AppIcon } from "@/components/ui/app-icon";
 import { formatDate } from "@/lib/format";
 import { useMoneyAction } from "@/hooks/use-money-action";
-
-const SUGGESTED = [
-  { name: "Pick the family movie", cost: 2100, icon: "movie" },
-  { name: "Special treat or snack", cost: 3000, icon: "treat" },
-  { name: "Stay up 30 min late", cost: 6000, icon: "moon" },
-  { name: "Toy of my choice", cost: 4500, icon: "game" },
-  { name: "Day at the park", cost: 2400, icon: "park" },
-  { name: "New book of my choice", cost: 3000, icon: "book" },
-  { name: "Cook favourite meal", cost: 2250, icon: "meal" },
-  { name: "Fun outing with parent", cost: 3000, icon: "outing" },
-];
 
 interface RewardsPanelProps {
   onGoToQuests?: () => void;
@@ -31,8 +18,6 @@ interface RewardsPanelProps {
 
 export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
   const { data, refresh } = useKidData();
-  const [name, setName] = useState("");
-  const [rawPts, setRawPts] = useState("");
   const { busy, run } = useMoneyAction();
 
   if (!data) return null;
@@ -40,8 +25,6 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
   const k = data.kid;
   const code = getKidSession()?.code;
   const totalPoints = Number(k.coins || 0);
-  const maxAllowedInput = 99999;
-  const parsedPts = parseInt(rawPts || "0", 10);
 
   const questsCompleted = Number((data as Record<string, unknown>).questsCompleted ?? 0);
   const quizTotalCorrect = Number((k as Record<string, unknown>).quiz_total_correct ?? 0);
@@ -60,26 +43,9 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
       {
         success: `Reward request sent: ${rewardName}`,
         failure: "Reward request didn't go through",
-        onSuccess: () => {
-          setName("");
-          setRawPts("");
-        },
         refresh,
       }
     );
-  };
-
-  const pressKey = (key: string) => {
-    if (key === "⌫") {
-      setRawPts((r) => r.slice(0, -1));
-      return;
-    }
-    setRawPts((r) => {
-      const next = r + key;
-      const val = parseInt(next, 10);
-      if (val > maxAllowedInput) return r;
-      return next.slice(0, 6);
-    });
   };
 
   const pending = (data.rewards || []).filter(
@@ -168,53 +134,6 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
             );
           })}
         </div>
-      </div>
-
-      {/* Custom Reward Request */}
-      <div className="space-y-3">
-        <SectionTitle>Custom Reward</SectionTitle>
-        <Card variant="default" className="p-5 space-y-4 border border-[var(--border)]">
-          <Input
-            label="What reward would you like?"
-            id="reward-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="E.g. Visit science museum, new coloring set"
-            maxLength={100}
-          />
-
-          <div>
-            <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] mb-1.5">
-              <span>Points to Spend</span>
-              <span>Balance: <strong>{Math.round(totalPoints).toLocaleString()} pts</strong></span>
-            </div>
-            <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-center">
-              <div className="text-2xl sm:text-3xl font-extrabold text-[var(--primary-text)] flex items-center justify-center gap-1.5 tabular-nums">
-                {parsedPts.toLocaleString()}
-                <AppIcon name="star" size={20} />
-              </div>
-              {parsedPts > 0 && (
-                <p className={`text-xs mt-1 ${parsedPts > totalPoints ? "text-[var(--error)] font-medium" : "text-[var(--text-muted)]"}`}>
-                  {parsedPts > totalPoints
-                    ? `Exceeds available points (${Math.round(totalPoints).toLocaleString()} pts)`
-                    : `of ${Math.round(totalPoints).toLocaleString()} points available`}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <NumericKeypad onKeyPress={pressKey} />
-
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => submit(name, parsedPts)}
-            disabled={busy || !name.trim() || parsedPts < 1}
-            className="w-full justify-center text-sm font-bold min-h-[48px]"
-          >
-            {busy ? "Sending request..." : `Submit Request for ${parsedPts.toLocaleString()} Points`}
-          </Button>
-        </Card>
       </div>
 
       {/* Waiting for Parent Section */}

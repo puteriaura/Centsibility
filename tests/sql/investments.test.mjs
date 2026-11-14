@@ -78,6 +78,7 @@ export const tests = [
   },
   {
     name: '2. minute fund rules: 1 open at a time, max 3 a day, client_request_id retry-safe',
+    requiresDeferred: true,
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 100 });
@@ -241,6 +242,7 @@ export const tests = [
   },
   {
     name: '5. Protected fund floors at principal; unprotected fund fluctuates below principal',
+    requiresDeferred: true,
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 100 });
@@ -288,6 +290,7 @@ export const tests = [
   },
   {
     name: '6. Settlement: pays payout (up or down), writes INVEST_GAIN or INVEST_LOSS, notification, ledger invariant holds',
+    requiresDeferred: true,
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 100 });
@@ -329,6 +332,7 @@ export const tests = [
   },
   {
     name: '7. Early close: protected returns principal; unprotected returns current value + gain/loss',
+    requiresDeferred: true,
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 100 });
@@ -381,6 +385,7 @@ export const tests = [
   },
   {
     name: '8. Growth Tabung migration preserves total balances and converts to weekly fund with protected = true',
+    requiresDeferred: true,
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 25, invest_balance: 35, risk_appetite: 'high' });
@@ -480,6 +485,7 @@ export const tests = [
   },
   {
     name: '11. Backfill gave every pre-existing fund row protected = true and old range',
+    requiresDeferred: true,
     fn: async (db) => {
       const invalidRows = (await db.query(`
         select count(*) from public.investments

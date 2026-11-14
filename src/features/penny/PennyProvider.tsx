@@ -70,7 +70,7 @@ function getInitialGreeting(
   return {
     id: "welcome",
     role: "assistant",
-    text: `Salam and hi there! I'm Penny, your money buddy.\n\nAsk me about spending breakdowns, Tabung, sadaqah, or rewards. I'll use your real activity to guide you.`,
+    text: `Salam and hi there! I'm Penny, your money buddy.\n\nAsk me about spending breakdowns, Tabung, sadaqah, or rewards. Centsibility can use your activity to help answer. Penny's AI sees your question with names and numbers removed.`,
   };
 }
 

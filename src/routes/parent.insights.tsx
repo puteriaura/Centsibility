@@ -102,8 +102,8 @@ function ParentInsights() {
             className="deposit-hero__link"
             style={{ opacity: 0.9, cursor: "default" }}
           >
-            Outflow · In {locked ? "•••" : <Money amount={summary.moneyIn} />} ·{" "}
-            {summary.txCount} tx
+            Money out · Money in {locked ? "•••" : <Money amount={summary.moneyIn} />} ·{" "}
+            {summary.txCount} transactions
           </p>
         </div>
         <div className="deposit-hero__mascot" aria-hidden="true">

@@ -239,28 +239,13 @@ function KidLoans() {
                   >
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[var(--text-secondary)]">
-                        Requested Amount
+                        Requested amount
                       </span>
                       <strong className="text-sm font-bold text-[var(--ink)] tabular-nums">
                         {formatRM(reqAmt!)} {/* privacy-ok: typing */}
                       </strong>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-[var(--text-secondary)]">
-                        Interest
-                      </span>
-                      <strong className="text-sm font-bold text-[var(--success-text)]">
-                        RM0.00 (Halal)
-                      </strong>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-[var(--text-secondary)]">
-                        Admin fee
-                      </span>
-                      <strong className="text-sm font-semibold text-[var(--ink)] tabular-nums">
-                        {formatRM(qard.adminFee)} {/* privacy-ok: typing */}
-                      </strong>
-                    </div>
+                    <p className="text-xs text-[var(--text-secondary)]">Qard Hasan has no interest or fees.</p>
                     <div className="flex justify-between items-center text-xs pt-1 border-t border-[var(--border)]">
                       <span className="font-semibold text-[var(--ink)]">
                         You receive

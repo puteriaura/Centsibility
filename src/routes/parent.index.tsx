@@ -1,3 +1,4 @@
+import { PRIVACY_NOTICE_VERSION } from "../../supabase/functions/_shared/privacy-version";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/providers/auth";
@@ -50,6 +51,7 @@ function ParentHome() {
   const [deletingKidId, setDeletingKidId] = useState<string | null>(null);
   const [kidQuery, setKidQuery] = useState("");
 
+  const [consented, setConsented] = useState(false);
   const [showRecruit, setShowRecruit] = useState(false);
   const [newKidName, setNewKidName] = useState("");
   const [newKidUsername, setNewKidUsername] = useState("");
@@ -74,6 +76,7 @@ function ParentHome() {
     setNewKidUsername("");
     setNewKidBirthDate("");
     setSetupCode(null);
+    setConsented(false);
     setShowRecruit(true);
   };
 
@@ -86,7 +89,7 @@ function ParentHome() {
   };
 
   const createKid = async () => {
-    if (!newKidName.trim() || !newKidUsername.trim()) return;
+    if (!consented || !newKidName.trim() || !newKidUsername.trim()) return;
     const nameTaken = kids.some(
       (k) => k.name.trim().toLowerCase() === newKidName.trim().toLowerCase(),
     );
@@ -101,6 +104,7 @@ function ParentHome() {
         name: newKidName.trim(),
         username: newKidUsername.trim().toLowerCase(),
         birth_date: newKidBirthDate.trim() || undefined,
+        consentVersion: PRIVACY_NOTICE_VERSION,
       });
       setSetupCode(res.kid.login_code);
       setNewKidName("");
@@ -447,6 +451,13 @@ function ParentHome() {
               helperText="Used to recommend age-appropriate missions and quests."
             />
 
+            <div className="space-y-2 text-sm">
+              <Link to="/privacy" target="_blank" className="underline">Read the privacy notice</Link>
+              <label className="flex items-start gap-2">
+                <input type="checkbox" className="mt-1" checked={consented} onChange={(event) => setConsented(event.target.checked)} />
+                I consent to the use of my child’s data as described in the privacy notice.
+              </label>
+            </div>
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <Button type="button" variant="secondary" onClick={closeRecruit}>
                 Cancel
@@ -458,6 +469,7 @@ function ParentHome() {
                 loading={generating}
                 disabled={
                   generating ||
+                  !consented ||
                   !newKidName.trim() ||
                   !newKidUsername.trim() ||
                   kids.some(

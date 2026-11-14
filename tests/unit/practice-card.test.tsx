@@ -36,7 +36,9 @@ describe("practice card components", () => {
     expect(html).toContain("4556 7812 9034 6553"); expect(html).toContain("428"); expect(html).toContain("10/29"); expect(html).toContain("Locked"); expect(html).toContain("Synthetic Child");
   });
   it("has accessible help and one compact tip without a carousel", () => {
-    expect(renderToStaticMarkup(<PracticeCardHeader onHelp={vi.fn()} />)).toContain('aria-label="Ask Penny about practice cards"');
+    const header = renderToStaticMarkup(<PracticeCardHeader onBack={vi.fn()} onHelp={vi.fn()} />);
+    expect(header).toContain('aria-label="Ask Penny about practice cards"');
+    expect(header).toContain('aria-label="Back to More"');
     const html = renderToStaticMarkup(<PracticeCardTips onSettings={vi.fn()} onHelp={vi.fn()} />);
     expect(html).toContain("Set a daily limit"); expect(html).toContain("Open settings");
     expect(html).not.toContain("carousel"); expect(html).not.toContain("slide"); expect(html).not.toContain("overflow-x-auto");

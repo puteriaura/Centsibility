@@ -17,6 +17,7 @@ export const PENNY_APP_GUIDE = [
       "Cancel",
       "Trying again…",
       "Try again",
+      "Back to More",
       "Ask Penny about practice cards",
       "Open settings"
     ],
@@ -35,6 +36,10 @@ export const PENNY_APP_GUIDE = [
       "Copy"
     ],
     "links": [
+      {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
       {
         "to": "/kid/insights",
         "label": "Insights"
@@ -151,11 +156,11 @@ export const PENNY_APP_GUIDE = [
       "Ask Penny",
       "Open Daily Wrap",
       "Close story",
-      "View transaction history for this period",
+      "View transactions for this period",
       "View transactions",
       "Ask Penny to deep dive on this insight",
       "Deep dive with Penny",
-      "Close transaction history",
+      "Close transactions",
       "Trying again…",
       "Try again",
       "Cancel",
@@ -167,6 +172,10 @@ export const PENNY_APP_GUIDE = [
       "Copy"
     ],
     "links": [
+      {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
       {
         "to": "/kid/insights",
         "label": "Insights"
@@ -206,6 +215,10 @@ export const PENNY_APP_GUIDE = [
     ],
     "links": [
       {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
+      {
         "to": "/kid/insights",
         "label": "Insights"
       }
@@ -235,8 +248,7 @@ export const PENNY_APP_GUIDE = [
     "buttons": [
       "Reward Store",
       "Try Again",
-      "Go to quests",
-      "Sending request..."
+      "Go to quests"
     ],
     "links": [
       {
@@ -311,6 +323,10 @@ export const PENNY_APP_GUIDE = [
         "label": "Alerts"
       },
       {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
+      {
         "to": "/kid/insights",
         "label": "Insights"
       }
@@ -350,6 +366,10 @@ export const PENNY_APP_GUIDE = [
         "label": "Missions"
       },
       {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
+      {
         "to": "/kid/insights",
         "label": "Insights"
       }
@@ -374,7 +394,7 @@ export const PENNY_APP_GUIDE = [
       "Sadaqah",
       "Zakat",
       "Cancel",
-      "Giving…",
+      "Pledging…",
       "Trying again…",
       "Try again",
       "Calculate without wallet",
@@ -411,6 +431,10 @@ export const PENNY_APP_GUIDE = [
     ],
     "links": [
       {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
+      {
         "to": "/kid/insights",
         "label": "Insights"
       },
@@ -440,6 +464,7 @@ export const PENNY_APP_GUIDE = [
     "path": "/kid/wallet",
     "title": "Wallet",
     "buttons": [
+      "No Hibah scheduled",
       "Go to Loans",
       "Trying again…",
       "Try again",
@@ -565,6 +590,10 @@ export const PENNY_APP_GUIDE = [
         "label": "Choose what your children call you Mama, Papa, Ummi or your own"
       },
       {
+        "to": "/privacy",
+        "label": "Read the privacy notice"
+      },
+      {
         "to": "/parent",
         "label": "Home"
       },
@@ -612,6 +641,10 @@ export const PENNY_APP_GUIDE = [
     ],
     "links": [
       {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
+      {
         "to": "/kid/insights",
         "label": "Insights"
       }
@@ -650,7 +683,6 @@ export const PENNY_APP_GUIDE = [
       "Save PIN",
       "Unmute sounds",
       "Mute sounds",
-      "Custom",
       "Retrying…",
       "Try again",
       "Trying again…"
@@ -698,6 +730,10 @@ export const PENNY_APP_GUIDE = [
       "Copy"
     ],
     "links": [
+      {
+        "to": "/privacy",
+        "label": "Privacy notice"
+      },
       {
         "to": "/kid/insights",
         "label": "Insights"

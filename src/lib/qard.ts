@@ -23,8 +23,8 @@ export function cleanApprovalReason(rawReason: string | null | undefined): strin
   return parseQardReason(rawReason).reason;
 }
 
-// Keep in sync with resolve_approval in supabase/migrations/20260929070000_qard_admin_fee_and_limits.sql
-export const QARD_FEES = { admin: 1.0 } as const;
+// Keep in sync with resolve_approval in supabase/migrations/20261114000000_final_check_fixes.sql
+export const QARD_FEES = { admin: 0.0 } as const;
 export const QARD_MIN_LOAN = 10;
 export const QARD_MAX_LOAN = 500;
 

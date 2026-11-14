@@ -1,3 +1,5 @@
+import { useKidData } from "@/hooks/use-kid-data";
+import { useParentData } from "@/hooks/use-parent-data";
 import { edgeKidLogout } from "@/lib/edge";
 import { toast } from "sonner";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
@@ -47,6 +49,23 @@ export async function signOutKid() {
   }
 }
 
+function KidUnread({ publish }: { publish: (count: number) => void }) {
+  const { data, refresh } = useKidData();
+  useEffect(() => {
+    const update = () => void refresh();
+    window.addEventListener("centsibility:kid-notifications-read", update);
+    return () => window.removeEventListener("centsibility:kid-notifications-read", update);
+  }, [refresh]);
+  useEffect(() => { publish(data?.unreadNotifications ?? 0); }, [data?.unreadNotifications, publish]);
+  return null;
+}
+
+function ParentWaiting({ publish }: { publish: (count: number) => void }) {
+  const { approvals } = useParentData();
+  useEffect(() => { publish(approvals.filter((item) => item.status === "pending").length); }, [approvals, publish]);
+  return null;
+}
+
 export function AppShell({
   mode,
   children,
@@ -63,6 +82,7 @@ export function AppShell({
     undefined,
   );
   const [unread, setUnread] = useState(0);
+  const [waiting, setWaiting] = useState(0);
 
   useEffect(() => {
     if (mode === "kid") setKid(getKidSession());
@@ -126,15 +146,6 @@ export function AppShell({
       return () => {
         supabase.removeChannel(channel);
       };
-    } else if (mode === "kid") {
-      const handleUnread = (e: Event) => {
-        const custom = e as CustomEvent<{ unread?: number }>;
-        if (typeof custom.detail?.unread === "number")
-          setUnread(custom.detail.unread);
-      };
-      window.addEventListener("centsibility:kid-unread", handleUnread);
-      return () =>
-        window.removeEventListener("centsibility:kid-unread", handleUnread);
     }
   }, [mode, session]);
 
@@ -174,7 +185,8 @@ export function AppShell({
       >
         {children}
       </main>
-      <BottomNav mode={mode} unread={unread} hiddenOnPhone={!showDock} />
+      {mode === "kid" ? <KidUnread publish={setUnread} /> : <ParentWaiting publish={setWaiting} />}
+      <BottomNav mode={mode} unread={mode === "parent" ? waiting : unread} hiddenOnPhone={!showDock} />
       <ShellAccount mode={mode} kind={immersive ? "immersive" : kind} kidName={kid?.name} kidAvatar={kidAvatar} parentAvatar={parentAvatar} unread={unread} />
       <AppearanceDialog />
     </div>
@@ -412,6 +424,7 @@ function TopBar({
   mode: Mode;
   kind: "home" | "root" | "detail";
 }) {
+  const navigate = useNavigate();
   const isKid = mode === "kid";
   const { openPenny } = usePenny();
   const currentPath = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
@@ -420,6 +433,7 @@ function TopBar({
   if (isKid && trimSlash(currentPath) === "/kid/card") {
     return (
       <PracticeCardHeader
+        onBack={() => void navigate({ to: "/kid/more" })}
         onHelp={() => openPenny({ context: { page: "Card" } })}
       />
     );

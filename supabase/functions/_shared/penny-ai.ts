@@ -337,7 +337,7 @@ export function validateBirthdayUpdate(
         let age = now.getUTCFullYear() - parsed.getUTCFullYear();
         const m = now.getUTCMonth() - parsed.getUTCMonth();
         if (m < 0 || (m === 0 && now.getUTCDate() < parsed.getUTCDate())) age--;
-        if (age < 4 || age > 18) return { allowed: false, error: "Age must be between 4 and 18." };
+        if (age < 6 || age > 17) return { allowed: false, error: "Age must be between 6 and 17." };
         updates.birth_date = bDate;
         updates.birth_year = parsed.getUTCFullYear();
       } else if (params.birth_year !== undefined) {

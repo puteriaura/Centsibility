@@ -7,7 +7,7 @@ import {
   edgeParentMarkNotificationsRead,
 } from "@/lib/edge";
 import { toast } from "sonner";
-import { parseQardReason, computeQardPayout } from "@/lib/qard";
+import { parseQardReason } from "@/lib/qard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,8 +55,8 @@ function Approvals() {
   }, [search.tab]);
 
   useEffect(() => {
-    edgeParentMarkNotificationsRead();
-  }, []);
+    if (tab === "activity") void edgeParentMarkNotificationsRead().then(() => refresh()).catch(console.error);
+  }, [tab, refresh]);
 
   const decide = async (id: string, decision: "approve" | "decline") => {
     setBusyId(id);
@@ -241,24 +241,16 @@ function Approvals() {
 
                   {isQard && (
                     <div className="p-3.5 rounded-xl bg-[var(--surface-pink)]/50 border border-[var(--primary-soft)] space-y-1.5 text-xs">
-                      <strong className="text-[var(--ink)] block mb-1">Loan Settlement Details</strong>
+                      <strong className="text-[var(--ink)] block mb-1">Loan settlement details</strong>
                       <div className="flex justify-between text-[var(--text-secondary)]">
-                        <span>Requested Amount</span>
+                        <span>Requested amount</span>
                         <span className="tabular-nums font-semibold">
                           <Money amount={Number(a.amount)} />
                         </span>
                       </div>
-                      <div className="flex justify-between text-[var(--text-secondary)]">
-                        <span>Admin fees</span>
-                        <span className="text-[var(--ink)] font-bold">
-                          {(() => {
-                            const q = computeQardPayout(Number(a.amount));
-                            return `Fees ${formatRM(q.totalFees)} · Child receives ${formatRM(q.payout)}`; // privacy-ok: typing
-                          })()}
-                        </span>
-                      </div>
+                      <p>Qard Hasan has no interest or fees.</p>
                       <div className="flex justify-between pt-1 border-t border-[var(--border)] font-bold text-[var(--ink)]">
-                        <span>Child Repayment Due</span>
+                        <span>Child repayment due</span>
                         <span className="tabular-nums text-[var(--primary-text)]">
                           <Money amount={Number(a.amount)} />
                         </span>

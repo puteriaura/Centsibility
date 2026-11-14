@@ -319,7 +319,7 @@ export function getMockEdgeResponse<T>(
       return {
         ok: true,
         balance: 137.5,
-        coins_awarded: Math.floor((Number(body.amount) || 5) * 2),
+        coins_awarded: 0,
         cause: (body.cause as string) || null,
       } as T;
     case "mark-notifications-read":
@@ -383,21 +383,21 @@ export function getMockEdgeResponse<T>(
         tiers: {
           low: {
             name: "Low",
-            min_rate: -0.005,
-            max_rate: 0.005,
-            label: "Low: moves up to 0.5% each update",
+            min_rate: 0.001,
+            max_rate: 0.01,
+            label: "Practice savings grow slowly and never fall",
           },
           medium: {
             name: "Medium",
-            min_rate: -0.01,
-            max_rate: 0.01,
-            label: "Medium: up to 1%",
+            min_rate: 0.001,
+            max_rate: 0.03,
+            label: "Practice savings grow slowly and never fall",
           },
           high: {
             name: "High",
-            min_rate: -0.02,
-            max_rate: 0.02,
-            label: "High: up to 2%",
+            min_rate: 0,
+            max_rate: 0.05,
+            label: "Practice savings grow slowly and never fall",
           },
         },
         frequencies: {
@@ -1112,6 +1112,7 @@ export async function edgeParentGetProfile() {
 export async function edgeParentCreateKid(params: {
   name: string;
   username: string;
+  consentVersion: string;
   birth_date?: string;
 }) {
   return invoke<{ kid: any }>("parent-finance", {
@@ -1210,16 +1211,6 @@ export async function edgeParentClearPin(params: { currentPin: string }) {
   });
   clearParentPinSession();
   return res;
-}
-
-export async function edgeParentSetHibah(params: {
-  kidId: string;
-  rate: number;
-}) {
-  return invoke<{ ok: boolean }>("parent-finance", {
-    action: "set-hibah",
-    ...params,
-  });
 }
 
 export async function edgeParentMarkNotificationsRead() {
@@ -1480,6 +1471,7 @@ export async function edgeKidGetState(params: { code: string }) {
       created_at: string;
     }[];
     unreadNotifications: number;
+    nextHibah?: { amount: number; next_run_at: string } | null;
   }>("kid-finance", { action: "get-state", ...params });
 }
 

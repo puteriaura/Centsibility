@@ -418,6 +418,7 @@ function KidLogin() {
                 <AppIcon name="parent" size={16} />
                 <span>Parent? Sign in here</span>
               </Link>
+              <Link to="/privacy" className="block text-center text-sm underline">Privacy notice</Link>
             </div>
 
             {/* Dev Mode Bypass */}

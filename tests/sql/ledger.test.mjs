@@ -3,7 +3,7 @@ import { seedParent, seedKid, asRole, expectError } from './harness.mjs';
 
 export const tests = [
   {
-    name: '1. Audit scenario: approving a RM100 QARD gives wallet +99.00 and 2 linked rows (gross QARD + 1 fee)',
+    name: '1. Audit scenario: approving a RM100 QARD credits the full principal with one QARD row',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 10 });
@@ -25,9 +25,9 @@ export const tests = [
       assert.equal(res.ok, true);
       assert.ok(res.loan_id, 'returns loan_id');
 
-      // Balance changed by +99.00
+      // Balance changed by +100.00
       const kidAfter = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0];
-      assert.equal(Number(kidAfter.balance), 109.00);
+      assert.equal(Number(kidAfter.balance), 110.00);
 
       // Verify loan row created
       const loanRow = (await db.query(`select * from public.loans where id = $1`, [res.loan_id])).rows[0];
@@ -40,7 +40,7 @@ export const tests = [
         [res.loan_id]
       )).rows;
 
-      assert.equal(txRows.length, 2);
+      assert.equal(txRows.length, 1);
 
       const qardTx = txRows.find((t) => t.type === 'QARD');
       assert.ok(qardTx);
@@ -48,23 +48,13 @@ export const tests = [
       assert.equal(qardTx.label, 'Qard approved: new bicycle');
       assert.equal(qardTx.loan_id, res.loan_id);
 
-      const feeTxs = txRows.filter((t) => t.type === 'FEE');
-      assert.equal(feeTxs.length, 1);
-
-      const adminFee = feeTxs.find((t) => t.label === 'Loan admin fee');
-      assert.ok(adminFee);
-      assert.equal(Number(adminFee.amount), 1.00);
-      assert.equal(adminFee.loan_id, res.loan_id);
-
-      // Invariant: credits (QARD 100) minus debits (FEE 1.00) = 99.00 = balance change
-      const credits = Number(qardTx.amount);
-      const debits = Number(adminFee.amount);
-      assert.equal(credits - debits, 99.00);
-      assert.equal(Number(kidAfter.balance) - 10, credits - debits);
+      assert.equal(txRows.filter((t) => t.type === 'FEE').length, 0);
+      assert.equal(Number(kidAfter.balance) - 10, Number(qardTx.amount));
+      console.log('Replay: RM100 Qard credited RM100.00 with no FEE rows');
     },
   },
   {
-    name: '2. RM10 loan: fee 1.00, balance change 9.00; legacy RM0.50 loan: fee 0.50, balance change 0',
+    name: '2. Current and legacy loans credit their full principal',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 5 });
@@ -85,16 +75,15 @@ export const tests = [
       );
 
       const kidAfter10 = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0];
-      assert.equal(Number(kidAfter10.balance), 14.00); // +9.00
+      assert.equal(Number(kidAfter10.balance), 15.00);
 
       const txs10 = (await db.query(
         `select * from public.transactions where loan_id = $1 order by id`,
         [res10.loan_id]
       )).rows;
 
-      assert.equal(txs10.length, 2);
+      assert.equal(txs10.length, 1);
       assert.equal(Number(txs10.find((t) => t.type === 'QARD').amount), 10.00);
-      assert.equal(Number(txs10.find((t) => t.label === 'Loan admin fee').amount), 1.00);
 
       // Legacy RM0.50 request
       const ap05 = (await db.query(
@@ -112,20 +101,19 @@ export const tests = [
       );
 
       const kidAfter05 = (await db.query(`select balance from public.kids where id = $1`, [kid.id])).rows[0];
-      assert.equal(Number(kidAfter05.balance), 14.00); // 14 + (0.50 - 0.50) = 14 (no change)
+      assert.equal(Number(kidAfter05.balance), 15.50);
 
       const txs05 = (await db.query(
         `select * from public.transactions where loan_id = $1 order by id`,
         [res05.loan_id]
       )).rows;
 
-      assert.equal(txs05.length, 2); // QARD + 1 fee
+      assert.equal(txs05.length, 1);
       assert.equal(Number(txs05.find((t) => t.type === 'QARD').amount), 0.50);
-      assert.equal(Number(txs05.find((t) => t.label === 'Loan admin fee').amount), 0.50);
     },
   },
   {
-    name: '3. Second approval of QARD raises already_resolved, loan and fee rows written once',
+    name: '3. Second approval of QARD raises already_resolved, loan and QARD rows written once',
     fn: async (db) => {
       const parentId = await seedParent(db);
       const kid = await seedKid(db, parentId, { balance: 0 });
@@ -152,7 +140,7 @@ export const tests = [
       assert.equal(Number(loansCount), 1);
 
       const txCount = (await db.query(`select count(*) from public.transactions where kid_id = $1`, [kid.id])).rows[0].count;
-      assert.equal(Number(txCount), 2);
+      assert.equal(Number(txCount), 1);
     },
   },
   {

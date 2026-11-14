@@ -7,7 +7,8 @@ describe("Zakat Calculator Logic", () => {
   });
 
   it("should calculate 2.5% if net wealth is exactly Nisab", () => {
-    expect(calculateZakat(22000)).toBe(550);
+    expect(calculateZakat(33995.99)).toBe(0);
+    expect(calculateZakat(33996)).toBeCloseTo(849.9, 2);
   });
 
   it("should calculate 2.5% if net wealth is above Nisab", () => {

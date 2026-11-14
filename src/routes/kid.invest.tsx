@@ -1051,7 +1051,7 @@ function KidInvest() {
                     Centsibility Fund
                   </strong>
                 </div>
-                <p className="text-xs text-[var(--text-muted)] mt-1">Centsibility Fund uses made-up prices.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-muted)] mt-1">Prices can rise or fall.</p></details>
+                <p className="text-xs text-[var(--text-muted)] mt-1">This practice savings fund grows slowly and never falls.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-muted)] mt-1">Real funds can fall. See Shares in the Market Tracker to learn about risk.</p></details>
               </button>
 
               {/* Market Option */}
@@ -1114,7 +1114,7 @@ function KidInvest() {
             <>
               {fundStep === 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-[var(--text-secondary)]">You can lose some money you put in.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-secondary)]">Price moves are unpredictable.</p></details>
+                  <p className="text-xs text-[var(--text-secondary)]">Your practice savings can only grow.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-xs text-[var(--text-secondary)]">Real funds can fall. See Shares in the Market Tracker to learn about risk.</p></details>
                   {tierKeys.map((t) => {
                     const tierCards: Record<string, string> = {
                       low: "Low: moves up to 0.5% each update",
@@ -1282,7 +1282,7 @@ function KidInvest() {
               {fundStep === 4 && preview && (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] space-y-1">
-                    <p className="text-sm text-[var(--ink)]">Values can rise or fall.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-sm text-[var(--ink)]">Higher risk means bigger moves.</p></details>
+                    <p className="text-sm text-[var(--ink)]">This practice savings fund grows slowly and never falls.</p><details className="short-details text-xs"><summary>Details</summary><p className="text-sm text-[var(--ink)]">Real funds can fall. See Shares in the Market Tracker to learn about risk.</p></details>
                   </div>
                   <div className="text-xs text-[var(--text-secondary)] space-y-0.5">
                     <div className="flex justify-between">

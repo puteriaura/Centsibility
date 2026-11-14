@@ -15,6 +15,7 @@ import { Route as KidLoginRouteImport } from './routes/kid-login'
 import { Route as LaunchRouteImport } from './routes/launch'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ParentRouteImport } from './routes/parent'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as KidIndexRouteImport } from './routes/kid.index'
 import { Route as KidCardRouteImport } from './routes/kid.card'
 import { Route as KidChatRouteImport } from './routes/kid.chat'
@@ -69,6 +70,11 @@ const LoginRoute = LoginRouteImport.update({
 const ParentRoute = ParentRouteImport.update({
   id: '/parent',
   path: '/parent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KidIndexRoute = KidIndexRouteImport.update({
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/launch': typeof LaunchRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/kid/card': typeof KidCardRoute
   '/kid/chat': typeof KidChatRoute
   '/kid/goals': typeof KidGoalsRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/kid-login': typeof KidLoginRoute
   '/launch': typeof LaunchRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/kid/card': typeof KidCardRoute
   '/kid/chat': typeof KidChatRoute
   '/kid/goals': typeof KidGoalsRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/launch': typeof LaunchRoute
   '/login': typeof LoginRoute
   '/parent': typeof ParentRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/kid/card': typeof KidCardRoute
   '/kid/chat': typeof KidChatRoute
   '/kid/goals': typeof KidGoalsRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/launch'
     | '/login'
     | '/parent'
+    | '/privacy'
     | '/kid/card'
     | '/kid/chat'
     | '/kid/goals'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/kid-login'
     | '/launch'
     | '/login'
+    | '/privacy'
     | '/kid/card'
     | '/kid/chat'
     | '/kid/goals'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/launch'
     | '/login'
     | '/parent'
+    | '/privacy'
     | '/kid/card'
     | '/kid/chat'
     | '/kid/goals'
@@ -402,6 +414,7 @@ export interface RootRouteChildren {
   LaunchRoute: typeof LaunchRoute
   LoginRoute: typeof LoginRoute
   ParentRoute: typeof ParentRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -446,6 +459,13 @@ declare module '@tanstack/react-router' {
       path: '/parent'
       fullPath: '/parent'
       preLoaderRoute: typeof ParentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kid/': {
@@ -700,6 +720,7 @@ const rootRouteChildren: RootRouteChildren = {
   LaunchRoute: LaunchRoute,
   LoginRoute: LoginRoute,
   ParentRoute: ParentRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

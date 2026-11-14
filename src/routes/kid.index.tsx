@@ -1,3 +1,4 @@
+import { malaysiaDay } from "../../supabase/functions/_shared/final-check-input";
 import { DailyWelcome } from "@/components/DailyWelcome";
 import { Modal } from "@/components/ui/modal";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -68,22 +69,6 @@ function KidHome() {
     setShowProfile(true);
   }, [data?.kid]);
 
-  useEffect(() => {
-    if (data?.unreadNotifications !== undefined) {
-      window.dispatchEvent(
-        new CustomEvent("centsibility:kid-unread", {
-          detail: { unread: data.unreadNotifications },
-        }),
-      );
-    }
-    if (data?.kid?.avatar) {
-      window.dispatchEvent(
-        new CustomEvent("centsibility:kid-avatar", {
-          detail: { avatar: data.kid.avatar },
-        }),
-      );
-    }
-  }, [data]);
 
   useEffect(() => {
     if (profile && data?.kid) {
@@ -266,7 +251,7 @@ function KidHome() {
             ))}
             {activeLoans.map((l: (typeof activeLoans)[number]) => {
               const remaining = Number(l.amount) - Number(l.repaid);
-              const overdue = new Date(l.due_date) < new Date();
+              const overdue = l.due_date < malaysiaDay();
               return (
                 <Link
                   key={l.id}

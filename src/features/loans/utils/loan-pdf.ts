@@ -102,7 +102,7 @@ export async function buildLoanPdf(loan: LoanPromise) {
   doc.text("My promises", 15, 175.8);
   const promises = [
     `I will pay back ${amount} by ${due}.`,
-    "No interest and no late fees. This is a kindness loan (Qard Hasan).",
+    "No interest or fees. This is a kindness loan (Qard Hasan).",
     "Paying back on time grows my Trust Score.",
     "If I need more time, I will talk to my parent early.",
     "We both agree, with Centsibility as our witness.",

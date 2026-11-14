@@ -17,11 +17,11 @@ export const tests = [
       );
 
       assert.equal(Number(res.balance), 15.00);
-      assert.equal(Number(res.coins_awarded), 10); // floor(5.00 * 2) = 10
+      assert.equal(Number(res.coins_awarded), 0);
 
       const kidRow = (await db.query(`select balance, coins from public.kids where id = $1`, [kid.id])).rows[0];
       assert.equal(Number(kidRow.balance), 15.00);
-      assert.equal(Number(kidRow.coins), 20); // 10 initial + 10 awarded
+      assert.equal(Number(kidRow.coins), 10);
 
       const txs = (await db.query(`select * from public.transactions where kid_id = $1`, [kid.id])).rows;
       assert.equal(txs.length, 1);

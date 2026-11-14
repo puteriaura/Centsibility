@@ -112,8 +112,9 @@ function KidWallet() {
               <Money amount={balance} />
             </strong>
             <small>
-              Available to spend · Hibah{" "}
-              {(Number(k.hibah_rate) * 100).toFixed(0)}%
+              {data.nextHibah ? (
+                <>Next Hibah <Money amount={Number(data.nextHibah.amount)} /> · {formatDate(data.nextHibah.next_run_at)}</>
+              ) : "No Hibah scheduled"}
             </small>
           </span>
           <AppIcon name="chevron" size={20} />

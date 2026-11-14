@@ -48,7 +48,7 @@ function KidHistoryPage() {
     }
 
     if (!session?.code) {
-      setError("Please sign in to view your transaction history.");
+      setError("Please sign in to view your transactions.");
       setLoading(false);
       return;
     }

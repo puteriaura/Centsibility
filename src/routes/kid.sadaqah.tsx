@@ -1,3 +1,4 @@
+import { SADAQAH_HADITH } from "@/content/lessons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,6 @@ function KidSadaqah() {
   const [successInfo, setSuccessInfo] = useState<{
     amount: number;
     cause: string;
-    points: number;
   } | null>(null);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
@@ -103,14 +103,13 @@ function KidSadaqah() {
           cause: selectedCause,
         }),
       {
-        success: (res) =>
-          `${formatRM(pendingAmount)} given to ${selectedCause}. +${res.coins_awarded ?? Math.floor(pendingAmount * 2)} points`, // privacy-ok: toast
+        success: () =>
+          `${formatRM(pendingAmount)} pledged to ${selectedCause}.`, // privacy-ok: toast
         failure: "Sadaqah didn't go through",
-        onSuccess: (res) => {
+        onSuccess: () => {
           setSuccessInfo({
             amount: pendingAmount,
             cause: selectedCause,
-            points: res.coins_awarded ?? Math.floor(pendingAmount * 2),
           });
           setPendingAmount(null);
           setModalError(null);
@@ -192,7 +191,7 @@ function KidSadaqah() {
             aria-label="Sadaqah contributions this year"
           >
             <div className="deposit-hero__copy">
-              <p className="deposit-hero__label">Given this year</p>
+              <p className="deposit-hero__label">Pledged this year</p>
               <p className="deposit-hero__amount tabular-nums">
                 <Money amount={sadaqahTotal} />
               </p>
@@ -212,20 +211,19 @@ function KidSadaqah() {
 
           <div className="px-2 text-center">
             <p className="text-base font-semibold leading-snug text-[var(--ink)] m-0">
-              &ldquo;Charity extinguishes sins just as water extinguishes
-              fire.&rdquo;
+              &ldquo;{SADAQAH_HADITH.text}&rdquo;
             </p>
             <p className="text-xs font-semibold text-[var(--text-2)] mt-1 mb-0">
-              Hadith
+              {SADAQAH_HADITH.source}
             </p>
           </div>
 
           <div className="promo-banner promo-banner--aqua">
             <div className="max-w-[70%]">
               <h2 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
-                Give sadaqah and earn reward points - start with RM1
+                Make a practice Sadaqah pledge from RM1
               </h2>
-              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">Help local masjids, orphans and clean water projects.</p>
+              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">This is practice money. The cause receives a donation only if your parent passes it on.</p>
             </div>
             <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0">
               <AppIcon name="heart" size={28} />
@@ -235,9 +233,9 @@ function KidSadaqah() {
           {/* Donation Form Card OR Success State */}
           {successInfo ? (
             <SuccessState
-              title={`${formatRM(successInfo.amount)} given to ${successInfo.cause}`} // privacy-ok: toast
-              detail={`+${successInfo.points} points · Jazakallah khair!`}
-              buttonText="Give again"
+              title={`${formatRM(successInfo.amount)} pledged to ${successInfo.cause}`} // privacy-ok: toast
+              detail="Ask your parent to pass on the pledge."
+              buttonText="Pledge again"
               onAction={handleGiveAgain}
             />
           ) : (
@@ -351,7 +349,7 @@ function KidSadaqah() {
               onClick={handleConfirmGive}
             >
               {busy
-                ? "Giving…"
+                ? "Pledging…"
                 : `Confirm & Donate ${formatRM(pendingAmount ?? 0 /* privacy-ok: typing */)}`}
             </Button>
           </div>
@@ -362,7 +360,7 @@ function KidSadaqah() {
             <AppIcon name="heart" size={28} />
           </div>
           <p className="text-sm text-[var(--ink)]">
-            Give{" "}
+            Pledge{" "}
             <strong className="text-base text-[var(--primary-text)] font-extrabold tabular-nums">
               {formatRM(pendingAmount ?? 0 /* privacy-ok: typing */)}
             </strong>{" "}

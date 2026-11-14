@@ -283,4 +283,5 @@ export const DEMO_KID_STATE = {
   },
   notifications: DEMO_KID_NOTIFICATIONS,
   unreadNotifications: 2,
+  nextHibah: { amount: 10, next_run_at: "2026-11-21T00:00:00Z" },
 };

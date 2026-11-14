@@ -26,13 +26,16 @@ alter table storage.objects enable row level security;
 create publication supabase_realtime;
 `;
 
-export async function openDb() {
+// Same deferred versions excluded by the release preparation script.
+const DEFERRED = new Set(['20261006100000', '20261009010000']);
+
+export async function openDb({ includeDeferred = false } = {}) {
   const db = new PGlite();
   await db.exec(BOOTSTRAP_SQL);
 
   const files = fs.readdirSync(migrationsDir).sort();
   for (const file of files) {
-    if (!file.endsWith('.sql')) continue;
+    if (!file.endsWith('.sql') || (!includeDeferred && DEFERRED.has(file.split('_')[0]))) continue;
     const fullPath = path.join(migrationsDir, file);
     const stat = fs.statSync(fullPath);
     if (stat.size === 0) continue;

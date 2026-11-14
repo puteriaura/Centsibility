@@ -53,7 +53,10 @@ function KidNotifications() {
     const code = getKidSession()?.code;
     if (!code) return;
     edgeKidMarkNotificationsRead({ code })
-      .then(() => refresh())
+      .then(() => {
+        window.dispatchEvent(new Event("centsibility:kid-notifications-read"));
+        return refresh();
+      })
       .catch(() => {});
   }, [refresh]);
 

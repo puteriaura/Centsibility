@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { AppIcon } from "@/components/ui/app-icon";
 
-export function PracticeCardHeader({ onHelp }: { onHelp: () => void }) {
+export function PracticeCardHeader({ onBack, onHelp }: { onBack: () => void; onHelp: () => void }) {
   return <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2 px-6 py-5">
-    <span aria-hidden="true" />
+    <button type="button" onClick={onBack} aria-label="Back to More" className="grid min-h-11 min-w-11 place-items-center rounded-full text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]">
+      <AppIcon name="back" size={24} />
+    </button>
     <h1 className="m-0 text-center text-xl font-bold text-[var(--ink)]">Practice card</h1>
     <button type="button" onClick={onHelp} aria-label="Ask Penny about practice cards" className="min-h-11 min-w-11 rounded-full text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]">
       <AppIcon name="messagecircle" size={24} />

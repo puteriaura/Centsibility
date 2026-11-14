@@ -11,6 +11,7 @@ async function main() {
     .filter((f) => f.endsWith('.test.mjs'))
     .sort();
 
+  const includeDeferred = process.argv.includes("--include-deferred");
   let totalTests = 0;
   let passedTests = 0;
   let failedTests = 0;
@@ -23,9 +24,11 @@ async function main() {
       continue;
     }
 
-    const db = await openDb();
+    const tests = mod.tests.filter((test) => includeDeferred || !test.requiresDeferred);
+    if (tests.length === 0) continue;
+    const db = await openDb({ includeDeferred });
 
-    for (const test of mod.tests) {
+    for (const test of tests) {
       totalTests++;
       try {
         await test.fn(db);
@@ -37,6 +40,7 @@ async function main() {
         failedTests++;
       }
     }
+    await db.close();
   }
 
   console.log(`\nSummary: ${passedTests} passed, ${failedTests} failed, ${totalTests} total`);

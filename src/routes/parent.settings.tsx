@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParentData } from "@/hooks/use-parent-data";
 import { useAuth } from "@/providers/auth";
 import {
-  edgeParentSetHibah,
   edgeParentSetPin,
   edgeParentGetPin,
   edgeParentClearPin,
@@ -43,8 +42,6 @@ function Settings() {
   const { user } = useAuth();
   const { kids, loading, error, hasLoaded, lastLoadedAt, refresh } =
     useParentData();
-  const [editing, setEditing] = useState<string | null>(null);
-  const [custom, setCustom] = useState(5);
   const [pin, setPin] = useState("");
   const [currentPin, setCurrentPin] = useState("");
   const [hasPin, setHasPin] = useState(false);
@@ -56,7 +53,7 @@ function Settings() {
   );
   const [savingName, setSavingName] = useState(false);
   const [panel, setPanel] = useState<
-    null | "profile" | "kids" | "pin" | "prefs" | "hibah"
+    null | "profile" | "kids" | "pin" | "prefs"
   >(null);
 
   useEffect(() => {
@@ -160,17 +157,6 @@ function Settings() {
     }
   };
 
-  const setRate = async (kidId: string, rate: number) => {
-    try {
-      await edgeParentSetHibah({ kidId, rate });
-      toast.success("Hibah rate updated");
-      refresh();
-      setEditing(null);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "An error occurred");
-    }
-  };
-
   const savePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\d{6}$/.test(pin)) {
@@ -264,7 +250,6 @@ function Settings() {
               title: "App preferences",
               items: [
                 { id: "prefs", label: "Sound & appearance", icon: "settings" },
-                { id: "hibah", label: "Hibah preferences", icon: "gift" },
               ],
             },
           ] as const
@@ -588,180 +573,7 @@ function Settings() {
         </Card>
       </div>
 
-      <div className={`settings-panel${panel === "hibah" ? " is-open" : ""}`}>
-        <Card variant="default" className="m-0">
-          <CardHeader>
-            <CardTitle style={{ fontSize: "1rem" }}>Hibah rate</CardTitle>
-            <CardDescription>Monthly gift per child</CardDescription>
-          </CardHeader>
-          <CardContent
-            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-          >
-            {hasLoaded && !error && kids.length === 0 ? (
-              <p
-                style={{
-                  fontSize: "0.875rem",
-                  color: "var(--text-muted)",
-                  margin: 0,
-                }}
-              >
-                No children enrolled yet.
-              </p>
-            ) : (
-              <>
-                {kids.length > 4 && (
-                  <div className="kid-search">
-                    <AppIcon name="users" size={16} />
-                    <input
-                      type="search"
-                      value={kidAvatarQuery}
-                      onChange={(e) => setKidAvatarQuery(e.target.value)}
-                      placeholder="Search children…"
-                      aria-label="Search children for hibah"
-                    />
-                  </div>
-                )}
-                {filteredKids.map((k) => (
-                  <div
-                    key={k.id}
-                    style={{
-                      padding: "0.85rem",
-                      borderRadius: "12px",
-                      background: "var(--surface-soft)",
-                      border: "1px solid var(--border)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.65rem",
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <AvatarBubble
-                          emoji={resolveAvatar(k.avatar, "kid")}
-                          size={32}
-                          ring
-                          kind="kid"
-                        />
-                        <strong className="truncate text-sm text-[var(--ink)]">
-                          {k.name}
-                        </strong>
-                      </div>
-                      <strong
-                        style={{
-                          fontSize: "1.1rem",
-                          color: "var(--action-text)",
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {(Number(k.hibah_rate) * 100).toFixed(1)}%
-                      </strong>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "0.4rem",
-                      }}
-                    >
-                      {presets.map((r) => {
-                        const active =
-                          Math.abs(Number(k.hibah_rate) - r) < 0.001;
-                        return (
-                          <Button
-                            key={r}
-                            size="sm"
-                            variant={active ? "selected" : "outline"}
-                            onClick={() => setRate(k.id, r)}
-                            style={{ minWidth: "56px" }}
-                          >
-                            {(r * 100).toFixed(1)}%
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        size="sm"
-                        variant={editing === k.id ? "secondary" : "outline"}
-                        onClick={() =>
-                          setEditing(editing === k.id ? null : k.id)
-                        }
-                      >
-                        Custom
-                      </Button>
-                    </div>
-                    {editing === k.id && (
-                      <div
-                        style={{
-                          padding: "0.75rem",
-                          borderRadius: "10px",
-                          background: "var(--surface)",
-                          border: "1px solid var(--primary-soft)",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "0.5rem",
-                        }}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
-                            Custom
-                          </span>
-                          <strong style={{ color: "var(--action-text)" }}>
-                            {custom.toFixed(1)}%
-                          </strong>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "0.35rem",
-                          }}
-                        >
-                          {[0.5, 1, 2, 5].map((step) => (
-                            <Button
-                              key={`-${step}`}
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                setCustom((v) =>
-                                  Math.max(0, +(v - step).toFixed(1)),
-                                )
-                              }
-                            >
-                              −{step}%
-                            </Button>
-                          ))}
-                          {[0.5, 1, 2, 5].map((step) => (
-                            <Button
-                              key={`+${step}`}
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                setCustom((v) =>
-                                  Math.min(20, +(v + step).toFixed(1)),
-                                )
-                              }
-                            >
-                              +{step}%
-                            </Button>
-                          ))}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => setRate(k.id, custom / 100)}
-                        >
-                          Apply {custom.toFixed(1)}%
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
 
       <p className="text-[11px] text-[var(--text-muted)] text-center m-0 px-2 leading-relaxed">
         100% free of riba · Qard al-Hasan loans · Hibah is a voluntary gift

@@ -583,7 +583,7 @@ function KidInsights() {
               {/* Receipt Icon: Opens Transaction History Sheet */}
               <button
                 type="button"
-                aria-label="View transaction history for this period"
+                aria-label="View transactions for this period"
                 title="View transactions"
                 onClick={() => {
                   sfx.tap();
@@ -698,7 +698,7 @@ function KidInsights() {
                       textAlign: "center",
                     }}
                   >
-                    Transaction history
+                    Transactions
                   </h2>
                   <button
                     type="button"
@@ -713,7 +713,7 @@ function KidInsights() {
                       cursor: "pointer",
                       padding: "4px",
                     }}
-                    aria-label="Close transaction history"
+                    aria-label="Close transactions"
                   >
                     <AppIcon name="close" size={22} />
                   </button>

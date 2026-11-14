@@ -16,12 +16,12 @@ export const tests = [
       );
 
       assert.equal(Number(res.balance), 40.00);
-      assert.equal(Number(res.coins_awarded), 20);
+      assert.equal(Number(res.coins_awarded), 0);
       assert.equal(res.cause, 'Orphan Relief');
 
       const kidRow = (await db.query(`select balance, coins from public.kids where id = $1`, [kid.id])).rows[0];
       assert.equal(Number(kidRow.balance), 40.00);
-      assert.equal(Number(kidRow.coins), 25);
+      assert.equal(Number(kidRow.coins), 5);
 
       const txs = (await db.query(`select * from public.transactions where kid_id = $1`, [kid.id])).rows;
       assert.equal(txs.length, 1);
@@ -36,7 +36,7 @@ export const tests = [
       const kidNotes = (await db.query(`select * from public.kid_notifications where kid_id = $1`, [kid.id])).rows;
       assert.equal(kidNotes.length, 1);
       assert.equal(kidNotes[0].kind, 'SADAQAH');
-      assert.equal(kidNotes[0].message, 'You gave RM10.00 to Orphan Relief. +20 points');
+      assert.equal(kidNotes[0].message, 'You pledged RM10.00 to Orphan Relief.');
       assert.equal(kidNotes[0].link, '/kid/sadaqah');
       assert.equal(kidNotes[0].read, false);
 
@@ -45,7 +45,7 @@ export const tests = [
       assert.equal(parentNotes.length, 1);
       assert.equal(parentNotes[0].kid_id, kid.id);
       assert.equal(parentNotes[0].kind, 'SADAQAH');
-      assert.equal(parentNotes[0].message, 'Adam gave RM10.00 sadaqah to Orphan Relief');
+      assert.equal(parentNotes[0].message, 'Adam pledged RM10.00 sadaqah to Orphan Relief. Please pass this pledge on to the cause.');
       assert.equal(parentNotes[0].link, '/parent');
     },
   },
@@ -63,7 +63,7 @@ export const tests = [
       );
 
       assert.equal(Number(res.balance), 25.00);
-      assert.equal(Number(res.coins_awarded), 10);
+      assert.equal(Number(res.coins_awarded), 0);
       assert.equal(res.cause, null);
 
       const txs = (await db.query(`select * from public.transactions where kid_id = $1`, [kid.id])).rows;
@@ -72,12 +72,12 @@ export const tests = [
 
       const kidNotes = (await db.query(`select * from public.kid_notifications where kid_id = $1`, [kid.id])).rows;
       assert.equal(kidNotes.length, 1);
-      assert.equal(kidNotes[0].message, 'You gave RM5.00. +10 points');
+      assert.equal(kidNotes[0].message, 'You pledged RM5.00.');
 
       const parentNotes = (await db.query(`select * from public.notifications where parent_id = $1`, [parentId])).rows;
       assert.equal(parentNotes.length, 1);
       assert.equal(parentNotes[0].kid_id, kid.id);
-      assert.equal(parentNotes[0].message, 'Siddiq gave RM5.00 sadaqah');
+      assert.equal(parentNotes[0].message, 'Siddiq pledged RM5.00 sadaqah. Please pass this pledge on to the cause.');
     },
   },
   {
@@ -130,7 +130,7 @@ export const tests = [
 
       await asRole(db, 'service_role', () =>
         expectError(
-          db.query(`select kid_give_sadaqah($1, 10.00, 'Medical Aid')`, [kid.id]),
+          db.query(`select kid_give_sadaqah($1, 10.00, 'Local Masjid')`, [kid.id]),
           'insufficient_balance'
         )
       );
@@ -179,7 +179,7 @@ export const tests = [
       const kid = await seedKid(db, parentId, { balance: 20 });
 
       await asRole(db, 'service_role', async () => {
-        await db.query(`select kid_give_sadaqah($1, 5.00, 'Emergency Relief')`, [kid.id]);
+        await db.query(`select kid_give_sadaqah($1, 5.00, 'Clean Water Wells')`, [kid.id]);
       });
 
       const before = (await db.query(`select count(*) from public.kid_notifications where kid_id = $1`, [kid.id])).rows[0].count;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { seedParent, seedKid } from './harness.mjs';
-export const tests = [{name:'Quarter settlement preserves stored 90-day terms, waits for maturity and pays exactly once',fn:async db=>{
+export const tests = [{requiresDeferred:true,name:'Quarter settlement preserves stored 90-day terms, waits for maturity and pays exactly once',fn:async db=>{
   const parent=await seedParent(db), kid=await seedKid(db,parent,{balance:100});
   // Simulate existing quarterly rows even on committed HEAD, whose new-position
   // options still omit quarters. This fixture DDL is not a production migration.

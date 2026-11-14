@@ -65,8 +65,8 @@ export const tests = [
       const { parent, kid } = await family(db);
       await call(db, "select kid_give_sadaqah($1,10,'Orphan Relief')", [kid]);
       await notes(db, parent, [kid],
-        [[kid, 'SADAQAH', 'You gave RM10.00 to Orphan Relief. +20 points', '/kid/sadaqah']],
-        [[kid, 'SADAQAH', 'Test Saver gave RM10.00 sadaqah to Orphan Relief', '/parent']]);
+        [[kid, 'SADAQAH', 'You pledged RM10.00 to Orphan Relief.', '/kid/sadaqah']],
+        [[kid, 'SADAQAH', 'Test Saver pledged RM10.00 sadaqah to Orphan Relief. Please pass this pledge on to the cause.', '/parent']]);
     },
   },
   {

@@ -1,3 +1,5 @@
+import { SUGGESTED_REWARDS } from "../_shared/reward-catalogue.ts";
+import { malaysiaDay, validAmount, validChildBirthday, validDueDays, validSignature, SADAQAH_CAUSES } from "../_shared/final-check-input.ts";
 import { normalizeUsername } from "../_shared/username.ts";
 import { issueKidSession, resolveKidSession, revokeKidSession } from "../_shared/kid-session.ts";
 import { isCodeUsable, INVALID_ACCESS_CODE } from "../_shared/access-code.ts";
@@ -60,8 +62,8 @@ function jsonOk(data: unknown): Response {
 }
 
 function jsonError(message: string, status = 400, detail?: unknown): Response {
-  const body: Record<string, unknown> = { error: message };
-  if (detail !== undefined) body.detail = String(detail);
+  const body: Record<string, unknown> = { error: status >= 500 ? "Something went wrong. Please try again." : message };
+  if (status < 500 && detail !== undefined) body.detail = String(detail);
 
   console.error(`[kid-finance] ${status}: ${message}`);
 
@@ -368,24 +370,9 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
   let birthDate: string | null = null;
   let birthYear: number | null = null;
   if (birthDateRaw) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDateRaw)) {
-      return jsonError("Birth date must be in YYYY-MM-DD format.", 400);
-    }
-    const parsedDate = new Date(birthDateRaw + "T00:00:00Z");
-    if (isNaN(parsedDate.getTime())) {
-      return jsonError("Invalid birth date.", 400);
-    }
-    const today = new Date();
-    let age = today.getUTCFullYear() - parsedDate.getUTCFullYear();
-    const m = today.getUTCMonth() - parsedDate.getUTCMonth();
-    if (m < 0 || (m === 0 && today.getUTCDate() < parsedDate.getUTCDate())) {
-      age--;
-    }
-    if (age < 4 || age > 18) {
-      return jsonError("Age must be between 4 and 18.", 400);
-    }
+    if (!validChildBirthday(birthDateRaw)) return jsonError("Enter a valid birthday for ages 6 to 17.", 400);
     birthDate = birthDateRaw;
-    birthYear = parsedDate.getUTCFullYear();
+    birthYear = Number(birthDateRaw.slice(0, 4));
   }
 
   const { data: kid, error: kidErr } = await admin
@@ -445,7 +432,7 @@ async function handleSetInitialPin(admin: Admin, params: Record<string, unknown>
 
 async function handleGetState(admin: Admin, params: Record<string, unknown>, requestId: string) {
   let kid = await getKid(admin, params.code, requestId);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = malaysiaDay();
   const lastLogin = kid.last_login_date ?? null;
   if (lastLogin !== today) {
     let newStreak = 1;
@@ -463,7 +450,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
   const { data: refKid } = await admin.from("kids").select("balance").eq("id", kid.id).maybeSingle();
   if (refKid) kid.balance = refKid.balance;
 
-  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes, investRes] = await Promise.all([
+  const [goalsRes, txsRes, rewardsRes, loansRes, approvalsRes, parentRes, notificationsRes, unreadRes, completionsRes, ageGroupRes, investRes, hibahRes] = await Promise.all([
     admin.from("goals").select("*").eq("kid_id", kid.id).order("created_at"),
     admin.from("transactions").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }).limit(100),
     admin.from("rewards").select("*").eq("kid_id", kid.id).order("created_at", { ascending: false }),
@@ -475,6 +462,8 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     admin.from("quest_completions").select("id", { count: "exact", head: true }).eq("kid_id", kid.id),
     admin.rpc("kid_age_group", { p_kid_id: kid.id }),
     currentInvestmentValues(admin, kid.id),
+    admin.from("scheduled_hibahs").select("amount, next_run_at").eq("kid_id", kid.id)
+      .eq("is_active", true).order("next_run_at").limit(1).maybeSingle(),
   ]);
 
   const investmentsValue = investRes.totalValue;
@@ -497,6 +486,7 @@ async function handleGetState(admin: Admin, params: Record<string, unknown>, req
     parent: parentRes.data ?? null,
     notifications: notificationsRes.data ?? [],
     unreadNotifications: unreadRes.count ?? 0,
+    nextHibah: hibahRes.data ?? null,
     investmentsValue: investmentsValue === null ? null : Number(investmentsValue.toFixed(2)),
   });
 }
@@ -590,14 +580,14 @@ async function handleInvestPreview(admin: Admin, params: Record<string, unknown>
   const lockTicks = Number(params.lockTicks);
   const amount = Number(params.amount);
 
-  if (!tier || !frequency || isNaN(lockTicks) || lockTicks <= 0 || isNaN(amount) || amount <= 0) {
+  if (!tier || !frequency || !Number.isInteger(lockTicks) || lockTicks <= 0 || !validAmount(params.amount, 1, 50)) {
     return jsonError("Pick an investment tier, frequency, and length from the options.", 400);
   }
 
   const rates: Record<string, [number, number]> = {
-    low: [-0.005, 0.005],
-    medium: [-0.010, 0.010],
-    high: [-0.020, 0.020],
+    low: [0.001, 0.010],
+    medium: [0.001, 0.030],
+    high: [0, 0.050],
   };
 
   const range = rates[tier];
@@ -686,7 +676,7 @@ async function handleMarketOpen(admin: Admin, params: Record<string, unknown>, r
   const clientRequestId = typeof params.clientRequestId === "string" && params.clientRequestId.trim() ? params.clientRequestId.trim() : null;
 
   if (!symbol) return jsonError("Missing symbol", 400);
-  if (isNaN(amount) || amount < 1.00) return jsonError("Invalid amount", 400);
+  if (!validAmount(params.amount, 1)) return jsonError("Invalid amount", 400);
 
   // Refresh quote if stale
   await getQuote(admin, symbol, { forTrade: "open" });
@@ -730,6 +720,7 @@ async function handleMarketSell(admin: Admin, params: Record<string, unknown>, r
 }
 
 async function handleInvestOpen(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  if (!(validAmount(params.amount, 1, 50))) return jsonError("Invalid amount", 400);
   const kid = await getKid(admin, params.code, requestId);
   const tier = typeof params.tier === "string" ? params.tier.toLowerCase() : "";
   const frequency = typeof params.frequency === "string" ? params.frequency.toLowerCase() : "";
@@ -769,7 +760,8 @@ async function handleRequestApproval(admin: Admin, params: Record<string, unknow
   const amount = Number(params.amount);
   const reason = typeof params.reason === "string" ? params.reason.trim() : "";
   if (!kind || !amount || !reason) return jsonError("Missing required fields: kind, amount, reason", 400);
-  if (!["WITHDRAWAL", "DEPOSIT"].includes(kind)) return jsonError(`Invalid kind "${kind}"`, 400);
+  if (!["WITHDRAWAL", "DEPOSIT"].includes(kind)) return jsonError("Invalid request kind", 400);
+  if (!validAmount(params.amount)) return jsonError("Invalid amount", 400);
   const kid = await getKid(admin, params.code, requestId);
 
   if (kind === "WITHDRAWAL") {
@@ -799,11 +791,14 @@ async function handleRequestLoan(admin: Admin, params: Record<string, unknown>, 
   const amount = Number(params.amount);
   const reason = typeof params.reason === "string" ? params.reason.trim() : "";
   const signature = typeof params.signature === "string" ? params.signature : "";
-  const dueDays = Number(params.dueDays) || 14;
+  const dueDays = params.dueDays ?? 14;
+  if (!validDueDays(dueDays) || !validSignature(signature) || reason.includes(' :: SIG::')) {
+    return jsonError("Invalid loan term or signature", 400);
+  }
   if (params.amount === undefined || params.amount === null || !reason || !signature) {
     return jsonError("Missing required fields: amount, reason, signature", 400);
   }
-  if (typeof amount !== "number" || isNaN(amount) || amount < 10 || amount > 500) {
+  if (!validAmount(params.amount, 10, 500)) {
     return jsonError("Loan amount must be between RM10.00 and RM500.00", 400);
   }
   const kid = await getKid(admin, params.code, requestId);
@@ -819,11 +814,12 @@ async function handleRequestLoan(admin: Admin, params: Record<string, unknown>, 
 
 async function handleRequestReward(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const name = typeof params.name === "string" ? params.name.trim() : "";
-  const cost = Number(params.cost);
-  if (!name || !cost || cost < 1) return jsonError("Missing required fields: name, cost", 400);
+  const reward = SUGGESTED_REWARDS.find((item) => item.name.toLowerCase() === name.toLowerCase());
+  if (!reward) return jsonError("Choose a reward from the store", 400);
+  const { cost } = reward;
   const kid = await getKid(admin, params.code, requestId);
   if (cost > Number(kid.coins)) return jsonError(`Not enough coins (have ${kid.coins}, need ${cost})`, 400);
-  const { error } = await admin.from("rewards").insert({ kid_id: kid.id, name, cost, status: "requested" });
+  const { error } = await admin.from("rewards").insert({ kid_id: kid.id, name: reward.name, cost, status: "requested" });
   if (error) return jsonError(`Failed to create reward request: ${error.message}`, 500);
   await notifyParent(admin, kid.parent_id as string, kid.id as string, "REWARD",
     `${kid.name} wants "${name}" (${cost} 🪙)`);
@@ -831,6 +827,7 @@ async function handleRequestReward(admin: Admin, params: Record<string, unknown>
 }
 
 async function handleLoanRepay(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  if (!(validAmount(params.amount, 0.5))) return jsonError("Invalid amount", 400);
   const loanId = typeof params.loanId === "string" ? params.loanId : "";
   const amount = Number(params.amount);
   const kid = await getKid(admin, params.code, requestId);
@@ -850,7 +847,9 @@ async function handleLoanRepay(admin: Admin, params: Record<string, unknown>, re
 
 async function handleSadaqah(admin: Admin, params: Record<string, unknown>, requestId: string) {
   const amount = Number(params.amount);
-  const cause = typeof params.cause === "string" ? params.cause.trim() : null;
+  const cause = SADAQAH_CAUSES.find((name) => name === params.cause);
+  if (!cause) return jsonError("Choose a Sadaqah cause", 400);
+  if (!validAmount(params.amount, 1, 10000)) return jsonError("Invalid amount", 400);
   const kid = await getKid(admin, params.code, requestId);
   const { data, error } = await admin.rpc("kid_give_sadaqah", {
     p_kid_id: kid.id,
@@ -878,6 +877,7 @@ async function handleMarkNotificationsRead(admin: Admin, params: Record<string, 
 }
 
 async function handleContributeGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  if (!(validAmount(params.amount))) return jsonError("Invalid amount", 400);
   const goalId = typeof params.goalId === "string" ? params.goalId : "";
   const amount = Number(params.amount);
   const kid = await getKid(admin, params.code, requestId);
@@ -895,6 +895,7 @@ async function handleContributeGoal(admin: Admin, params: Record<string, unknown
 }
 
 async function handleCreateGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  if (!(validAmount(params.target, 1))) return jsonError("Invalid amount", 400);
   const name = typeof params.name === "string" ? params.name : "";
   const emoji = typeof params.emoji === "string" ? params.emoji : "🎯";
   const target = Number(params.target);
@@ -910,6 +911,7 @@ async function handleCreateGoal(admin: Admin, params: Record<string, unknown>, r
 }
 
 async function handleUpdateGoal(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  if (!(params.target === undefined || validAmount(params.target, 1))) return jsonError("Invalid amount", 400);
   const goalId = typeof params.goalId === "string" ? params.goalId : "";
   const name = typeof params.name === "string" ? params.name : "";
   const emoji = typeof params.emoji === "string" ? params.emoji : "🎯";
@@ -942,7 +944,7 @@ async function handleSetCardControls(admin: Admin, params: Record<string, unknow
   if (params.frozen !== undefined && typeof params.frozen !== "boolean") {
     return jsonError("Field 'frozen' must be a boolean", 400);
   }
-  if (params.dailyLimit !== undefined && typeof params.dailyLimit !== "number") {
+  if (params.dailyLimit !== undefined && !validAmount(params.dailyLimit)) {
     return jsonError("Field 'dailyLimit' must be a number", 400);
   }
   if (params.onlineEnabled !== undefined && typeof params.onlineEnabled !== "boolean") {
@@ -1087,6 +1089,9 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
     return jsonError("Penny request settings are invalid", 400);
   }
 
+  const limited = await pennyGlobalLimit(admin, corsHeaders);
+  if (limited) return limited;
+
   // 3. Consume quota atomically in DB
   const { data: remaining, error: quotaErr } = await admin.rpc("kid_consume_penny_quota", {
     p_kid_id: kid.id,
@@ -1099,8 +1104,6 @@ async function handlePennyChat(admin: Admin, params: Record<string, unknown>, re
 
   // 4. Call DeepSeek via shared callPenny
   try {
-    const limited = await pennyGlobalLimit(admin, corsHeaders);
-    if (limited) return limited;
     const result = await callPenny(apiKey, requestParams);
     return jsonOk({
       reply: result.reply,
@@ -1197,7 +1200,7 @@ async function handleTransfer(admin: Admin, params: Record<string, unknown>, req
   const amount = Number(params.amount);
   const note = typeof params.note === "string" ? params.note.trim() : null;
 
-  if (isNaN(amount) || amount < 1.00) {
+  if (!validAmount(params.amount, 1)) {
     return jsonError("Invalid amount", 400);
   }
 

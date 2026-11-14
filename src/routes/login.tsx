@@ -176,6 +176,7 @@ function Login() {
                 <AppIcon name="kid" size={16} />
                 <span>Kid? Sign in with your code</span>
               </Link>
+              <Link to="/privacy" className="block text-center text-sm underline">Privacy notice</Link>
             </div>
 
             {/* Dev Demo Bypass */}

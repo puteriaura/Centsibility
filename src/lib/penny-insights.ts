@@ -126,14 +126,14 @@ export function buildSpendingSummary(
     txCount === 0
       ? "Quiet stretch so far. When you move money, I’ll spot patterns for you."
       : top
-        ? `Big week for ${top.label.toLowerCase()}! You made ${top.count} related move${top.count === 1 ? "" : "s"} totaling RM${top.amount.toFixed(2)}.`
+        ? `Big week for ${top.label.toLowerCase()}! Recorded ${top.count} related transaction${top.count === 1 ? "" : "s"} totaling RM${top.amount.toFixed(2)}.`
         : `You completed ${txCount} transactions recently. Keep tracking to level up your savings game.`;
 
   if (biggest) {
     const day = new Date(biggest.created_at).toLocaleDateString("en-MY", {
       weekday: "long",
     });
-    highlight = `Big week for transfers! You made 1 outgoing move of ${formatRM(Number(biggest.amount))} on ${day}, showing standout engagement this week.`;
+    highlight = `Largest outgoing transaction: ${formatRM(Number(biggest.amount))} on ${day}.`;
   }
 
   const fmt = (d: Date) => formatDate(d);
@@ -194,7 +194,7 @@ export function pennyReply(
     return `Pro saver move from Penny: move a little from your wallet into a Tabung right when money comes in. You received ${formatRM(s.moneyIn)} recently. Even putting ${formatRM(Math.max(2, s.moneyIn * 0.1))} into a Tabung builds massive discipline! Open Tabung to tuck it away.`;
   }
   if (/sadaqah|charity|give|zakat/.test(q)) {
-    return `Sadaqah cleanses wealth like water extinguishes fire. Even RM1 makes a huge difference. Your recent outflow is ${formatRM(s.moneyOut)}. Giving with pure intention brings barakah into everything you save!`;
+    return `You can make a practice Sadaqah pledge from RM1. Your parent can pass it on to the cause. Your recent outgoing transactions total ${formatRM(s.moneyOut)}.`;
   }
   if (/invest|growth|halal/.test(q)) {
     return `Halal growth means risk you truly understand. Check Investment to practice with Centsibility Funds and learn how growth works. Always check in with your parent first. That is wise, not weak.`;
