@@ -257,7 +257,7 @@ function ParentLayout() {
             </div>
             <div className="w-full bg-[var(--surface-sunken)] h-1.5 rounded-full overflow-hidden">
               <div
-                className="bg-[var(--primary)] h-full transition-all duration-300"
+                className="bg-[var(--primary)] h-full transition-colors duration-300"
                 style={{
                   width: onboardingStep === 1 ? "33%" : onboardingStep === 2 ? "66%" : "100%",
                 }}

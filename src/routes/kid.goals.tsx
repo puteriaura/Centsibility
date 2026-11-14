@@ -278,7 +278,7 @@ function KidGoals() {
         <Link
           to="/kid/invest"
           onClick={() => sfx.tap()}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[var(--primary-text)] text-xs font-medium no-underline hover:border-[var(--primary)] transition-all"
+          className="flex min-h-[44px] items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[var(--primary-text)] text-xs font-medium no-underline hover:border-[var(--primary)] transition-colors"
         >
           <AppIcon name="invest" size={16} />
           <span>Investments are on the Investment page</span>
@@ -295,9 +295,9 @@ function KidGoals() {
             <div className="w-14 h-14 rounded-2xl bg-[var(--primary-soft)] text-[var(--primary-text)] flex items-center justify-center mx-auto">
               <AppIcon name="save" size={32} />
             </div>
-            <h3 className="text-base font-bold text-[var(--ink)] m-0">
+            <h2 className="text-base font-bold text-[var(--ink)] m-0">
               No Tabung yet
-            </h3>
+            </h2>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-sm mx-auto">
               Start putting money aside for games, books, or family gifts to
               reach your milestones.
@@ -354,7 +354,7 @@ function KidGoals() {
             <Card
               key={g.id}
               variant="default"
-              className={`p-4 rounded-2xl border transition-all ${
+              className={`p-4 rounded-2xl border transition-colors ${
                 complete
                   ? "border-[var(--success-soft)] bg-[var(--surface-soft)]"
                   : "border-[var(--border)]"
@@ -382,9 +382,9 @@ function KidGoals() {
                 {/* Right: name, RM saved/target, 6px progress bar */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-base font-bold text-[var(--ink)] leading-snug truncate m-0">
+                    <h2 className="text-base font-bold text-[var(--ink)] leading-snug truncate m-0">
                       {g.name}
-                    </h3>
+                    </h2>
                     {complete && <Badge variant="success">Full</Badge>}
                   </div>
 
@@ -541,10 +541,10 @@ function KidGoals() {
           className="p-5 space-y-4 border-2 border-[var(--primary)]/20 shadow-md"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-[var(--ink)] flex items-center gap-2 m-0">
+            <h2 className="text-base font-bold text-[var(--ink)] flex items-center gap-2 m-0">
               <AppIcon name="save" size={20} color="var(--primary)" />
               Create Tabung
-            </h3>
+            </h2>
             <Button
               type="button"
               variant="ghost"
@@ -716,7 +716,7 @@ function IconPicker({
             aria-selected={selected}
             onClick={() => onChange(e)}
             aria-label={e}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer min-h-[44px] ${
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-150 cursor-pointer min-h-[44px] ${
               selected
                 ? "bg-[var(--primary)] text-white shadow-sm scale-105"
                 : "bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--primary-text)] hover:bg-[var(--primary-soft)] border border-[var(--border)]"

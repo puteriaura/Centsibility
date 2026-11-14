@@ -99,7 +99,11 @@ export function pageTitle(pathname: string, mode: Mode) {
 /** Where the back arrow goes: one level up the hierarchy, never "wherever". */
 export function upTarget(pathname: string, mode: Mode): string {
   if (mode === "kid") {
-    if (pathname.startsWith("/kid/quest")) return "/kid/missions";
+    const p = trimSlash(pathname);
+    if (p.startsWith("/kid/quest")) return "/kid/missions";
+    if (["/kid/goals", "/kid/loans", "/kid/card", "/kid/invest", "/kid/sadaqah", "/kid/zakat", "/kid/history", "/kid/rewards", "/kid/notifications"].includes(p)) {
+      return "/kid/more";
+    }
     return "/kid";
   }
   if (pathname.startsWith("/parent/reports")) return "/parent/insights";

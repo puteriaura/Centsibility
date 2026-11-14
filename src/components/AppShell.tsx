@@ -380,7 +380,7 @@ function ShellAccount({ mode, kind, kidName, kidAvatar, parentAvatar, unread }: 
           )}
         </div>
 
-        <div className="shell-account__notifications">
+        <div className="shell-account__notifications" role="region" aria-label="Notifications">
           {isKid ? (
             <Link
               to="/kid/notifications"
@@ -443,7 +443,7 @@ function TopBar({
     return (
       <header className="shell-topbar shell-topbar--home">
         <img src="/icons/centsibility-app.svg" alt="Centsibility" width={36} height={36} className="shell-topbar__logo" />
-        <h1 className="shell-home-title">Home</h1>
+        <div className="shell-home-title font-display font-bold text-[var(--ink)] leading-[1.25] tracking-[-0.01em]" aria-hidden="true">Home</div>
         <div className="shell-topbar__left" />
         <div className="shell-topbar__right">{isKid && <PennyButton title={title} />}</div>
       </header>

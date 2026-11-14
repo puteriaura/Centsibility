@@ -101,6 +101,10 @@ export function PennyProvider({ children, mode }: PennyProviderProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const pathname = useLocation({ select: (location) => location.pathname });
   React.useEffect(() => { setIsOpen(false); }, [pathname]);
+  React.useEffect(() => {
+    document.body.classList.toggle("penny-open", isOpen);
+    return () => { document.body.classList.remove("penny-open"); };
+  }, [isOpen]);
   const [pageContext, setPageContext] = React.useState<PennyPageContext | null>(
     null,
   );

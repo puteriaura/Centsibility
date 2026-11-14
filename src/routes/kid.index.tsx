@@ -38,7 +38,7 @@ import {
 const SHORTCUTS: Array<{ to: string; label: string; icon: string }> = [
   { to: "/kid/transfer", label: "Send", icon: "send" },
   { to: "/kid/goals", label: "Tabung", icon: "tabung" },
-  { to: "/kid/wallet", label: "Ask", icon: "ask" },
+  { to: "/kid/wallet", label: "Request", icon: "ask" },
   { to: "/kid/more", label: "More", icon: "more" },
 ];
 
@@ -158,6 +158,7 @@ function KidHome() {
 
   return (
     <>
+      <h1 className="sr-only">Home</h1>
       <div className="page-split">
       <div className="page-split__summary">
       <DailyWelcome kidId={k.id} streak={Number(k.streak) || 0} incoming={incoming} />
@@ -257,6 +258,7 @@ function KidHome() {
                   key={l.id}
                   to="/kid/loans"
                   className="list-row"
+                  aria-label={`${l.reason || "Qard loan"}, due ${formatDate(l.due_date)}, repay`}
                   onClick={() => sfx.tap()}
                 >
                   <span className="list-row__icon" aria-hidden="true">
@@ -427,14 +429,11 @@ function KidHome() {
                   {data.parent && (
                     <Card variant="soft" className="p-3 space-y-1">
                       <small className="text-xs text-[var(--text-secondary)] font-medium">
-                        Linked to Parent
+                        Linked to parent
                       </small>
                       <div className="text-sm font-bold text-[var(--ink)]">
                         {data.parent.display_name || "Parent"}
                       </div>
-                      <small className="text-xs text-[var(--text-muted)]">
-                        {data.parent.email}
-                      </small>
                     </Card>
                   )}
 
@@ -446,7 +445,7 @@ function KidHome() {
                     loading={savingProfile}
                     className="w-full justify-center mt-2"
                   >
-                    {savingProfile ? "Saving..." : "Save Profile"}
+                    {savingProfile ? "Saving..." : "Save profile"}
                   </Button>
                 </div>
               </div>

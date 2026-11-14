@@ -6,6 +6,7 @@ import {
   createIdleLockTimer,
   createVisibilityLockListener,
   IDLE_TIMEOUT_MS,
+  STORAGE_KEY_HIDDEN,
 } from "./privacy-reducer";
 import { PrivacyUnlockSheet } from "./PrivacyUnlockSheet";
 
@@ -85,6 +86,17 @@ export function PrivacyProvider({
 
   const openUnlockSheet = React.useCallback(() => setSheetOpen(true), []);
   const closeUnlockSheet = React.useCallback(() => setSheetOpen(false), []);
+
+  // Cross-tab sync for hide-amounts preference (FC-55)
+  React.useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_HIDDEN) {
+        dispatch({ type: "SET_HIDDEN", hidden: e.newValue === "true" });
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Idle timer: 5 minutes with no tap, key press or scroll
   React.useEffect(() => {

@@ -293,7 +293,7 @@ function KidQuestRunnerPage() {
         </p>
         <div className="w-full bg-[var(--surface-muted)] rounded-full h-2 overflow-hidden">
           <div
-            className="bg-[var(--primary)] h-2 rounded-full transition-all duration-300"
+            className="bg-[var(--primary)] h-2 rounded-full transition-colors duration-300"
             style={{ width: `${Math.round(((currentIndex + 1) / totalQ) * 100)}%` }}
           />
         </div>
@@ -333,7 +333,7 @@ function KidQuestRunnerPage() {
                 disabled={submitting || hasGraded}
                 onClick={() => void handleSelectChoice(idx)}
                 aria-pressed={isSelected}
-                className={`w-full p-4 rounded-xl border text-left text-sm transition-all duration-150 flex items-center justify-between gap-3 cursor-pointer ${buttonStyle}`}
+                className={`w-full p-4 rounded-xl border text-left text-sm transition-colors duration-150 flex items-center justify-between gap-3 cursor-pointer ${buttonStyle}`}
               >
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-lg bg-[var(--surface-soft)] font-bold text-xs flex items-center justify-center shrink-0 text-[var(--ink)]">

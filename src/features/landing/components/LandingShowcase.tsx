@@ -16,7 +16,7 @@ export function LandingShowcase() {
             These are real screens with made-up amounts.
           </p>
         </div>
-        <div className="landing-phones">
+        <div className="landing-phones" tabIndex={0} aria-label="Child app screens preview">
           {["Home", "Insights", "Practice card"].map((title, i) => (
             <figure key={title}>
               <div className="landing-phone-scale">

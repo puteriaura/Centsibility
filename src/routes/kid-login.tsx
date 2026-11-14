@@ -123,7 +123,7 @@ function KidLogin() {
   };
 
   return (
-    <div
+    <main
       style={{
         minHeight: "100dvh",
         display: "flex",
@@ -191,7 +191,7 @@ function KidLogin() {
               >
                 {tab === "login" && <SlidingPill layoutId="kid-login-method" />}
                 <AppIcon name="user" size={16} />
-                <span>Username + PIN</span>
+                <span className="whitespace-nowrap">Username + PIN</span>
               </Button>
               <Button
                 type="button"
@@ -205,7 +205,7 @@ function KidLogin() {
               >
                 {tab === "code" && <SlidingPill layoutId="kid-login-method" />}
                 <AppIcon name="key" size={16} />
-                <span>First Time Code</span>
+                <span className="whitespace-nowrap">First-time code</span>
               </Button>
             </div>
           </div>
@@ -418,7 +418,7 @@ function KidLogin() {
                 <AppIcon name="parent" size={16} />
                 <span>Parent? Sign in here</span>
               </Link>
-              <Link to="/privacy" className="block text-center text-sm underline">Privacy notice</Link>
+              <Link to="/privacy" className="flex min-h-[44px] items-center justify-center text-sm underline">Privacy notice</Link>
             </div>
 
             {/* Dev Mode Bypass */}
@@ -470,6 +470,6 @@ function KidLogin() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }

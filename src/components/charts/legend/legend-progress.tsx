@@ -36,7 +36,7 @@ export function LegendProgress({
       >
         <Progress.Indicator
           className={cn(
-            "h-full rounded-full transition-all duration-500",
+            "h-full rounded-full transition-colors duration-500",
             indicatorClassName
           )}
           style={{ backgroundColor: item.color }}

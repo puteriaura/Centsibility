@@ -105,7 +105,7 @@ export function ZakatSection() {
           <p
             className="m-0 text-sm leading-snug"
           >
-            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ.
+            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="text-inherit underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ.
           </p>
           <p className="m-0 text-sm">Rate {(ZAKAT_RATE * 100).toFixed(1)}%
           </p>
@@ -147,17 +147,25 @@ export function ZakatSection() {
 
       {/* Wallet balance quick-add toggle */}
       <Card variant="default" className="p-4 border border-[var(--border)]">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={useWallet}
-            onChange={(e) => setUseWallet(e.target.checked)}
-            className="w-5 h-5 accent-[var(--primary)] rounded cursor-pointer"
-            aria-label="Include Centsibility wallet balance"
-          />
+        <label className="flex items-center gap-3 cursor-pointer select-none min-h-[44px]">
+          <span className="relative inline-flex items-center justify-center w-11 h-11 shrink-0">
+            <input
+              type="checkbox"
+              checked={useWallet}
+              onChange={(e) => setUseWallet(e.target.checked)}
+              className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              aria-label="Include Centsibility wallet balance"
+            />
+            <span
+              aria-hidden="true"
+              className="w-5 h-5 rounded border border-[var(--border-strong)] bg-[var(--surface)] flex items-center justify-center peer-checked:bg-[var(--primary)] peer-checked:border-[var(--primary)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--primary)] transition-colors"
+            >
+              {useWallet && <AppIcon name="check" size={14} color="#ffffff" />}
+            </span>
+          </span>
           <div className="text-xs sm:text-sm">
             <strong className="text-[var(--ink)] block">
-              Include My Centsibility Balance
+              Include my Centsibility balance
             </strong>
             <span className="text-[var(--text-secondary)]">
               Wallet + Investment Pool ={" "}

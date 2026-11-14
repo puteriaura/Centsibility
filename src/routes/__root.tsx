@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, useMatches, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { AuthProvider } from "@/providers/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect } from "react";
@@ -14,7 +14,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 function NotFoundComponent() {
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
+    <main className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
       <Card variant="default" className="max-w-md w-full p-6 rounded-3xl">
         <div className="w-14 h-14 mb-4 rounded-full bg-[var(--action-tint)] text-[var(--action)] flex items-center justify-center">
           <AppIcon name="compass" size={30} />
@@ -33,14 +33,14 @@ function NotFoundComponent() {
           </Link>
         </div>
       </Card>
-    </div>
+    </main>
   );
 }
 
 export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
+    <main className="min-h-[100dvh] flex items-center justify-center p-6 bg-[var(--canvas)]">
       <Card variant="default" className="max-w-md w-full p-6 rounded-3xl">
         <div className="w-14 h-14 mb-4 rounded-full bg-[var(--neg-bg)] text-[var(--neg)] flex items-center justify-center">
           <AppIcon name="close" size={30} />
@@ -64,7 +64,7 @@ export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
           </Link>
         </div>
       </Card>
-    </div>
+    </main>
   );
 }
 
@@ -76,10 +76,21 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { reduced: reduce } = useTheme();
+  const matches = useMatches();
   useEffect(observeViewport, []);
   useEffect(() => {
     purgeStoredCredentials();
   }, []);
+  useEffect(() => {
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const title = (matches[i].meta as Array<{ title?: string }> | undefined)?.find((m) => m?.title)?.title;
+      if (title) {
+        document.title = title;
+        return;
+      }
+    }
+    document.title = "Centsibility | Shariah family finance for kids";
+  }, [matches]);
 
   return (
     <MotionConfig reducedMotion={reduce ? "always" : "user"}>

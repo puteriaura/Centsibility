@@ -288,9 +288,9 @@ function KidLoans() {
               {/* Repay Duration Selector */}
               <div>
                 <label className="block text-xs font-semibold text-[var(--ink)] mb-2">
-                  Repayment Duration
+                  Repayment duration
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 min-[380px]:grid-cols-4 gap-2">
                   {[7, 14, 30, 60].map((d) => (
                     <Button
                       key={d}
@@ -298,7 +298,7 @@ function KidLoans() {
                       variant={dueDays === d ? "selected" : "secondary"}
                       size="sm"
                       onClick={() => setDueDays(d)}
-                      className="justify-center"
+                      className="justify-center whitespace-nowrap"
                     >
                       {d} days
                     </Button>
@@ -309,7 +309,7 @@ function KidLoans() {
               {/* Signature Capture */}
               <div>
                 <label className="block text-xs font-semibold text-[var(--ink)] mb-2">
-                  Sign Digitally Below
+                  Sign digitally below
                 </label>
                 <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-[var(--surface)] p-2">
                   <SignaturePad onChange={setSignature} />
@@ -323,7 +323,7 @@ function KidLoans() {
                 disabled={busy}
                 className="w-full justify-center text-sm font-bold"
               >
-                {busy ? "Submitting..." : "Sign Agreement & Submit to Parent"}
+                {busy ? "Submitting..." : "Sign agreement and submit"}
               </Button>
             </div>
           )}
@@ -364,7 +364,7 @@ function KidLoans() {
                   <Card
                     key={l.id}
                     variant="default"
-                    className={`p-5 rounded-2xl border transition-all duration-150 ${
+                    className={`p-5 rounded-2xl border transition-colors duration-150 ${
                       overdue
                         ? "border-[var(--error)]/40 bg-[var(--error-soft)]/20"
                         : "border-[var(--border)]"
@@ -373,9 +373,9 @@ function KidLoans() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-base font-bold text-[var(--ink)]">
+                          <h3 className="text-base font-bold text-[var(--ink)]">
                             {l.reason || "Qard Hasan Loan"}
-                          </h4>
+                          </h3>
                           {l.status === "repaid" ? (
                             <Badge variant="success">Repaid</Badge>
                           ) : overdue ? (

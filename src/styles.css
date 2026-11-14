@@ -119,8 +119,10 @@ input, textarea, select {
   --red-50: #FCEBEA;
   --red-700: #C4302B;    /* 5.5:1 white, 4.8:1 on red-50 */
   --red-800: #A3261F;
-  --amber-50: #FDF1DE;
-  --amber-700: #A15C07;  /* 5.2:1 white, 4.6:1 on amber-50 */
+  --amber-50: #FFF1CC;
+  --amber-700: #7A4B00;  /* 6.60:1 on amber-50 */
+  --info: #22355B;
+  --info-bg: #E2E7F4;    /* 9.82:1 */
 
   /* Roles */
   --canvas: var(--gray-100);
@@ -2781,6 +2783,8 @@ input, textarea, select {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    min-height: 44px;
     gap: 2px;
     padding: 8px;
     background: var(--surface);
@@ -3236,7 +3240,7 @@ input, textarea, select {
 /* Appearance changes role colors, preserving white-on-action and card artwork. */
 :root[data-theme="dark"] {
   --edge: #08090E; --tile-edge: #08090E;
-  --gray-0: #181C26; --gray-50: #1D212D; --gray-100: #0F121A; --gray-150: #243247; --gray-200: #252936; --gray-400: #71839d;
+  --gray-0: #1C2130; --gray-50: #22283A; --gray-100: #0F121A; --gray-150: #243247; --gray-200: #3A4258; --gray-400: #71839d;
   --gray-500: #959BAE; --gray-600: #B0B6C6; --gray-800: #e1e7f0; --gray-900: #EEF0F8;
   --blue-50: #202737; --blue-100: #283145; --action-text: #A0B0DA;
   --green-50: #14382c; --green-700: #78dbad; --red-50: #46262b; --red-700: #ffa5a0; --amber-50: #44331b; --amber-700: #f4c47b;
@@ -3255,6 +3259,22 @@ button[data-variant]:active:not(:disabled), .quick-btn:active .quick-circle, .sh
 .penny-drawer__content { z-index: 201; height: min(85dvh, var(--viewport-height, 85dvh)); max-height: var(--viewport-height, 85dvh); }
 /* Full-page chat follows the visible viewport, like .app-dialog: only the thread scrolls, so iOS toolbars stop resizing the layout and the composer stays above the keyboard. */
 .penny-chat:not(.penny-chat--drawer) { position: fixed; inset-inline: 0; top: var(--viewport-top, 0px); height: var(--viewport-height, 100dvh); min-height: 0; max-width: 560px; margin-inline: auto; z-index: 1; }
+:root[data-route="app"] #prerender-landing { display: none !important; }
+button[data-variant="primary"], button[data-variant="brand"] { border: 1.5px solid #7D6F09; }
+@media (min-width: 1024px) {
+  body.penny-open .app-shell__main { padding-right: 432px; transition: padding-right 220ms var(--ease-standard); }
+}
+@keyframes pin-dot-pop { 0% { transform: scale(0.6); } 65% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes pin-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-6px); } }
+.pin-dot--filled { animation: pin-dot-pop 160ms var(--ease-pop); }
+.pin-dots--shake { animation: pin-shake 280ms var(--ease-standard); }
+@keyframes dock-bounce { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.shell-navitem--active svg { animation: dock-bounce 300ms var(--ease-pop); }
+.home-children { align-items: start; }
+@media (max-width: 359px) {
+  .quick-grid { gap: 4px; }
+  .quick-label { font-size: 11px; line-height: 1.2; }
+}
 :root[data-theme="dark"] button[data-variant="danger"] { background: #9d2824; color: #fff; }
 :root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after {
   animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important;

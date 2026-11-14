@@ -33,7 +33,7 @@ describe("navigation map", () => {
   it("sends back one level up, not always home", () => {
     expect(upTarget("/kid/quest/abc", "kid")).toBe("/kid/missions");
     expect(upTarget("/kid/missions", "kid")).toBe("/kid");
-    expect(upTarget("/kid/invest", "kid")).toBe("/kid");
+    expect(upTarget("/kid/invest", "kid")).toBe("/kid/more");
     expect(upTarget("/parent/reports", "parent")).toBe("/parent/insights");
     expect(upTarget("/parent/transfer", "parent")).toBe("/parent");
   });

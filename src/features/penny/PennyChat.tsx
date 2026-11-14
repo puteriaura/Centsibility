@@ -152,7 +152,11 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             onClick={() => {
               sfx.tap();
               if (mode === "kid") {
-                void nav({ to: "/kid/insights" });
+                if (window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  void nav({ to: "/kid/insights" });
+                }
               } else {
                 void nav({ to: "/parent" });
               }
@@ -196,7 +200,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
             {[0, 1, 2, 3, 4, 5].map((idx) => (
               <span
                 key={idx}
-                className={cn("w-3.5 h-3.5 rounded-full border border-[var(--primary)] transition-all", idx < pinInput.length ? "bg-[var(--primary)] scale-110" : "bg-transparent")}
+                className={cn("w-3.5 h-3.5 rounded-full border border-[var(--primary)] transition-colors", idx < pinInput.length ? "bg-[var(--primary)] scale-110" : "bg-transparent")}
               />
             ))}
           </div>
@@ -362,7 +366,7 @@ export function PennyChat({ inDrawer = false, mode }: PennyChatProps) {
                 : "Penny's AI sees your question with names and numbers removed. Penny gives general guidance, not financial, legal or religious rulings."}
             </p>
 
-            <Link to="/privacy" className="text-xs underline">Privacy notice</Link>
+            <Link to="/privacy" className="inline-flex min-h-[44px] items-center text-xs underline">Privacy notice</Link>
 
             {/* Link to Insights on full-page kid chat only */}
             {!inDrawer && mode === "kid" && (

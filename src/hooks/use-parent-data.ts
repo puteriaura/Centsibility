@@ -292,20 +292,21 @@ export function useParentData() {
     refresh();
   }, [refresh]);
 
-  // Poll for updates. Polls pause while the tab is hidden and catch up as soon
-  // as it is shown; the first load above always runs.
+  // Poll every 20s while a request is pending, otherwise every 60s.
+  // Polls pause while the tab is hidden and catch up as soon as it is shown.
+  const hasPending = approvals.some((a) => a.status === "pending");
   useEffect(() => {
     if (!user) return;
     const poll = () => {
       if (document.visibilityState === "visible") refresh();
     };
-    const interval = setInterval(poll, 20000);
+    const interval = setInterval(poll, hasPending ? 20000 : 60000);
     document.addEventListener("visibilitychange", poll);
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [user, refresh]);
+  }, [user, refresh, hasPending]);
 
   return {
     kids,

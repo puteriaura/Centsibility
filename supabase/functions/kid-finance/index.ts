@@ -13,7 +13,7 @@ import { isKidSessionToken } from "../_shared/kid-session-token.ts";
 
 import { createClient } from "npm:@supabase/supabase-js@2.105.3";
 import bcrypt from "npm:bcryptjs@3.0.3";
-import { checkKidPin } from "./pin.ts";
+import { checkKidLoginPin, checkKidPin } from "./pin.ts";
 import {
   buildPennyRequest,
   callPenny,
@@ -219,7 +219,7 @@ Deno.serve(async (req: Request) => {
       case "logout":
         await revokeKidSession(admin, String(params.code).trim());
         return jsonOk({ ok: true });
-      case "login":            return await handleLogin(admin, params, requestId);
+      case "login":            return await handleLogin(admin, req, params, requestId);
       case "verify-access-code": return await handleVerifyAccessCode(admin, params, requestId);
       case "set-initial-pin":  return await handleSetInitialPin(admin, params, requestId);
       case "get-state":        return await handleGetState(admin, params, requestId);
@@ -300,7 +300,7 @@ async function notifyParent(
 // Auth handlers (pre-auth)
 // ---------------------------------------------------------------------------
 
-async function handleLogin(admin: Admin, params: Record<string, unknown>, requestId: string) {
+async function handleLogin(admin: Admin, req: Request, params: Record<string, unknown>, requestId: string) {
   const username = typeof params.username === "string" ? normalizeUsername(params.username) : "";
   const pin = typeof params.pin === "string" ? params.pin.trim() : "";
   if (!username || !pin) return jsonError("Missing username or PIN", 400);
@@ -316,7 +316,7 @@ async function handleLogin(admin: Admin, params: Record<string, unknown>, reques
     return jsonError("Account setup incomplete. Please enter your one-time access code to set your 6-digit PIN.", 400);
   }
 
-  const pinCheck = await checkKidPin(admin, kid, pin);
+  const pinCheck = await checkKidLoginPin(admin, req, kid, pin, params.deviceId);
   if (!pinCheck.ok) return jsonError(pinCheck.error || "Invalid username or PIN", pinCheck.status || 400);
 
   const sessionToken = await issueKidSession(admin, kid.id, kid.hashed_pin);

@@ -163,11 +163,27 @@ export function TransferFlow({
     return validateTransferNote(note);
   }, [note]);
 
-  // Stepper navigation
+  // Stepper navigation with browser history support (FC-39)
   const goToStep = (nextStep: 1 | 3 | 4) => {
     sfx.tap();
+    if (nextStep > step) {
+      window.history.pushState({ transferStep: nextStep }, "");
+    }
     setStep(nextStep);
   };
+
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const s = e.state?.transferStep;
+      if (s === 1 || s === 3 || s === 4) {
+        setStep(s);
+      } else if (step > 1) {
+        setStep(step === 4 ? 3 : 1);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [step]);
 
   // PIN Keypress handler
   const handlePinPress = (key: string) => {
@@ -424,13 +440,20 @@ export function TransferFlow({
                 </button>
               ))}
               {matchingRecipients.length === 0 && (
-                <p className="text-sm text-[var(--text-2)]" role="status">
-                  {recipientError
-                    ? "Could not load recipients. Reopen Transfer to retry."
-                    : recipients.length === 0
-                      ? "No permitted family recipients available."
-                      : "No matching family recipient."}
-                </p>
+                <div className="flex items-center gap-3" role="status">
+                  <p className="text-sm text-[var(--text-2)] m-0">
+                    {recipientError
+                      ? "Could not load recipients."
+                      : recipients.length === 0
+                        ? "No permitted family recipients available."
+                        : "No matching family recipient."}
+                  </p>
+                  {recipientError && (
+                    <Button type="button" variant="secondary" size="sm" onClick={() => window.location.reload()}>
+                      Retry
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -611,7 +634,7 @@ export function TransferFlow({
               return (
                 <div
                   key={i}
-                  className={`flex items-center justify-center font-bold border transition-all ${
+                  className={`flex items-center justify-center font-bold border transition-colors ${
                     filled
                       ? "border-[var(--primary)] bg-[var(--surface-pink)] text-[var(--primary-text)] shadow-xs"
                       : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]"

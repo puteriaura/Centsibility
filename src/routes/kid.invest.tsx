@@ -1039,7 +1039,7 @@ function KidInvest() {
               {/* Fund Option */}
               <button
                 type="button"
-                className="w-full text-left p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all min-h-[44px]"
+                className="w-full text-left p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-colors min-h-[44px]"
                 onClick={() => {
                   setChosenMode("fund");
                   setFundStep(0);
@@ -1084,7 +1084,7 @@ function KidInvest() {
               ) : (
                 <button
                   type="button"
-                  className="w-full text-left p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all min-h-[44px]"
+                  className="w-full text-left p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-colors min-h-[44px]"
                   onClick={() => {
                     setChosenMode("market");
                     if (!hasSeenExplainer) {
@@ -1120,7 +1120,7 @@ function KidInvest() {
                       <button
                         key={t}
                         type="button"
-                        className={tier === t ? "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
+                        className={tier === t ? "w-full text-left p-3.5 rounded-xl border transition-colors min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-colors min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
                         onClick={() => {
                           setTier(t);
                           sfx.tap();
@@ -1165,7 +1165,7 @@ function KidInvest() {
                     <button
                       key={f}
                       type="button"
-                      className={freq === f ? "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
+                      className={freq === f ? "w-full text-left p-3.5 rounded-xl border transition-colors min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-colors min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
                       onClick={() => {
                         setFreq(f);
                         sfx.tap();
@@ -1212,7 +1212,7 @@ function KidInvest() {
                     <button
                       key={lt}
                       type="button"
-                      className={lockTicks === lt ? "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-all min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
+                      className={lockTicks === lt ? "w-full text-left p-3.5 rounded-xl border transition-colors min-h-[44px] border-[var(--primary)] bg-[var(--surface-pink)]" : "w-full text-left p-3.5 rounded-xl border transition-colors min-h-[44px] border-[var(--border)] hover:bg-[var(--surface-soft)]"}
                       onClick={() => {
                         setLockTicks(lt);
                         sfx.tap();
@@ -1402,7 +1402,7 @@ function KidInvest() {
                       <div
                         key={s.symbol}
                         data-market-symbol={s.symbol}
-                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-all grid grid-cols-[3.5rem_minmax(0,1fr)_3rem] items-center gap-2"
+                        className="w-full p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-soft)] transition-colors grid grid-cols-[3.5rem_minmax(0,1fr)_3rem] items-center gap-2"
                       >
                         <button
                           type="button"
@@ -1670,14 +1670,18 @@ export function FundCard({
 }) {
   const isMinute = inv.frequency === "minute";
   return (
-    <Card
-      variant="default"
-      className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] cursor-pointer transition-all"
+    <button
+      type="button"
       onClick={() => {
         sfx.tap();
         onClick();
       }}
+      className="w-full text-left bg-transparent border-0 p-0 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
     >
+      <Card
+        variant="default"
+        className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+      >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="brand" className="text-[11px]">
@@ -1737,7 +1741,8 @@ export function FundCard({
         )}
       </div>
       <Suspense fallback={null}><InvestmentSparkline investment={inv} /></Suspense>
-    </Card>
+      </Card>
+    </button>
   );
 }
 
@@ -1751,14 +1756,18 @@ function MarketCard({
   onClick: () => void;
 }) {
   return (
-    <Card
-      variant="default"
-      className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] cursor-pointer transition-all"
+    <button
+      type="button"
       onClick={() => {
         sfx.tap();
         onClick();
       }}
+      className="w-full text-left bg-transparent border-0 p-0 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
     >
+      <Card
+        variant="default"
+        className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+      >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="brand" className="text-[11px]">
@@ -1814,7 +1823,8 @@ function MarketCard({
         {quoteOlderThanTradingDay(inv.lastUpdated) ? <Badge variant="warning">Price from {formatDateTime(inv.lastUpdated) || "unavailable"}</Badge> : <span>Price from {formatDateTime(inv.lastUpdated) || "unavailable"}</span>}
       </div>
       <Suspense fallback={null}><InvestmentSparkline investment={inv} /></Suspense>
-    </Card>
+      </Card>
+    </button>
   );
 }
 

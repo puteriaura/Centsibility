@@ -36,7 +36,7 @@ export function SavingsPot({
     <Card
       variant="default"
       onClick={onClick}
-      className={`p-4 sm:p-5 rounded-2xl border border-[var(--border)] transition-all duration-200 hover:shadow-md ${
+      className={`p-4 sm:p-5 rounded-2xl border border-[var(--border)] transition-colors duration-200 hover:shadow-md ${
         onClick ? "cursor-pointer" : ""
       } ${className}`.trim()}
     >

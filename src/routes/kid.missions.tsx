@@ -112,7 +112,7 @@ function KidMissionsPage() {
               {coins.toLocaleString()}
             </p>
             <span className="text-sm font-bold text-white">
-              pts · Lvl {level}
+              points · Level {level}
             </span>
           </div>
         </div>
@@ -122,11 +122,15 @@ function KidMissionsPage() {
       </section>
 
       {/* Segmented Control Tabs */}
-      <div className="flex items-center p-1 bg-[var(--surface-soft)] rounded-2xl border border-[var(--border)]">
+      <div
+        role="tablist"
+        aria-label="Missions and rewards"
+        className="flex items-center p-1 bg-[var(--surface-soft)] rounded-2xl border border-[var(--border)]"
+      >
         <button
           type="button"
           onClick={() => setTab("quests")}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer border-0 ${
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-colors duration-150 cursor-pointer border-0 ${
             tab === "quests"
               ? "bg-[var(--surface)] text-[var(--ink)] shadow-sm"
               : "bg-transparent text-[var(--text-secondary)] hover:text-[var(--ink)]"
@@ -147,7 +151,7 @@ function KidMissionsPage() {
         <button
           type="button"
           onClick={() => setTab("rewards")}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer border-0 ${
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-colors duration-150 cursor-pointer border-0 ${
             tab === "rewards"
               ? "bg-[var(--surface)] text-[var(--ink)] shadow-sm"
               : "bg-transparent text-[var(--text-secondary)] hover:text-[var(--ink)]"
@@ -157,7 +161,7 @@ function KidMissionsPage() {
         >
           <span className="flex items-center justify-center gap-2">
             <AppIcon name="gift" size={16} />
-            Reward Store
+            Reward store
           </span>
         </button>
       </div>
@@ -172,7 +176,7 @@ function KidMissionsPage() {
           >
             <div className="flex items-center justify-between text-xs sm:text-sm">
               <strong className="text-[var(--ink)] font-bold">
-                Quest Journey
+                Quest journey
               </strong>
               <span className="text-xs font-semibold text-[var(--text-secondary)]">
                 {completedCount} of {totalQuests} quests completed
@@ -180,7 +184,7 @@ function KidMissionsPage() {
             </div>
             <div className="w-full bg-[var(--surface-muted)] rounded-full h-2.5 overflow-hidden">
               <div
-                className="bg-[var(--primary)] h-2.5 rounded-full transition-all duration-300"
+                className="bg-[var(--primary)] h-2.5 rounded-full transition-colors duration-300"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -203,11 +207,11 @@ function KidMissionsPage() {
                 onClick={() => void fetchBoard()}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--primary)] text-white border-0 cursor-pointer"
               >
-                Try Again
+                Try again
               </button>
             </Card>
           ) : (
-            <div className="space-y-3" role="feed" aria-label="Quest track">
+            <div className="space-y-3" aria-label="Quest track">
               {quests.map((q, idx) => {
                 const isLocked = q.status === "locked";
                 const isDone = q.status === "done";
@@ -215,7 +219,7 @@ function KidMissionsPage() {
                 const cardContent = (
                   <Card
                     variant={isDone ? "soft" : "default"}
-                    className={`p-4 border transition-all duration-150 flex items-center justify-between gap-3 ${
+                    className={`p-4 border transition-colors duration-150 flex items-center justify-between gap-3 ${
                       isLocked
                         ? "opacity-60 bg-[var(--surface-soft)] border-transparent cursor-not-allowed"
                         : "hover:border-[var(--primary)] shadow-sm cursor-pointer"
