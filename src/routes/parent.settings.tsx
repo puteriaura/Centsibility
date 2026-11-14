@@ -11,6 +11,9 @@ import {
   edgeParentSetAvatar,
   edgeParentSetSelfAvatar,
   edgeParentGetSelfAvatar,
+  edgeParentVerifyPin,
+  edgeParentExportFamilyData,
+  edgeParentDeleteAccount,
   clearParentPinSession,
 } from "@/lib/edge";
 import { setParentBypassed } from "@/lib/admin-bypass";
@@ -20,6 +23,7 @@ import { AvatarBubble, AvatarPicker } from "@/components/AvatarBubble";
 import { DEFAULT_PARENT_AVATAR, resolveAvatar } from "@/lib/avatar";
 import { sfx, isMuted, toggleMute } from "@/lib/sounds";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
+import { PushNotificationCard } from "@/components/PushNotificationCard";
 import {
   Card,
   CardHeader,
@@ -52,8 +56,12 @@ function Settings() {
     (user?.user_metadata as { comfort_name?: string })?.comfort_name ?? "",
   );
   const [savingName, setSavingName] = useState(false);
+  const [privacyPin, setPrivacyPin] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [panel, setPanel] = useState<
-    null | "profile" | "kids" | "pin" | "prefs"
+    null | "profile" | "kids" | "pin" | "privacy" | "prefs" | "push"
   >(null);
 
   useEffect(() => {
@@ -134,6 +142,73 @@ function Settings() {
     await supabase.auth.signOut();
     toast.success("Signed out");
     window.location.href = "/login";
+  };
+
+  const resolvePrivacyPinSession = async (): Promise<string | undefined> => {
+    if (!hasPin) {
+      throw new Error("Set your 6-digit Dashboard PIN first in Dashboard PIN settings");
+    }
+    if (!/^\d{6}$/.test(privacyPin.trim())) {
+      throw new Error("Enter your 6-digit PIN first");
+    }
+    const verify = await edgeParentVerifyPin({ pin: privacyPin.trim() });
+    if (!verify.valid || !verify.pinSession) {
+      throw new Error("Incorrect PIN");
+    }
+    return verify.pinSession;
+  };
+
+  const handleExportFamily = async () => {
+    setExporting(true);
+    try {
+      const pinSession = await resolvePrivacyPinSession();
+      const { family } = await edgeParentExportFamilyData({ pinSession });
+      const blob = new Blob([JSON.stringify(family, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `centsibility-family-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      sfx.success();
+      toast.success("Family data exported");
+    } catch (err) {
+      sfx.error();
+      toast.error(err instanceof Error ? err.message : "Could not export family data");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deleteConfirm.trim() !== "DELETE") {
+      toast.error('Type "DELETE" to confirm');
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      const pinSession = await resolvePrivacyPinSession();
+      await edgeParentDeleteAccount({
+        confirmText: deleteConfirm.trim(),
+        pinSession,
+      });
+      clearParentPinSession();
+      setParentBypassed(false);
+      await supabase.auth.signOut().catch(() => undefined);
+      sfx.success();
+      toast.success("Account and family records deleted");
+      window.location.href = "/login";
+    } catch (err) {
+      sfx.error();
+      toast.error(err instanceof Error ? err.message : "Could not delete account");
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   const updateSelfAvatar = async (a: string) => {
@@ -244,11 +319,13 @@ function Settings() {
                 { id: "profile", label: "My profile", icon: "user" },
                 { id: "kids", label: "Children avatars", icon: "users" },
                 { id: "pin", label: "Dashboard PIN", icon: "lock" },
+                { id: "privacy", label: "Data & privacy", icon: "filetext" },
               ],
             },
             {
               title: "App preferences",
               items: [
+                { id: "push", label: "Push notifications", icon: "bell" },
                 { id: "prefs", label: "Sound & appearance", icon: "settings" },
               ],
             },
@@ -547,6 +624,103 @@ function Settings() {
                 </Button>
               </form>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className={`settings-panel${panel === "privacy" ? " is-open" : ""}`}>
+        <Card variant="default" className="m-0">
+          <CardHeader>
+            <CardTitle>Data & privacy</CardTitle>
+            <CardDescription>
+              Export all family records as JSON or permanently delete your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {hasPin ? (
+              <div>
+                <label
+                  htmlFor="settings-privacy-pin"
+                  className="block text-xs font-semibold text-[var(--text-secondary)] mb-1"
+                >
+                  Parent PIN (required for export or deletion)
+                </label>
+                <Input
+                  id="settings-privacy-pin"
+                  value={privacyPin}
+                  onChange={(e) => setPrivacyPin(e.target.value)}
+                  placeholder="6 digits"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoComplete="off"
+                />
+              </div>
+            ) : (
+              <p className="m-0 rounded-xl bg-[var(--action-tint)] px-3 py-2 text-xs text-[var(--ink)] leading-relaxed">
+                Set a 6-digit Dashboard PIN in Dashboard PIN settings before exporting family data or deleting your account.
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={exporting || !hasPin}
+                onClick={handleExportFamily}
+              >
+                <AppIcon name="filetext" size={16} />
+                {exporting ? "Exporting…" : "Export family JSON"}
+              </Button>
+              <Link
+                to="/privacy"
+                className="text-xs font-semibold text-[var(--action-text)] no-underline px-2 py-1"
+              >
+                Read privacy & retention notice
+              </Link>
+            </div>
+
+            <form
+              onSubmit={handleDeleteAccount}
+              className="space-y-2.5 rounded-2xl border border-[var(--neg)]/30 bg-[var(--neg-bg)]/40 p-3.5"
+            >
+              <p className="m-0 text-xs font-semibold text-[var(--neg)]">
+                Delete account permanently
+              </p>
+              <p className="m-0 text-xs text-[var(--text-2)] leading-relaxed">
+                This deletes your parent sign-in, all children, balances, goals, chores, loans, and uploaded photos. It cannot be undone.
+              </p>
+              <Input
+                id="settings-delete-confirm"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder='Type "DELETE" to confirm'
+                autoComplete="off"
+                aria-label='Type "DELETE" to confirm account deletion'
+              />
+              <Button
+                type="submit"
+                variant="danger"
+                size="sm"
+                disabled={deletingAccount || !hasPin || deleteConfirm.trim() !== "DELETE"}
+              >
+                {deletingAccount ? "Deleting…" : "Delete my account"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className={`settings-panel${panel === "push" ? " is-open" : ""}`}>
+        <Card variant="default" className="m-0">
+          <CardHeader>
+            <CardTitle>Push notifications</CardTitle>
+            <CardDescription>
+              Receive alerts when a child sends a money, loan, reward, or chore request.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PushNotificationCard role="parent" />
           </CardContent>
         </Card>
       </div>

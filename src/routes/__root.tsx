@@ -7,6 +7,8 @@ import { useTheme } from "@/lib/theme";
 import { purgeStoredCredentials } from "@/lib/quick-login";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { observeViewport } from "@/lib/viewport";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { registerAppServiceWorker } from "@/lib/push";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +82,7 @@ function RootComponent() {
   useEffect(observeViewport, []);
   useEffect(() => {
     purgeStoredCredentials();
+    void registerAppServiceWorker();
   }, []);
   useEffect(() => {
     for (let i = matches.length - 1; i >= 0; i--) {
@@ -96,6 +99,7 @@ function RootComponent() {
     <MotionConfig reducedMotion={reduce ? "always" : "user"}>
     <ErrorBoundary>
       <AuthProvider>
+        <OfflineBanner />
         <Outlet />
         <Toaster />
       </AuthProvider>

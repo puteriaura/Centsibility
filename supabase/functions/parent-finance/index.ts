@@ -8,6 +8,7 @@ import { enforceKidLimit } from "./kid-limit.ts";
 import { logEvent } from "../_shared/log.ts";
 import { familyPennyReply, getPennyKnownNames, minimizePennyQuestion, routePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
+import { getVapidConfig, sendPushToSubscriptions } from "../_shared/web-push.ts";
 // supabase/functions/parent-finance/index.ts
 // Handles: all parent-initiated actions
 // Runs server-side with access to the Service Role Key.
@@ -130,6 +131,16 @@ Deno.serve(async (req: Request) => {
         return await handleCreateChore(adminClient, parentId, params);
       case "resolve-chore":
         return await handleResolveChore(adminClient, parentId, params);
+      case "export-family-data":
+        return await handleExportFamilyData(adminClient, parentId);
+      case "delete-parent-account":
+        return await handleDeleteParentAccount(adminClient, parentId, params);
+      case "save-push-subscription":
+        return await handleSavePushSubscription(adminClient, parentId, params);
+      case "remove-push-subscription":
+        return await handleRemovePushSubscription(adminClient, parentId, params);
+      case "get-push-status":
+        return await handleGetPushStatus(adminClient, parentId);
       default:
         return jsonError(`Unknown action: ${action}`, 400);
     }
@@ -176,6 +187,8 @@ const PIN_GATED_ACTIONS = new Set([
   "set-market-tracker",
   "create-chore",
   "resolve-chore",
+  "export-family-data",
+  "delete-parent-account",
 ]);
 
 async function issuePinSession(admin: Admin, parentId: string): Promise<{ pinSession: string; pinSessionExpiresAt: string }> {
@@ -452,13 +465,10 @@ function parseLoanTerms(reason: string) {
 
 async function handleApproveRequest(admin: Admin, parentId: string, params: { approvalId: string; decision: "approve" | "decline" }) {
   const approve = params.decision === "approve";
-  let loanTerms = {};
-  if (approve) {
-    const { data: ap, error } = await admin.from("approvals").select("kind, reason").eq("id", params.approvalId).maybeSingle();
-    if (error) return jsonError(error.message, 500);
-    if (!ap) return jsonError("Not found", 404);
-    if (ap.kind === "QARD") loanTerms = parseLoanTerms(ap.reason || "");
-  }
+  const { data: ap, error: apErr } = await admin.from("approvals").select("kid_id, kind, reason").eq("id", params.approvalId).maybeSingle();
+  if (apErr) return jsonError(apErr.message, 500);
+  if (!ap) return jsonError("Not found", 404);
+  const loanTerms = approve && ap.kind === "QARD" ? parseLoanTerms(ap.reason || "") : {};
   const { data, error } = await admin.rpc("resolve_approval", {
     p_approval_id: params.approvalId,
     p_parent_id: parentId,
@@ -466,16 +476,33 @@ async function handleApproveRequest(admin: Admin, parentId: string, params: { ap
     ...loanTerms,
   });
   if (error) return resolveError(error);
+  if (ap.kid_id) {
+    await sendPushToSubscriptions(admin, { kidId: String(ap.kid_id) }, {
+      title: approve ? "Request approved" : "Request declined",
+      body: approve ? "Your parent approved your request." : "Your parent declined your request.",
+      url: "/kid/notifications",
+      tag: `approval-${params.approvalId}`,
+    });
+  }
   return jsonOk(data ?? { ok: true });
 }
 
 async function handleResolveReward(admin: Admin, parentId: string, params: { rewardId: string; decision: "approve" | "decline" }) {
+  const { data: rw } = await admin.from("rewards").select("kid_id, name").eq("id", params.rewardId).maybeSingle();
   const { error } = await admin.rpc("resolve_reward", {
     p_reward_id: params.rewardId,
     p_parent_id: parentId,
     p_approve: params.decision === "approve",
   });
   if (error) return resolveError(error);
+  if (rw?.kid_id) {
+    await sendPushToSubscriptions(admin, { kidId: String(rw.kid_id) }, {
+      title: params.decision === "approve" ? "Reward approved" : "Reward declined",
+      body: rw.name ? `${rw.name}` : "Check your rewards.",
+      url: "/kid/rewards",
+      tag: `reward-${params.rewardId}`,
+    });
+  }
   return jsonOk({ ok: true });
 }
 
@@ -1015,6 +1042,12 @@ async function handleCreateChore(admin: Admin, parentId: string, params: Record<
     if (msg.includes("not_found")) return jsonError("Not found", 404);
     return jsonError("Could not create chore", 500);
   }
+  await sendPushToSubscriptions(admin, { kidId: kid.id }, {
+    title: "New chore",
+    body: `${title} (RM${Number(params.amount).toFixed(2)})`,
+    url: "/kid/missions",
+    tag: `chore-new-${data?.id ?? ""}`,
+  });
   return jsonOk({ chore: data });
 }
 
@@ -1039,5 +1072,113 @@ async function handleResolveChore(admin: Admin, parentId: string, params: Record
     if (msg.includes("already_resolved")) return jsonError("Already resolved", 409);
     return jsonError("Could not resolve chore", 500);
   }
+  if (data?.kid_id) {
+    await sendPushToSubscriptions(admin, { kidId: String(data.kid_id) }, {
+      title: decision === "APPROVED" ? "Chore approved" : "Chore not approved yet",
+      body: typeof data.title === "string" ? data.title : "Check your missions.",
+      url: decision === "APPROVED" ? "/kid/history" : "/kid/missions",
+      tag: `chore-${choreId}`,
+    });
+  }
   return jsonOk({ chore: data });
+}
+
+async function handleExportFamilyData(admin: Admin, parentId: string) {
+  const { data, error } = await admin.rpc("parent_export_family_data", { p_parent_id: parentId });
+  if (error) {
+    if (error.message?.includes("not_found")) return jsonError("Account not found", 404);
+    return jsonError("Could not export family data", 500);
+  }
+  return jsonOk({ family: data });
+}
+
+async function handleDeleteParentAccount(admin: Admin, parentId: string, params: Record<string, unknown>) {
+  const confirmText = typeof params.confirmText === "string" ? params.confirmText.trim() : "";
+  if (confirmText !== "DELETE") {
+    return jsonError("Type DELETE to confirm account deletion.", 400);
+  }
+
+  const { data, error } = await admin.rpc("parent_delete_account_data", { p_parent_id: parentId });
+  if (error) {
+    if (error.message?.includes("not_found")) return jsonError("Account not found", 404);
+    return jsonError("Could not delete family data", 500);
+  }
+
+  const avatarUrls = Array.isArray(data?.avatar_urls) ? (data.avatar_urls as unknown[]) : [];
+  const avatarPaths = avatarUrls
+    .filter((u): u is string => typeof u === "string" && u.includes("/avatars/"))
+    .map((u) => {
+      const idx = u.indexOf("/avatars/");
+      return idx >= 0 ? u.slice(idx + "/avatars/".length).split("?")[0] : "";
+    })
+    .filter(Boolean);
+  if (avatarPaths.length > 0) {
+    await admin.storage.from("avatars").remove(avatarPaths);
+  }
+
+  const { error: authErr } = await admin.auth.admin.deleteUser(parentId);
+  if (authErr) {
+    return jsonError("Family records removed, but sign-in deletion failed. Contact support.", 500);
+  }
+
+  return jsonOk({ ok: true, deletedKids: Number(data?.deleted_kids ?? 0) });
+}
+
+function validatePushSubscription(params: Record<string, unknown>) {
+  const sub = params.subscription as Record<string, unknown> | undefined;
+  const endpoint = typeof sub?.endpoint === "string" ? sub.endpoint.trim() : "";
+  const keys = sub?.keys as Record<string, unknown> | undefined;
+  const p256dh = typeof keys?.p256dh === "string" ? keys.p256dh.trim() : "";
+  const auth = typeof keys?.auth === "string" ? keys.auth.trim() : "";
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    parsed = null;
+  }
+  if (!parsed || parsed.protocol !== "https:" || !p256dh || !auth || endpoint.length > 1024) {
+    return null;
+  }
+  return { endpoint, p256dh, auth };
+}
+
+async function handleSavePushSubscription(admin: Admin, parentId: string, params: Record<string, unknown>) {
+  const valid = validatePushSubscription(params);
+  if (!valid) return jsonError("Invalid push subscription", 400);
+  const userAgent = typeof params.userAgent === "string" ? params.userAgent.slice(0, 200) : null;
+
+  const { error } = await admin.from("push_subscriptions").upsert(
+    {
+      parent_id: parentId,
+      kid_id: null,
+      role: "parent",
+      endpoint: valid.endpoint,
+      p256dh: valid.p256dh,
+      auth: valid.auth,
+      user_agent: userAgent,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "endpoint" },
+  );
+  if (error) return jsonError("Could not save push subscription", 500);
+  return jsonOk({ ok: true });
+}
+
+async function handleRemovePushSubscription(admin: Admin, parentId: string, params: Record<string, unknown>) {
+  const endpoint = typeof params.endpoint === "string" ? params.endpoint.trim() : "";
+  let q = admin.from("push_subscriptions").delete().eq("parent_id", parentId).eq("role", "parent");
+  if (endpoint) q = q.eq("endpoint", endpoint);
+  const { error } = await q;
+  if (error) return jsonError("Could not remove push subscription", 500);
+  return jsonOk({ ok: true });
+}
+
+async function handleGetPushStatus(admin: Admin, parentId: string) {
+  const { count, error } = await admin
+    .from("push_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", parentId)
+    .eq("role", "parent");
+  if (error) return jsonError("Could not check push status", 500);
+  return jsonOk({ count: count ?? 0, configured: Boolean(getVapidConfig()) });
 }

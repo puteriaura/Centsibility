@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
+import { PushNotificationCard } from "@/components/PushNotificationCard";
 import { useKidData } from "@/hooks/use-kid-data";
 import { KidLoadError } from "@/features/kid/components";
 import { edgeKidMarkNotificationsRead } from "@/lib/edge";
@@ -157,6 +158,10 @@ function KidNotifications() {
           })}
         </div>
       )}
+
+      <Card variant="default" className="p-4 border border-[var(--border)]">
+        <PushNotificationCard role="kid" kidCode={getKidSession()?.code} />
+      </Card>
     </div>
   );
 }

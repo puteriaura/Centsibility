@@ -2271,3 +2271,71 @@ export async function edgeParentResolveChore(params: {
     ...params,
   });
 }
+
+export async function edgeParentExportFamilyData(params?: { pinSession?: string }) {
+  return invoke<{ family: Record<string, unknown> }>("parent-finance", {
+    action: "export-family-data",
+    ...(params ?? {}),
+  });
+}
+
+export async function edgeParentDeleteAccount(params: {
+  confirmText: string;
+  pinSession?: string;
+}) {
+  return invoke<{ ok: boolean; deletedKids: number }>("parent-finance", {
+    action: "delete-parent-account",
+    ...params,
+  });
+}
+
+export async function edgeParentSavePushSubscription(params: {
+  subscription: PushSubscriptionJSON;
+  userAgent?: string;
+}) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "save-push-subscription",
+    ...params,
+  });
+}
+
+export async function edgeParentRemovePushSubscription(params?: { endpoint?: string }) {
+  return invoke<{ ok: boolean }>("parent-finance", {
+    action: "remove-push-subscription",
+    ...(params ?? {}),
+  });
+}
+
+export async function edgeParentGetPushStatus() {
+  return invoke<{ count: number; configured: boolean }>("parent-finance", {
+    action: "get-push-status",
+  });
+}
+
+export async function edgeKidSavePushSubscription(params: {
+  code: string;
+  subscription: PushSubscriptionJSON;
+  userAgent?: string;
+}) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "save-push-subscription",
+    ...params,
+  });
+}
+
+export async function edgeKidRemovePushSubscription(params: {
+  code: string;
+  endpoint?: string;
+}) {
+  return invoke<{ ok: boolean }>("kid-finance", {
+    action: "remove-push-subscription",
+    ...params,
+  });
+}
+
+export async function edgeKidGetPushStatus(params: { code: string }) {
+  return invoke<{ count: number; configured: boolean }>("kid-finance", {
+    action: "get-push-status",
+    ...params,
+  });
+}

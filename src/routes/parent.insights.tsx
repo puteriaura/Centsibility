@@ -13,6 +13,7 @@ import { sfx } from "@/lib/sounds";
 import { transactionAmount } from "@/lib/finance";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { usePrivacy, Money, LogInToView } from "@/features/privacy";
+import { WeeklyDigestCard } from "@/components/WeeklyDigestCard";
 
 export const Route = createFileRoute("/parent/insights")({
   head: () => ({ meta: [{ title: "Insights | Centsibility" }] }),
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/parent/insights")({
 
 function ParentInsights() {
   const nav = useNavigate();
-  const { kids, txs, loading, error, hasLoaded, lastLoadedAt, refresh } =
+  const { kids, txs, approvals, loading, error, hasLoaded, lastLoadedAt, refresh } =
     useParentData();
   const { locked, openUnlockSheet, isMasked } = usePrivacy();
   const [kidFilter, setKidFilter] = useState<string>("all");
@@ -122,6 +123,8 @@ function ParentInsights() {
           {summary.rangeLabel}
         </p>
       </Card>
+
+      <WeeklyDigestCard kids={kids} txs={txs} approvals={approvals} />
 
       </div>
       <div className="page-split__details">
