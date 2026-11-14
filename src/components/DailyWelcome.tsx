@@ -20,11 +20,6 @@ export function DailyWelcome({ kidId, streak, incoming }: { kidId: string; strea
   useEffect(() => {
     if (claimDailyWelcome(kidId)) { sounded.current = false; setOpen(true); }
   }, [kidId, today]);
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() => setOpen(false), 4000);
-    return () => window.clearTimeout(timer);
-  }, [open]);
   const close = () => setOpen(false);
   return <Dialog.Root open={open} onOpenChange={setOpen}><Dialog.Portal forceMount><AnimatePresence>
     {open && <Dialog.Overlay forceMount asChild key="scrim"><motion.div className="daily-welcome__scrim" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} /></Dialog.Overlay>}

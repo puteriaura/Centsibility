@@ -2,6 +2,9 @@ import { DOCK_ROUTES, trimSlash } from "@/lib/navigation";
 
 export const spring = { type: "spring", stiffness: 247, damping: 31.4, mass: 1 } as const;
 export const springPop = { type: "spring", stiffness: 195, damping: 20.1, mass: 1 } as const;
+export const springSettle = { type: "spring", stiffness: 220, damping: 28, mass: 1 } as const;
+export const easeStandard = [0.2, 0, 0, 1] as const;
+export const easeFade = [0.4, 0, 0.2, 1] as const;
 
 const dockPaths = new Set(Object.values(DOCK_ROUTES).flat());
 export function navigationMotion(from: string | undefined, to: string): "tab" | "forward" | "back" {

@@ -122,7 +122,7 @@ export function PrivacyUnlockSheet({
             return (
               <span
                 key={i}
-                className={`w-3.5 h-3.5 rounded-full transition-all duration-150 ${
+                className={`w-3.5 h-3.5 rounded-full transition-colors duration-150 ${
                   filled
                     ? "bg-[var(--primary)] scale-110 shadow-xs"
                     : "bg-[var(--border)]"

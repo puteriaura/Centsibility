@@ -264,7 +264,7 @@ function KidSadaqah() {
                     return (
                       <label
                         key={c.name}
-                        className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border text-center cursor-pointer transition-all ${
+                        className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border text-center cursor-pointer transition-colors ${
                           isSelected
                             ? "border-[var(--primary)] bg-[var(--surface-pink)] ring-2 ring-[var(--primary)]/20 shadow-xs"
                             : "border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--primary-soft)]"

@@ -32,7 +32,6 @@ const groups = [
       { to: "/kid/invest", label: "Invest", icon: "trend" },
       { to: "/kid/sadaqah", label: "Sadaqah", icon: "sadaqah" },
       { to: "/kid/zakat", label: "Zakat", icon: "scale" },
-      { to: "/kid/history", label: "Transactions", icon: "history" },
     ],
   },
   {
@@ -40,12 +39,12 @@ const groups = [
     items: [
       { to: "/kid/missions", label: "Missions", icon: "missions" },
       { to: "/kid/rewards", label: "Rewards", icon: "gift" },
-      { to: "/kid/quiz", label: "Quizzes", icon: "brain" },
     ],
   },
   {
-    title: "Help",
+    title: "Help and activity",
     items: [
+      { to: "/kid/history", label: "Transactions", icon: "history" },
       { to: "/kid/chat", label: "Ask Penny", icon: "chat" },
       { to: "/kid/notifications", label: "Alerts", icon: "bell" },
     ],
@@ -72,7 +71,7 @@ function KidMore() {
     <div className="settings-groups">
       <InstallHint />
       {data ? <Card variant="brand" className="more-level balance-hero">
-        <p>Level {level}</p><strong>{Number(data?.kid.coins) || 0} pts</strong>
+        <p>Level {level}</p><strong>{Number(data?.kid.coins) || 0} points</strong>
         {progress !== null && <><Progress value={progress} indicatorColor="var(--on-brand-card)" /><small>{100 - progress} XP to Level {level + 1}</small></>}
       </Card> : <Skeleton style={{ height: 120, borderRadius: 26 }} />}
       {unclaimed > 0 && (

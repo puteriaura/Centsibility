@@ -111,12 +111,12 @@ export function RewardsPanel({ onGoToQuests }: RewardsPanelProps) {
                     ? "Locked: complete a quest first"
                     : `Request ${s.name} for ${s.cost} points`
                 }
-                className={`p-4 rounded-2xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${
+                className={`p-4 rounded-2xl border text-left transition-colors duration-150 cursor-pointer min-h-[90px] flex flex-col justify-between ${
                   !rewardsUnlocked
-                    ? "bg-[var(--surface)] border-transparent opacity-75"
+                    ? "bg-[var(--surface)] border-transparent"
                     : hasEnough
                       ? "bg-[var(--surface)] border-transparent hover:border-[var(--primary)] shadow-sm"
-                      : "bg-[var(--surface)] border-dashed border-[var(--border)] opacity-85 hover:border-[var(--primary-soft)]"
+                      : "bg-[var(--surface)] border-dashed border-[var(--border)] hover:border-[var(--primary-soft)]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">

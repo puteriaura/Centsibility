@@ -380,7 +380,7 @@ function ShellAccount({ mode, kind, kidName, kidAvatar, parentAvatar, unread }: 
           )}
         </div>
 
-        <div className="shell-account__notifications">
+        <div className="shell-account__notifications" role="region" aria-label="Notifications">
           {isKid ? (
             <Link
               to="/kid/notifications"

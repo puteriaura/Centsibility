@@ -164,7 +164,7 @@ function Approvals() {
           <div className="w-12 h-12 rounded-2xl bg-[var(--success-soft)] text-[var(--success-text)] flex items-center justify-center mx-auto">
             <AppIcon name="approve" size={24} />
           </div>
-          <h3 className="m-0 text-base font-bold text-[var(--ink)]">All clear</h3>
+          <h2 className="m-0 text-base font-bold text-[var(--ink)]">All clear</h2>
           <p className="m-0 text-sm text-[var(--text-2)]">
             Nothing is waiting for your approval.
           </p>
@@ -194,7 +194,7 @@ function Approvals() {
                     <span className="notif-item__date">
                       {formatDate(a.created_at)}
                     </span>
-                    <span className="notif-item__dot" aria-label="Unread" />
+                    <span className="notif-item__dot" aria-hidden="true" /><span className="sr-only">Unread</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -202,9 +202,9 @@ function Approvals() {
                         <Badge variant={isQard ? "warning" : isTransfer ? "soft" : "brand"}>
                           {isQard ? "Qard Loan" : isTransfer ? "Transfer Request" : approvalKindLabel(a.kind)}
                         </Badge>
-                        <h3 className="notif-item__title">
+                        <h2 className="notif-item__title">
                           {isTransfer ? `${senderName} → ${recipientName}` : a.kids?.name}
-                        </h3>
+                        </h2>
                       </div>
                       <p className="notif-item__body mt-1">
                         {isTransfer
@@ -303,13 +303,13 @@ function Approvals() {
                     <span className="notif-item__date">
                       {formatDate(r.created_at)}
                     </span>
-                    <span className="notif-item__dot" aria-label="Unread" />
+                    <span className="notif-item__dot" aria-hidden="true" /><span className="sr-only">Unread</span>
                   </div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge variant="soft">Reward Store</Badge>
-                        <h4 className="notif-item__title">{r.kids?.name}</h4>
+                        <h2 className="notif-item__title">{r.kids?.name}</h2>
                       </div>
                       <p className="notif-item__body mt-1">
                         Requested: <strong className="text-[var(--ink)]">&ldquo;{r.name}&rdquo;</strong>
@@ -366,7 +366,7 @@ function Approvals() {
                       <span className="text-sm font-semibold leading-snug text-[var(--ink)]">{text}</span>
                       <span className="list-row__sub">{formatDate(n.created_at)}</span>
                     </span>
-                    {!n.read && <span className="notif-item__dot" aria-label="New" />}
+                    {!n.read && <><span className="notif-item__dot" aria-hidden="true" /><span className="sr-only">New</span></>}
                   </>
                 );
                 return n.link ? (

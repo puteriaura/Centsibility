@@ -356,33 +356,36 @@ export function CrewMemberCard({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="p-1 min-h-[40px]"
+                  className="px-2 py-1 min-h-[44px] flex-col gap-0.5 text-[11px] leading-none"
                   onClick={() => setIsEditing(true)}
                   aria-label={`Edit ${kid.name}`}
                 >
                   <AppIcon name="edit" size={15} />
+                  <span>Edit</span>
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="p-1 min-h-[40px] text-[var(--primary)]"
+                  className="px-2 py-1 min-h-[44px] flex-col gap-0.5 text-[11px] leading-none text-[var(--primary)]"
                   disabled={resettingPin}
                   onClick={handleResetPin}
                   aria-label={`Reset PIN for ${kid.name}`}
                   title="Generate new access code / reset PIN"
                 >
                   <AppIcon name="key" size={15} />
+                  <span>PIN</span>
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="p-1 min-h-[40px] text-[var(--error-text)]"
+                  className="px-2 py-1 min-h-[44px] flex-col gap-0.5 text-[11px] leading-none text-[var(--error-text)]"
                   onClick={() => onDeleteInitiate(kid.id)}
                   aria-label={`Delete ${kid.name}`}
                 >
                   <AppIcon name="delete" size={15} color="var(--error)" />
+                  <span>Delete</span>
                 </Button>
                 <Button
                   type="button"
@@ -409,33 +412,33 @@ export function CrewMemberCard({
             )}
           </div>
 
-          <div className="grid grid-cols-4 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
-            <div className="text-center">
-              <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
+          <div className="grid grid-cols-2 min-[420px]:grid-cols-4 gap-2 p-2.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--border)]">
+            <div className="text-center min-w-0">
+              <div className="text-sm font-bold text-[var(--ink)] tabular-nums whitespace-nowrap">
                 <Money amount={summary.spending} />
               </div>
               <small className="text-[11px] text-[var(--text-secondary)]">
                 Spending
               </small>
             </div>
-            <div className="text-center border-l border-[var(--border)]">
-              <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
+            <div className="text-center min-w-0 border-l border-[var(--border)]">
+              <div className="text-sm font-bold text-[var(--ink)] tabular-nums whitespace-nowrap">
                 <Money amount={summary.tabung} />
               </div>
               <small className="text-[11px] text-[var(--text-secondary)]">
                 Tabung
               </small>
             </div>
-            <div className="text-center border-l border-[var(--border)]">
-              <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
+            <div className="text-center min-w-0 min-[420px]:border-l border-[var(--border)]">
+              <div className="text-sm font-bold text-[var(--ink)] tabular-nums whitespace-nowrap">
                 <Money amount={summary.investments} />
               </div>
               <small className="text-[11px] text-[var(--text-secondary)]">
                 Investment
               </small>
             </div>
-            <div className="text-center border-l border-[var(--border)]">
-              <div className="text-sm font-bold text-[var(--ink)] tabular-nums">
+            <div className="text-center min-w-0 border-l border-[var(--border)]">
+              <div className="text-sm font-bold text-[var(--ink)] tabular-nums whitespace-nowrap">
                 {kid.coins ?? 0}
               </div>
               <small className="text-[11px] text-[var(--text-secondary)]">

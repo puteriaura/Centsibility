@@ -15,6 +15,7 @@ export const getRouter = () => {
         return [navigationMotion(fromLocation?.pathname, toLocation.pathname)];
       },
     },
+    defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: DefaultErrorComponent,
   });

@@ -53,7 +53,7 @@ function Login() {
   };
 
   return (
-    <div
+    <main
       style={{
         minHeight: "100dvh",
         display: "flex",
@@ -105,9 +105,9 @@ function Login() {
         {/* Main Card */}
         <Card variant="default" style={{ padding: "0.5rem" }}>
           <CardHeader style={{ textAlign: "center", padding: "1.5rem 1.5rem 0.5rem" }}>
-            <CardTitle style={{ fontSize: "1.35rem" }}>
-              Parent Sign In
-            </CardTitle>
+            <h1 className="font-display font-bold text-[var(--ink)] m-0" style={{ fontSize: "1.35rem" }}>
+              Parent sign in
+            </h1>
             <CardDescription>
               Use your Google account. New parents get an account automatically.
             </CardDescription>
@@ -176,7 +176,7 @@ function Login() {
                 <AppIcon name="kid" size={16} />
                 <span>Kid? Sign in with your code</span>
               </Link>
-              <Link to="/privacy" className="block text-center text-sm underline">Privacy notice</Link>
+              <Link to="/privacy" className="flex min-h-[44px] items-center justify-center text-sm underline">Privacy notice</Link>
             </div>
 
             {/* Dev Demo Bypass */}
@@ -228,6 +228,6 @@ function Login() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }

@@ -191,7 +191,7 @@ export function AvatarPicker({
                         onChange(e);
                         setOpen(false);
                       }}
-                      className={`p-2.5 rounded-xl flex items-center justify-center transition-all cursor-pointer border min-h-[44px] ${
+                      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer border min-h-[44px] ${
                         selected
                           ? "bg-[var(--surface-pink)] border-[var(--primary)] text-[var(--primary-text)] shadow-xs"
                           : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-soft)]"

@@ -42,6 +42,10 @@ function getNotificationIcon(kind: string): string {
   if (k.includes("REWARD")) return "gift";
   if (k.includes("LOAN") || k.includes("QARD")) return "loan";
   if (k.includes("GOAL") || k.includes("TABUNG")) return "save";
+  if (k.includes("DEPOSIT")) return "incoming";
+  if (k.includes("WITHDRAW")) return "outgoing";
+  if (k.includes("HIBAH")) return "gift";
+  if (k.includes("INVEST")) return "trend";
   return "bell";
 }
 
@@ -52,13 +56,14 @@ function KidNotifications() {
   useEffect(() => {
     const code = getKidSession()?.code;
     if (!code) return;
-    edgeKidMarkNotificationsRead({ code })
-      .then(() => {
-        window.dispatchEvent(new Event("centsibility:kid-notifications-read"));
-        return refresh();
-      })
-      .catch(() => {});
-  }, [refresh]);
+    return () => {
+      edgeKidMarkNotificationsRead({ code })
+        .then(() => {
+          window.dispatchEvent(new Event("centsibility:kid-notifications-read"));
+        })
+        .catch(() => {});
+    };
+  }, []);
 
   if (!data && error) return <KidLoadError onRetry={refresh} />;
   if (loading || !data) {
@@ -88,7 +93,7 @@ function KidNotifications() {
           </p>
         </Card>
       ) : (
-        <div className="space-y-2.5" role="feed" aria-label="Notifications list">
+        <div className="space-y-2.5" aria-label="Notifications list">
           {notifications.map((n) => {
             const iconName = getNotificationIcon(n.kind);
             const timeStr = formatTimeAgo(n.created_at);
@@ -126,7 +131,7 @@ function KidNotifications() {
                 <Card
                   key={n.id}
                   variant="default"
-                  className="p-0 border border-[var(--border)] overflow-hidden transition-all hover:border-[var(--primary-soft)] hover:shadow-xs active:scale-[0.99]"
+                  className="p-0 border border-[var(--border)] overflow-hidden transition-colors hover:border-[var(--primary-soft)] hover:shadow-xs active:scale-[0.99]"
                 >
                   <Link
                     to={n.link}

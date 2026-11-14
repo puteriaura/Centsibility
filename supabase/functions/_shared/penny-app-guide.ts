@@ -85,7 +85,7 @@ export const PENNY_APP_GUIDE = [
     "buttons": [
       "Change Picture",
       "Saving...",
-      "Save Profile",
+      "Save profile",
       "Cancel",
       "Trying again…",
       "Try again"
@@ -101,7 +101,7 @@ export const PENNY_APP_GUIDE = [
       },
       {
         "to": "/kid/wallet",
-        "label": "Ask"
+        "label": "Request"
       },
       {
         "to": "/kid/more",
@@ -231,7 +231,7 @@ export const PENNY_APP_GUIDE = [
       "Ask for a loan",
       "Change Amount",
       "Submitting...",
-      "Sign Agreement & Submit to Parent",
+      "Sign agreement and submit",
       "Receipt (PDF)",
       "Agreement (PDF)",
       "Cancel",
@@ -246,8 +246,8 @@ export const PENNY_APP_GUIDE = [
     "path": "/kid/missions",
     "title": "Missions",
     "buttons": [
-      "Reward Store",
-      "Try Again",
+      "Reward store",
+      "Try again",
       "Go to quests"
     ],
     "links": [
@@ -299,10 +299,6 @@ export const PENNY_APP_GUIDE = [
         "label": "Zakat"
       },
       {
-        "to": "/kid/history",
-        "label": "Transactions"
-      },
-      {
         "to": "/kid/missions",
         "label": "Missions"
       },
@@ -311,8 +307,8 @@ export const PENNY_APP_GUIDE = [
         "label": "Rewards"
       },
       {
-        "to": "/kid/quiz",
-        "label": "Quizzes"
+        "to": "/kid/history",
+        "label": "Transactions"
       },
       {
         "to": "/kid/chat",
@@ -409,6 +405,7 @@ export const PENNY_APP_GUIDE = [
     "title": "Send",
     "buttons": [
       "Send another",
+      "Retry",
       "Continue",
       "Edit transfer",
       "Enter PIN to Confirm",
@@ -542,7 +539,10 @@ export const PENNY_APP_GUIDE = [
       "Create account",
       "Setup needed",
       "Set up sign-in",
+      "Edit",
       "Generate new access code / reset PIN",
+      "PIN",
+      "Delete",
       "Hide card controls",
       "Card controls",
       "Close card controls",
@@ -703,6 +703,7 @@ export const PENNY_APP_GUIDE = [
     "title": "Send",
     "buttons": [
       "Send another",
+      "Retry",
       "Continue",
       "Edit transfer",
       "Enter PIN to Confirm",

@@ -174,6 +174,7 @@ function ParentHome() {
 
   return (
     <div className="parent-page mobile-stack pb-4 page-split parent-home">
+      <h1 className="sr-only">Parent home</h1>
       <div className="page-split__summary">
       {error && hasLoaded && (
         <ParentLoadError

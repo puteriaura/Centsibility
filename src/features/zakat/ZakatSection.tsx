@@ -105,7 +105,7 @@ export function ZakatSection() {
           <p
             className="m-0 text-sm leading-snug"
           >
-            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ.
+            Nisab RM{NISAB_RM.toLocaleString("en-MY", { minimumFractionDigits: 2 })} (<a className="text-inherit underline" href={NISAB.source}>PPZ-MAIWP, {NISAB.checkedOn}</a>). Your state’s figure may differ.
           </p>
           <p className="m-0 text-sm">Rate {(ZAKAT_RATE * 100).toFixed(1)}%
           </p>
@@ -147,17 +147,17 @@ export function ZakatSection() {
 
       {/* Wallet balance quick-add toggle */}
       <Card variant="default" className="p-4 border border-[var(--border)]">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
+        <label className="flex items-center gap-3 cursor-pointer select-none min-h-[44px]">
           <input
             type="checkbox"
             checked={useWallet}
             onChange={(e) => setUseWallet(e.target.checked)}
-            className="w-5 h-5 accent-[var(--primary)] rounded cursor-pointer"
+            className="w-5 h-5 accent-[var(--primary)] rounded cursor-pointer shrink-0"
             aria-label="Include Centsibility wallet balance"
           />
           <div className="text-xs sm:text-sm">
             <strong className="text-[var(--ink)] block">
-              Include My Centsibility Balance
+              Include my Centsibility balance
             </strong>
             <span className="text-[var(--text-secondary)]">
               Wallet + Investment Pool ={" "}

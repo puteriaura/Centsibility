@@ -110,21 +110,20 @@ export function useKidData() {
     refresh();
   }, [refresh]);
 
-  // Poll every 20s so the kid sees parent decisions without a manual refresh.
-  // Polls pause while the tab is hidden and catch up as soon as it is shown;
-  // the first load above always runs, so a page opened in a background tab
-  // does not sit on its skeleton.
+  // Poll every 20s while a request is pending, otherwise every 60s.
+  // Polls pause while the tab is hidden and catch up as soon as it is shown.
+  const hasPending = Boolean(data?.approvals?.some((a) => a.status === "pending"));
   useEffect(() => {
     const poll = () => {
       if (document.visibilityState === "visible") refresh();
     };
-    const id = setInterval(poll, 20000);
+    const id = setInterval(poll, hasPending ? 20000 : 60000);
     document.addEventListener("visibilitychange", poll);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [refresh]);
+  }, [refresh, hasPending]);
 
   return { data, loading, error, refresh };
 }

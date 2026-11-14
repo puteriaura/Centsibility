@@ -28,8 +28,8 @@ export function LandingHero() {
         <img
           src="/images/bicycle-park.webp"
           alt="A child's blue bicycle with a yellow helmet, parked by a lake"
-          width={1774}
-          height={887}
+          width={1200}
+          height={600}
           fetchPriority="high"
         />
         <div className="landing-goal">

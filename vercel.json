@@ -3,18 +3,44 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/kid-login", "destination": "/index.html" },
+    { "source": "/launch", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/kid", "destination": "/index.html" },
+    { "source": "/kid/card", "destination": "/index.html" },
+    { "source": "/kid/chat", "destination": "/index.html" },
+    { "source": "/kid/goals", "destination": "/index.html" },
+    { "source": "/kid/history", "destination": "/index.html" },
+    { "source": "/kid/insights", "destination": "/index.html" },
+    { "source": "/kid/invest", "destination": "/index.html" },
+    { "source": "/kid/loans", "destination": "/index.html" },
+    { "source": "/kid/missions", "destination": "/index.html" },
+    { "source": "/kid/more", "destination": "/index.html" },
+    { "source": "/kid/notifications", "destination": "/index.html" },
+    { "source": "/kid/quest/(.*)", "destination": "/index.html" },
+    { "source": "/kid/quiz", "destination": "/index.html" },
+    { "source": "/kid/rewards", "destination": "/index.html" },
+    { "source": "/kid/sadaqah", "destination": "/index.html" },
+    { "source": "/kid/transfer", "destination": "/index.html" },
+    { "source": "/kid/wallet", "destination": "/index.html" },
+    { "source": "/kid/zakat", "destination": "/index.html" },
+    { "source": "/parent", "destination": "/index.html" },
+    { "source": "/parent/approvals", "destination": "/index.html" },
+    { "source": "/parent/insights", "destination": "/index.html" },
+    { "source": "/parent/penny", "destination": "/index.html" },
+    { "source": "/parent/reports", "destination": "/index.html" },
+    { "source": "/parent/settings", "destination": "/index.html" },
+    { "source": "/parent/transfer", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
-          "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://uoghvqciodboxhfopuip.supabase.co https://*.googleusercontent.com; connect-src 'self' https://uoghvqciodboxhfopuip.supabase.co wss://uoghvqciodboxhfopuip.supabase.co; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://uoghvqciodboxhfopuip.supabase.co https://*.googleusercontent.com; connect-src 'self' https://uoghvqciodboxhfopuip.supabase.co wss://uoghvqciodboxhfopuip.supabase.co; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
         },
         {
           "key": "X-Frame-Options",

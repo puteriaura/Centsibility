@@ -1391,9 +1391,24 @@ export async function edgeKidSetCardControls(params: {
   }>("kid-finance", { action: "set-card-controls", ...params });
 }
 
+function getClientDeviceId(): string {
+  try {
+    const key = "centsibility.device-id";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return "ephemeral";
+  }
+}
+
 export async function edgeKidLogin(params: { username: string; pin: string }) {
   return invoke<{ kidId: string; name: string; code: string }>("kid-finance", {
     action: "login",
+    deviceId: getClientDeviceId(),
     ...params,
   });
 }
