@@ -45,6 +45,7 @@ function getNotificationIcon(kind: string): string {
   if (k.includes("DEPOSIT")) return "incoming";
   if (k.includes("WITHDRAW")) return "outgoing";
   if (k.includes("HIBAH")) return "gift";
+  if (k.includes("CHORE")) return "gift";
   if (k.includes("INVEST")) return "trend";
   return "bell";
 }

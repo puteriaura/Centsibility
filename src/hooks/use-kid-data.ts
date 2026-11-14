@@ -110,9 +110,12 @@ export function useKidData() {
       if (newlyResolved.length) markSeen(newlyResolved);
 
       const nextBal = Number(res.kid?.balance ?? 0);
-      const goalDoneCount = (res.goals ?? []).filter(
-        (g) => Number(g.saved_amount) >= Number(g.target_amount) && Number(g.target_amount) > 0,
-      ).length;
+      const goalDoneCount = (res.goals ?? []).filter((g) => {
+        const goal = g as { saved?: unknown; saved_amount?: unknown; target?: unknown; target_amount?: unknown };
+        const target = Number(goal.target ?? goal.target_amount ?? 0);
+        const saved = Number(goal.saved ?? goal.saved_amount ?? 0);
+        return target > 0 && saved >= target;
+      }).length;
       if (!firstLoad.current) {
         if (prevGoalDoneCountRef.current !== null && goalDoneCount > prevGoalDoneCountRef.current) {
           triggerMood("goal_reached");

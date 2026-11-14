@@ -7,8 +7,8 @@ export interface SproutStageInfo {
 }
 
 export function getSproutStage(pct: number): SproutStageInfo {
+  if (!Number.isFinite(pct) || pct <= 0) return { stage: 0, label: "Seed" };
   const clamped = Math.max(0, Math.min(100, pct));
-  if (clamped <= 0) return { stage: 0, label: "Seed" };
   if (clamped < 25) return { stage: 1, label: "Shoot" };
   if (clamped < 50) return { stage: 2, label: "Two leaves" };
   if (clamped < 75) return { stage: 3, label: "Three leaves" };

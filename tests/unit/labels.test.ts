@@ -10,9 +10,9 @@ import {
 } from "@/lib/labels";
 
 describe("labels", () => {
-  it("formats each of the 15 types without underscores or all-capitals", () => {
+  it("formats each of the 16 types without underscores or all-capitals", () => {
     const keys = Object.keys(TRANSACTION_TYPE_LABELS);
-    expect(keys.length).toBe(15);
+    expect(keys.length).toBe(16);
     for (const key of keys) {
       const label = TRANSACTION_TYPE_LABELS[key];
       expect(label).not.toContain("_");

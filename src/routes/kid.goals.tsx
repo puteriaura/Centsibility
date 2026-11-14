@@ -353,10 +353,8 @@ function KidGoals() {
         )}
         {/* 3. One card per Tabung */}
         {data.goals.map((g: (typeof data.goals)[number], index: number) => {
-          const pct = Math.min(
-            100,
-            Math.round((Number(g.saved) / Number(g.target)) * 100),
-          );
+          const target = Number(g.target);
+          const pct = target > 0 ? Math.min(100, Math.round((Number(g.saved) / target) * 100)) : 0;
           const sprout = getSproutStage(pct);
           const remaining = Math.max(0, Number(g.target) - Number(g.saved));
           const complete = pct >= 100;

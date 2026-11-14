@@ -92,6 +92,15 @@ export interface KidCopySet {
   approved: string;
   declined: string;
   open: string;
+  agesPrefix: string;
+  toSpend: string;
+  daySingular: string;
+  dayPlural: string;
+  streakLabel: string;
+  sadaqahHeroLabel: string;
+  giveAnytime: string;
+  sadaqahBannerTitle: string;
+  sadaqahBannerBody: string;
 }
 
 const EN_COPY: KidCopySet = {
@@ -125,6 +134,15 @@ const EN_COPY: KidCopySet = {
   approved: "Approved",
   declined: "Not approved",
   open: "To do",
+  agesPrefix: "Ages",
+  toSpend: "to spend",
+  daySingular: "day",
+  dayPlural: "days",
+  streakLabel: "Streak",
+  sadaqahHeroLabel: "Pledged this year",
+  giveAnytime: "Give anytime",
+  sadaqahBannerTitle: "Make a practice Sadaqah pledge from RM1",
+  sadaqahBannerBody: "This is practice money. The cause receives a donation only if your parent passes it on.",
 };
 
 const MS_COPY: KidCopySet = {
@@ -158,6 +176,15 @@ const MS_COPY: KidCopySet = {
   approved: "Diluluskan",
   declined: "Tidak diluluskan",
   open: "Perlu dibuat",
+  agesPrefix: "Umur",
+  toSpend: "untuk belanja",
+  daySingular: "hari",
+  dayPlural: "hari",
+  streakLabel: "Rentetan",
+  sadaqahHeroLabel: "Janji derma tahun ini",
+  giveAnytime: "Beri bila-bila masa",
+  sadaqahBannerTitle: "Buat janji Sadaqah latihan dari RM1",
+  sadaqahBannerBody: "Ini duit latihan. Badan amal hanya menerima sumbangan jika ibu bapa meneruskannya.",
 };
 
 export function getKidCopy(

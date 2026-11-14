@@ -139,7 +139,7 @@ function KidLoans() {
           </p>
           <p
             className="deposit-hero__link"
-            style={{ cursor: "default", textDecoration: "none" }}
+            style={{ display: "block", cursor: "default", textDecoration: "none" }}
           >
             Trust {data.kid.trust_score} · 0% interest (<Term termKey="qard_hasan" />, <Term termKey="amanah" />)
           </p>

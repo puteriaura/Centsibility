@@ -5,6 +5,9 @@ import {
   edgeParentApproveRequest,
   edgeParentResolveReward,
   edgeParentMarkNotificationsRead,
+  edgeParentListChores,
+  edgeParentResolveChore,
+  type ChoreItem,
 } from "@/lib/edge";
 import { toast } from "sonner";
 import { parseQardReason } from "@/lib/qard";
@@ -35,6 +38,7 @@ const parseQard = parseQardReason;
 
 function Approvals() {
   const {
+    kids,
     approvals,
     rewards,
     notifications,
@@ -47,12 +51,39 @@ function Approvals() {
   const { locked } = usePrivacy();
   const search = Route.useSearch();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [chores, setChores] = useState<ChoreItem[]>([]);
   // The bell opens the Activity tab: notifications are marked read on this
   // page, so this is also where their text has to be readable.
   const [tab, setTab] = useState<ApprovalsTab>(search.tab ?? "requests");
   useEffect(() => {
     setTab(search.tab ?? "requests");
   }, [search.tab]);
+
+  useEffect(() => {
+    void edgeParentListChores()
+      .then((res) => setChores(res.chores ?? []))
+      .catch(() => {});
+  }, [lastLoadedAt]);
+
+  const doneChores = chores.filter((c) => c.status === "DONE");
+
+  const decideChore = async (id: string, decision: "approve" | "decline") => {
+    setBusyId(id);
+    try {
+      await edgeParentResolveChore({
+        choreId: id,
+        decision: decision === "approve" ? "APPROVED" : "DECLINED",
+      });
+      toast.success(decision === "approve" ? "Chore approved" : "Chore declined");
+      const res = await edgeParentListChores();
+      setChores(res.chores ?? []);
+      refresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "An error occurred");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   useEffect(() => {
     if (tab === "activity") void edgeParentMarkNotificationsRead().then(() => refresh()).catch(console.error);
@@ -102,7 +133,8 @@ function Approvals() {
     );
   }
 
-  const totalPending = approvals.length + rewards.length;
+  const totalPending = approvals.length + rewards.length + doneChores.length;
+  const requestsCount = approvals.length + doneChores.length;
 
   return (
     <div className="space-y-5 pb-12">
@@ -124,9 +156,9 @@ function Approvals() {
           onClick={() => setTab("requests")}
         >
           Requests
-          {approvals.length > 0 ? (
+          {requestsCount > 0 ? (
             <span className="ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[var(--neg)] text-white text-[11px] font-bold">
-              {approvals.length > 99 ? "99+" : approvals.length}
+              {requestsCount > 99 ? "99+" : requestsCount}
             </span>
           ) : null}
         </button>
@@ -173,7 +205,52 @@ function Approvals() {
 
       {tab === "requests" && (
         <div className="space-y-3" role="tabpanel" id="panel-req" aria-labelledby="tab-req">
-          {hasLoaded && !error && approvals.length === 0 ? (
+          {doneChores.length > 0 && (
+            <div className="space-y-2.5">
+              {doneChores.map((c) => {
+                const kid = kids.find((k) => k.id === c.kid_id);
+                const isBusy = busyId === c.id;
+                return (
+                  <Card key={c.id} variant="default" className="p-4 border border-[var(--border)] space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-[var(--ink)]">{kid?.comfort_name || kid?.name || "Child"}</span>
+                          <Badge variant="default">Chore</Badge>
+                        </div>
+                        <p className="text-xs text-[var(--text-2)] mt-1 mb-0">{c.title}</p>
+                      </div>
+                      <span className="text-base font-extrabold text-[var(--ink)] tabular-nums shrink-0">
+                        <Money amount={Number(c.amount)} />
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={isBusy}
+                        onClick={() => decideChore(c.id, "decline")}
+                        className="flex-1"
+                      >
+                        Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        disabled={isBusy}
+                        loading={isBusy}
+                        onClick={() => decideChore(c.id, "approve")}
+                        className="flex-1"
+                      >
+                        Approve
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+          {hasLoaded && !error && approvals.length === 0 && doneChores.length === 0 ? (
             <p className="text-sm text-[var(--text-3)] py-6 text-center">No money or loan requests.</p>
           ) : (
             approvals.map((a) => {

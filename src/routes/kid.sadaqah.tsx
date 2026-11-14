@@ -2,6 +2,7 @@ import { SADAQAH_HADITH } from "@/content/lessons";
 import { getMalaysiaSeason, malaysiaDateIso } from "@/content/ramadan";
 import { motion } from "framer-motion";
 import { useTheme } from "@/lib/theme";
+import { getKidCopy } from "@/lib/i18n";
 import { LessonCard } from "@/components/LessonCard";
 import { Term } from "@/components/ui/Term";
 import { SpeakButton } from "@/components/ui/SpeakButton";
@@ -72,7 +73,8 @@ function KidSadaqah() {
     amount: number;
     cause: string;
   } | null>(null);
-  const { seasonPreview, reduced } = useTheme();
+  const { seasonPreview, reduced, lang } = useTheme();
+  const copy = getKidCopy(lang, data?.ageGroup ?? "10-12");
   const season = getMalaysiaSeason(new Date(), seasonPreview);
   const [rayaOpen, setRayaOpen] = useState(false);
 
@@ -206,7 +208,7 @@ function KidSadaqah() {
             aria-label="Sadaqah contributions this year"
           >
             <div className="deposit-hero__copy">
-              <p className="deposit-hero__label">Pledged this year</p>
+              <p className="deposit-hero__label">{copy.sadaqahHeroLabel}</p>
               <p className="deposit-hero__amount tabular-nums">
                 <Money amount={sadaqahTotal} />
               </p>
@@ -214,9 +216,9 @@ function KidSadaqah() {
                 className="deposit-hero__link flex items-center gap-1.5"
                 style={{ cursor: "default", textDecoration: "none" }}
               >
-                <span>Wallet</span>
+                <span>{copy.wallet}</span>
                 <Money amount={balance} />
-                <span>· Give anytime</span>
+                <span>· {copy.giveAnytime}</span>
               </p>
             </div>
             <div className="deposit-hero__mascot" aria-hidden="true">
@@ -326,9 +328,9 @@ function KidSadaqah() {
           <div className="promo-banner promo-banner--aqua">
             <div className="max-w-[70%]">
               <h2 className="text-base font-bold text-[var(--ink)] leading-snug m-0">
-                Make a practice Sadaqah pledge from RM1
+                {copy.sadaqahBannerTitle}
               </h2>
-              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">This is practice money. The cause receives a donation only if your parent passes it on.</p>
+              <p className="text-sm text-[var(--text-2)] mt-1 mb-0">{copy.sadaqahBannerBody}</p>
             </div>
             <div className="w-14 h-14 rounded-full bg-[var(--ink)]/10 flex items-center justify-center text-[var(--ink)] shrink-0">
               <AppIcon name="heart" size={28} />

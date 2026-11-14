@@ -5,11 +5,13 @@ import { KID_CARD_THEMES } from "@/lib/theme";
 import { getMalaysiaSeason, JAKIM_ESOLAT_SOURCE_URL } from "@/content/ramadan";
 import { getKidCopy, GLOSSARY_TERMS } from "@/lib/i18n";
 import { levelNameFor } from "@/lib/kid-level";
-import { walletDeltaCents } from "../../supabase/functions/_shared/wallet-transactions";
+import { TRANSACTION_TYPE_LABELS, APPROVAL_KIND_LABELS } from "@/lib/labels";
+import { KNOWN_CREDIT_TYPES, walletDeltaCents } from "../../supabase/functions/_shared/wallet-transactions";
 
 describe("V3 Delight unit checks", () => {
-  it("computes all 6 sprout stages accurately", () => {
+  it("computes all 6 sprout stages accurately and guards NaN/0", () => {
     expect(getSproutStage(0).label).toBe("Seed");
+    expect(getSproutStage(Number.NaN).label).toBe("Seed");
     expect(getSproutStage(10).label).toBe("Shoot");
     expect(getSproutStage(30).label).toBe("Two leaves");
     expect(getSproutStage(60).label).toBe("Three leaves");
@@ -53,11 +55,16 @@ describe("V3 Delight unit checks", () => {
     expect(Object.keys(GLOSSARY_TERMS)).toHaveLength(7);
   });
 
-  it("maps named kid levels and treats CHORE as wallet credit", () => {
+  it("maps named kid levels, BM copy, and CHORE labels/credits", () => {
     expect(levelNameFor(1)).toBe("Seedling");
     expect(levelNameFor(2)).toBe("Sprout");
     expect(levelNameFor(3)).toBe("Sapling");
     expect(levelNameFor(4)).toBe("Tree");
+    expect(TRANSACTION_TYPE_LABELS.CHORE).toBe("Chore reward");
+    expect(APPROVAL_KIND_LABELS.CHORE).toBe("Chore request");
+    expect(KNOWN_CREDIT_TYPES.has("CHORE")).toBe(true);
+    expect(getKidCopy("ms", "6-9").agesPrefix).toBe("Umur");
+    expect(getKidCopy("ms", "6-9").toSpend).toBe("untuk belanja");
     expect(walletDeltaCents({ type: "CHORE", amount: 3.5 })).toBe(350);
   });
 });

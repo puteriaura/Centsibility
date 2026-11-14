@@ -172,7 +172,7 @@ function KidHome() {
       <div className="page-split__summary">
       <DailyWelcome kidId={k.id} streak={Number(k.streak) || 0} incoming={incoming} />
       <div className="mb-2 flex items-center justify-between gap-2">
-        <Badge variant="default">Ages {ageGroup}</Badge>
+        <Badge variant="default">{copy.agesPrefix} {ageGroup}</Badge>
         <div className="flex items-center gap-2">
           <PennyMascot state={pennyMood} size={44} />
           <SpeakButton text={`${copy.myBalance} RM${(summary.total ?? 0).toFixed(2)}. ${copy.spendLabel} RM${summary.spending.toFixed(2)}.`} />
@@ -189,7 +189,7 @@ function KidHome() {
               {copy.spendLabel} <Money amount={summary.spending} /> · {copy.tabungLabel} <Money amount={summary.tabung} />
             </>
           ) : (
-            <><Money amount={summary.spending} /> to spend</>
+            <><Money amount={summary.spending} /> {copy.toSpend}</>
           )
         }
         tag={
@@ -259,8 +259,8 @@ function KidHome() {
 
       <div className="home-tiles">
         <Card className="home-tile">
-          <small>Streak</small>
-          <strong>{k.streak} {k.streak === 1 ? "day" : "days"}</strong>
+          <small>{copy.streakLabel}</small>
+          <strong>{k.streak} {k.streak === 1 ? copy.daySingular : copy.dayPlural}</strong>
           <span className="home-streak-badge"><AppIcon name="flame" size={28} /></span>
         </Card>
         <Link to="/kid/goals" className="home-tile home-goal" onClick={() => sfx.tap()}>

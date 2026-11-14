@@ -237,6 +237,7 @@ export const PENNY_APP_GUIDE = [
       "Reward store",
       "Try again",
       "Saving...",
+      "Cancel",
       "Go to quests"
     ],
     "links": [

@@ -14,6 +14,7 @@ export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
   INVEST_LOSS: "Investment loss",
   TRANSFER_IN: "Transfer received",
   TRANSFER_OUT: "Transfer sent",
+  CHORE: "Chore reward",
 };
 
 export const APPROVAL_KIND_LABELS: Record<string, string> = {
@@ -22,6 +23,7 @@ export const APPROVAL_KIND_LABELS: Record<string, string> = {
   QARD: "Loan request",
   TRANSFER: "Transfer request",
   REWARD: "Reward request",
+  CHORE: "Chore request",
 };
 
 export function humanizeCode(code: string): string {

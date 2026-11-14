@@ -15,7 +15,7 @@ export function Term({ termKey, children }: TermProps) {
   if (!entry) return <>{children ?? termKey}</>;
 
   return (
-    <span className="relative inline-block">
+    <span className="inline">
       <button
         type="button"
         aria-expanded={open}
@@ -30,7 +30,7 @@ export function Term({ termKey, children }: TermProps) {
           id={panelId}
           role="region"
           aria-label={entry.term}
-          className="mt-2 block rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-left text-xs leading-relaxed text-[var(--ink)] shadow-sm"
+          className="my-2 block rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 text-left text-xs leading-relaxed text-[var(--ink)] shadow-sm"
         >
           <span className="flex items-center justify-between gap-2 font-bold">
             <span>{entry.term}</span>

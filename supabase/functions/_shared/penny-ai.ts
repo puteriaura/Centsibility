@@ -211,6 +211,7 @@ export function typeLabel(type: string): string {
     INVEST_LOSS: "Investment loss",
     TRANSFER_IN: "Transfer received",
     TRANSFER_OUT: "Transfer sent",
+    CHORE: "Chore reward",
   };
   if (type in map) return map[type];
   const human = type.replace(/[_-]+/g, " ").trim().toLowerCase();
@@ -227,6 +228,7 @@ export function categoryLabel(key: string): string {
   if (key === "QARD_REPAY" || key === "QARD") return "Loan repayments";
   if (key === "GOAL_IN") return "Savings goals";
   if (key === "DEPOSIT") return "Deposits";
+  if (key === "CHORE") return "Chore rewards";
   if (key === "TRANSFER_OUT") return "Transfers";
   const human = key.replace(/[_-]+/g, " ").trim().toLowerCase();
   return human ? human.charAt(0).toUpperCase() + human.slice(1) : key;
@@ -444,7 +446,7 @@ export function buildKidCoachContext(data: BuildKidCoachContextInput): string[] 
     }
 
     // Money In
-    const isMoneyIn = ["DEPOSIT", "HIBAH", "GOAL_OUT", "INVEST_OUT", "TRANSFER_IN"].includes(typeStr) ||
+    const isMoneyIn = ["DEPOSIT", "HIBAH", "GOAL_OUT", "INVEST_OUT", "TRANSFER_IN", "CHORE"].includes(typeStr) ||
                       (typeStr === "QARD" && labelStr !== "Loan repayment");
     if (isMoneyIn) {
       if (inThisWeek) moneyInThisWeek += amt;
