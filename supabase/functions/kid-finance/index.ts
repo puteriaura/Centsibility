@@ -9,6 +9,7 @@ import { logEvent } from "../_shared/log.ts";
 import { getPennyKnownNames, minimizePennyQuestion } from "../_shared/penny-minimization.ts";
 import { filterPennyInput } from "../_shared/penny-safety.ts";
 import { isKidSessionToken } from "../_shared/kid-session-token.ts";
+import { getVapidConfig, sendPushToSubscriptions } from "../_shared/web-push.ts";
 // supabase/functions/kid-finance/index.ts
 
 import { createClient } from "npm:@supabase/supabase-js@2.105.3";
@@ -255,6 +256,9 @@ Deno.serve(async (req: Request) => {
       case "transfer-recipients": return await handleTransferRecipients(admin, params, requestId);
       case "transfer":         return await handleTransfer(admin, params, requestId);
       case "complete-chore":   return await handleCompleteChore(admin, params, requestId);
+      case "save-push-subscription": return await handleSavePushSubscription(admin, params, requestId);
+      case "remove-push-subscription": return await handleRemovePushSubscription(admin, params, requestId);
+      case "get-push-status": return await handleGetPushStatus(admin, params, requestId);
       case "unlock":           return await handleUnlock(admin, params, requestId);
       case "pin-status": {
         const kid = await getKid(admin, params.code, requestId);
@@ -295,6 +299,12 @@ async function notifyParent(
   const resolvedLink = link ?? (["WITHDRAWAL","DEPOSIT","QARD","REWARD"].includes(kind) ? "/parent/approvals" : "/parent");
   const { error } = await admin.from("notifications").insert({ parent_id: parentId, kid_id: kidId, kind, message, link: resolvedLink });
   if (error) console.warn(`[kid-finance] notifyParent failed (non-fatal): ${error.message}`);
+  await sendPushToSubscriptions(admin, { parentId }, {
+    title: "New family request",
+    body: message,
+    url: resolvedLink,
+    tag: `req-${kind}-${kidId}`,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1247,5 +1257,68 @@ async function handleCompleteChore(admin: Admin, params: Record<string, unknown>
     p_chore_id: choreId,
   });
   if (error) return handleRpcError(error);
+  if (kid.parent_id) {
+    await sendPushToSubscriptions(admin, { parentId: String(kid.parent_id) }, {
+      title: "Chore completed",
+      body: `${String(kid.name ?? "Your child")} finished ${typeof data?.title === "string" ? data.title : "a chore"}`,
+      url: "/parent/approvals",
+      tag: `chore-done-${choreId}`,
+    });
+  }
   return jsonOk({ chore: data });
+}
+
+async function handleSavePushSubscription(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId, true);
+  const sub = params.subscription as Record<string, unknown> | undefined;
+  const endpoint = typeof sub?.endpoint === "string" ? sub.endpoint.trim() : "";
+  const keys = sub?.keys as Record<string, unknown> | undefined;
+  const p256dh = typeof keys?.p256dh === "string" ? keys.p256dh.trim() : "";
+  const auth = typeof keys?.auth === "string" ? keys.auth.trim() : "";
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    parsed = null;
+  }
+  if (!parsed || parsed.protocol !== "https:" || !p256dh || !auth || endpoint.length > 1024) {
+    return jsonError("Invalid push subscription", 400);
+  }
+  const userAgent = typeof params.userAgent === "string" ? params.userAgent.slice(0, 200) : null;
+  const { error } = await admin.from("push_subscriptions").upsert(
+    {
+      parent_id: null,
+      kid_id: kid.id,
+      role: "kid",
+      endpoint,
+      p256dh,
+      auth,
+      user_agent: userAgent,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "endpoint" },
+  );
+  if (error) return jsonError("Could not save push subscription", 500);
+  return jsonOk({ ok: true });
+}
+
+async function handleRemovePushSubscription(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId, true);
+  const endpoint = typeof params.endpoint === "string" ? params.endpoint.trim() : "";
+  let q = admin.from("push_subscriptions").delete().eq("kid_id", kid.id).eq("role", "kid");
+  if (endpoint) q = q.eq("endpoint", endpoint);
+  const { error } = await q;
+  if (error) return jsonError("Could not remove push subscription", 500);
+  return jsonOk({ ok: true });
+}
+
+async function handleGetPushStatus(admin: Admin, params: Record<string, unknown>, requestId: string) {
+  const kid = await getKid(admin, params.code, requestId, true);
+  const { count, error } = await admin
+    .from("push_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("kid_id", kid.id)
+    .eq("role", "kid");
+  if (error) return jsonError("Could not check push status", 500);
+  return jsonOk({ count: count ?? 0, configured: Boolean(getVapidConfig()) });
 }

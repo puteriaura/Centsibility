@@ -676,6 +676,10 @@ export const PENNY_APP_GUIDE = [
       "Save Comfort Name",
       "Turn off PIN",
       "Save PIN",
+      "Exporting…",
+      "Export family JSON",
+      "Deleting…",
+      "Delete my account",
       "Unmute sounds",
       "Mute sounds",
       "Retrying…",
@@ -690,6 +694,10 @@ export const PENNY_APP_GUIDE = [
       {
         "to": "/parent/reports",
         "label": "Monthly statements"
+      },
+      {
+        "to": "/privacy",
+        "label": "Read privacy & retention notice"
       }
     ]
   },
