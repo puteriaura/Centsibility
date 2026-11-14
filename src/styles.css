@@ -93,6 +93,39 @@ input, textarea, select {
   --blue-900: #151E31;
   --brand-card: var(--blue-300);
   --on-brand-card: var(--blue-900);
+}
+
+:root[data-kid-theme="periwinkle"] {
+  --brand-card: #A0B0DA;
+  --on-brand-card: #151E31;
+}
+
+:root[data-kid-theme="pandan"] {
+  --brand-card: #A8D8C0;
+  --on-brand-card: #10302A;
+}
+
+:root[data-kid-theme="senja"] {
+  --brand-card: #F4B8A0;
+  --on-brand-card: #3A1A10;
+}
+
+:root[data-kid-theme="telang"] {
+  --brand-card: #C6B3E6;
+  --on-brand-card: #23153F;
+}
+
+:root[data-kid-theme="langit"] {
+  --brand-card: #9CCBEA;
+  --on-brand-card: #0F2A3D;
+}
+
+:root[data-kid-theme="malam"] {
+  --brand-card: #2A3558;
+  --on-brand-card: #EEF0F8;
+}
+
+:root {
   --sun: #DDC518;
   --sun-edge: #A6930E;
   --on-sun: #262101;

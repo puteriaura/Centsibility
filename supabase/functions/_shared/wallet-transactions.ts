@@ -2,6 +2,10 @@ export const DEBIT_TYPES = new Set([
   "WITHDRAWAL", "SADAQAH", "INVEST_IN", "FEE", "QARD_REPAY", "GOAL_IN", "TRANSFER_OUT",
 ]);
 
+export const KNOWN_CREDIT_TYPES = new Set([
+  "DEPOSIT", "HIBAH", "GOAL_OUT", "INVEST_OUT", "TRANSFER_IN", "QARD", "CHORE",
+]);
+
 export const POT_ONLY_TYPES = new Set(["INVEST_GAIN", "INVEST_LOSS"]);
 
 export function isWalletTransaction(type: string): boolean {

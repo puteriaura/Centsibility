@@ -10,6 +10,8 @@ import { DEMO_KID_STATE } from "@/lib/demo-data";
 import { approvalKindLabel } from "@/lib/labels";
 import equal from "fast-deep-equal";
 
+import type { PennyState } from "@/components/PennyMascot";
+
 export type KidState = Awaited<ReturnType<typeof edgeKidGetState>>;
 
 const SEEN_KEY = "centsi:kid-seen-resolutions";
@@ -36,7 +38,20 @@ export function useKidData() {
   // Set when the latest fetch failed. Pages keep showing the last good data;
   // with nothing loaded yet they show <KidLoadError> with a retry button.
   const [error, setError] = useState<string | null>(null);
+  const [pennyMood, setPennyMood] = useState<PennyState>("idle");
   const firstLoad = useRef(true);
+  const prevBalanceRef = useRef<number | null>(null);
+  const prevGoalDoneCountRef = useRef<number | null>(null);
+  const moodTimerRef = useRef<number | null>(null);
+
+  const triggerMood = useCallback((next: PennyState) => {
+    setPennyMood(next);
+    if (moodTimerRef.current) window.clearTimeout(moodTimerRef.current);
+    moodTimerRef.current = window.setTimeout(() => {
+      setPennyMood("idle");
+      moodTimerRef.current = null;
+    }, 4500);
+  }, []);
 
   const refresh = useCallback(async () => {
     const s = getKidSession();
@@ -72,9 +87,11 @@ export function useKidData() {
         if (a.status === "approved") {
           sfx.success();
           toast.success(`${label} approved: ${reasonClean || "RM " + a.amount}`);
+          triggerMood("money_in");
         } else {
           sfx.error();
           toast.error(`${label} declined: ${reasonClean || "RM " + a.amount}`);
+          triggerMood("declined");
         }
       }
       for (const r of res.rewards) {
@@ -91,6 +108,24 @@ export function useKidData() {
         }
       }
       if (newlyResolved.length) markSeen(newlyResolved);
+
+      const nextBal = Number(res.kid?.balance ?? 0);
+      const goalDoneCount = (res.goals ?? []).filter((g) => {
+        const goal = g as { saved?: unknown; saved_amount?: unknown; target?: unknown; target_amount?: unknown };
+        const target = Number(goal.target ?? goal.target_amount ?? 0);
+        const saved = Number(goal.saved ?? goal.saved_amount ?? 0);
+        return target > 0 && saved >= target;
+      }).length;
+      if (!firstLoad.current) {
+        if (prevGoalDoneCountRef.current !== null && goalDoneCount > prevGoalDoneCountRef.current) {
+          triggerMood("goal_reached");
+        } else if (prevBalanceRef.current !== null && nextBal > prevBalanceRef.current) {
+          triggerMood("money_in");
+        }
+      }
+      prevBalanceRef.current = nextBal;
+      prevGoalDoneCountRef.current = goalDoneCount;
+
       firstLoad.current = false;
     } catch (err) {
       console.warn("Failed to fetch kid state from edge function:", err);
@@ -125,5 +160,5 @@ export function useKidData() {
     };
   }, [refresh, hasPending]);
 
-  return { data, loading, error, refresh };
+  return { data, loading, error, refresh, pennyMood, triggerMood };
 }

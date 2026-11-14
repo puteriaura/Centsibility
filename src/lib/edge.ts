@@ -28,6 +28,37 @@ import {
 
 type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"];
 
+export interface ChoreItem {
+  id: string;
+  kid_id?: string;
+  title: string;
+  amount: number;
+  status: "OPEN" | "DONE" | "APPROVED" | "DECLINED";
+  completed_at?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+}
+
+const demoChores: ChoreItem[] = [
+  {
+    id: "demo-chore-1",
+    kid_id: DEMO_IDENTITY.kidId,
+    title: "Fold laundry and put away shoes",
+    amount: 3.5,
+    status: "OPEN",
+    created_at: new Date(Date.now() - 3600_000).toISOString(),
+  },
+  {
+    id: "demo-chore-2",
+    kid_id: DEMO_IDENTITY.kidId,
+    title: "Water the plants",
+    amount: 2.0,
+    status: "DONE",
+    completed_at: new Date(Date.now() - 1800_000).toISOString(),
+    created_at: new Date(Date.now() - 7200_000).toISOString(),
+  },
+];
+
 export function getMockEdgeResponse<T>(
   functionName: string,
   body: Record<string, unknown>,
@@ -69,8 +100,39 @@ export function getMockEdgeResponse<T>(
           ...DEMO_KID_STATE.kid,
           investmentsValue: invVal,
         },
+        chores: demoChores,
         investmentsValue: invVal,
       } as T;
+    }
+    case "complete-chore": {
+      const chore = demoChores.find((c) => c.id === body.choreId);
+      if (chore && chore.status === "OPEN") {
+        chore.status = "DONE";
+        chore.completed_at = new Date().toISOString();
+      }
+      return { chore } as T;
+    }
+    case "list-chores":
+      return { chores: demoChores } as T;
+    case "create-chore": {
+      const next: ChoreItem = {
+        id: "demo-chore-" + Date.now(),
+        kid_id: String(body.kidId || DEMO_IDENTITY.kidId),
+        title: String(body.title || "Chore"),
+        amount: Number(body.amount || 2),
+        status: "OPEN",
+        created_at: new Date().toISOString(),
+      };
+      demoChores.unshift(next);
+      return { chore: next } as T;
+    }
+    case "resolve-chore": {
+      const chore = demoChores.find((c) => c.id === body.choreId);
+      if (chore && chore.status === "DONE") {
+        chore.status = body.decision === "APPROVED" ? "APPROVED" : "DECLINED";
+        chore.resolved_at = new Date().toISOString();
+      }
+      return { chore } as T;
     }
     case "get-history":
       return { txs: DEMO_TRANSACTIONS } as T;
@@ -1487,6 +1549,7 @@ export async function edgeKidGetState(params: { code: string }) {
     }[];
     unreadNotifications: number;
     nextHibah?: { amount: number; next_run_at: string } | null;
+    chores?: ChoreItem[];
   }>("kid-finance", { action: "get-state", ...params });
 }
 
@@ -2169,6 +2232,42 @@ export function getDemoMarketEnabled(): boolean | null {
 export async function edgeKidLogout(params: { code: string }) {
   return invoke<{ ok: boolean }>("kid-finance", {
     action: "logout",
+    ...params,
+  });
+}
+
+export async function edgeKidCompleteChore(params: { code: string; choreId: string }) {
+  return invoke<{ chore: ChoreItem }>("kid-finance", {
+    action: "complete-chore",
+    ...params,
+  });
+}
+
+export async function edgeParentListChores() {
+  return invoke<{ chores: ChoreItem[] }>("parent-finance", {
+    action: "list-chores",
+  });
+}
+
+export async function edgeParentCreateChore(params: {
+  kidId: string;
+  title: string;
+  amount: number;
+  pinSession?: string;
+}) {
+  return invoke<{ chore: ChoreItem }>("parent-finance", {
+    action: "create-chore",
+    ...params,
+  });
+}
+
+export async function edgeParentResolveChore(params: {
+  choreId: string;
+  decision: "APPROVED" | "DECLINED";
+  pinSession?: string;
+}) {
+  return invoke<{ chore: ChoreItem }>("parent-finance", {
+    action: "resolve-chore",
     ...params,
   });
 }

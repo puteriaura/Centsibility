@@ -258,6 +258,8 @@ const ICONS: Record<string, IconSvgElement> = {
   search: Search01Icon,
   scale: BalanceScaleIcon,
   send: SentIcon,
+  volume2: VolumeHighIcon,
+  volumex: VolumeOffIcon,
   tabung: SproutIcon,
   ask: MoneyAdd01Icon,
   incoming: ArrowDownLeft01Icon,

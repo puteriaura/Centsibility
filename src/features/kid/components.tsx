@@ -175,6 +175,7 @@ export const TX_ICON_MAP: Record<string, string> = {
   QARD: "loan",
   INVEST_IN: "investin",
   INVEST_OUT: "investreturn",
+  CHORE: "gift",
 };
 
 export function txEmoji(t: string) {

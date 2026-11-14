@@ -92,20 +92,8 @@ export const PENNY_APP_GUIDE = [
     ],
     "links": [
       {
-        "to": "/kid/transfer",
-        "label": "Send"
-      },
-      {
-        "to": "/kid/goals",
-        "label": "Tabung"
-      },
-      {
-        "to": "/kid/wallet",
-        "label": "Request"
-      },
-      {
-        "to": "/kid/more",
-        "label": "More"
+        "to": "/kid/insights",
+        "label": "View"
       },
       {
         "to": "/kid/goals",
@@ -248,6 +236,8 @@ export const PENNY_APP_GUIDE = [
     "buttons": [
       "Reward store",
       "Try again",
+      "Saving...",
+      "Cancel",
       "Go to quests"
     ],
     "links": [
@@ -308,7 +298,7 @@ export const PENNY_APP_GUIDE = [
       },
       {
         "to": "/kid/history",
-        "label": "Transactions"
+        "label": "History"
       },
       {
         "to": "/kid/chat",
@@ -316,7 +306,7 @@ export const PENNY_APP_GUIDE = [
       },
       {
         "to": "/kid/notifications",
-        "label": "Alerts"
+        "label": "Notifications"
       },
       {
         "to": "/privacy",
@@ -389,6 +379,8 @@ export const PENNY_APP_GUIDE = [
     "buttons": [
       "Sadaqah",
       "Zakat",
+      "Close Raya packet",
+      "Open Raya packet",
       "Cancel",
       "Pledging…",
       "Trying again…",
@@ -531,6 +523,9 @@ export const PENNY_APP_GUIDE = [
     "title": "Home",
     "buttons": [
       "Add child",
+      "Add chore",
+      "Approve",
+      "Decline",
       "Add your first child",
       "Cancel",
       "Delete account",

@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/providers/auth";
 import { QuoteCard } from "@/components/QuoteCard";
 import { useParentData } from "@/hooks/use-parent-data";
-import { edgeParentCreateKid, edgeParentDeleteKid } from "@/lib/edge";
+import {
+  edgeParentCreateKid,
+  edgeParentDeleteKid,
+  edgeParentListChores,
+  edgeParentCreateChore,
+  edgeParentResolveChore,
+  type ChoreItem,
+} from "@/lib/edge";
 import { CrewMemberCard } from "@/features/parent/components";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
 import { toast } from "sonner";
@@ -58,6 +65,63 @@ function ParentHome() {
   const [newKidBirthDate, setNewKidBirthDate] = useState("");
   const [generating, setGenerating] = useState(false);
   const [setupCode, setSetupCode] = useState<string | null>(null);
+  const [chores, setChores] = useState<ChoreItem[]>([]);
+  const [choreTitle, setChoreTitle] = useState("");
+  const [choreAmount, setChoreAmount] = useState("2.00");
+  const [choreKidId, setChoreKidId] = useState("");
+  const [choreBusy, setChoreBusy] = useState(false);
+
+  useEffect(() => {
+    void edgeParentListChores()
+      .then((res) => setChores(res.chores ?? []))
+      .catch(() => {});
+  }, [lastLoadedAt]);
+
+  useEffect(() => {
+    if (!choreKidId && kids.length > 0) setChoreKidId(kids[0].id);
+  }, [kids, choreKidId]);
+
+  const handleCreateChore = async () => {
+    const targetKid = choreKidId || kids[0]?.id;
+    const amt = Number(choreAmount);
+    if (!targetKid || !choreTitle.trim() || !Number.isFinite(amt) || amt <= 0) {
+      toast.error("Enter a chore title and amount");
+      return;
+    }
+    setChoreBusy(true);
+    try {
+      const res = await edgeParentCreateChore({
+        kidId: targetKid,
+        title: choreTitle.trim(),
+        amount: amt,
+      });
+      if (res.chore) setChores((prev) => [res.chore, ...prev]);
+      setChoreTitle("");
+      sfx.success();
+      toast.success("Chore sent to child");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not create chore");
+    } finally {
+      setChoreBusy(false);
+    }
+  };
+
+  const handleResolveChore = async (choreId: string, decision: "APPROVED" | "DECLINED") => {
+    setChoreBusy(true);
+    try {
+      const res = await edgeParentResolveChore({ choreId, decision });
+      if (res.chore) {
+        setChores((prev) => prev.map((c) => (c.id === choreId ? res.chore : c)));
+      }
+      sfx.success();
+      toast.success(decision === "APPROVED" ? "Chore approved and credited" : "Chore declined");
+      await refresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not update chore");
+    } finally {
+      setChoreBusy(false);
+    }
+  };
 
   const filteredKids = useMemo(() => {
     const q = kidQuery.trim().toLowerCase();
@@ -259,6 +323,80 @@ function ParentHome() {
       )}
 
       <div className="parent-home__reflection"><QuoteCard variant="parent" /></div>
+      <section aria-label="Chores" className="mt-4 space-y-3">
+        <SectionTitle className="mt-2">Chores</SectionTitle>
+        <Card className="p-4 border border-[var(--border)] space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Input
+              aria-label="Chore title"
+              placeholder="e.g. Fold laundry"
+              value={choreTitle}
+              onChange={(e) => setChoreTitle(e.target.value)}
+            />
+            <Input
+              aria-label="Chore reward RM"
+              type="number"
+              min="0.50"
+              step="0.50"
+              value={choreAmount}
+              onChange={(e) => setChoreAmount(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="primary"
+              disabled={choreBusy || kids.length === 0}
+              onClick={() => void handleCreateChore()}
+            >
+              Add chore
+            </Button>
+          </div>
+          {chores.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+              {chores.slice(0, 5).map((c) => {
+                const kidName = kids.find((k) => k.id === c.kid_id)?.name ?? "Child";
+                return (
+                  <div key={c.id} className="flex items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-bold text-[var(--ink)] truncate m-0">
+                        {kidName} · {c.title}
+                      </p>
+                      <p className="text-[var(--text-2)] m-0">
+                        RM{Number(c.amount).toFixed(2)} · {c.status}
+                      </p>
+                    </div>
+                    {c.status === "DONE" ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="primary"
+                          disabled={choreBusy}
+                          onClick={() => void handleResolveChore(c.id, "APPROVED")}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={choreBusy}
+                          onClick={() => void handleResolveChore(c.id, "DECLINED")}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge variant={c.status === "APPROVED" ? "success" : "default"}>
+                        {c.status}
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </section>
       </div>
 
       <div className="parent-home__children space-y-3">

@@ -18,6 +18,8 @@ import { sfx } from "@/lib/sounds";
 import { SlidingPill } from "@/components/ui/sliding-pill";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppIcon } from "@/components/ui/app-icon";
+import { useTheme } from "@/lib/theme";
+import { getKidCopy } from "@/lib/i18n";
 import { AvatarBubble } from "@/components/AvatarBubble";
 import {
   endParentUnlock,
@@ -486,7 +488,18 @@ function TopBar({
 
 function BottomNav({ mode, unread, hiddenOnPhone }: { mode: Mode; unread: number; hiddenOnPhone: boolean }) {
   const pathname = useRouterState({ select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname });
-  const items = NAV[mode];
+  const { lang } = useTheme();
+  const copy = getKidCopy(lang);
+  const kidLabels: Record<string, string> = {
+    "/kid": copy.home,
+    "/kid/wallet": copy.wallet,
+    "/kid/transfer": copy.send,
+    "/kid/insights": copy.insights,
+    "/kid/more": copy.more,
+  };
+  const items = NAV[mode].map((it) =>
+    mode === "kid" && kidLabels[it.to] ? { ...it, label: kidLabels[it.to] } : it,
+  );
 
   return (
     <nav className={`shell-bottomnav ${hiddenOnPhone ? "shell-bottomnav--phone-hidden" : ""}`} aria-label="Main">
