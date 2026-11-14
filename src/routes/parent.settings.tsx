@@ -145,7 +145,9 @@ function Settings() {
   };
 
   const resolvePrivacyPinSession = async (): Promise<string | undefined> => {
-    if (!hasPin) return undefined;
+    if (!hasPin) {
+      throw new Error("Set your 6-digit Dashboard PIN first in Dashboard PIN settings");
+    }
     if (!/^\d{6}$/.test(privacyPin.trim())) {
       throw new Error("Enter your 6-digit PIN first");
     }
@@ -635,7 +637,7 @@ function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {hasPin && (
+            {hasPin ? (
               <div>
                 <label
                   htmlFor="settings-privacy-pin"
@@ -653,6 +655,10 @@ function Settings() {
                   autoComplete="off"
                 />
               </div>
+            ) : (
+              <p className="m-0 rounded-xl bg-[var(--action-tint)] px-3 py-2 text-xs text-[var(--ink)] leading-relaxed">
+                Set a 6-digit Dashboard PIN in Dashboard PIN settings before exporting family data or deleting your account.
+              </p>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
@@ -660,7 +666,7 @@ function Settings() {
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={exporting}
+                disabled={exporting || !hasPin}
                 onClick={handleExportFamily}
               >
                 <AppIcon name="filetext" size={16} />
@@ -696,7 +702,7 @@ function Settings() {
                 type="submit"
                 variant="danger"
                 size="sm"
-                disabled={deletingAccount || deleteConfirm.trim() !== "DELETE"}
+                disabled={deletingAccount || !hasPin || deleteConfirm.trim() !== "DELETE"}
               >
                 {deletingAccount ? "Deleting…" : "Delete my account"}
               </Button>
