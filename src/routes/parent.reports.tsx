@@ -220,7 +220,7 @@ function Reports() {
               if (e.target.value)
                 setMonth(startOfMonth(new Date(e.target.value + "-01")));
             }}
-            className="min-h-[44px] min-w-[10rem] flex-[1_1_12rem] px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--primary)] focus-within:border-[var(--primary)]"
+            className="min-h-[44px] min-w-[10rem] flex-[1_1_12rem] px-3 text-xs sm:text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl font-semibold text-[var(--ink)] focus:outline-2 focus:outline-offset-2 focus:outline-[var(--primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--primary)] focus:border-[var(--primary)] focus-within:border-[var(--primary)]"
           />
         </div>
       </div>

@@ -278,7 +278,7 @@ function KidGoals() {
         <Link
           to="/kid/invest"
           onClick={() => sfx.tap()}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[var(--primary-text)] text-xs font-medium no-underline hover:border-[var(--primary)] transition-colors"
+          className="flex min-h-[44px] items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--border)] text-[var(--primary-text)] text-xs font-medium no-underline hover:border-[var(--primary)] transition-colors"
         >
           <AppIcon name="invest" size={16} />
           <span>Investments are on the Investment page</span>

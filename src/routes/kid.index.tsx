@@ -258,6 +258,7 @@ function KidHome() {
                   key={l.id}
                   to="/kid/loans"
                   className="list-row"
+                  aria-label={`${l.reason || "Qard loan"}, due ${formatDate(l.due_date)}, repay`}
                   onClick={() => sfx.tap()}
                 >
                   <span className="list-row__icon" aria-hidden="true">

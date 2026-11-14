@@ -264,7 +264,7 @@ function KidSadaqah() {
                     return (
                       <label
                         key={c.name}
-                        className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border text-center cursor-pointer transition-colors ${
+                        className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border text-center cursor-pointer transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--primary)] ${
                           isSelected
                             ? "border-[var(--primary)] bg-[var(--surface-pink)] ring-2 ring-[var(--primary)]/20 shadow-xs"
                             : "border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--primary-soft)]"
@@ -274,12 +274,13 @@ function KidSadaqah() {
                           type="radio"
                           name="sadaqah-cause"
                           value={c.name}
+                          aria-label={c.name}
                           checked={isSelected}
                           onChange={() => {
                             setSelectedCause(c.name);
                             setModalError(null);
                           }}
-                          className="sr-only"
+                          className="peer absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
                         <div
                           className={`w-9 h-9 rounded-lg flex items-center justify-center mx-auto mb-1.5 transition-colors ${
