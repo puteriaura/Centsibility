@@ -16,6 +16,7 @@ import { getVapidConfig, sendPushToSubscriptions } from "../_shared/web-push.ts"
 import { createClient } from "npm:@supabase/supabase-js@2.105.3";
 import { encodeHex } from "https://deno.land/std@0.208.0/encoding/hex.ts";
 import { isValidPinFormat, hashPin, verifyStoredPin } from "./pin.ts";
+import { pinGateFailure, sha256 } from "./pin-gate.ts";
 import { verifyKidOwnership, OwnershipError } from "./ownership.ts";
 import { setMarketTracker } from "./market_tracker.ts";
 import { getStatement, StatementError } from "./statement.ts";
@@ -66,8 +67,8 @@ Deno.serve(async (req: Request) => {
     if (limited) return limited;
 
     if (PIN_GATED_ACTIONS.has(action)) {
-      const pinGateError = await requirePinSession(adminClient, parentId, params.pinSession);
-      if (pinGateError) return pinGateError;
+      const pinFailure = await pinGateFailure(adminClient, parentId, action, params.pinSession);
+      if (pinFailure) return jsonError(pinFailure.message, pinFailure.status);
     }
 
     switch (action) {
@@ -208,48 +209,10 @@ async function issuePinSession(admin: Admin, parentId: string): Promise<{ pinSes
   };
 }
 
-async function requirePinSession(admin: Admin, parentId: string, token: unknown): Promise<Response | null> {
-  const { data: pinRow, error: pinErr } = await admin
-    .from("commander_pins")
-    .select("pin_hash")
-    .eq("parent_id", parentId)
-    .maybeSingle();
-
-  if (pinErr) return jsonError(pinErr.message, 500);
-
-  // If no PIN row or pin_hash is null, allow the call (no PIN configured)
-  if (!pinRow || !pinRow.pin_hash) {
-    return null;
-  }
-
-  if (typeof token !== "string" || !token.trim()) {
-    return jsonError("PIN required", 403);
-  }
-
-  const tokenHash = await sha256(token.trim());
-  const { data: isValid, error: valErr } = await admin.rpc("parent_pin_session_valid", {
-    p_parent_id: parentId,
-    p_token_hash: tokenHash,
-  });
-
-  if (valErr) return jsonError(valErr.message, 500);
-  if (!isValid) {
-    return jsonError("PIN required", 403);
-  }
-
-  return null;
-}
-
-
 function randomHex(bytes: number) {
   const array = new Uint8Array(bytes);
   crypto.getRandomValues(array);
   return encodeHex(array);
-}
-async function sha256(text: string) {
-  const msgUint8 = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  return encodeHex(new Uint8Array(hashBuffer));
 }
 
 // ---------------------------------------------------------------------------

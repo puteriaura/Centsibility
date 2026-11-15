@@ -51,6 +51,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select { m
 .quick-circle { width: 62px; height: 62px; border-radius: 22px; background: var(--surface); color: var(--action-text); box-shadow: 0 5px 0 var(--tile-edge); }
 .quick-circle svg { width: 28px; height: 28px; }
 .quick-label { font-family: var(--font-text); font-weight: 600; font-size: 13.5px; overflow-wrap: break-word; }
+/* Four labels share 280px at 320: the 11px floor in styles.css lost to the 13.5px above, so "Statements" ran into its neighbours (FC-41). */
+@media (max-width: 359px) { .quick-label { font-size: 11px; } }
 .tx-icon { background: var(--action-tint); border-radius: 12px; color: var(--action-text); }
 .app-dialog { border: 1px solid var(--line); border-radius: 22px; }
 .app-dialog--sheet { border-radius: 22px 22px 0 0; }
@@ -63,7 +65,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select { m
 .paper-guidance p { margin: 0 0 12px; font-size: 14px; color: var(--text-2); }
 .paper-guidance a { display: inline-flex; align-items: center; min-height: 48px; color: var(--action-text); font-weight: 600; }
 .app-shell .truncate, .app-dialog .truncate { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
-.deposit-hero { border-radius: 20px; margin: 0; padding: 22px; box-shadow: var(--paper-shadow); }
+/* Block margins stay free so a parent's space-y-* gap reaches the card below; margin: 0 here wiped it (FC-40). */
+.deposit-hero { border-radius: 20px; margin-inline: 0; padding: 22px; box-shadow: var(--paper-shadow); }
 .deposit-hero::after { display: none; }
 .app-shell:has(.deposit-hero) .shell-topbar { color: var(--ink); }
 .app-shell:has(.deposit-hero) .shell-topbar :is(.shell-topbar__title, .shell-icon-btn) { color: var(--ink); }

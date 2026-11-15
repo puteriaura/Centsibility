@@ -258,11 +258,12 @@ function KidHome() {
       )}
 
       <div className="home-tiles">
-        <Card className="home-tile">
+        {/* The streak and level card lives on More, so the tile leads there. */}
+        <Link to="/kid/more" className="home-tile" onClick={() => sfx.tap()}>
           <small>{copy.streakLabel}</small>
           <strong>{k.streak} {k.streak === 1 ? copy.daySingular : copy.dayPlural}</strong>
-          <span className="home-streak-badge"><AppIcon name="flame" size={28} /></span>
-        </Card>
+          <span className="home-streak-badge" aria-hidden="true"><AppIcon name="flame" size={28} /></span>
+        </Link>
         <Link to="/kid/goals" className="home-tile home-goal" onClick={() => sfx.tap()}>
           {topGoal ? <>
             <small>{topGoal.name} · {getSproutStage(goalPercent).label}</small>

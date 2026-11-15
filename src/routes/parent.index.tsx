@@ -21,11 +21,10 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { AppIcon } from "@/components/ui/app-icon";
 import { cleanApprovalReason } from "@/lib/qard";
-import { approvalKindLabel } from "@/lib/labels";
+import { approvalKindLabel, choreStatusLabel } from "@/lib/labels";
 import { getBalanceSummary } from "@/lib/finance";
 
 import { BalanceCard } from "@/components/banking";
@@ -355,16 +354,16 @@ function ParentHome() {
               {chores.slice(0, 5).map((c) => {
                 const kidName = kids.find((k) => k.id === c.kid_id)?.name ?? "Child";
                 return (
-                  <div key={c.id} className="flex items-center justify-between gap-2 text-xs">
-                    <div className="min-w-0">
+                  <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0 flex-[1_1_10rem]">
                       <p className="font-bold text-[var(--ink)] truncate m-0">
                         {kidName} · {c.title}
                       </p>
                       <p className="text-[var(--text-2)] m-0">
-                        RM{Number(c.amount).toFixed(2)} · {c.status}
+                        RM{Number(c.amount).toFixed(2)} · {choreStatusLabel(c.status, kidName)}
                       </p>
                     </div>
-                    {c.status === "DONE" ? (
+                    {c.status === "DONE" && (
                       <div className="flex items-center gap-1.5 shrink-0">
                         <Button
                           type="button"
@@ -385,10 +384,6 @@ function ParentHome() {
                           Decline
                         </Button>
                       </div>
-                    ) : (
-                      <Badge variant={c.status === "APPROVED" ? "success" : "default"}>
-                        {c.status}
-                      </Badge>
                     )}
                   </div>
                 );

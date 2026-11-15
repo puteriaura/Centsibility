@@ -70,6 +70,22 @@ export function approvalKindLabel(kind: string): string {
   return APPROVAL_KIND_LABELS[kind] ?? humanizeCode(kind);
 }
 
+// The parent's wording for a chore's status, shown once wherever a chore appears.
+export function choreStatusLabel(status: string, kidName: string): string {
+  switch (status) {
+    case "OPEN":
+      return `Waiting for ${kidName}`;
+    case "DONE":
+      return "Done, needs your OK";
+    case "APPROVED":
+      return "Paid";
+    case "DECLINED":
+      return "Not approved";
+    default:
+      return humanizeCode(status);
+  }
+}
+
 // Replaces raw codes and underscores with human labels.
 export function sanitizeDisplayText(text: string): string {
   if (!text) return "";

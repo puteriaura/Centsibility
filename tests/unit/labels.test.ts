@@ -6,6 +6,7 @@ import {
   transactionTypeLabel,
   transactionTitle,
   approvalKindLabel,
+  choreStatusLabel,
   sanitizeDisplayText,
 } from "@/lib/labels";
 
@@ -57,6 +58,14 @@ describe("labels", () => {
     expect(approvalKindLabel("TRANSFER")).toBe("Transfer request");
     expect(approvalKindLabel("REWARD")).toBe("Reward request");
     expect(approvalKindLabel("custom_kind")).toBe("Custom kind");
+  });
+
+  it("choreStatusLabel gives each chore status one sentence-case phrase", () => {
+    expect(choreStatusLabel("OPEN", "Child A")).toBe("Waiting for Child A");
+    expect(choreStatusLabel("DONE", "Child A")).toBe("Done, needs your OK");
+    expect(choreStatusLabel("APPROVED", "Child A")).toBe("Paid");
+    expect(choreStatusLabel("DECLINED", "Child A")).toBe("Not approved");
+    expect(choreStatusLabel("ON_HOLD", "Child A")).toBe("On hold");
   });
 
   it("sanitizeDisplayText cleans up codes and underscores in messages", () => {

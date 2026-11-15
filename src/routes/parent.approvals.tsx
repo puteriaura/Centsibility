@@ -18,7 +18,7 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatRM } from "@/lib/format";
 import { ParentLoadError } from "@/features/parent/components/ParentLoadError";
-import { approvalKindLabel, sanitizeDisplayText } from "@/lib/labels";
+import { approvalKindLabel, choreStatusLabel, sanitizeDisplayText } from "@/lib/labels";
 import { Money, maskAmounts, usePrivacy } from "@/features/privacy";
 
 type ApprovalsTab = "requests" | "rewards" | "activity";
@@ -209,16 +209,17 @@ function Approvals() {
             <div className="space-y-2.5">
               {doneChores.map((c) => {
                 const kid = kids.find((k) => k.id === c.kid_id);
+                const kidName = kid?.comfort_name || kid?.name || "Child";
                 const isBusy = busyId === c.id;
                 return (
                   <Card key={c.id} variant="default" className="p-4 border border-[var(--border)] space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-[var(--ink)]">{kid?.comfort_name || kid?.name || "Child"}</span>
+                          <span className="text-sm font-bold text-[var(--ink)]">{kidName}</span>
                           <Badge variant="default">Chore</Badge>
                         </div>
-                        <p className="text-xs text-[var(--text-2)] mt-1 mb-0">{c.title}</p>
+                        <p className="text-xs text-[var(--text-2)] mt-1 mb-0">{c.title} · {choreStatusLabel(c.status, kidName)}</p>
                       </div>
                       <span className="text-base font-extrabold text-[var(--ink)] tabular-nums shrink-0">
                         <Money amount={Number(c.amount)} />
