@@ -57,7 +57,7 @@ export default defineConfig({
     port: 3000,
     host: true,
     // Worktrees and unpacked tools live inside this folder; their edits must not reload the app.
-    watch: { ignored: ["**/.claude/**", "**/analysis/private/**", "**/hyperframes-main/**"] },
+    
   },
   // Scan dependencies from the app entry only, not every HTML file in the folder.
   optimizeDeps: { entries: ["index.html"] },

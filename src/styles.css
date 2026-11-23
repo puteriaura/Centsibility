@@ -3,7 +3,6 @@
 @custom-variant dark (&:is(.dark *));
 @source "../src";
 @source "../index.html";
-@source not "../.agents";
 
 /* Keep iOS form focus readable without disabling pinch zoom. */
 input, textarea, select {

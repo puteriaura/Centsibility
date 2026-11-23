@@ -1,9 +1,6 @@
 /supabase
 /tests
 /docs
-/.claude
-/.agents
 *.log
 *.dump
 
-/analysis

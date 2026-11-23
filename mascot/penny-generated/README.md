@@ -31,7 +31,7 @@ Use the corrected MVP sheet as the expression source of truth. The generated con
 
 Keep sad and worried faces out of automatic spending feedback. The permission explanation pose on the onboarding sheet has clasped hands: use calm attentive Penny instead in the product so refusal never feels like disappointing the mascot.
 
-## Motion handoff
+## Motion notes
 
 Build one front-facing rigid coin rig with separate eyes, mouths, arms, short legs, and plum shoes. Each MVP state has a static reduced-motion fallback.
 

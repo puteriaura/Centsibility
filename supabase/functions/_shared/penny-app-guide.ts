@@ -1,4 +1,4 @@
-// Generated from actual route JSX by analysis/generate-penny-guide.mjs. Dynamic labels are not inferred.
+// Generated from route JSX. Dynamic labels are not inferred.
 export const PENNY_APP_GUIDE = [
   {
     "path": "/kid/card",

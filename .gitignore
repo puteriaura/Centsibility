@@ -23,7 +23,6 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.cursor
 .idea
 .DS_Store
 *.suo
@@ -38,10 +37,6 @@ test-results/
 supabase/functions/.env
 .vercel
 .env*
-.agents/
 *OAuth*.json
 client_secret*.json
-graphify-out/
 
-# Private restore snapshots, backups and synthetic local credentials
-analysis/private/

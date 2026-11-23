@@ -1,35 +1,71 @@
 # Centsibility
 
-The current release candidate lives in this project root on `codex/local-upgrade-rehearsal`. Older branches remain preserved. Do not copy an older checkout over this folder.
+Centsibility is a family banking and financial-literacy web app for children and their parents. Kids practise saving, spending, giving and investing in a safe, simulated environment, while parents stay in control through approvals, limits and reports. Penny, the in-app mascot and assistant, guides children through money decisions.
 
-## Run locally
+> Final Year Project. The card is a practice card and cannot make real bank-card payments.
 
-Use Node.js 24 and the existing lockfile. Run `npm ci`, then `npm run dev`. Open the local address printed by Vite (normally port 3000). Docker is not required for the frontend.
+## Features
 
-For authenticated backend use, configure the public `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in an uncommitted `.env.local`. Check the exact key name against `src/integrations/supabase/client.ts` before configuration. Never put the service-role key or AI/provider keys in a `VITE_` variable. Server configuration is documented in `analysis/STAGING-SETUP.md`.
+**Kid experience**
+- Wallet, practice card, transfers and transaction history
+- Savings goals, missions, quests, quizzes and rewards
+- Chores with parent approval
+- Zakat and sadaqah (giving) tools
+- Simulated investing and loans with market quotes
+- Penny chat assistant and spending insights
 
-Development-only demo controls use synthetic responses. They are removed from production builds. Demo balances, quotes and PIN outcomes do not prove real backend behavior. The card is a practice card and cannot make bank-card payments.
+**Parent experience**
+- Approvals for transfers, chores and purchases
+- Card controls, PIN protection and account settings
+- Insights, statements and exportable reports
+- Penny settings and privacy controls
+- Family data export and account deletion
 
-## Checks
+## Tech stack
 
-```powershell
-npx tsc --noEmit
-python analysis/check-server-types.py
-npx vitest run
-node tests/runtime/penny-minimization.mjs
-node tests/runtime/penny-red-team.mjs
-node tests/runtime/market.mjs
-node tests/runtime/legacy-fund-display.mjs
-npm run build
-node analysis/scan-client-boundaries.mjs
+- **Frontend:** React, TypeScript, Vite, TanStack Router, Tailwind CSS
+- **Backend:** Supabase (Postgres, Row Level Security, Edge Functions on Deno)
+- **Testing:** Vitest, Playwright, SQL and Deno tests
+- **Deployment:** Vercel
+
+## Project structure
+
+```text
+src/                 React app (routes, components, libraries)
+supabase/            Migrations, edge functions, config
+tests/               Unit, end-to-end and SQL tests
+mascot/              Penny mascot assets and animations
+public/              Static assets and fonts
+scripts/             Maintenance and seeding scripts
 ```
 
-With a local dev server running, set `LOCAL_DEV_URL` to its localhost address and run `node analysis/verify-ui-assertions.mjs` and `node analysis/verify-route-smoke.mjs`. These checks block remote requests. Browser checks require the installed Chrome and Playwright. Screenshots and JSON results live in `analysis/corrected-ui` and `analysis/route-smoke-results.json`.
+## Getting started
 
-## Finish and release
+Requirements: Node.js 24 and npm.
 
-Read `analysis/WRAPUP-STATUS.md` and the wrap-up section of `analysis/DEPLOY-RUNBOOK.md`. No push or deployment has been performed. Vercel can publish the production branch automatically on push, so keep this candidate on the review branch until backend verification and explicit release approval.
+```bash
+npm ci
+cp .env.example .env.local   # then fill in your own values
+npm run dev
+```
 
-The production Market catalogue contains NVDA, but the captured deployed backend omits screening metadata. The prepared server code supplies it; production remains blocked until that backend is released and checked. Quotes require the server-side market provider configuration and an available provider response; missing quotes remain labeled unavailable rather than invented.
+Open the address printed by Vite (normally http://localhost:3000).
 
-Existing Fund contracts stay under their original database rules. The proposed 85%/115% engine and reserve are analysis only. Do not run a blanket migration push from this repository for the wrap-up release.
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. Never put a service-role key or any AI/provider key in a `VITE_` variable. Server secrets belong in `supabase/functions/.env` (see `supabase/functions/.env.example`).
+
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Lint the codebase |
+| `npx vitest run` | Run unit tests |
+| `npx tsc --noEmit` | Type-check |
+
+## Notes
+
+- Development-only demo controls use synthetic data and are removed from production builds.
+- Market data comes from public provider endpoints used under each provider's own terms.
+- Fonts (Baloo 2, Lexend) are under the SIL Open Font License; chart components include their original licences.

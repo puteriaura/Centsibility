@@ -20,7 +20,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-// Market data endpoints are undocumented public endpoints used under each provider's own terms; no data licence is held. See analysis/MARKET-DATA-TERMS-RISK.md.
+// Market data endpoints are undocumented public endpoints used under each provider's own terms; no data licence is held.
 
 export type ProviderQuote = {
   symbol: string;
