@@ -21,6 +21,19 @@ Centsibility is a family banking and financial-literacy web app for children and
 - Penny settings and privacy controls
 - Family data export and account deletion
 
+## Screenshots
+
+Captured from the development build with seeded demo data (all amounts are made up).
+
+| Landing page | Parent dashboard |
+| --- | --- |
+| ![Landing page](docs/screenshots/landing.png) | ![Parent dashboard](docs/screenshots/parent-dashboard.png) |
+
+| Kid home | Savings goals | Practice investing |
+| --- | --- | --- |
+| <img src="docs/screenshots/kid-home.png" width="240" alt="Kid home"> | <img src="docs/screenshots/kid-goals.png" width="240" alt="Kid goals"> | <img src="docs/screenshots/kid-invest.png" width="240" alt="Kid investing"> |
+
+![Parent insights](docs/screenshots/parent-insights.png)
 ## Tech stack
 
 - **Frontend:** React, TypeScript, Vite, TanStack Router, Tailwind CSS
@@ -69,3 +82,4 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. Nev
 - Development-only demo controls use synthetic data and are removed from production builds.
 - Market data comes from public provider endpoints used under each provider's own terms.
 - Fonts (Baloo 2, Lexend) are under the SIL Open Font License; chart components include their original licences.
+
